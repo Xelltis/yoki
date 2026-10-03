@@ -4,6 +4,7 @@ import { csrf } from './auth/csrf';
 import { registerDevRoutes } from './auth/dev';
 import type { Bindings } from './env';
 import { AppError } from './lib/errors';
+import { adminRoutes } from './routes/admin';
 import { authRoutes } from './routes/auth';
 import { noticePage } from './routes/html';
 import { meRoutes } from './routes/me';
@@ -25,6 +26,7 @@ app.route('/', authRoutes);
 app.route('/', meRoutes);
 app.route('/', pageRoutes);
 app.route('/', rpcRoutes);
+app.route('/', adminRoutes);
 if (import.meta.env?.DEV) registerDevRoutes(app);
 
 const isApi = (url: string) => new URL(url).pathname.startsWith('/api/');
