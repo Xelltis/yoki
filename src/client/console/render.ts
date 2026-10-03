@@ -7,7 +7,7 @@ import { $, fillSelect, load } from './dom';
 import { fillForm, syncNotifyUi } from './form';
 import { updateProxy } from './header';
 import { showLoadedAt } from './load';
-import { fillMemberForm, renderMembers } from './members';
+import { fillMemberForm, renderMeCard, renderMembers } from './members';
 import { active, byId, isAdmin, pickLabel, seriesNames, sortedActive, sortSessions } from './model';
 import { renderNotices } from './notices';
 import { renderOps } from './ops';
@@ -28,6 +28,9 @@ export function buildStatic(): void {
   $('me').disabled = !isAdmin();
   $('me').classList.toggle('need', !$('me').value);
   updateProxy();
+  // 管理画面への入口（管理者だけ。代理で入れているあいだも、本人が管理者かで決める）
+  $('adminLink').hidden = !D.isAdmin;
+  $('adminEntry').hidden = !D.isAdmin;
   const dl = $('memberList');
   dl.innerHTML = '';
   D.members.forEach((m) => { const o = document.createElement('option'); o.value = m.name; dl.appendChild(o); });
@@ -45,7 +48,7 @@ export function buildStatic(): void {
     cb.type = 'checkbox'; cb.value = m.name; cb.className = 'm';
     lab.appendChild(cb); lab.appendChild(document.createTextNode(m.name)); box.appendChild(lab);
   });
-  if (!D.members.length) box.innerHTML = '<span class="hint">「メンバーの登録」タブで名前を足すと、ここにチェック欄が出ます。</span>';
+  if (!D.members.length) box.innerHTML = '<span class="hint">管理画面の「メンバー」で名前を足すと、ここにチェック欄が出ます。</span>';
   syncNotifyUi(true);
   const pickKeep = fillSelect($('pick'), sortedActive().concat(sortSessions(D.sessions.filter((s) => s.status === '中止'))).map((s) => ({ value: s.id, text: pickLabel(s) })), '（新規登録）');
   $('pick').value = byId(pickKeep) ? pickKeep : '';
@@ -67,5 +70,6 @@ export function renderAll(): void {
   if ($('formModal').hidden) fillForm($('pick').value);
   renderMembers();
   if (!drafts.member) fillMemberForm($('mpick').value);
+  renderMeCard();
   renderSettings();
 }

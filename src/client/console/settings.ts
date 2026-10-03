@@ -1,9 +1,9 @@
-// 設定のタブ。区分（知らせ・この卓予定・この端末・管理者・送信の記録）と、それぞれの保存
+// グループの管理画面（/g/:id/admin/）の区分（知らせ・この卓予定・管理者・送信の記録・グループを消す）と、ふだんの画面の「この端末」
 import type { RpcName } from '../../shared/api';
 import { api, discordSend, failToast, refetch, useData } from './api';
 import { addDaysYmd, fmtJa } from './dates';
 import { $, esc, fillSelect, load, mi, store, toast } from './dom';
-import { autoMinutes, showLoadedAt } from './load';
+import { autoMinutes, clearCache, showLoadedAt } from './load';
 import { askConfirm } from './modal';
 import { kindSet, whenText } from './notify';
 import { readWhen, renderSeriesNotify } from './series-notify';
@@ -16,7 +16,7 @@ export function renderSettings(): void {
   let lh = '<tr><th>日時</th><th>種別</th><th>対象</th><th>結果</th></tr>';
   lg.forEach((row) => {
     const bad = /^(HTTP|ERROR|送らず|送信失敗)/.test(row.result);
-    lh += '<tr' + (bad ? ' class="r-past"' : '') + '><td class="nw">' + esc(row.at) + '</td><td class="nw">' + esc(row.kind) + '</td><td>' + esc(row.target) + '</td><td>' + esc(row.result) + '</td></tr>';
+    lh += '<tr' + (bad ? ' class="r-past"' : '') + '><td class="nw">' + esc(row.at) + '</td><td class="nw">' + esc(row.kind) + '</td><td class="txt">' + esc(row.target) + '</td><td class="txt">' + esc(row.result) + '</td></tr>';
   });
   if (!lg.length) lh += '<tr><td colspan="4" class="hint">まだ送っていません。「接続テスト」を押すとここに記録が出ます。</td></tr>';
   $('stLog').innerHTML = lh;
@@ -51,7 +51,11 @@ export function renderSettings(): void {
   renderSeriesNotify();
   renderKindWebhooks();
   renderAdminPane();
+  $('delTitle').textContent = D.title;
+  syncDelete();
 }
+/** グループを消すボタンは、名前を打ち終えるまで押せない */
+function syncDelete(): void { $('delGroup').disabled = $('delConfirm').value.trim() !== D.title; }
 /** 管理者の区分。名簿と、管理者を足す・外す */
 function renderAdminPane(): void {
   const st = $('admState'), list = D.admins || [];
@@ -87,13 +91,14 @@ function renderAdminPane(): void {
 /* ON/OFF のつまみ。checkbox ではなく button[role=switch] で持つ */
 function swOn(id: string): boolean { return $(id).getAttribute('aria-checked') === 'true'; }
 function setSw(id: string, on: boolean): void { const b = document.getElementById(id); if (b) b.setAttribute('aria-checked', String(!!on)); }
-/** 設定の区分を切り替える */
+/** 管理画面の区分を切り替える。URL の # にも出す（再読み込みや共有で同じ区分が開くように） */
 export function showSetPane(k: string): void {
-  document.querySelectorAll<HTMLElement>('#tab-settings .set-pane').forEach((p) => { p.hidden = p.dataset.pane !== k; });
+  document.querySelectorAll<HTMLElement>('#tab-admin .set-pane').forEach((p) => { p.hidden = p.dataset.pane !== k; });
   document.querySelectorAll<HTMLElement>('#setNav button').forEach((b) => {
     if (b.dataset.set === k) b.setAttribute('aria-current', 'true'); else b.removeAttribute('aria-current');
   });
-  store('setPane', k);
+  store('adminPane', k);
+  if (location.hash !== '#' + k) history.replaceState(null, '', '#' + k);
 }
 /** 設定を保存する呼び出し。ボタンを押せなくして、結果を msgId の欄と吹き出しに出す */
 export function stCall(btnId: string, msgId: string, fnName: RpcName, form?: object): void {
@@ -235,4 +240,16 @@ export function init(): void {
     toast('文字サイズを' + (font.value === 'l' ? '大' : font.value === 'm' ? '中' : '小') + 'にしました（この端末だけ）');
   });
   $('stSave').onclick = () => { drafts.settings = false; stCall('stSave', 'stMsg', 'saveConsoleSettings', { availDays: $('stAvailDays').value.trim() }); };
+  /* グループを消す。名前を打ってから、確かめる窓を通す。消したら控えを消して入口へ */
+  $('delConfirm').addEventListener('input', syncDelete);
+  $('delGroup').onclick = () => {
+    const confirm = $('delConfirm').value.trim();
+    if (confirm !== D.title) return;
+    askConfirm({ title: '「' + D.title + '」を消しますか？', message: '卓・メンバーの予定・メモ・日程調整の回答・送信の記録が、すべて消えます。元に戻せません。', ok: '消す', danger: true }, () => {
+      $('delGroup').disabled = true; $('delMsg').textContent = '消しています…';
+      api().withSuccessHandler(() => { clearCache(); location.href = '/?deleted=1'; })
+        .withFailureHandler((e) => { syncDelete(); $('delMsg').textContent = e.message; toast(e.message); })
+        .deleteGroup({ confirm });
+    });
+  };
 }

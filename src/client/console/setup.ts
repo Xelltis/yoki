@@ -1,5 +1,6 @@
 // はじめの 3 ステップ。メンバーと卓がそろうまで、カレンダーの上に出す。「使い方」の隣のボタンで、いつでも出し直せる
-import { $, hit, mi } from './dom';
+import { adminUrl } from './area';
+import { $, hit, mi, toast } from './dom';
 import { fillForm, openForm } from './form';
 import { isActive } from './model';
 import { D, selDay } from './state';
@@ -16,11 +17,13 @@ export function renderSetup(): void {
   const step = (n: number, state: string, title: string, text: string, btn: string) =>
     '<li class="' + state + '"><span class="n">' + (state === 'done' ? mi('check', 'sm') : n) + '</span><div><b>' + title + '</b><p class="hint">' + text + '</p>' + btn + '</div></li>';
   const hasDiscord = !!D.webhookSet;
+  // メンバーの登録と Discord の設定は、管理者が管理画面でする。管理者でない人には、頼むように出す
+  const ask = '<span class="hint">管理者に頼んでください</span>';
   box.innerHTML = '<h3>' + mi('flag', 'sm') + 'はじめの 3 ステップ' + '<button type="button" class="btn icon close-guide" data-go="close" aria-label="はじめの 3 ステップを閉じる">' + mi('close') + '</button>' + '</h3><ol class="setup">' +
     step(1, hasMembers ? 'done' : 'now', 'メンバーを登録する', '卓に出る人の名前を入れます。ここで入れた名前が、予定表の列と参加者の候補になります。',
-      hasMembers ? '<span class="hint">' + D.members.length + ' 人を登録しています</span>' + ' <button type="button" class="btn small" data-go="members">開く</button>' : '<button type="button" class="btn primary" data-go="members">' + mi('person_add', 'sm') + 'メンバーを登録</button>') +
-    step(2, hasDiscord ? 'done' : hasMembers ? 'now' : '', 'Discord を登録する', '設定タブで Webhook URL を貼ると、卓の案内と開催前の知らせがチャンネルに届きます。Discord を使わないなら飛ばせます。',
-      hasDiscord ? '<span class="hint">登録してあります</span>' + ' <button type="button" class="btn small" data-go="discord">開く</button>' : '<button type="button" class="btn" data-go="discord">' + mi('notifications', 'sm') + 'Discord を登録</button>') +
+      hasMembers ? '<span class="hint">' + D.members.length + ' 人を登録しています</span>' + (D.isAdmin ? ' <button type="button" class="btn small" data-go="members">開く</button>' : '') : D.isAdmin ? '<button type="button" class="btn primary" data-go="members">' + mi('person_add', 'sm') + 'メンバーを登録</button>' : ask) +
+    step(2, hasDiscord ? 'done' : hasMembers ? 'now' : '', 'Discord を登録する', '管理画面の「知らせ」で Webhook URL を貼ると、卓の案内と開催前の知らせがチャンネルに届きます。Discord を使わないなら飛ばせます。',
+      hasDiscord ? '<span class="hint">登録してあります</span>' + (D.isAdmin ? ' <button type="button" class="btn small" data-go="discord">開く</button>' : '') : D.isAdmin ? '<button type="button" class="btn" data-go="discord">' + mi('notifications', 'sm') + 'Discord を登録</button>' : ask) +
     step(3, !hasMembers ? '' : hasSession ? 'done' : 'now', '予定を登録する', 'カレンダーで日を選んで「卓を登録」を押します。日が決まっていなければ、状態を「募集」か「調整中」にします。',
       hasMembers ? (hasSession ? '<span class="hint">' + D.sessions.filter(isActive).length + ' 件の卓があります</span> ' : '') + '<button type="button" class="btn ' + (hasSession ? 'small' : 'primary') + '" data-go="new">' + mi('add', 'sm') + '卓を登録</button>' : '<span class="hint">先にメンバーを登録します</span>') +
     '</ol>';
@@ -38,8 +41,12 @@ export function init(): void {
   $('setupGuide').addEventListener('click', (ev) => {
     const b = hit(ev, 'button[data-go]'); if (!b) return;
     if (b.dataset.go === 'close') { guideMode = 'closed'; renderSetup(); return; }
-    if (b.dataset.go === 'members') { showTab('members'); $('mname').focus(); return; }
-    if (b.dataset.go === 'discord') { showTab('settings'); $('stWebhookNew').focus(); return; }
+    // メンバーと Discord は管理画面へ（管理者でなければボタンは出ないが、念のため）
+    if (b.dataset.go === 'members' || b.dataset.go === 'discord') {
+      if (!D.isAdmin) { toast('メンバーの登録と Discord の設定は、管理者が管理画面でします'); return; }
+      location.href = adminUrl(b.dataset.go === 'members' ? 'members' : 'notify');
+      return;
+    }
     fillForm(''); if (selDay) $('date').value = selDay; openForm();
   });
   /* 「はじめの 3 ステップ」ボタン。カレンダーで出ていれば閉じ、それ以外は出す（押すたびに切り替わる） */

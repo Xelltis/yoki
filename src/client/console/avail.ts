@@ -192,7 +192,7 @@ function readFilter(): void {
   renderAvail();
 }
 /* 折り畳み。開閉はブラウザが覚える */
-const FOLD_LABEL: Record<string, string> = { availFilter: '絞り込み', availBulk: 'まとめて入れる', availOps: '卓をまとめて変える' };
+const FOLD_LABEL: Record<string, string> = { availFilter: '絞り込み', availBulk: 'まとめて入れる' };
 function setFold(id: string, open: boolean): void {
   const box = $(id), btn = document.querySelector<HTMLElement>('.fold[data-target="' + id + '"]')!;
   box.hidden = !open;
@@ -231,7 +231,6 @@ export function init(): void {
   });
   setFold('availFilter', load('fold.availFilter') === '1');
   setFold('availBulk', load('fold.availBulk') === '1');
-  setFold('availOps', load('fold.availOps') === '1');
   $('afMe').onclick = () => {
     const n = me(); if (!n) { needMe(); return; }
     document.querySelectorAll<HTMLInputElement>('input.afm').forEach((cb) => { cb.checked = cb.value === n; });

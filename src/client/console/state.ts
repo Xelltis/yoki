@@ -27,7 +27,9 @@ export const sync = {
   failed: false,
   /** 描くのを見送ったデータがある（書き込みの返事のあとで読み直す） */
   stale: false,
+  /** グループが消された。もう読まない */
+  stopped: false,
 };
 
 /** 保存前の書きかけ。読み込み直しても上書きしない */
-export const drafts = { member: false, settings: false };
+export const drafts = { member: false, settings: false, me: false };

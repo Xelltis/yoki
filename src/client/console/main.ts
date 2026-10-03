@@ -1,5 +1,6 @@
 // グループの画面（/g/:id/）の入口。各部分の初期化（イベントの登録）を順に呼び、控えを描いてから最新を読む。
 // 各ファイルは関数と定数だけを持ち、読み込んだときには何もしない（ファイルどうしが互いを呼んでも、読み込みの順で壊れないように）
+import { initArea } from './area';
 import { init as initAvail } from './avail';
 import { init as initAvailInput } from './avail-input';
 import { init as initCalendar, renderIconLegend, selectDay } from './calendar';
@@ -29,6 +30,7 @@ declare global {
   }
 }
 
+initArea();
 initTips(); initModal(); initHeader(); initTabs(); initTheme(); initSetup(); initNotices(); initCalendar(); initDay();
 initRecruit(); initPoll(); initOps(); initAvail(); initAvailInput(); initForm(); initPromote(); initMembers(); initSettings(); initSeriesNotify(); initLoad();
 
