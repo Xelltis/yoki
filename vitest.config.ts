@@ -23,12 +23,13 @@ export default defineConfig(async () => {
                   // 区切りの読み方（カンマと空白）も確かめる
                   OPERATOR_IDS: '400000000000000098, 400000000000000099',
                 },
-                // 画面の静的ファイルの代わり（テストでは組み立てない）。グループのページの骨組みだけ返す
+                // 画面の静的ファイルの代わり（テストでは組み立てない）。グループの画面と運営者の管理画面の骨組みだけ返す
                 serviceBindings: {
-                  ASSETS: (request: Request) =>
-                    new URL(request.url).pathname === '/console/'
-                      ? new Response('<!doctype html><title>卓予定</title>', { headers: { 'Content-Type': 'text/html' } })
-                      : new Response('not found', { status: 404 }),
+                  ASSETS: (request: Request) => {
+                    const page: Record<string, string> = { '/console/': '卓予定', '/operator/': '運営の管理画面' };
+                    const title = page[new URL(request.url).pathname];
+                    return title ? new Response('<!doctype html><title>' + title + '</title>', { headers: { 'Content-Type': 'text/html' } }) : new Response('not found', { status: 404 });
+                  },
                 },
               },
             }),

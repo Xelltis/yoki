@@ -16,7 +16,8 @@ import { cancelPoll, decidePoll, type Io, setPollVote, setPollVoteAll, startPoll
 import { bulkUpdateSessions, deleteSession, saveSession, setInterest } from '../domain/sessions';
 import { renameGroup, saveConsoleSettings, saveSeriesNotify } from '../domain/settings';
 import type { Ctx } from '../domain/types';
-import { AppError, adminError, authError, notFound } from '../lib/errors';
+import { deleteGroup } from '../domain/groups';
+import { AppError, adminError, authError, goneError, notFound } from '../lib/errors';
 import type { RpcName } from '../../shared/api';
 
 type Entry = {
@@ -48,7 +49,17 @@ export const RPC: Record<Exclude<RpcName, 'getConsoleData'>, Entry> = {
   saveSeriesNotify: { run: saveSeriesNotify, admin: 'シリーズごとの設定を変えること', data: true },
   renameGroup: { run: renameGroup, admin: 'グループの名前を変えること', data: true },
   sendDiscordStep: { run: sendDiscordStep },
+  // 消したあとは画面のデータを読めないので data を付けない
+  deleteGroup: { run: deleteGroup, admin: 'グループを消すこと' },
 };
+
+/** 最後に使われた日時（運営者の管理画面に出す）。書き込みを減らすため、10 分に 1 回まで書き換える */
+const TOUCH_MS = 10 * 60_000;
+async function touchGroup(db: D1Database, groupId: string, now = new Date()): Promise<void> {
+  await db.prepare('UPDATE groups SET last_used_at = ?1 WHERE id = ?2 AND (last_used_at IS NULL OR last_used_at < ?3)')
+    .bind(now.toISOString(), groupId, new Date(now.getTime() - TOUCH_MS).toISOString())
+    .run();
+}
 
 export const rpcRoutes = new Hono<AppEnv>();
 
@@ -59,10 +70,11 @@ rpcRoutes.post('/api/g/:groupId/:fn', async (c) => {
   const groupId = c.req.param('groupId');
   const access = await groupAccess(c.env.DB, await currentViewer(c), groupId);
   if (!access.ok) {
-    if (access.reason === 'notfound') throw notFound('グループが見つかりません。');
+    if (access.reason === 'notfound') throw goneError();
     if (access.reason === 'forbidden') throw new AppError(403, 'このグループの Discord サーバーのメンバーではありません。');
     throw authError('ログインし直してください。');
   }
+  await touchGroup(c.env.DB, groupId);
   const appUrl = new URL(c.req.url).origin + '/g/' + groupId + '/';
   const load = () => loadGroup(c.env.DB, groupId, access.actor, appUrl);
   const ctx = await load();

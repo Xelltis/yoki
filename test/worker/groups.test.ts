@@ -1,7 +1,7 @@
-// グループを作る・グループのページに入る・メンバーを決める・CSRF・開発用ログイン
+// グループを作る・グループのページに入る・メンバーを決める・CSRF・開発用ログイン・管理画面のページ・グループを消す
 import { env } from 'cloudflare:test';
 import { describe, expect, test } from 'vitest';
-import { call, loginAs, makeGroup, ORIGIN, postJson } from './helpers';
+import { call, loginAs, makeGroup, ORIGIN, postJson, rpc, setupGroup } from './helpers';
 
 const member = (groupId: string, userId: string) =>
   env.DB.prepare('SELECT name, is_admin, discord_id FROM members WHERE group_id = ? AND user_id = ?').bind(groupId, userId).first<{ name: string; is_admin: number; discord_id: string }>();
@@ -114,5 +114,74 @@ describe('開発用ログイン', () => {
   test('手元でなければ無い', async () => {
     const res = await call('/dev/login', { method: 'POST', headers: { Origin: ORIGIN, 'Content-Type': 'application/x-www-form-urlencoded' }, body: 'as=ソラ' });
     expect(res.status).toBe(404);
+  });
+});
+
+describe('グループの管理画面（/g/:id/admin/）', () => {
+  test('管理者には画面を返す。管理者でない人には 403 の案内（予定の画面へのリンク付き）', async () => {
+    const { admin, sora } = await setupGroup();
+    const ok = await call('/g/grp/admin/', { sid: admin });
+    expect(ok.status).toBe(200);
+    expect(await ok.text()).toContain('<title>卓予定</title>');
+    const ng = await call('/g/grp/admin/', { sid: sora });
+    expect(ng.status).toBe(403);
+    expect(await ng.text()).toContain('href="/g/grp/"');
+  });
+
+  test('ログインしていなければ、管理画面へ戻ってくるログインへ送る。末尾の / が無ければ付ける', async () => {
+    await makeGroup('grp', 'g');
+    expect((await call('/g/grp/admin/')).headers.get('Location')).toBe('/auth/login?return_to=%2Fg%2Fgrp%2Fadmin%2F');
+    const r = await call('/g/grp/admin');
+    expect(r.status).toBe(301);
+    expect(r.headers.get('Location')).toBe('/g/grp/admin/');
+  });
+});
+
+describe('運営者の管理画面（/admin/）', () => {
+  test('運営者だけ。ログインしていなければログインへ、運営者でなければ 403', async () => {
+    expect((await call('/admin/')).headers.get('Location')).toBe('/auth/login?return_to=%2Fadmin%2F');
+    const user = await loginAs({ id: '300', name: 'ふつうの人' }, []);
+    expect((await call('/admin/', { sid: user })).status).toBe(403);
+    const op = await loginAs({ id: '400000000000000098', name: '運営' }, []);
+    const res = await call('/admin/', { sid: op });
+    expect(res.status).toBe(200);
+    expect(res.headers.get('Cache-Control')).toBe('no-store');
+    expect(await res.text()).toContain('運営の管理画面');
+    expect((await call('/admin')).headers.get('Location')).toBe('/admin/');
+  });
+});
+
+describe('グループを消す（deleteGroup）', () => {
+  test('管理者だけ。名前が合えば中身ごと消え、返事にデータは付かない', async () => {
+    const { admin, sora } = await setupGroup();
+    expect((await rpc(sora, 'grp', 'deleteGroup', { confirm: 'テストの卓' })).body.error).toMatch(/^ADMIN:/);
+    expect((await rpc(admin, 'grp', 'deleteGroup', { confirm: 'ちがう' })).status).toBe(400);
+    const r = await rpc(admin, 'grp', 'deleteGroup', { confirm: 'テストの卓' });
+    expect(r.status).toBe(200);
+    expect(r.body.data).toBeUndefined();
+    expect(await env.DB.prepare("SELECT count(*) AS n FROM members WHERE group_id = 'grp'").first('n')).toBe(0);
+  });
+
+  test('消えたグループを開いていた画面には、GONE: で知らせる', async () => {
+    const { admin, sora } = await setupGroup();
+    await rpc(admin, 'grp', 'deleteGroup', { confirm: 'テストの卓' });
+    const r = await rpc(sora, 'grp', 'getConsoleData');
+    expect(r.status).toBe(404);
+    expect(r.body.error).toMatch(/^GONE:/);
+  });
+});
+
+describe('最後に使われた日時', () => {
+  test('画面から呼ばれたら書き換える。10 分以内なら書き換えない', async () => {
+    const { sora } = await setupGroup();
+    const used = () => env.DB.prepare("SELECT last_used_at FROM groups WHERE id = 'grp'").first<string>('last_used_at');
+    await env.DB.prepare("UPDATE groups SET last_used_at = '2026-01-01T00:00:00.000Z' WHERE id = 'grp'").run();
+    await rpc(sora, 'grp', 'getConsoleData');
+    const t = await used();
+    expect(Date.now() - Date.parse(t!)).toBeLessThan(60_000);
+    const recent = new Date(Date.now() - 5 * 60_000).toISOString();
+    await env.DB.prepare("UPDATE groups SET last_used_at = ? WHERE id = 'grp'").bind(recent).run();
+    await rpc(sora, 'grp', 'getConsoleData');
+    expect(await used()).toBe(recent);
   });
 });

@@ -15,7 +15,7 @@ export type Status = (typeof STATUS)[keyof typeof STATUS];
 export const RPC_FUNCS = [
   'getConsoleData', 'sendDiscordStep', 'setDayNote', 'setInterest', 'bulkUpdateSessions', 'setAvailability', 'setAvailabilityBulk', 'setAvailNote',
   'saveSession', 'deleteSession', 'saveMember', 'deleteMember', 'saveConsoleSettings', 'saveSeriesNotify', 'renameGroup', 'startPoll', 'setPollVote',
-  'setPollVoteAll', 'cancelPoll', 'decidePoll', 'setAdmin',
+  'setPollVoteAll', 'cancelPoll', 'decidePoll', 'setAdmin', 'deleteGroup',
 ] as const;
 export type RpcName = (typeof RPC_FUNCS)[number];
 
