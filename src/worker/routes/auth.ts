@@ -3,12 +3,12 @@ import { Hono } from 'hono';
 import { deleteCookie, getCookie, setCookie } from 'hono/cookie';
 import type { AppEnv } from '../app';
 import { authorizeUrl, fetchDiscordProfile, saveProfile } from '../auth/oauth';
-import { endSession, isLocalHttp, startSession } from '../auth/session';
+import { endSession, isBanned, isLocalHttp, startSession } from '../auth/session';
 import { randomToken, safeEqual } from '../lib/ids';
 import { noticePage } from './html';
 
-/** ログインのあとに戻ってよい場所（入口か、グループのページ） */
-export const RETURN_TO = /^\/(g\/[a-z0-9-]{1,40}\/)?$/;
+/** ログインのあとに戻ってよい場所（入口・グループのページ・グループの管理画面・運営者の管理画面） */
+export const RETURN_TO = /^\/(g\/[a-z0-9-]{1,40}\/(admin\/)?|admin\/)?$/;
 const STATE_COOKIE = 'yoki_oauth';
 
 export const authRoutes = new Hono<AppEnv>();
@@ -50,6 +50,8 @@ authRoutes.get('/auth/callback', async (c) => {
     return c.html(noticePage('ログインをやり直してください', 'ログインの確認ができませんでした。', retry), 400);
   }
   const { user, guilds } = await fetchDiscordProfile(c.env, code, url.origin + '/auth/callback');
+  // 締め出された人は、ログインの記録も残さずに入口へ戻す
+  if (await isBanned(c.env.DB, user.id)) return c.redirect('/?login=banned');
   await saveProfile(c.env.DB, user, guilds);
   await startSession(c, user.id);
   return c.redirect(RETURN_TO.test(returnTo) ? returnTo : '/');

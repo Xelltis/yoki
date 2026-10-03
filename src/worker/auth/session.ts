@@ -41,19 +41,24 @@ export async function startSession(c: Context, userId: string, now = new Date())
   });
 }
 
-/** cookie からログインしている人を読む。無い・期限切れなら null */
+/** cookie からログインしている人を読む。無い・期限切れ・締め出されていれば null */
 export async function currentViewer(c: Context, now = new Date()): Promise<Viewer | null> {
   const token = getCookie(c, cookieName(new URL(c.req.url)));
   if (!token) return null;
   const row = await c.env.DB.prepare(
     `SELECT u.id, u.username, u.global_name, u.avatar, u.guilds_checked_at
        FROM auth_sessions s JOIN users u ON u.id = s.user_id
-      WHERE s.id_hash = ? AND s.expires_at > ?`,
+      WHERE s.id_hash = ? AND s.expires_at > ? AND u.banned_at IS NULL`,
   )
     .bind(await sha256Hex(token), now.toISOString())
     .first<{ id: string; username: string; global_name: string | null; avatar: string | null; guilds_checked_at: string }>();
   if (!row) return null;
   return { id: row.id, username: row.username, globalName: row.global_name, avatar: row.avatar, guildsCheckedAt: row.guilds_checked_at };
+}
+
+/** 締め出されているか（運営者が印を付けた人は、ログインできない） */
+export async function isBanned(db: D1Database, userId: string): Promise<boolean> {
+  return !!(await db.prepare('SELECT 1 FROM users WHERE id = ? AND banned_at IS NOT NULL').bind(userId).first());
 }
 
 export async function endSession(c: Context): Promise<void> {
