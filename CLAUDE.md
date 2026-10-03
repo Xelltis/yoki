@@ -36,7 +36,8 @@
 README の「書くときの決まり」に加えて、次を守る。
 
 - 日付と時刻は `src/worker/lib/jst.ts` で日本時間として扱う（Workers は UTC で動く）
-- 画面から呼べる関数は `src/worker/routes/rpc.ts` の一覧だけ。足すときは画面の `API_FUNCS` にも足す
+- 画面とサーバーの約束（呼べる関数の名前・画面データの型・返事の形）は `src/shared/api.ts` に置く。呼べる関数を足すときは、ここの `RPC_FUNCS` とサーバーの一覧（`src/worker/routes/rpc.ts`）の両方に足す
+- 画面（`src/client/console/`）のファイルは、読み込んだときに何もしない。イベントの登録は `init()` に書き、`main.ts` から呼ぶ
 - 開発用ログイン（`src/worker/auth/dev.ts`）は `import.meta.env.DEV` のときだけ登録する
 - Discord のトークンは保存しない。秘密の値（`.dev.vars`）はコミットしない
 - アイコンを足したら、読み込む一覧にも足す（画面は各ページの `icon_names`、サイトは `website/.vitepress/config.ts` の `ICONS`。テストが確かめる）

@@ -58,9 +58,11 @@ Worker 1 つで、次の 3 つを受け持つ。
 
 ## 画面からの呼び出し
 
-`POST /api/g/:id/:fn` に、GAS 版と同じ形の form を JSON で送り、同じ形の返事（`{ ok, message, data }`）を返す。画面の `api()`（`src/client/console/app.js`）は、`google.script.run` と同じ使い方のまま、通信だけを `fetch` に替えてある。
+`POST /api/g/:id/:fn` に、GAS 版と同じ形の form を JSON で送り、同じ形の返事（`{ ok, message, data }`）を返す。画面の `api()`（`src/client/console/api.ts`）は、`google.script.run` と同じ使い方のまま、通信だけを `fetch` に替えてある。
 
-- 呼べる関数は `routes/rpc.ts` の一覧だけ。管理者だけの関数は一覧に書く
+- 画面とサーバーの約束（呼べる関数の名前・画面データ `ConsoleData`・返事の形・卓の状態）は `src/shared/api.ts` に置き、両方から読む。サーバーの一覧（`routes/rpc.ts`）は名前の型で固めてあり、足りなくても多すぎても型の確認で止まる。`consoleData()` は `ConsoleData` を返すと書いてあるので、返す形が変わると型の確認で分かる
+- `src/shared/` は、ブラウザの型も Workers の型も使わない（どちらからも読めるように）
+- 管理者だけの関数は、サーバーの一覧に書く
 - 書き込みの返事には、最新の画面データ（`data`）を付ける。画面は読み直さずに済む
 - エラーは `{ error }`。`AUTH:` で始まればログインし直し（画面がそのまま `/auth/login` へ送る）、`ADMIN:` で始まれば管理者だけの操作
 
@@ -93,6 +95,26 @@ Worker 1 つで、次の 3 つを受け持つ。
 ## 日本時間
 
 Workers は UTC で動く。日付と時刻はすべて `lib/jst.ts` で日本時間（UTC+9、夏時間なし）に直して扱い、暦日は `YYYY-MM-DD` の文字列のまま `Date.UTC` で計算する。`new Date(年, 月, 日)` や `getHours()` は使わない（`test/client/conventions.test.js` が確かめる）。
+
+## 画面（src/client/）
+
+TypeScript で書き、Vite が組み立てる。グループの画面は `console/main.ts` が入口で、画面ごとのファイルに分けてある。
+
+| ファイル | 中身 |
+|---|---|
+| `state.ts` | 共有する状態（画面データ `D`・選んでいる日など）。書き換えは set〜 を通す |
+| `api.ts`・`load.ts`・`render.ts` | 通信と Discord への送信、読み込みと自動更新、各タブを描き直す |
+| `dom.ts`・`dates.ts`・`model.ts`・`notify.ts` | 小道具（要素・日付）と、卓の読み方・知らせの決まり（D から読むだけ） |
+| `calendar.ts`・`day.ts`・`notices.ts`・`setup.ts` | カレンダーのタブ |
+| `recruit.ts`・`poll.ts` | 募集・調整のタブと、候補日を選ぶ窓 |
+| `avail.ts`・`avail-input.ts`・`ops.ts` | メンバーの予定のタブ（表とリスト・メモとまとめて入れる・卓をまとめて変える） |
+| `form.ts`・`promote.ts` | 卓の登録・変更の窓 |
+| `members.ts`・`settings.ts`・`series-notify.ts` | メンバーの登録と設定のタブ |
+| `header.ts`・`tabs.ts`・`theme.ts`・`modal.ts`・`tips.ts` | 上の帯・タブ・見た目・窓・吹き出し |
+
+- 各ファイルは関数と定数だけを持ち、読み込んだときには何もしない。イベントの登録は `init()` に書き、`main.ts` が順に呼ぶ。ファイルどうしが互いを呼ぶ（描き直しは別のタブの描き直しも呼ぶ）ので、読み込んだときに別のファイルの値を読むと、読み込みの順で壊れるため
+- 押した瞬間に画面へ出し（D を書き換えて描き直す）、返事の `data` で本物に置き換える。失敗したら戻すか読み直す
+- 画面は見る人の手元の暦で日付を扱う（今日は、サーバーが日本時間で決めた `D.today`）
 
 ## サイト（website/）
 
