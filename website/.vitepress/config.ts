@@ -10,9 +10,9 @@ const APP_URL = '';
 
 /** 本文と部品で使う Material Symbols の名前（アルファベット順）。足したら、ここにも足す（テストが確かめる） */
 export const ICONS = [
-  'add', 'block', 'calendar_month', 'campaign', 'check', 'check_circle', 'date_range', 'edit_calendar', 'event',
-  'event_available', 'flag', 'how_to_vote', 'login', 'notifications', 'person_add', 'play_circle', 'refresh',
-  'restart_alt', 'settings', 'sticky_note_2', 'task_alt', 'touch_app', 'visibility',
+  'add', 'arrow_back', 'block', 'calendar_month', 'campaign', 'check', 'check_circle', 'date_range', 'edit_calendar', 'event',
+  'event_available', 'flag', 'how_to_vote', 'login', 'notifications', 'play_circle', 'refresh',
+  'restart_alt', 'settings', 'shield', 'sticky_note_2', 'task_alt', 'touch_app', 'visibility',
 ];
 
 const base = new URL(SITE_URL).pathname;
@@ -78,7 +78,13 @@ export default defineConfig({
             { text: 'Discord に知らせる', link: '/guide/discord' },
           ],
         },
-        { text: '管理者', items: [{ text: 'メンバーと管理者', link: '/guide/members' }] },
+        {
+          text: '管理者',
+          items: [
+            { text: 'メンバーと管理者', link: '/guide/members' },
+            { text: '管理画面', link: '/guide/admin' },
+          ],
+        },
         { text: '困ったとき', items: [{ text: 'よくある質問', link: '/guide/faq' }] },
       ],
     },
