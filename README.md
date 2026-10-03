@@ -50,6 +50,7 @@ wrangler.jsonc     Worker の設定（D1・cron・公開する値）
 vite.config.ts     開発サーバーと組み立て
 vitest.config.ts   テスト
 lefthook.yml       Git のフック（コミットの前の確認）
+CLAUDE.md          Claude Code で作業するときの決まり（コミットの書き方など）
 ```
 
 ## テスト
