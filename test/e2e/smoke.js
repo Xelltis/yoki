@@ -1,5 +1,5 @@
 // ブラウザで通しで確かめる（npm run e2e）。開発サーバーを立て、開発用ログインでサンプルのグループに入り、
-// 画面の主な操作（タブ・カレンダー・卓の登録と変更・募集・日程調整・予定・メンバー・設定）をして、
+// 画面の主な操作（タブ・カレンダー・卓の登録と変更・募集・日程調整・予定・グループの管理画面）をして、
 // データに入ったことと、画面にエラーが出ないことを見る。npm test には入れない（ブラウザが要るため）
 import assert from 'node:assert/strict';
 import { chromium } from 'playwright';
@@ -8,7 +8,8 @@ import { devLogin, withDevServer } from './dev-server.js';
 await withDevServer(async (base) => {
   await fetch(base + 'dev/reset', { method: 'POST', headers: { Origin: new URL(base).origin } });
   const browser = await chromium.launch();
-  const page = await browser.newPage({ viewport: { width: 1280, height: 860 } });
+  const context = await browser.newContext({ viewport: { width: 1280, height: 860 } });
+  const page = await context.newPage();
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));
   page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
@@ -16,6 +17,12 @@ await withDevServer(async (base) => {
   /** 画面のデータが条件を満たすまで待つ（fn はブラウザの中で D と arg を受け取る） */
   const until = (fn, arg) => page.waitForFunction(`(${fn})(window.yoki.D, ${JSON.stringify(arg ?? null)})`, null, { timeout: 15000 });
   const tab = (name) => page.click(`nav.tabs button[data-tab=${name}]`);
+  /** グループの管理画面を開き、区分を選ぶ */
+  const admin = async (pane) => {
+    if (!page.url().includes('/admin/')) { await page.goto(base + 'g/sample/admin/'); await page.waitForFunction(() => window.yoki && window.yoki.D, null, { timeout: 30000 }); }
+    await page.click(`#setNav button[data-set="${pane}"]`);
+  };
+  const main = async () => { await page.goto(base + 'g/sample/'); await page.waitForFunction(() => window.yoki && window.yoki.D, null, { timeout: 30000 }); };
   const confirm = () => page.click('#confirmOk');
   const step = async (name, fn) => { await fn(); console.log('ok - ' + name); };
   try {
@@ -25,7 +32,7 @@ await withDevServer(async (base) => {
     });
 
     await step('タブと見た目（ライト・ダーク）を切り替えられる', async () => {
-      for (const t of ['recruit', 'avail', 'members', 'settings', 'cal']) {
+      for (const t of ['recruit', 'avail', 'settings', 'cal']) {
         await tab(t);
         assert.equal(await page.getAttribute('body', 'data-tab'), t);
       }
@@ -164,8 +171,8 @@ await withDevServer(async (base) => {
       await until((d) => Object.values(d.avail).filter((m) => m['ひより'] === '×').length >= 10);
     });
 
-    await step('メンバーを足し、名前を変え、外せる', async () => {
-      await tab('members');
+    await step('管理画面: メンバーを足し、名前を変え、外せる', async () => {
+      await admin('members');
       await page.click('#mclear');
       await page.fill('#mname', 'e2e メンバー');
       await page.click('#msave');
@@ -179,8 +186,8 @@ await withDevServer(async (base) => {
       await until((d) => !d.members.some((m) => m.name.startsWith('e2e メンバー')));
     });
 
-    await step('設定のつまみ・接続テスト・名前の変更ができる', async () => {
-      await tab('settings');
+    await step('管理画面: 知らせのつまみ・接続テスト・グループの名前の変更ができる', async () => {
+      await admin('notify');
       const urge = (await D()).settings.urge;
       await page.locator('#stUrge').dispatchEvent('click');
       await until((d, v) => d.settings.urge === !v, urge);
@@ -194,6 +201,24 @@ await withDevServer(async (base) => {
       await until((d) => d.title === 'e2e のグループ');
     });
 
+    await step('管理画面: 卓をまとめて変えられる', async () => {
+      await admin('ops');
+      const s = (await D()).sessions.find((x) => x.name === '灰色の図書館（改）');
+      await page.check(`#matrix input.rowsel[data-id="${s.id}"]`);
+      await page.selectOption('#bulkAction', 'status');
+      await page.selectOption('#bulkStatus', '中止');
+      await page.click('#bulkRun');
+      await confirm();
+      await until((d, id) => d.sessions.find((x) => x.id === id)?.status === '中止', s.id);
+    });
+
+    await step('管理画面から予定の画面へ戻れる', async () => {
+      await page.click('#toMain');
+      await page.waitForURL('**/g/sample/');
+      await page.waitForFunction(() => window.yoki && window.yoki.D, null, { timeout: 30000 });
+      assert.equal(await page.isVisible('#adminLink'), true, '管理者には管理画面への入口が出る');
+    });
+
     await step('管理者はほかの人を選んで代わりに入れられる（代理の札が出る）', async () => {
       await page.selectOption('#me', 'ソラ');
       assert.equal(await page.isVisible('#proxyBadge'), true);
@@ -204,6 +229,44 @@ await withDevServer(async (base) => {
     await step('「更新」で読み直せる', async () => {
       await page.click('#reload');
       await page.waitForFunction(() => /最新/.test(document.getElementById('toast').textContent), null, { timeout: 15000 });
+    });
+
+    await step('グループを消せる。開いていたほかのタブには「見つかりません」と出る', async () => {
+      const made = await page.evaluate(async () => {
+        const r = await fetch('/api/groups', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ guildId: 'dev-guild', title: 'e2e の消すグループ' }) });
+        return r.json();
+      });
+      const other = await context.newPage();
+      await other.goto(base + made.url.slice(1));
+      await other.waitForFunction(() => window.yoki && window.yoki.D, null, { timeout: 30000 });
+      await page.goto(base + made.url.slice(1) + 'admin/#danger');
+      await page.waitForFunction(() => window.yoki && window.yoki.D, null, { timeout: 30000 });
+      assert.equal(await page.isDisabled('#delGroup'), true, '名前を打つまでは押せない');
+      await page.fill('#delConfirm', 'e2e の消すグループ');
+      await page.click('#delGroup');
+      await confirm();
+      await page.waitForURL('**/?deleted=1');
+      await other.click('#reload');
+      await other.waitForSelector('#loading:not([hidden]) >> text=見つかりません', { timeout: 15000 });
+      await other.close();
+      await main();
+    });
+
+    await step('管理者でない人（ソラ）: 管理画面は 403、入口も出ない。自分の名前と備考は直せる', async () => {
+      const ctx = await browser.newContext({ viewport: { width: 1280, height: 860 } });
+      const sora = await ctx.newPage();
+      sora.on('pageerror', (e) => errors.push(e.message));
+      await devLogin(sora, base, 'ソラ');
+      assert.equal(await sora.isVisible('#adminLink'), false);
+      assert.equal((await sora.goto(base + 'g/sample/admin/')).status(), 403);
+      await sora.goto(base + 'g/sample/');
+      await sora.waitForFunction(() => window.yoki && window.yoki.D, null, { timeout: 30000 });
+      await sora.click('nav.tabs button[data-tab=settings]');
+      assert.equal(await sora.isVisible('#adminEntry'), false);
+      await sora.fill('#meNote', 'e2e の備考');
+      await sora.click('#meSave');
+      await sora.waitForFunction(() => window.yoki.D.members.find((m) => m.name === 'ソラ')?.note === 'e2e の備考', null, { timeout: 15000 });
+      await ctx.close();
     });
 
     await step('狭い画面では日ごとのリストで印を打てる', async () => {

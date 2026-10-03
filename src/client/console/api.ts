@@ -1,7 +1,7 @@
 // サーバーとのやり取り（POST /api/g/:id/:fn）と、Discord への送信
 import { type ConsoleData, type DiscordReason, type DiscordStepResult, RPC_FUNCS, type RpcName, type RpcResult } from '../../shared/api';
 import { $, toast } from './dom';
-import { applyData, loadingMsg } from './load';
+import { applyData, loadingMsg, showGone } from './load';
 import { D, sync } from './state';
 
 /** このグループの ID（URL の /g/:id/） */
@@ -28,7 +28,7 @@ function loginAgain(): void {
  * サーバーを呼ぶ。使い方: api().withSuccessHandler(f).withFailureHandler(g).saveSession(form)
  * 返事の型 R は、読み込み（getConsoleData）なら ConsoleData、Discord への送信なら DiscordStepResult、ほかは RpcResult。
  * サーバーが「AUTH:」で断ったら（ログインが切れた・Discord サーバーの控えが古い）、ログインし直してこの画面へ戻る。
- * 「ADMIN:」は管理者だけの操作。失敗として、その旨の文を返す
+ * 「ADMIN:」は管理者だけの操作。失敗として、その旨の文を返す。「GONE:」はグループが消された（入口へ案内して、読むのをやめる）
  */
 export function api<R = RpcResult>(): Call<R> {
   let okF: ((r: R) => void) | null = null, ngF: ((e: Failure) => void) | null = null;
@@ -60,6 +60,7 @@ export function api<R = RpcResult>(): Call<R> {
         }
         let msg = String((r.body && r.body.error) || 'うまくいきませんでした。');
         if (/^AUTH:/.test(msg)) { loginAgain(); return; }
+        if (/^GONE:/.test(msg)) { showGone(msg.replace(/^GONE:\s*/, '')); return; }
         msg = msg.replace(/^ADMIN:\s*/, '');
         if (ngF) ngF({ message: msg }); else toast(msg);
         afterWrites();
@@ -174,5 +175,5 @@ export function failToast(r: SendResult): string {
   const rs = f ? f.reason : r && r.reason;
   if (!rs) return (part && f ? f.label + ' に届きませんでした: ' : '送信失敗: ') + ((f && f.text) || (r && (r.raw || r.result)) || '不明');
   return (part && f ? f.label + ' に届きませんでした（' : '送信失敗（') + rs.label + '）' + (rs.toolFault ? '' : '。ツールの不具合ではありません') +
-    (part ? '。' + r.sent.join('、') + ' には届きました' : '。設定タブの送信記録に詳細があります');
+    (part ? '。' + r.sent.join('、') + ' には届きました' : '。管理画面の「送信の記録」に詳細があります');
 }

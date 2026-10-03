@@ -1,4 +1,4 @@
-// メンバーの予定のタブの「卓をまとめて変える」。卓の一覧から選び、状態・参加者・開催日などをまとめて変える
+// 管理画面の「卓をまとめて変える」。卓の一覧から選び、状態・参加者・開催日などをまとめて変える。メンバーに無い参加者の注意は、メンバーの予定のタブに出す
 import { api, discordSend, failToast, useData } from './api';
 import { renderAvail } from './avail';
 import { daysBetween, fmtJa } from './dates';
@@ -22,7 +22,7 @@ export function renderOps(): void {
   const act = sortedActive(), names = D.members.map((m) => m.name);
   const unknown: string[] = [];
   act.forEach((s) => { peopleOf(s).forEach((n) => { if (names.indexOf(n) < 0 && unknown.indexOf(n) < 0) unknown.push(n); }); });
-  $('unknownWarn').innerHTML = unknown.length ? '<div class="notice adjust" style="margin-bottom:8px">' + mi('warning') + 'メンバーに無い参加者: ' + esc(unknown.join('、')) + '　→「メンバーの登録」タブで足すと、予定表に列ができます。</div>' : '';
+  $('unknownWarn').innerHTML = unknown.length ? '<div class="notice adjust" style="margin-bottom:8px">' + mi('warning') + 'メンバーに無い参加者: ' + esc(unknown.join('、')) + '　→ 管理画面の「メンバー」で足すと、予定表に列ができます。</div>' : '';
 
   const rows = matrixRows();
   const ids: Record<string, boolean> = {};
@@ -31,7 +31,7 @@ export function renderOps(): void {
   let html = '<tr><th class="sel"><input type="checkbox" id="selAll"></th><th>セッション名</th><th class="c">シリーズ</th><th class="c">状態</th><th class="c">開催日</th><th class="c">GM</th><th>参加者</th><th></th></tr>';
   rows.forEach((s) => {
     const when = s.date ? fmtJa(s.date) : (isRecruit(s) || isAdjusting(s)) ? esc(s.windowLabel || '期間未定') : '未定';
-    html += '<tr class="' + (isActive(s) ? '' : 'done') + (selected[s.id] ? ' checked' : '') + '" data-id="' + esc(s.id) + '"><td class="sel"><input type="checkbox" class="rowsel" data-id="' + esc(s.id) + '"' + (selected[s.id] ? ' checked' : '') + '></td><td class="nw"><b>' + esc(s.name) + '</b></td><td class="c nw">' + esc(s.series) + '</td><td class="c nw">' + esc(s.status) + '</td><td class="c nw">' + when + '</td><td class="c nw">' + esc(s.gm) + '</td><td>' + esc(s.members.join('、')) + '</td><td class="nw"><button type="button" class="btn small" data-edit="' + esc(s.id) + '">編集</button></td></tr>';
+    html += '<tr class="' + (isActive(s) ? '' : 'done') + (selected[s.id] ? ' checked' : '') + '" data-id="' + esc(s.id) + '"><td class="sel"><input type="checkbox" class="rowsel" data-id="' + esc(s.id) + '"' + (selected[s.id] ? ' checked' : '') + '></td><td class="nw"><b>' + esc(s.name) + '</b></td><td class="c nw">' + esc(s.series) + '</td><td class="c nw">' + esc(s.status) + '</td><td class="c nw">' + when + '</td><td class="c nw">' + esc(s.gm) + '</td><td class="ppl">' + esc(s.members.join('、')) + '</td><td class="nw"><button type="button" class="btn small" data-edit="' + esc(s.id) + '">編集</button></td></tr>';
   });
   if (!rows.length) html += '<tr><td colspan="8" class="hint">稼働中の卓はありません。カレンダーの「卓を登録」から。</td></tr>';
   $('matrix').innerHTML = html;

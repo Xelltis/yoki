@@ -1,4 +1,4 @@
-// メンバーの登録のタブ。一覧と、足す・名前を変える・外す
+// メンバー。管理画面の「メンバー」（一覧と、足す・名前を変える・外す）と、ふだんの画面の設定の「あなたの名前と備考」
 import type { RpcResult } from '../../shared/api';
 import { api, useData } from './api';
 import { $, esc, fillSelect, hit, mi, toast } from './dom';
@@ -29,6 +29,17 @@ export function fillMemberForm(name: string): void {
   $('mmsg').textContent = ''; $('mmsg').className = '';
   drafts.member = false;
 }
+/** 設定の「あなたの名前と備考」。ログインした本人のぶん（管理者が代わりに入れているあいだも、本人） */
+export function renderMeCard(): void {
+  const m = D.members.filter((x) => x.name === D.me.name)[0];
+  const card = $('meCard');
+  if (!drafts.me && !card.contains(document.activeElement)) {
+    $('meName').value = m ? m.name : D.me.name;
+    $('meNote').value = m ? m.note : '';
+  }
+  $('meDiscord').textContent = m && m.linked ? 'Discord でログインしています。Discord の ID は自動で入るので、知らせでメンションが付きます。' : '';
+}
+
 function mmsg(t: string, err: boolean): void { $('mmsg').textContent = t; $('mmsg').className = err ? 'err' : 'ok'; }
 function mbusy(on: boolean): void { $('msave').disabled = on; $('mdel').disabled = on; if (on) mmsg('保存しています…', false); }
 function afterMemberChange(res: RpcResult, keepName: string): void {
@@ -49,6 +60,19 @@ export function init(): void {
     mbusy(true);
     api().withSuccessHandler((res) => { afterMemberChange(res, res.name || ''); })
       .withFailureHandler((e) => { mbusy(false); mmsg(e.message, true); }).saveMember(form);
+  });
+  $('meCard').addEventListener('input', () => { drafts.me = true; });
+  $('meCard').addEventListener('submit', (ev) => {
+    ev.preventDefault();
+    const m = D.members.filter((x) => x.name === D.me.name)[0];
+    const form = { oldName: D.me.name, name: $('meName').value.trim(), note: $('meNote').value.trim(), discordId: m ? m.discordId : '' };
+    if (!form.name) { $('meMsg').textContent = '名前を入れてください。'; return; }
+    $('meSave').disabled = true; $('meMsg').textContent = '保存しています…';
+    api().withSuccessHandler((res) => {
+      $('meSave').disabled = false; drafts.me = false;
+      toast(res.message);
+      useData(res, () => { $('meMsg').textContent = res.message; });
+    }).withFailureHandler((e) => { $('meSave').disabled = false; $('meMsg').textContent = e.message; }).saveMember(form);
   });
   $('mdel').onclick = () => {
     const name = $('mpick').value; if (!name) return;

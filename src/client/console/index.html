@@ -8,7 +8,7 @@
   <!-- アイコンは Material Symbols Rounded。使う名前だけに絞って読み込む（icon_names はアルファベット順）。
        アイコンを足したら、ここにも名前を足す。読み込みが済むまでは空白で待つ（display=block） -->
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..24,400,0..1,0&icon_names=add,arrow_forward,block,calendar_month,campaign,casino,check,chevron_left,chevron_right,close,dark_mode,date_range,edit,edit_calendar,event,event_available,expand_more,flag,help,history,how_to_vote,light_mode,logout,menu_book,notifications,open_in_new,person_add,play_circle,refresh,settings,sticky_note_2,table_view,task_alt,today,warning&display=block">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..24,400,0..1,0&icon_names=add,arrow_back,arrow_forward,block,calendar_month,campaign,casino,check,chevron_left,chevron_right,close,dark_mode,date_range,delete,edit,edit_calendar,event,event_available,expand_more,flag,help,history,how_to_vote,light_mode,logout,menu_book,notifications,open_in_new,person,person_add,play_circle,refresh,settings,shield,sticky_note_2,table_view,task_alt,today,warning&display=block">
   <link rel="stylesheet" href="/console/app.css">
   <script>
     // 保存したテーマを描画前に当てる。無ければ OS の設定（prefers-color-scheme）に任せる
@@ -26,8 +26,9 @@
 </head>
 <body>
   <header class="appbar">
-    <a class="brand" href="/" title="グループの一覧へ"><span class="logo"><span class="material-icons" aria-hidden="true">casino</span></span><span id="title">卓予定</span></a>
+    <a class="brand" href="/" title="グループの一覧へ"><span class="logo"><span class="material-icons" aria-hidden="true">casino</span></span><span id="title">卓予定</span><span class="area-badge">管理</span></a>
     <div class="hdr-actions">
+      <a id="toMain" class="hbtn to-main" href="../" title="カレンダーなどの、ふだんの画面へ戻る"><span class="material-icons sm" aria-hidden="true">arrow_back</span><span class="btxt">予定の画面へ</span></a>
       <span class="sync">
         <span class="sync-at" id="loadedAt"></span>
         <button type="button" id="reload" class="hbtn" aria-label="更新" title="最新の状態を読み込む"><span class="material-icons sm" aria-hidden="true">refresh</span><span class="btxt">更新</span></button>
@@ -45,9 +46,9 @@
       <button type="button" data-tab="cal" class="on" aria-current="page"><span class="material-icons" aria-hidden="true">calendar_month</span><span class="lbl">カレンダー</span></button>
       <button type="button" data-tab="recruit"><span class="material-icons" aria-hidden="true">campaign</span><span class="lbl">募集・調整</span><span class="tcnt" id="recruitCount"></span></button>
       <button type="button" data-tab="avail"><span class="material-icons" aria-hidden="true">event_available</span><span class="lbl">メンバーの予定</span></button>
-      <button type="button" data-tab="members"><span class="material-icons" aria-hidden="true">person_add</span><span class="lbl">メンバーの登録</span></button>
       <button type="button" data-tab="settings"><span class="material-icons" aria-hidden="true">settings</span><span class="lbl">設定</span></button>
       <button type="button" id="guideBtn" class="tab-help" aria-label="はじめの 3 ステップ" aria-controls="setupGuide" aria-expanded="false" title="はじめの 3 ステップをカレンダーの上に出す"><span class="material-icons" aria-hidden="true">flag</span><span class="gl">はじめの 3 ステップ</span></button>
+      <a id="adminLink" class="tab-help admin-link" href="admin/" hidden title="グループの管理画面を開く（管理者だけ）"><span class="material-icons" aria-hidden="true">shield</span><span class="lbl">管理</span></a>
       <a id="helpLink" class="tab-help" href="https://xelltis.github.io/yoki/" target="_blank" rel="noopener" title="使い方のページを新しいタブで開く"><span class="material-icons" aria-hidden="true">help</span><span class="lbl">使い方</span><span class="material-icons xs" aria-hidden="true">open_in_new</span></a>
     </nav>
   </header>
@@ -119,7 +120,6 @@
         <button type="button" class="btn small fold" id="foldFilter" data-target="availFilter"><span class="material-icons sm" aria-hidden="true">chevron_right</span>絞り込み</button><button type="button" class="tip" data-tip="出す人・期間・曜日をしぼります。卓を選ぶと、その卓の GM と参加者だけになります。" aria-label="絞り込みとは"><span class="material-icons xs" aria-hidden="true">help</span></button>
         <span class="hint" id="afSummary"></span>
         <button type="button" class="btn small fold" id="foldBulk" data-target="availBulk"><span class="material-icons sm" aria-hidden="true">chevron_right</span>まとめて入れる</button><button type="button" class="tip" data-tip="自分の列に、期間と曜日を決めて △ か × をまとめて入れます。卓のある日は飛ばします。" aria-label="まとめて入れるとは"><span class="material-icons xs" aria-hidden="true">help</span></button>
-        <button type="button" class="btn small fold" id="foldOps" data-target="availOps"><span class="material-icons sm" aria-hidden="true">chevron_right</span>卓をまとめて変える</button><button type="button" class="tip" data-tip="卓の一覧から選び、参加者の出入り・開催日のずらし・状態の変更・削除をまとめてできます。" aria-label="卓をまとめて変えるとは"><span class="material-icons xs" aria-hidden="true">help</span></button>
         <label class="chk" style="margin-left:auto"><input type="checkbox" id="sortByLoad" checked> 卓の多い人を左に</label><button type="button" class="tip" data-tip="いま動いている卓に多く入っている人ほど、左の列に並べます。外すと登録した順になります。" aria-label="並び順"><span class="material-icons xs" aria-hidden="true">help</span></button>
       </div>
       <div class="card panel" id="availFilter" hidden>
@@ -155,33 +155,6 @@
         </div>
         <div class="btns"><label class="chk"><input type="checkbox" id="abKeep" checked> 入力済みは残す</label><button type="button" class="btn primary" id="abRun">自分の列に入れる</button><span id="abMsg" class="hint"></span></div>
       </div>
-      <div class="card" id="availOps" hidden>
-        <div class="bulk" style="margin-bottom:10px">
-          <span class="cnt" id="bulkCount">選択 0 件</span>
-          <button type="button" class="btn small" id="bulkPast">過ぎた卓を選ぶ</button>
-          <button type="button" class="btn small" id="bulkNone">選択解除</button>
-          <label class="chk"><input type="checkbox" id="showAll"> 終了・中止も表示</label>
-        </div>
-        <div class="wrap"><table id="matrix"></table></div>
-        <div class="bulk" id="bulkBar" style="margin-top:10px">
-          <select id="bulkAction">
-            <option value="status">状態を変更</option>
-            <option value="addMember">参加者を追加</option>
-            <option value="removeMember">参加者から外す</option>
-            <option value="setGm">GM を変更</option>
-            <option value="shiftDays">開催日をずらす</option>
-            <option value="setSeries">シリーズを変更</option>
-            <option value="delete">削除</option>
-          </select>
-          <select id="bulkStatus"></select>
-          <select id="bulkMember" hidden></select>
-          <input type="text" id="bulkDays" inputmode="numeric" placeholder="日数（7 や -1）" style="width:9em" hidden>
-          <input type="text" id="bulkSeries" list="seriesList" placeholder="シリーズ名（空で外す）" style="width:14em" hidden>
-          <label class="chk"><input type="checkbox" id="bulkNotify"> Discord に知らせる</label>
-          <button type="button" class="btn primary" id="bulkRun">実行</button>
-          <span id="bulkMsg" class="hint"></span>
-        </div>
-      </div>
       <!-- よく使う絞り込みは、表の上に常に出す（詳しい条件は上の「絞り込み」） -->
       <div class="av-chips" id="availChips" role="group" aria-label="予定表をしぼる">
         <button type="button" class="av-chip" data-chip="hol" aria-pressed="false">土日祝だけ</button>
@@ -195,50 +168,120 @@
       <div class="avail-list" id="availList"></div>
     </section>
 
-    <!-- メンバー: 登録フォームを上、一覧を下 -->
-    <section id="tab-members" hidden>
-      <div class="page-head">
-        <h1>メンバーの登録</h1>
-        <p class="lead">ここに入れた名前が、卓の参加者の候補と「メンバーの予定」の列になります。</p>
-      </div>
-      <form id="mf" class="card">
-        <label for="mpick">編集するメンバー <small>新しく足すなら「（新規追加）」のまま</small></label>
-        <select id="mpick"><option value="">（新規追加）</option></select>
-        <div class="row">
-          <div><label for="mname">名前 <small>必須。卓の参加者名と同じ表記に</small></label><input type="text" id="mname" required></div>
-          <div><label for="mdiscord">Discord ユーザーID <small>任意。数字だけ</small></label><input type="text" id="mdiscord" inputmode="numeric" placeholder="123456789012345678"></div>
-        </div>
-        <label for="mnote">備考</label><input type="text" id="mnote">
-        <p class="hint">Discord のユーザーID は、ユーザー設定 → 詳細設定 → 開発者モードを ON にしてから、名前を右クリック →「ユーザーIDをコピー」。入れておくと開催前の知らせなどでメンションされます。</p>
-        <div class="btns">
-          <button type="submit" class="btn primary" id="msave">追加</button>
-          <button type="button" class="btn" id="mclear">新規に戻す</button>
-          <button type="button" class="btn danger" id="mdel" hidden>このメンバーを削除</button>
-        </div>
-        <div id="mmsg"></div>
-      </form>
-      <div class="wrap"><table id="memberTable"></table></div>
-      <p class="hint">行をタップすると上のフォームに入ります。</p>
-    </section>
-
-    <!-- 設定 -->
+    <!-- 設定（ふだんの画面）: この端末・あなたの名前と備考。管理者には管理画面への入口。グループの設定は管理画面にある -->
     <section id="tab-settings" class="settings" hidden>
       <div class="page-head">
         <h1>設定</h1>
-        <p class="lead">左の区分で切り替えます。「この端末」以外はグループの全員に効き、変えられるのは管理者だけです。</p>
+        <p class="lead">この端末の見た目と、あなたの名前です。グループの設定（知らせ・メンバー・管理者）は、管理者が管理画面で変えます。</p>
+      </div>
+      <div class="card admin-entry" id="adminEntry" hidden>
+        <h3><span class="material-icons sm" aria-hidden="true">shield</span>グループの管理画面</h3>
+        <p class="hint">メンバーの登録・卓をまとめて変える・知らせ（Discord）・管理者・送信の記録・グループを消す、は管理画面にあります。あなたは管理者なので開けます。</p>
+        <div class="btns"><a class="btn primary" href="admin/"><span class="material-icons sm" aria-hidden="true">shield</span>管理画面を開く</a></div>
+      </div>
+      <form class="card" id="meCard">
+        <h3><span class="material-icons sm" aria-hidden="true">person</span>あなたの名前と備考</h3>
+        <p class="hint">予定表の列と、卓の参加者に出る名前です。グループの中で同じ名前は使えません。</p>
+        <div class="row">
+          <div><label class="f" for="meName">名前</label><input type="text" id="meName" required></div>
+          <div><label class="f" for="meNote">備考</label><input type="text" id="meNote"></div>
+        </div>
+        <p class="hint" id="meDiscord"></p>
+        <div class="btns"><button type="submit" class="btn primary" id="meSave">保存</button><span class="hint" id="meMsg"></span></div>
+      </form>
+      <div class="card">
+        <h3>この端末</h3>
+        <p class="hint">このブラウザだけの設定です。グループのほかの人には関係しません。</p>
+        <div class="row">
+          <div><label class="f" for="stAutoRefresh">自動更新 <small>読み込む間隔</small></label>
+            <select id="stAutoRefresh"><option value="0">しない</option><option value="1">1 分ごと</option><option value="3">3 分ごと</option><option value="5">5 分ごと</option><option value="10">10 分ごと</option></select></div>
+          <div><label class="f" for="stTheme">見た目</label>
+            <select id="stTheme"><option value="">端末の設定に合わせる</option><option value="light">ライト</option><option value="dark">ダーク</option></select></div>
+          <div><label class="f" for="stFont">文字サイズ</label>
+            <select id="stFont"><option value="">小</option><option value="m">中</option><option value="l">大</option></select></div>
+        </div>
+        <p class="hint">入力中や窓を開いているあいだは、読み込みを待ちます。ほかのタブから戻ったときも、しばらく経っていれば読み込みます。</p>
+        <div class="btns">
+          <a class="btn" id="stHelpLink" href="https://xelltis.github.io/yoki/" target="_blank" rel="noopener"><span class="material-icons sm" aria-hidden="true">menu_book</span>使い方を見る</a>
+          <button type="button" class="btn danger" id="stLogout"><span class="material-icons sm" aria-hidden="true">logout</span>ログアウト</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 管理画面（/g/:id/admin/）: グループの管理者だけ。左の区分で切り替える。ID はふだんの画面にあったときのまま -->
+    <section id="tab-admin" class="settings" hidden>
+      <div class="page-head">
+        <h1>グループの管理</h1>
+        <p class="lead">ここで変えたことは、グループの全員に効きます。管理者だけが開けます。</p>
       </div>
       <div class="set2">
-        <nav class="set-nav" id="setNav" aria-label="設定の区分">
-          <button type="button" data-set="notify" aria-current="true">知らせ</button>
+        <nav class="set-nav" id="setNav" aria-label="管理の区分">
+          <button type="button" data-set="members" aria-current="true">メンバー</button>
+          <button type="button" data-set="ops">卓をまとめて変える</button>
+          <button type="button" data-set="notify">知らせ</button>
           <button type="button" data-set="table">この卓予定</button>
-          <button type="button" data-set="device">この端末</button>
           <button type="button" data-set="admin">管理者</button>
           <button type="button" data-set="log">送信の記録</button>
+          <button type="button" data-set="danger">グループを消す</button>
         </nav>
         <div>
 
-          <!-- ===== 知らせ ===== -->
-          <div class="set-pane" data-pane="notify">
+          <!-- ===== メンバー ===== -->
+          <div class="set-pane" data-pane="members">
+            <p class="hint pane-lead">ここに入れた名前が、卓の参加者の候補と「メンバーの予定」の列になります。Discord でログインして開いた人は、自動でメンバーになります。</p>
+            <form id="mf" class="card">
+              <label for="mpick">編集するメンバー <small>新しく足すなら「（新規追加）」のまま</small></label>
+              <select id="mpick"><option value="">（新規追加）</option></select>
+              <div class="row">
+                <div><label for="mname">名前 <small>必須。卓の参加者名と同じ表記に</small></label><input type="text" id="mname" required></div>
+                <div><label for="mdiscord">Discord ユーザーID <small>任意。数字だけ</small></label><input type="text" id="mdiscord" inputmode="numeric" placeholder="123456789012345678"></div>
+              </div>
+              <label for="mnote">備考</label><input type="text" id="mnote">
+              <p class="hint">Discord のユーザーID は、ユーザー設定 → 詳細設定 → 開発者モードを ON にしてから、名前を右クリック →「ユーザーIDをコピー」。入れておくと開催前の知らせなどでメンションされます。</p>
+              <div class="btns">
+                <button type="submit" class="btn primary" id="msave">追加</button>
+                <button type="button" class="btn" id="mclear">新規に戻す</button>
+                <button type="button" class="btn danger" id="mdel" hidden>このメンバーを削除</button>
+              </div>
+              <div id="mmsg"></div>
+            </form>
+            <div class="wrap"><table id="memberTable"></table></div>
+            <p class="hint">行をタップすると上のフォームに入ります。</p>
+          </div>
+
+          <!-- ===== 卓をまとめて変える ===== -->
+          <div class="set-pane" data-pane="ops" hidden>
+            <p class="hint pane-lead">卓の一覧から選び、参加者の出入り・開催日のずらし・状態の変更・削除をまとめてできます。</p>
+            <div class="card" id="availOps">
+              <div class="bulk" style="margin-bottom:10px">
+                <span class="cnt" id="bulkCount">選択 0 件</span>
+                <button type="button" class="btn small" id="bulkPast">過ぎた卓を選ぶ</button>
+                <button type="button" class="btn small" id="bulkNone">選択解除</button>
+                <label class="chk"><input type="checkbox" id="showAll"> 終了・中止も表示</label>
+              </div>
+              <div class="wrap"><table id="matrix"></table></div>
+              <div class="bulk" id="bulkBar" style="margin-top:10px">
+                <select id="bulkAction">
+                  <option value="status">状態を変更</option>
+                  <option value="addMember">参加者を追加</option>
+                  <option value="removeMember">参加者から外す</option>
+                  <option value="setGm">GM を変更</option>
+                  <option value="shiftDays">開催日をずらす</option>
+                  <option value="setSeries">シリーズを変更</option>
+                  <option value="delete">削除</option>
+                </select>
+                <select id="bulkStatus"></select>
+                <select id="bulkMember" hidden></select>
+                <input type="text" id="bulkDays" inputmode="numeric" placeholder="日数（7 や -1）" style="width:9em" hidden>
+                <input type="text" id="bulkSeries" list="seriesList" placeholder="シリーズ名（空で外す）" style="width:14em" hidden>
+                <label class="chk"><input type="checkbox" id="bulkNotify"> Discord に知らせる</label>
+                <button type="button" class="btn primary" id="bulkRun">実行</button>
+                <span id="bulkMsg" class="hint"></span>
+              </div>
+            </div>
+          </div>
+
+          <div class="set-pane" data-pane="notify" hidden>
             <div class="card">
               <h3>知らせ <small class="hint">何を・どこへ・いつ送るか</small></h3>
               <div class="wrap"><table class="ntx">
@@ -353,7 +396,6 @@
             </details>
           </div>
 
-          <!-- ===== この卓予定 ===== -->
           <div class="set-pane" data-pane="table" hidden>
             <div class="card">
               <h3>名前</h3>
@@ -365,7 +407,7 @@
             <div class="card">
               <h3>卓の後始末</h3>
               <label class="c"><input type="checkbox" id="stAutoFinish"> 開催日を過ぎた卓を「終了」にする</label>
-              <p class="hint">終了になってもカレンダーからは消えず、灰色で残ります。「メンバーの予定」タブの「卓をまとめて変える」で見るには「終了・中止も表示」を付けてください。</p>
+              <p class="hint">終了になってもカレンダーからは消えず、灰色で残ります。「卓をまとめて変える」で見るには「終了・中止も表示」を付けてください。</p>
             </div>
             <div class="card">
               <h3>表示</h3>
@@ -376,29 +418,6 @@
             </div>
           </div>
 
-          <!-- ===== この端末 ===== -->
-          <div class="set-pane" data-pane="device" hidden>
-            <div class="card">
-              <h3>この端末</h3>
-              <p class="hint">このブラウザだけの設定です。グループのほかの人には関係しません。</p>
-              <div class="row">
-                <div><label class="f" for="stAutoRefresh">自動更新 <small>読み込む間隔</small></label>
-                  <select id="stAutoRefresh"><option value="0">しない</option><option value="1">1 分ごと</option><option value="3">3 分ごと</option><option value="5">5 分ごと</option><option value="10">10 分ごと</option></select></div>
-                <div><label class="f" for="stTheme">見た目</label>
-                  <select id="stTheme"><option value="">端末の設定に合わせる</option><option value="light">ライト</option><option value="dark">ダーク</option></select></div>
-                <div><label class="f" for="stFont">文字サイズ</label>
-                  <select id="stFont"><option value="">小</option><option value="m">中</option><option value="l">大</option></select></div>
-              </div>
-              <p class="hint">入力中や窓を開いているあいだは、読み込みを待ちます。ほかのタブから戻ったときも、しばらく経っていれば読み込みます。</p>
-              <div class="btns">
-                <a class="btn" id="stHelpLink" href="https://xelltis.github.io/yoki/" target="_blank" rel="noopener"><span class="material-icons sm" aria-hidden="true">menu_book</span>使い方を見る</a>
-                <button type="button" class="btn danger" id="stLogout"><span class="material-icons sm" aria-hidden="true">logout</span>ログアウト</button>
-              </div>
-            </div>
-          </div>
-
-
-          <!-- ===== 管理者 ===== -->
           <div class="set-pane" data-pane="admin" hidden>
             <div class="card">
               <h3>管理者 <small class="hint">ほかの人のぶんを入れる・卓を消す・メンバーと設定を変える</small></h3>
@@ -416,11 +435,21 @@
             </div>
           </div>
 
-          <!-- ===== 送信の記録 ===== -->
           <div class="set-pane" data-pane="log" hidden>
             <div class="card">
               <h3>送信の記録 <small class="hint">届かないときはここを見る。新しい順 10 件</small></h3>
               <div class="wrap"><table id="stLog"></table></div>
+            </div>
+          </div>
+
+          <!-- ===== グループを消す ===== -->
+          <div class="set-pane" data-pane="danger" hidden>
+            <div class="card danger-card">
+              <h3><span class="material-icons sm" aria-hidden="true">delete</span>グループを消す</h3>
+              <p>このグループの卓・メンバーの予定・メモ・日程調整の回答・送信の記録が、すべて消えます。<b>元に戻せません。</b></p>
+              <label class="f" for="delConfirm">確かめのために、グループの名前「<span id="delTitle"></span>」を入れてください</label>
+              <input type="text" id="delConfirm" autocomplete="off">
+              <div class="btns"><button type="button" class="btn danger-fill" id="delGroup" disabled>グループを消す</button><span class="hint" id="delMsg"></span></div>
             </div>
           </div>
 

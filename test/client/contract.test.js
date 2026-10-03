@@ -19,9 +19,13 @@ test('GAS の名残（google.script・テンプレート・合言葉の窓・シ
   expect(consoleHtml).not.toContain('base target');
 });
 
+/** HTML に直接書いたアイコン（class="material-icons …" や class="ms …" の中身） */
+const htmlIcons = (html) => [...html.matchAll(/class="(?:material-icons|ms)\b[^"]*"[^>]*>([a-z_]+)</g)].map((x) => x[1]);
+const tsIcons = (ts) => [...ts.matchAll(/\bmi\('([a-z_]+)'/g)].map((x) => x[1]);
+
 test('グループの画面で使うアイコンが、読み込むアイコンの一覧にある', () => {
   const names = iconNames(consoleHtml);
-  const used = new Set([...consoleTs.matchAll(/\bmi\('([a-z_]+)'/g)].map((x) => x[1]));
+  const used = new Set([...tsIcons(consoleTs), ...htmlIcons(consoleHtml)]);
   expect([...used].filter((n) => !names.has(n))).toEqual([]);
 });
 

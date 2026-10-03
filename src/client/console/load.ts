@@ -9,9 +9,18 @@ import { showTab } from './tabs';
 
 /** 読み込み中の骨組み（読み込みに失敗したあと、もう一度読むときに戻す） */
 let skeleton = '';
-export function loadingMsg(text: string, retry: boolean): void {
-  $('loading').innerHTML = '<div class="msg"><p>' + esc(text) + '</p>' + (retry ? '<button type="button" class="btn primary" id="loadRetry">' + mi('refresh', 'sm') + 'もう一度読み込む</button>' : '') + '</div>';
+export function loadingMsg(text: string, retry: boolean, link?: { href: string; label: string }): void {
+  $('loading').innerHTML = '<div class="msg"><p>' + esc(text) + '</p>' + (retry ? '<button type="button" class="btn primary" id="loadRetry">' + mi('refresh', 'sm') + 'もう一度読み込む</button>' : '') +
+    (link ? '<a class="btn primary" href="' + esc(link.href) + '">' + esc(link.label) + '</a>' : '') + '</div>';
   if (retry) $('loadRetry').onclick = () => { $('loading').innerHTML = skeleton; reload(false); };
+}
+/** グループが消された（ほかのタブや、ほかの管理者が消した）。控えを消し、読むのをやめ、入口へ案内する */
+export function showGone(text: string): void {
+  sync.stopped = true;
+  clearCache();
+  document.querySelectorAll<HTMLElement>('main > section').forEach((el) => { el.hidden = true; });
+  $('loading').hidden = false;
+  loadingMsg(text, false, { href: '/', label: '入口へ' });
 }
 /** 中身が変わったかを比べる印。読み込んだ時刻だけは毎回変わるので外す */
 function dataSig(d: ConsoleData): string { const { loadedAt: _, ...rest } = d; return JSON.stringify(rest); }
@@ -54,6 +63,7 @@ function setSyncBusy(on: boolean): void { const b = $('reload'); b.disabled = on
  * 読んでいるあいだに書き込みが始まったら、その結果は捨てて、書き込みの返事のあとで読み直す
  */
 export function reload(keepTab: boolean, modeIn?: Inflight['mode']): void {
+  if (sync.stopped) return;
   const mode = modeIn || (keepTab ? 'manual' : 'boot');
   if (sync.inflight) { if (mode === 'manual') { sync.inflight.manual = true; setSyncBusy(true); } return; }
   const req: Inflight = sync.inflight = { mode, manual: mode === 'manual', epoch: sync.epoch, t0: Date.now() };
@@ -94,7 +104,7 @@ function autoBlocked(): boolean {
 }
 function autoTick(force: boolean): void {
   const min = autoMinutes();
-  if (!D || sync.inflight || sync.pending || (!min && !force)) return;
+  if (!D || sync.stopped || sync.inflight || sync.pending || (!min && !force)) return;
   if (!force && Date.now() - sync.last < min * 60000) return;
   if (autoBlocked()) return;
   reload(true, 'auto');
