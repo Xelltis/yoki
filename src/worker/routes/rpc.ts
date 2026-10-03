@@ -1,5 +1,6 @@
 // 画面からの呼び出し（POST /api/g/:groupId/:fn）。form と返事の形は GAS 版のまま。
-// 呼べる関数はここの一覧だけ。管理者だけの関数は admin に「何ができるのは管理者だけか」を書く
+// 呼べる関数はここの一覧だけ。名前は画面と共有する（src/shared/api.ts の RPC_FUNCS。足りなくても多すぎても型の確認で止まる）。
+// 管理者だけの関数は admin に「何ができるのは管理者だけか」を書く
 import { Hono } from 'hono';
 import type { AppEnv } from '../app';
 import { groupAccess } from '../auth/guard';
@@ -16,6 +17,7 @@ import { bulkUpdateSessions, deleteSession, saveSession, setInterest } from '../
 import { renameGroup, saveConsoleSettings, saveSeriesNotify } from '../domain/settings';
 import type { Ctx } from '../domain/types';
 import { AppError, adminError, authError, notFound } from '../lib/errors';
+import type { RpcName } from '../../shared/api';
 
 type Entry = {
   run: (ctx: Ctx, form: Form, io: Io) => Promise<Record<string, unknown>>;
@@ -25,7 +27,7 @@ type Entry = {
   data?: boolean;
 };
 
-export const RPC: Record<string, Entry> = {
+export const RPC: Record<Exclude<RpcName, 'getConsoleData'>, Entry> = {
   saveSession: { run: saveSession, data: true },
   setInterest: { run: setInterest, data: true },
   deleteSession: { run: deleteSession, admin: '卓の削除', data: true },
@@ -48,14 +50,11 @@ export const RPC: Record<string, Entry> = {
   sendDiscordStep: { run: sendDiscordStep },
 };
 
-/** 画面が呼べる関数の名前（getConsoleData を含む） */
-export const RPC_NAMES = ['getConsoleData', ...Object.keys(RPC)];
-
 export const rpcRoutes = new Hono<AppEnv>();
 
 rpcRoutes.post('/api/g/:groupId/:fn', async (c) => {
   const fn = c.req.param('fn');
-  const entry = RPC[fn];
+  const entry = Object.hasOwn(RPC, fn) ? RPC[fn as keyof typeof RPC] : undefined;
   if (!entry && fn !== 'getConsoleData') throw notFound('そんな操作はありません: ' + fn);
   const groupId = c.req.param('groupId');
   const access = await groupAccess(c.env.DB, await currentViewer(c), groupId);

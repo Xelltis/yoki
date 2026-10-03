@@ -7,6 +7,7 @@ import { AppError, authError, badRequest } from '../lib/errors';
 import { randomId } from '../lib/ids';
 import { memberNameFrom } from '../lib/text';
 import { DEV_USERS } from '../auth/dev-users';
+import type { CreateGroupResult, MeResponse } from '../../shared/api';
 
 export const meRoutes = new Hono<AppEnv>();
 
@@ -19,7 +20,7 @@ meRoutes.get('/api/me', async (c) => {
   const url = new URL(c.req.url);
   const base = { discord: !!c.env.DISCORD_CLIENT_ID, dev: devAvailable(url) ? { users: DEV_USERS.map((u) => u.name) } : null };
   const viewer = await currentViewer(c);
-  if (!viewer) return c.json({ ...base, loggedIn: false });
+  if (!viewer) return c.json({ ...base, loggedIn: false } satisfies MeResponse);
   const db = c.env.DB;
   const [groups, creatable] = await Promise.all([
     db
@@ -29,8 +30,8 @@ meRoutes.get('/api/me', async (c) => {
           ORDER BY g.title`,
       )
       .bind(viewer.id)
-      .all(),
-    db.prepare('SELECT guild_id AS guildId, name, icon FROM user_guilds WHERE user_id = ? AND can_manage = 1 ORDER BY name').bind(viewer.id).all(),
+      .all<{ id: string; title: string; guildName: string; guildIcon: string | null }>(),
+    db.prepare('SELECT guild_id AS guildId, name, icon FROM user_guilds WHERE user_id = ? AND can_manage = 1 ORDER BY name').bind(viewer.id).all<{ guildId: string; name: string; icon: string | null }>(),
   ]);
   return c.json({
     ...base,
@@ -39,7 +40,7 @@ meRoutes.get('/api/me', async (c) => {
     groups: groups.results,
     creatable: creatable.results,
     stale: snapshotAgeMs(viewer, new Date()) > SNAPSHOT_HOURS * 3600_000,
-  });
+  } satisfies MeResponse);
 });
 
 meRoutes.post('/api/groups', async (c) => {
@@ -63,5 +64,5 @@ meRoutes.post('/api/groups', async (c) => {
     c.env.DB.prepare('INSERT INTO members (group_id, name, user_id, discord_id, is_admin, created_at) VALUES (?, ?, ?, ?, 1, ?)')
       .bind(id, memberNameFrom(viewer.globalName, viewer.username), viewer.id, viewer.id, at),
   ]);
-  return c.json({ ok: true, id, url: '/g/' + id + '/' });
+  return c.json({ ok: true, id, url: '/g/' + id + '/' } satisfies CreateGroupResult);
 });

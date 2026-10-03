@@ -1,12 +1,13 @@
-// 画面に渡す一式（GAS 版 consoleData_）。形と日時の書き方は GAS 版のまま。
+// 画面に渡す一式（GAS 版 consoleData_）。形は src/shared/api.ts の ConsoleData（画面と共有する）。日時の書き方は GAS 版のまま。
 // 外したもの: url（シート）・hasPassword・adminSet。足したもの: me・group・members[].linked / admin・settings.remind
+import type { ConsoleData } from '../../shared/api';
 import { maskUrl } from '../discord/webhook';
 import { addDays, fmtDateTime, stampText } from '../lib/jst';
 import { STATUS_LIST } from './constants';
 import { bookedMap, windowInfo } from './model';
 import type { Ctx } from './types';
 
-export function consoleData(ctx: Ctx) {
+export function consoleData(ctx: Ctx): ConsoleData {
   const g = ctx.group;
   const availDays: string[] = [];
   for (let i = 0; i < g.avail_days; i++) availDays.push(addDays(ctx.today, i));
@@ -85,4 +86,3 @@ export function consoleData(ctx: Ctx) {
   };
 }
 
-export type ConsoleData = ReturnType<typeof consoleData>;
