@@ -6,4 +6,8 @@
 desktop.ini
 .tmp.drivedownload/
 .tmp.driveupload/
-__pycache__/
+# npm・Vite・Vitest
+node_modules/
+coverage/
+# 書き出した画像（npm run screenshots / npm run promo）
+promo/images/

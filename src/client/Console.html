@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta charset="utf-8">
+  <title>卓予定</title>
+  <!-- アイコンは Material Symbols Rounded。使う名前だけに絞って読み込む（icon_names はアルファベット順）。
+       アイコンを足したら、ここにも名前を足す。読み込みが済むまでは空白で待つ（display=block） -->
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..24,400,0..1,0&icon_names=add,arrow_forward,block,calendar_month,campaign,casino,check,chevron_left,chevron_right,close,dark_mode,date_range,edit,edit_calendar,event,event_available,expand_more,flag,help,history,how_to_vote,light_mode,logout,menu_book,notifications,open_in_new,person_add,play_circle,refresh,settings,sticky_note_2,table_view,task_alt,today,warning&display=block">
+  <!-- 見た目は ConsoleCss.html、動きは ConsoleJs.html。doGet（server/WebApp.js）がテンプレートとして組み立てるときに差し込む -->
+  <?!= include_('client/ConsoleCss'); ?>
+  <script>
+    // 保存したテーマを描画前に当てる。無ければ OS の設定（prefers-color-scheme）に任せる
+    (function () {
+      try { var t = localStorage.getItem('taku.theme'); if (t === 'dark' || t === 'light') document.documentElement.setAttribute('data-theme', t); } catch (e) {}
+      try {
+        var f = localStorage.getItem('taku.font');
+        if (f === 'm' || f === 'l') {
+          document.documentElement.setAttribute('data-font', f);
+          document.documentElement.style.setProperty('--zoom', f === 'l' ? '1.25' : '1.12');
+        }
+      } catch (e) {}
+    })();
+  </script>
+</head>
+<body>
+  <header class="appbar">
+    <div class="brand"><span class="logo"><span class="material-icons" aria-hidden="true">casino</span></span><span id="title">卓予定</span></div>
+    <div class="hdr-actions">
+      <span class="sync">
+        <span class="sync-at" id="loadedAt"></span>
+        <button type="button" id="reload" class="hbtn" aria-label="更新" title="最新の状態を読み込む"><span class="material-icons sm" aria-hidden="true">refresh</span><span class="btxt">更新</span></button>
+      </span>
+      <label class="me"><span class="me-l">あなた</span>
+        <select id="me"><option value="">（選ぶ）</option></select>
+      </label>
+      <button type="button" id="guideBtnM" class="hbtn icon guide-m" aria-label="はじめの 3 ステップ" aria-controls="setupGuide" aria-expanded="false" title="はじめの 3 ステップをカレンダーの上に出す"><span class="material-icons sm" aria-hidden="true">flag</span></button>
+      <a id="helpLinkM" class="hbtn help-m" hidden href="#" target="_blank" rel="noopener" title="使い方のページを新しいタブで開く"><span class="material-icons sm" aria-hidden="true">help</span>使い方</a>
+      <button type="button" id="theme" class="hbtn icon" title="ライト／ダークを切り替える（このブラウザだけ）" aria-label="ダークに切り替える"><span class="material-icons sm" aria-hidden="true">dark_mode</span></button>
+      <button type="button" id="logoutBtn" class="hbtn icon" hidden title="ログアウト（このブラウザが覚えている合言葉を消す）" aria-label="ログアウト"><span class="material-icons sm" aria-hidden="true">logout</span></button>
+      <a id="sheetLink" class="hbtn icon" href="#" target="_blank" rel="noopener" title="スプレッドシートを開く" aria-label="シートを開く"><span class="material-icons sm" aria-hidden="true">table_view</span></a>
+    </div>
+    <nav class="tabs" aria-label="画面">
+      <button type="button" data-tab="cal" class="on" aria-current="page"><span class="material-icons" aria-hidden="true">calendar_month</span><span class="lbl">カレンダー</span></button>
+      <button type="button" data-tab="recruit"><span class="material-icons" aria-hidden="true">campaign</span><span class="lbl">募集・調整</span><span class="tcnt" id="recruitCount"></span></button>
+      <button type="button" data-tab="avail"><span class="material-icons" aria-hidden="true">event_available</span><span class="lbl">メンバーの予定</span></button>
+      <button type="button" data-tab="members"><span class="material-icons" aria-hidden="true">person_add</span><span class="lbl">メンバーの登録</span></button>
+      <button type="button" data-tab="settings"><span class="material-icons" aria-hidden="true">settings</span><span class="lbl">設定</span></button>
+      <button type="button" id="guideBtn" class="tab-help" aria-label="はじめの 3 ステップ" aria-controls="setupGuide" aria-expanded="false" title="はじめの 3 ステップをカレンダーの上に出す"><span class="material-icons" aria-hidden="true">flag</span><span class="gl">はじめの 3 ステップ</span></button>
+      <a id="helpLink" class="tab-help" hidden href="#" target="_blank" rel="noopener" title="使い方のページを新しいタブで開く"><span class="material-icons" aria-hidden="true">help</span><span class="lbl">使い方</span><span class="material-icons xs" aria-hidden="true">open_in_new</span></a>
+    </nav>
+  </header>
+  <main>
+    <div id="loading" role="status" aria-label="読み込み中"><div class="skel-frame" aria-hidden="true">
+      <div><div class="skel-bar"><span class="skel" style="width:40%"></span><span class="skel" style="width:20%;margin-left:auto"></span></div>
+        <div class="skel-grid"><i class="skel"></i><i class="skel"></i><i class="skel"></i><i class="skel"></i><i class="skel"></i><i class="skel"></i><i class="skel"></i><i class="skel"></i><i class="skel"></i><i class="skel"></i><i class="skel"></i><i class="skel"></i><i class="skel"></i><i class="skel"></i><i class="skel"></i><i class="skel"></i><i class="skel"></i><i class="skel"></i><i class="skel"></i><i class="skel"></i><i class="skel"></i><i class="skel"></i><i class="skel"></i><i class="skel"></i><i class="skel"></i><i class="skel"></i><i class="skel"></i><i class="skel"></i></div></div>
+      <div class="skel-side"><span class="skel"></span><span class="skel"></span></div>
+    </div></div>
+
+    <!-- カレンダー: 左にカレンダー、右に卓予定と選んだ日の内訳 -->
+    <section id="tab-cal" hidden>
+      <div class="card setup-card" id="setupGuide" hidden></div>
+      <div class="frame">
+        <div class="frame-l">
+          <div class="calbar">
+            <div class="calnav">
+              <button type="button" id="prev" class="btn icon" aria-label="前の月"><span class="material-icons" aria-hidden="true">chevron_left</span></button><h1 class="month" id="monthLabel"></h1><button type="button" id="next" class="btn icon" aria-label="次の月"><span class="material-icons" aria-hidden="true">chevron_right</span></button>
+              <button type="button" id="todayBtn" class="btn"><span class="material-icons sm" aria-hidden="true">today</span>今月</button>
+            </div>
+            <div class="caltools">
+              <label>都合を見る卓 <select id="target"></select></label>
+            </div>
+            <div class="newgroup"><button type="button" id="newSession" class="btn primary xl" title="カレンダーで日を選んでから押すと、その日の卓になります"><span class="material-icons" aria-hidden="true">add</span><span id="newSessionLbl">卓を登録</span></button><button type="button" id="newRecruit" class="btn xl" title="状態を「募集」にした登録の窓を開きます"><span class="material-icons" aria-hidden="true">campaign</span>募集を始める</button><button type="button" id="newAdjust" class="btn xl" title="状態を「調整中」にした登録の窓を開きます"><span class="material-icons" aria-hidden="true">edit_calendar</span>日程調整を始める</button></div>
+          </div>
+          <div class="legend">
+            <span class="sw"><i style="background:var(--ok)"></i>全員空き</span><span class="sw"><i style="background:var(--soft)"></i>△あり</span>
+            <span class="sw"><i style="background:var(--session)"></i>卓あり</span><span class="sw"><i style="background:var(--past)"></i>終わった卓</span><span class="sw"><i style="background:var(--today)"></i>今日</span>
+            <span class="brk" aria-hidden="true"></span>
+            <span class="hint">日をタップすると内訳が出ます</span>
+            <div class="legend-icons" id="iconLegend"></div>
+          </div>
+          <div id="calendar" class="cal"></div>
+        </div>
+        <div class="frame-r">
+          <div class="card nosel" id="dayDetail">
+            <h3 id="dayTitle">日を選んでください</h3>
+            <div id="dayBody" class="hint">カレンダーの日をタップすると、その日の卓の内訳がここに出ます。</div>
+          </div>
+          <div class="card">
+            <h3>卓予定</h3>
+            <div id="notices" class="notices"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 募集: 募集中の卓を並べ、参加希望・興味ありをその場で付ける -->
+    <section id="tab-recruit" hidden>
+      <div class="page-head">
+        <h1>募集・調整</h1>
+        <p class="lead">参加者を集めている卓と、開催日を選んでいる卓です。</p>
+      </div>
+      <div class="bar"><h2><span class="material-icons sm" aria-hidden="true">campaign</span>募集中</h2><button type="button" class="tip" data-tip="参加者を集めている卓です。上の「あなた」で自分を選び、カードの「参加希望」か「興味あり」を押します。押しても Discord には流れません。" aria-label="募集中とは"><span class="material-icons xs" aria-hidden="true">help</span></button><button type="button" class="btn small primary" id="barRecruit"><span class="material-icons sm" aria-hidden="true">add</span>募集を始める</button></div>
+      <div id="recruitList" class="recruit-list"></div>
+      <div class="bar"><h2><span class="material-icons sm" aria-hidden="true">edit_calendar</span>日程調整中</h2><button type="button" class="tip" data-tip="開催日を選んでいる卓です。GM が候補日を出すと知らせが届き、候補日ごとに ◯ か × を押します。全員が答えると GM に知らせが届き、GM が選んだ日に決まって、状態は「開催」になります。" aria-label="日程調整中とは"><span class="material-icons xs" aria-hidden="true">help</span></button><button type="button" class="btn small" id="barAdjust"><span class="material-icons sm" aria-hidden="true">add</span>日程調整を始める</button></div>
+      <div id="adjustList" class="recruit-list"></div>
+    </section>
+
+    <!-- メンバーの予定: 日付ごとの予定表。上に絞り込み・まとめて入れる・卓をまとめて変える -->
+    <section id="tab-avail" hidden>
+      <div class="page-head">
+        <h1>メンバーの予定 <button type="button" class="tip" data-tip="自分の列のマスをタップすると 空 → △ → × → 空 と変わります。空欄は「参加できる」扱いです。マスの右上の鉛筆で、その日のメモ（「21 時から」など）を書けます。ほかの人の列は見るだけです。" aria-label="予定表の使い方"><span class="material-icons xs" aria-hidden="true">help</span></button></h1>
+        <p class="lead">空欄は「参加できる」扱いです。都合の悪い日だけ、自分の列をタップして印を付けます。</p>
+      </div>
+      <div id="unknownWarn"></div>
+      <div id="availHot" class="hot-bar" hidden></div>
+      <div class="fold-bar">
+        <button type="button" class="btn small fold" id="foldFilter" data-target="availFilter"><span class="material-icons sm" aria-hidden="true">chevron_right</span>絞り込み</button><button type="button" class="tip" data-tip="出す人・期間・曜日をしぼります。卓を選ぶと、その卓の GM と参加者だけになります。" aria-label="絞り込みとは"><span class="material-icons xs" aria-hidden="true">help</span></button>
+        <span class="hint" id="afSummary"></span>
+        <button type="button" class="btn small fold" id="foldBulk" data-target="availBulk"><span class="material-icons sm" aria-hidden="true">chevron_right</span>まとめて入れる</button><button type="button" class="tip" data-tip="自分の列に、期間と曜日を決めて △ か × をまとめて入れます。卓のある日は飛ばします。" aria-label="まとめて入れるとは"><span class="material-icons xs" aria-hidden="true">help</span></button>
+        <button type="button" class="btn small fold" id="foldOps" data-target="availOps"><span class="material-icons sm" aria-hidden="true">chevron_right</span>卓をまとめて変える</button><button type="button" class="tip" data-tip="卓の一覧から選び、参加者の出入り・開催日のずらし・状態の変更・削除をまとめてできます。" aria-label="卓をまとめて変えるとは"><span class="material-icons xs" aria-hidden="true">help</span></button>
+        <label class="chk" style="margin-left:auto"><input type="checkbox" id="sortByLoad" checked> 卓の多い人を左に</label><button type="button" class="tip" data-tip="いま動いている卓に多く入っている人ほど、左の列に並べます。外すと登録した順になります。" aria-label="並び順"><span class="material-icons xs" aria-hidden="true">help</span></button>
+      </div>
+      <div class="card panel" id="availFilter" hidden>
+        <div class="pgrid">
+          <label class="plabel" for="afTarget">卓</label>
+          <div class="pctl"><select id="afTarget"></select><label class="chk"><input type="checkbox" id="afOnly"> どれかの卓に入っている人だけ</label></div>
+          <span class="plabel">メンバー</span>
+          <div class="pctl"><span class="wds" id="afMembers"></span><button type="button" class="btn small" id="afMe">自分だけ</button><button type="button" class="btn small" id="afAllMembers">全員</button></div>
+          <span class="plabel">期間</span>
+          <div class="pctl"><input type="date" id="afFrom" aria-label="絞り込みの始まり"><span>〜</span><input type="date" id="afTo" aria-label="絞り込みの終わり"></div>
+          <span class="plabel">曜日</span>
+          <div class="pctl"><span class="wds" id="afWds"></span></div>
+          <label class="plabel" for="afCond">条件</label>
+          <div class="pctl">
+            <select id="afCond">
+              <option value="">すべての日</option>
+              <option value="has">卓のある日</option>
+              <option value="free">卓のない日</option>
+              <option value="ok">表示中の全員が空いている日</option>
+              <option value="soft">表示中の誰も × を付けていない日</option>
+              <option value="hol">土日祝</option>
+            </select>
+          </div>
+        </div>
+        <div class="btns"><button type="button" class="btn small" id="afReset">解除</button><span id="afMsg" class="hint"></span></div>
+      </div>
+      <div class="card panel" id="availBulk" hidden>
+        <div class="pgrid">
+          <label class="plabel" for="abMark">印</label>
+          <div class="pctl"><select id="abMark"><option value="△">△ 調整すれば可</option><option value="×">× 不可</option><option value="">空欄に戻す（参加できる）</option></select></div>
+          <span class="plabel">期間</span>
+          <div class="pctl"><input type="date" id="abFrom" aria-label="入れる期間の始まり"><span>〜</span><input type="date" id="abTo" aria-label="入れる期間の終わり"></div>
+          <span class="plabel">曜日</span>
+          <div class="pctl"><span class="wds" id="abWds"></span><button type="button" class="btn small" id="abWeekday">平日</button><button type="button" class="btn small" id="abWeekend">土日</button><button type="button" class="btn small" id="abAll">全曜日</button></div>
+        </div>
+        <div class="btns"><label class="chk"><input type="checkbox" id="abKeep" checked> 入力済みは残す</label><button type="button" class="btn primary" id="abRun">自分の列に入れる</button><span id="abMsg" class="hint"></span></div>
+      </div>
+      <div class="card" id="availOps" hidden>
+        <div class="bulk" style="margin-bottom:10px">
+          <span class="cnt" id="bulkCount">選択 0 件</span>
+          <button type="button" class="btn small" id="bulkPast">過ぎた卓を選ぶ</button>
+          <button type="button" class="btn small" id="bulkNone">選択解除</button>
+          <label class="chk"><input type="checkbox" id="showAll"> 終了・中止も表示</label>
+        </div>
+        <div class="wrap"><table id="matrix"></table></div>
+        <div class="bulk" id="bulkBar" style="margin-top:10px">
+          <select id="bulkAction">
+            <option value="status">状態を変更</option>
+            <option value="addMember">参加者を追加</option>
+            <option value="removeMember">参加者から外す</option>
+            <option value="setGm">GM を変更</option>
+            <option value="shiftDays">開催日をずらす</option>
+            <option value="setSeries">シリーズを変更</option>
+            <option value="delete">削除</option>
+          </select>
+          <select id="bulkStatus"></select>
+          <select id="bulkMember" hidden></select>
+          <input type="text" id="bulkDays" inputmode="numeric" placeholder="日数（7 や -1）" style="width:9em" hidden>
+          <input type="text" id="bulkSeries" list="seriesList" placeholder="シリーズ名（空で外す）" style="width:14em" hidden>
+          <label class="chk"><input type="checkbox" id="bulkNotify"> Discord に知らせる</label>
+          <button type="button" class="btn primary" id="bulkRun">実行</button>
+          <span id="bulkMsg" class="hint"></span>
+        </div>
+      </div>
+      <div class="wrap avail"><table id="availTable"></table></div>
+    </section>
+
+    <!-- メンバー: 登録フォームを上、一覧を下 -->
+    <section id="tab-members" hidden>
+      <div class="page-head">
+        <h1>メンバーの登録</h1>
+        <p class="lead">ここに入れた名前が、卓の参加者の候補と「メンバーの予定」の列になります。</p>
+      </div>
+      <form id="mf" class="card">
+        <label for="mpick">編集するメンバー <small>新しく足すなら「（新規追加）」のまま</small></label>
+        <select id="mpick"><option value="">（新規追加）</option></select>
+        <div class="row">
+          <div><label for="mname">名前 <small>必須。卓の参加者名と同じ表記に</small></label><input type="text" id="mname" required></div>
+          <div><label for="mdiscord">Discord ユーザーID <small>任意。数字だけ</small></label><input type="text" id="mdiscord" inputmode="numeric" placeholder="123456789012345678"></div>
+        </div>
+        <label for="mnote">備考</label><input type="text" id="mnote">
+        <p class="hint">Discord のユーザーID は、ユーザー設定 → 詳細設定 → 開発者モードを ON にしてから、名前を右クリック →「ユーザーIDをコピー」。入れておくと開催前の知らせなどでメンションされます。</p>
+        <div class="btns">
+          <button type="submit" class="btn primary" id="msave">追加</button>
+          <button type="button" class="btn" id="mclear">新規に戻す</button>
+          <button type="button" class="btn danger" id="mdel" hidden>このメンバーを削除</button>
+        </div>
+        <div id="mmsg"></div>
+      </form>
+      <div class="wrap"><table id="memberTable"></table></div>
+      <p class="hint">行をタップすると上のフォームに入ります。</p>
+    </section>
+
+    <!-- 設定 -->
+    <section id="tab-settings" class="settings" hidden>
+      <div class="page-head">
+        <h1>設定</h1>
+        <p class="lead">左の区分で切り替えます。「この端末」以外は「設定」シートに書き込まれ、合言葉を知っている人なら誰でも変えられます。</p>
+      </div>
+      <div class="set2">
+        <nav class="set-nav" id="setNav" aria-label="設定の区分">
+          <button type="button" data-set="notify" aria-current="true">知らせ</button>
+          <button type="button" data-set="table">この卓予定</button>
+          <button type="button" data-set="device">この端末</button>
+          <button type="button" data-set="access">入り口と合言葉</button>
+          <button type="button" data-set="admin">管理者</button>
+          <button type="button" data-set="log">送信の記録</button>
+        </nav>
+        <div>
+
+          <!-- ===== 知らせ ===== -->
+          <div class="set-pane" data-pane="notify">
+            <div class="card">
+              <h3>知らせ <small class="hint">何を・どこへ・いつ送るか</small></h3>
+              <div class="wrap"><table class="ntx">
+                <thead><tr><th style="width:38%">知らせ</th><th>送り先</th><th>いつ</th><th class="sw">送る</th></tr></thead>
+                <tbody>
+                  <tr>
+                    <td class="what"><b>開催前の知らせ</b><span class="hint">開催日が近づいた卓を、GM と参加者に</span></td>
+                    <td class="dest"><span class="dest-chip" id="ntDestRemind">基本のチャンネル</span></td>
+                    <td class="when2">開催日の <input type="text" class="num" id="stDays" inputmode="numeric" maxlength="2" aria-label="何日前（0〜30）"> 日前 <input type="text" class="num" id="stHour" inputmode="numeric" maxlength="2" aria-label="何時台（0〜23）"> 時台</td>
+                    <td class="sw"><button type="button" class="sw-btn" id="ntRemind" role="switch" aria-checked="false" aria-label="開催前の知らせを送る"></button></td>
+                  </tr>
+                  <tr>
+                    <td class="what"><b>期間前の催促</b><span class="hint">募集中・調整中のまま、期間の前日になったら GM に</span></td>
+                    <td class="dest"><span class="dest-chip" id="ntDestUrge">基本のチャンネル</span></td>
+                    <td class="when2">期間の前日（開催前の知らせと同じ時刻）</td>
+                    <td class="sw"><button type="button" class="sw-btn" id="stUrge" role="switch" aria-checked="false" aria-label="期間前の催促を送る"></button></td>
+                  </tr>
+                  <tr>
+                    <td class="what"><b>開始直前の知らせ</b><span class="hint">当日、開始の少し前に GM と参加者に</span></td>
+                    <td class="dest"><span class="dest-chip" id="ntDestSoon">基本のチャンネル</span></td>
+                    <td class="when2">開始の <input type="text" class="num" id="stSoonMin" inputmode="numeric" maxlength="3" aria-label="開始の何分前（5〜720）"> 分前</td>
+                    <td class="sw"><button type="button" class="sw-btn" id="stSoon" role="switch" aria-checked="false" aria-label="開始直前の知らせを送る"></button></td>
+                  </tr>
+                  <tr>
+                    <td class="what"><b>登録・変更・削除</b><span class="hint">保存のときに「Discord に知らせる」を付けたぶん</span></td>
+                    <td class="dest"><span class="dest-chip">卓に合わせて自動</span></td>
+                    <td class="when2">保存したとき</td>
+                    <td class="sw"><button type="button" class="sw-btn" id="stNotifyOnSave" role="switch" aria-checked="false" aria-label="登録・変更・削除を知らせる"></button></td>
+                  </tr>
+                  <tr>
+                    <td class="what"><b>募集と参加確認</b><span class="hint">募集の卓の案内と、興味ありの人への確認</span></td>
+                    <td class="dest"><span class="dest-chip" id="ntDestRecruit">基本のチャンネル</span></td>
+                    <td class="when2">押したときだけ</td>
+                    <td class="sw"><span class="manual">自動では送らない</span></td>
+                  </tr>
+                </tbody>
+              </table></div>
+              <p class="hint" id="stWhenSay"></p>
+              <p class="hint" id="ntMsg"></p>
+              <p class="hint">開催前の知らせは、0 日前なら当日、1 日前なら前日です。開始直前の知らせを ON にすると見回りが 5 分ごとになり、指定した時刻を過ぎた最初の見回りで届きます。送り先は下の「チャンネル」で決めます。</p>
+            </div>
+
+            <details class="fold-card" id="chFold">
+              <summary><span class="material-icons sm" aria-hidden="true">notifications</span>チャンネル（Discord の Webhook URL）<span class="hint" id="chSum"></span></summary>
+              <div class="fold-body">
+                <div class="card">
+                  <h3>基本のチャンネル</h3>
+                  <p class="hint">種類ごとのチャンネルやシリーズ専用のチャンネルを決めていない知らせは、ここへ送ります。</p>
+                  <div>いまの Webhook URL: <span id="stWebhook" class="hint"></span></div>
+                  <div class="lbl-row"><label class="f" for="stWebhookNew">新しい Webhook URL <small>変えるときだけ貼る</small></label><button type="button" class="qhelp" popovertarget="whHelp" aria-label="Webhook URL の取り方" title="Webhook URL の取り方"><span class="material-icons sm" aria-hidden="true">help</span></button></div>
+                  <input type="text" id="stWebhookNew" placeholder="https://discord.com/api/webhooks/…">
+                  <div class="btns">
+                    <button type="button" class="btn primary" id="stWebhookSave">URL を保存</button>
+                    <button type="button" class="btn" id="stTest">接続テスト</button>
+                    <button type="button" class="btn danger" id="stClear">URL を空にする</button>
+                    <span class="hint" id="stWebhookMsg"></span>
+                  </div>
+                </div>
+                <div class="card" id="kwCard">
+                  <h3>種類ごとのチャンネル</h3>
+                  <p class="hint">開催前の知らせと募集の知らせを、別のチャンネルに送れます。空なら基本のチャンネルへ。シリーズ専用のチャンネルがあれば、そちらが先です。</p>
+                  <div class="kw">
+                    <div class="lbl-row"><label class="f" for="kwRemind">開催前の知らせ <small>期間前の催促と、開始直前の知らせもここへ</small></label><button type="button" class="qhelp" popovertarget="whHelp" aria-label="Webhook URL の取り方" title="Webhook URL の取り方"><span class="material-icons sm" aria-hidden="true">help</span></button></div>
+                    <div class="hint">いま: <span id="kwRemindNow"></span></div>
+                    <input type="text" id="kwRemind" placeholder="https://discord.com/api/webhooks/…">
+                    <div class="btns">
+                      <button type="button" class="btn primary" id="kwRemindSave">URL を保存</button>
+                      <button type="button" class="btn" id="kwRemindTest">接続テスト</button>
+                      <button type="button" class="btn danger" id="kwRemindClear">外して基本に戻す</button>
+                      <span class="hint" id="kwRemindMsg"></span>
+                    </div>
+                  </div>
+                  <div class="kw">
+                    <div class="lbl-row"><label class="f" for="kwRecruit">募集 <small>募集の卓の登録・変更・削除・案内と、興味ありの人への参加確認</small></label><button type="button" class="qhelp" popovertarget="whHelp" aria-label="Webhook URL の取り方" title="Webhook URL の取り方"><span class="material-icons sm" aria-hidden="true">help</span></button></div>
+                    <div class="hint">いま: <span id="kwRecruitNow"></span></div>
+                    <input type="text" id="kwRecruit" placeholder="https://discord.com/api/webhooks/…">
+                    <div class="btns">
+                      <button type="button" class="btn primary" id="kwRecruitSave">URL を保存</button>
+                      <button type="button" class="btn" id="kwRecruitTest">接続テスト</button>
+                      <button type="button" class="btn danger" id="kwRecruitClear">外して基本に戻す</button>
+                      <span class="hint" id="kwRecruitMsg"></span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </details>
+
+            <details class="fold-card" id="snFold">
+              <summary><span class="material-icons sm" aria-hidden="true">date_range</span>シリーズごとの上書き<span class="hint" id="snSum"></span></summary>
+              <div class="fold-body">
+                <div class="card" id="snCard">
+                  <p class="hint">シリーズごとに、送るチャンネルと開催前の知らせの日時を変えられます。決めなければ上の表のとおりです。</p>
+                  <div class="wrap" id="snListWrap" hidden><table id="snList"></table></div>
+                  <label class="f" for="snSeries">シリーズ</label>
+                  <select id="snSeries"></select>
+                  <div id="snFields" hidden>
+                    <p class="hint" id="snNow"></p>
+                    <div class="lbl-row"><label class="f" for="snWebhook">このシリーズの Webhook URL <small>貼ると専用のチャンネルに送る。変えるときだけ貼る</small></label><button type="button" class="qhelp" popovertarget="whHelp" aria-label="Webhook URL の取り方" title="Webhook URL の取り方"><span class="material-icons sm" aria-hidden="true">help</span></button></div>
+                    <input type="text" id="snWebhook" placeholder="https://discord.com/api/webhooks/…">
+                    <label class="c"><input type="checkbox" id="snAlsoBase"> 基本のチャンネルにも送る</label>
+                    <label class="c"><input type="checkbox" id="snSame"> <span id="snSameLbl">開催前の知らせは上の表と同じ日時</span></label>
+                    <div class="when-row" id="snWhen">開催日の <input type="text" class="num" id="snDays" inputmode="numeric" maxlength="2" aria-label="何日前（0〜30）"> 日前、<input type="text" class="num" id="snHour" inputmode="numeric" maxlength="2" aria-label="何時台（0〜23）"> 時台に送る</div>
+                    <div class="btns">
+                      <button type="button" class="btn primary" id="snSave">保存</button>
+                      <button type="button" class="btn" id="snTest">接続テスト</button>
+                      <button type="button" class="btn danger" id="snRemove">設定を消す</button>
+                      <span class="hint" id="snMsg"></span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </details>
+          </div>
+
+          <!-- ===== この卓予定 ===== -->
+          <div class="set-pane" data-pane="table" hidden>
+            <div class="card">
+              <h3>名前</h3>
+              <p class="hint">画面の左上とスプレッドシートの名前です。みんなに見えます。</p>
+              <label class="f" for="stName">卓予定の名前 <small>80 文字まで</small></label>
+              <input type="text" id="stName" maxlength="80">
+              <div class="btns"><button type="button" class="btn primary" id="stNameSave">名前を変える</button><span class="hint" id="stNameMsg"></span></div>
+            </div>
+            <div class="card">
+              <h3>卓の後始末</h3>
+              <label class="c"><input type="checkbox" id="stAutoFinish"> 開催日を過ぎた卓を「終了」にする</label>
+              <p class="hint">終了になってもカレンダーからは消えず、灰色で残ります。「メンバーの予定」タブの「卓をまとめて変える」で見るには「終了・中止も表示」を付けてください。</p>
+            </div>
+            <div class="card">
+              <h3>表示</h3>
+              <div class="row">
+                <div><label class="f" for="stCalMonths">シートのカレンダーの表示月数 <small>1〜12</small></label><input type="text" id="stCalMonths" inputmode="numeric"></div>
+                <div><label class="f" for="stAvailDays">メンバーの予定の日数 <small>7〜366</small></label><input type="text" id="stAvailDays" inputmode="numeric"></div>
+              </div>
+              <div class="btns"><button type="button" class="btn primary" id="stSave">保存</button><span class="hint" id="stMsg"></span></div>
+            </div>
+          </div>
+
+          <!-- ===== この端末 ===== -->
+          <div class="set-pane" data-pane="device" hidden>
+            <div class="card">
+              <h3>この端末</h3>
+              <p class="hint">このブラウザだけの設定です。シートには書きません。</p>
+              <div class="row">
+                <div><label class="f" for="stAutoRefresh">自動更新 <small>読み込む間隔</small></label>
+                  <select id="stAutoRefresh"><option value="0">しない</option><option value="1">1 分ごと</option><option value="3">3 分ごと</option><option value="5">5 分ごと</option><option value="10">10 分ごと</option></select></div>
+                <div><label class="f" for="stTheme">見た目</label>
+                  <select id="stTheme"><option value="">端末の設定に合わせる</option><option value="light">ライト</option><option value="dark">ダーク</option></select></div>
+                <div><label class="f" for="stFont">文字サイズ</label>
+                  <select id="stFont"><option value="">小</option><option value="m">中</option><option value="l">大</option></select></div>
+              </div>
+              <p class="hint">入力中や窓を開いているあいだは、読み込みを待ちます。ほかのタブから戻ったときも、しばらく経っていれば読み込みます。</p>
+              <div class="btns">
+                <a class="btn" id="stHelpLink" hidden href="#" target="_blank" rel="noopener"><span class="material-icons sm" aria-hidden="true">menu_book</span>使い方を見る</a>
+                <a class="btn" id="stSheetLink" href="#" target="_blank" rel="noopener"><span class="material-icons sm" aria-hidden="true">table_view</span>シートを開く</a>
+                <button type="button" class="btn danger" id="stLogout"><span class="material-icons sm" aria-hidden="true">logout</span>ログアウト</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- ===== 入り口と合言葉 ===== -->
+          <div class="set-pane" data-pane="access" hidden>
+            <div class="card">
+              <h3>合言葉</h3>
+              <p class="hint">この画面を開く全員で使う合言葉です。一度入れたブラウザは、ログアウトするか合言葉が変わるまで二度と求めません。メンバーを外したときはここで変えると、その人は次に開いたときから見られなくなります。</p>
+              <div class="row">
+                <div><label class="f" for="stPwCurrent">いまの合言葉</label><input type="password" id="stPwCurrent" autocomplete="current-password"></div>
+                <div><label class="f" for="stPwNew">新しい合言葉 <small>8 文字以上</small></label><input type="password" id="stPwNew" autocomplete="new-password"></div>
+                <div><label class="f" for="stPwConfirm">もう一度</label><input type="password" id="stPwConfirm" autocomplete="new-password"></div>
+              </div>
+              <div class="btns"><button type="button" class="btn primary" id="stPwChange">合言葉を変える</button><span class="hint" id="stPwMsg"></span></div>
+              <p class="hint">忘れたときは、シートのメニュー「卓予定 → ウェブアプリの合言葉を設定…」から決め直せます。</p>
+            </div>
+          </div>
+
+          <!-- ===== 管理者 ===== -->
+          <div class="set-pane" data-pane="admin" hidden>
+            <div class="card">
+              <h3>管理者 <small class="hint">シートを開く・ほかの人のぶんを入れる・メンバーと設定を変える</small></h3>
+              <div id="admState" class="adm-state"></div>
+              <p class="hint" id="admLead"></p>
+              <div class="adm-list" id="admList"></div>
+              <p class="hint">管理者の合言葉を通した人は、そのとき「あなた」で選んでいた名前で名簿に加わります。最初の合言葉を決めた人が、最初の管理者です。</p>
+            </div>
+            <div class="card">
+              <h3 id="admPwTitle">管理者の合言葉を決める</h3>
+              <p class="hint" id="admPwLead"></p>
+              <div class="row">
+                <div id="admCurWrap" hidden><label class="f" for="admCur">いまの管理者の合言葉</label><input type="password" id="admCur" autocomplete="current-password"></div>
+                <div><label class="f" for="admNew">新しい管理者の合言葉 <small>8 文字以上</small></label><input type="password" id="admNew" autocomplete="new-password"></div>
+                <div><label class="f" for="admConfirm">もう一度</label><input type="password" id="admConfirm" autocomplete="new-password"></div>
+              </div>
+              <div class="btns"><button type="button" class="btn primary" id="admPwSave">決める</button><span class="hint" id="admPwMsg"></span></div>
+              <p class="hint">忘れたときは、シートのメニュー「卓予定 → 管理者の合言葉を設定…」から決め直せます。</p>
+            </div>
+          </div>
+
+          <!-- ===== 送信の記録 ===== -->
+          <div class="set-pane" data-pane="log" hidden>
+            <div class="card">
+              <h3>送信の記録 <small class="hint">届かないときはここを見る。新しい順 10 件</small></h3>
+              <div class="wrap"><table id="stLog"></table></div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+  </main>
+  <datalist id="memberList"></datalist>
+  <datalist id="seriesList"></datalist>
+
+  <div class="pop" id="whHelp" popover role="dialog" aria-labelledby="whHelpTitle">
+    <div class="pop-head"><h3 id="whHelpTitle">Webhook URL の取り方</h3><button type="button" class="btn icon" popovertarget="whHelp" popovertargetaction="hide" aria-label="閉じる"><span class="material-icons" aria-hidden="true">close</span></button></div>
+    <ol>
+      <li>Discord で、知らせを流したいチャンネルの <b>チャンネルの編集</b>（歯車）を開く。スマホはチャンネルを長押しして「チャンネルを編集」。</li>
+      <li><b>連携サービス</b> → <b>ウェブフック</b> を開き、<b>新しいウェブフック</b> を押す。</li>
+      <li>できたウェブフックを押して開く。名前とアイコンは好みで変えてよい。投稿先のチャンネルが合っているか確かめる。</li>
+      <li><b>ウェブフック URL をコピー</b> を押す。</li>
+      <li>この画面の URL の欄に貼って保存し、「接続テスト」で届くか確かめる。</li>
+    </ol>
+    <p class="hint">「連携サービス」が出てこないときは、そのサーバーで「ウェブフックの管理」の権限がありません。サーバーの管理者に作ってもらうか、権限をもらってください。</p>
+    <p class="hint">URL を知っている人は、誰でもそのチャンネルに投稿できます。卓の仲間の外には出さないでください。</p>
+  </div>
+  <div class="modal" id="loginModal" hidden>
+    <form class="box" id="loginForm" role="dialog" aria-modal="true" aria-labelledby="loginTitle" tabindex="-1">
+      <h3 id="loginTitle">ログイン</h3>
+      <p class="hint" id="loginHint"></p>
+      <label for="lgPass" id="lgPassLabel">合言葉</label>
+      <input type="password" id="lgPass" autocomplete="current-password">
+      <div id="lgConfirmWrap" hidden><label for="lgConfirm">もう一度</label><input type="password" id="lgConfirm" autocomplete="new-password"></div>
+      <div class="btns"><button type="submit" class="btn primary" id="lgOk">ログイン</button></div>
+      <div id="loginMsg" role="alert"></div>
+      <p class="hint" id="loginHelpWrap" hidden><a id="loginHelp" href="#" target="_blank" rel="noopener">はじめて使う人は、使い方のページへ</a></p>
+    </form>
+  </div>
+
+  <div class="modal" id="adminModal" hidden>
+    <form class="box" id="adminForm" role="dialog" aria-modal="true" aria-labelledby="adminTitle" tabindex="-1">
+      <h3 id="adminTitle">管理者の合言葉</h3>
+      <p class="hint" id="adminHint"></p>
+      <label for="adPass">管理者の合言葉</label>
+      <input type="password" id="adPass" autocomplete="current-password">
+      <div class="btns">
+        <button type="submit" class="btn primary" id="adOk">管理者になる</button>
+        <button type="button" class="btn" id="adCancel">やめる</button>
+      </div>
+      <div id="adminMsg" role="alert"></div>
+    </form>
+  </div>
+
+  <div class="modal" id="formModal" hidden>
+    <div class="box wide" role="dialog" aria-modal="true" aria-labelledby="formTitle" tabindex="-1">
+      <div class="bar"><h2 id="formTitle">卓を登録</h2><button type="button" class="btn small" id="formClose" style="margin-left:auto"><span class="material-icons sm" aria-hidden="true">close</span>閉じる</button></div>
+      <form id="f">
+        <label for="pick">編集する卓 <small>新しく登録するなら「（新規登録）」のまま</small></label>
+        <select id="pick"><option value="">（新規登録）</option></select>
+        <div class="row" id="seriesRow">
+          <div><label for="series">シリーズ <small>何日かに分けて開く卓の名前。選ぶと直前の回の内容を引き継ぎます</small></label>
+            <input type="text" id="series" list="seriesList" placeholder="例: 鉄鳴界の夜明け（1 日で終わる卓なら空のまま）"></div>
+          <div class="narrow" id="seriesEndWrap" hidden><label for="seriesEnd">シリーズの最終日 <small>この日を過ぎると候補から消える</small></label><input type="date" id="seriesEnd"></div>
+        </div>
+        <div class="row">
+          <div><label for="name">卓の名前 <small>必須</small></label><input type="text" id="name" required></div>
+          <div class="narrow"><label for="status">状態</label><select id="status"></select></div>
+        </div>
+        <div id="flowGuide" class="flow" aria-live="polite"></div>
+        <div class="row" id="dateRow">
+          <div><label for="date">開催日 <small>まだ決まっていなければ状態を「募集」に</small></label><input type="date" id="date"></div>
+          <div class="narrow"><label for="start">開始</label><input type="time" id="start" step="300"></div>
+          <div class="narrow"><label for="end">終了</label><input type="time" id="end" step="300"></div>
+        </div>
+        <div id="conflictWarn" class="warn-box" hidden></div>
+        <div id="moreDatesWrap" hidden>
+          <div id="moreDates"></div>
+          <button type="button" class="btn small" id="addDate"><span class="material-icons sm" aria-hidden="true">add</span>日を足す（何日かまとめて登録）</button>
+          <span class="hint" id="moreDatesHint"></span>
+        </div>
+        <div class="row" id="windowRow" hidden>
+          <div><label for="winFrom"><span id="winLbl">候補の期間</span> <small id="winHint">この期間のどこかで開く。空なら未定</small></label><input type="date" id="winFrom"></div>
+          <div><label for="winTo">まで</label><input type="date" id="winTo"></div>
+        </div>
+        <div class="row">
+          <div><label for="gm">GM</label><input type="text" id="gm" list="memberList"></div>
+        </div>
+        <fieldset id="membersRow">
+          <legend>参加者</legend>
+          <div class="members" id="membersBox"></div>
+          <input type="text" id="extra" placeholder="メンバーに無い人は、ここに「、」区切りで" aria-label="メンバーに無い参加者">
+        </fieldset>
+        <div id="wantInfo" hidden></div>
+        <label for="place">場所 / URL</label><input type="text" id="place">
+        <label for="memo">メモ</label><textarea id="memo"></textarea>
+        <div class="btns">
+          <label><input type="checkbox" id="notify"> Discord に知らせる <span class="hint" id="notifyHint"></span></label>
+        </div>
+        <div class="form-actions">
+          <div class="btns">
+            <button type="submit" class="btn primary" id="save">登録</button>
+            <button type="button" class="btn" id="cont" hidden title="GM・参加者・時間・場所を引き継いで、翌日の卓を新しく登録する">続けて登録（翌日・設定を引き継ぐ）</button>
+            <button type="button" class="btn" id="clear">新規に戻す</button>
+            <button type="button" class="btn danger" id="del" hidden>この卓を削除</button>
+          </div>
+          <div id="msg" role="status"></div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal" id="pollModal" hidden>
+    <form class="box wide" id="pollForm" role="dialog" aria-modal="true" aria-labelledby="pollTitle" tabindex="-1">
+      <div class="bar"><h2 id="pollTitle">日程を調整する</h2><button type="button" class="btn small" id="pollClose" style="margin-left:auto"><span class="material-icons sm" aria-hidden="true">close</span>閉じる</button></div>
+      <p class="hint" id="pollWho"></p>
+      <div class="row">
+        <div class="narrow"><label for="pollStart">開始</label><input type="time" id="pollStart" step="300"></div>
+        <div class="narrow"><label for="pollEnd">終了</label><input type="time" id="pollEnd" step="300"></div>
+      </div>
+      <div class="poll-pick-h">
+        <span class="plbl">候補日 <small class="hint" id="pollCount"></small></span>
+        <label class="chk"><input type="checkbox" id="pollOkOnly"> 全員空きの日だけ</label>
+      </div>
+      <div id="pollDays" class="poll-days"></div>
+      <div class="pctl poll-add"><input type="date" id="pollAddDate" aria-label="候補に足す日"><button type="button" class="btn small" id="pollAddBtn"><span class="material-icons sm" aria-hidden="true">add</span>日を足す</button></div>
+      <div class="form-actions">
+        <div class="btns">
+          <label><input type="checkbox" id="pollNotify"> Discord で知らせる <span class="hint" id="pollNotifyHint"></span></label>
+          <button type="submit" class="btn primary" id="pollSend" style="margin-left:auto">この候補日で聞く</button>
+        </div>
+        <div id="pollMsg" role="alert"></div>
+      </div>
+    </form>
+  </div>
+
+  <div class="modal" id="askModal" hidden>
+    <form class="box" id="askForm" role="dialog" aria-modal="true" aria-labelledby="askTitle" tabindex="-1">
+      <h3 id="askTitle">興味ありの人に聞く</h3>
+      <p class="hint" id="askWho"></p>
+      <label for="askText">添える一言 <small>任意。500 文字まで</small></label>
+      <textarea id="askText" maxlength="500" placeholder="例: 10 月の土曜のどこかを考えています。都合を教えてください"></textarea>
+      <div class="btns">
+        <button type="submit" class="btn primary" id="askSend">Discord に送る</button>
+        <button type="button" class="btn" id="askCancel" style="margin-left:auto">閉じる</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="modal" id="memoModal" hidden>
+    <form class="box" id="memoForm" role="dialog" aria-modal="true" aria-labelledby="memoTitle" tabindex="-1">
+      <h3 id="memoTitle">予定のメモ</h3>
+      <p class="hint">△ や × とは別に、その日の事情を短く書けます。ほかの人にも見えます。</p>
+      <textarea id="memoText" maxlength="200" placeholder="例: 21 時からなら参加できます" aria-labelledby="memoTitle"></textarea>
+      <div class="btns">
+        <button type="submit" class="btn primary" id="memoSave">保存</button>
+        <button type="button" class="btn" id="memoClear">消す</button>
+        <button type="button" class="btn" id="memoCancel" style="margin-left:auto">閉じる</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- 確かめる窓。ブラウザの確認ダイアログの代わり（Apps Script ではそちらに見慣れないドメイン名が出るため） -->
+  <div id="tipBubble" role="tooltip" hidden></div>
+  <div class="modal" id="promoteModal" hidden>
+    <div class="box" role="dialog" aria-modal="true" aria-labelledby="promoteTitle" tabindex="-1">
+      <div class="bar"><h2 id="promoteTitle">興味ありの人はどうしますか？</h2></div>
+      <p class="hint" id="promoteLead"></p>
+      <div class="members" id="promoteList"></div>
+      <div class="btns"><button type="button" class="btn small" id="promoteAll">全員を参加者に</button><button type="button" class="btn small" id="promoteNone">全員を取り下げ</button></div>
+      <div class="form-actions"><div class="btns">
+        <button type="button" class="btn primary" id="promoteOk">この内容で進む</button>
+        <button type="button" class="btn" id="promoteCancel">やめる</button>
+      </div></div>
+    </div>
+  </div>
+  <div class="modal" id="confirmModal" hidden>
+    <form class="box confirm" id="confirmForm" role="alertdialog" aria-modal="true" aria-labelledby="confirmTitle" aria-describedby="confirmText" tabindex="-1">
+      <h3 id="confirmTitle">確認</h3>
+      <p id="confirmText"></p>
+      <div class="btns">
+        <button type="button" class="btn" id="confirmCancel">やめる</button>
+        <button type="submit" class="btn primary" id="confirmOk">OK</button>
+      </div>
+    </form>
+  </div>
+
+  <div id="memoPop" class="memo-pop" hidden></div>
+  <div id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+
+  <?!= include_('client/ConsoleJs'); ?>
+</body>
+</html>

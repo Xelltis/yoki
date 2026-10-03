@@ -1,7 +1,7 @@
-# clasp push で送るのは、Apps Script プロジェクトに置く 4 つだけ。
-# テスト（test/）・旧い版（保管/）・スクリーンショットなどは送らない
+# clasp push で送るのは src/ の中だけ（.clasp.json の "rootDir": "src"）。
+# ここのパターンは src/ からの相対。念のため、Apps Script に置く形のファイルだけを通す。
+# rootDir を書き忘れると何にも当たらず、何も送らない（テストやデモが紛れ込むことはない）
 **/**
 !appsscript.json
-!Code.gs
-!Console.html
-!Tutorial.html
+!server/*.js
+!client/*.html

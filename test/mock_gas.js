@@ -241,9 +241,24 @@ var ScriptApp = strict({
   getProjectTriggers: function () { return TRIGGERS.map(function (t) { return strict({ getHandlerFunction: function () { return t.fn; }, _t: t }, 'Trigger'); }); },
   deleteTrigger: function (tp) { var i = TRIGGERS.indexOf(tp._t); if (i >= 0) TRIGGERS.splice(i, 1); },
 }, 'ScriptApp');
+// src/client の HTML。test/helpers/load-gas.js が { 'client/Console': 中身 } の形で入れる
+var HTML_FILES = {};
+function htmlFileOf(name) { if (!Object.prototype.hasOwnProperty.call(HTML_FILES, name)) throw new Error('HTML ファイルが無い: ' + name); return HTML_FILES[name]; }
+function htmlOutputOf(name, content) { var raw = { setWidth: function () { return h; }, setHeight: function () { return h; }, setTitle: function (t) { raw.title = t; return h; }, addMetaTag: function () { return h; }, append: function (c) { raw.appended += c; return h; }, getContent: function () { return raw.content + raw.appended; }, name: name, title: '', appended: '', content: content }; var h = strict(raw, 'HtmlOutput'); return h; }
 var HtmlService = strict({
   createHtmlOutput: function (html) { var h = strict({ setWidth: function () { return h; }, setHeight: function () { return h; }, setTitle: function () { return h; }, html: html }, 'HtmlOutput'); return h; },
-  createHtmlOutputFromFile: function (name) { var raw = { setWidth: function () { return h; }, setHeight: function () { return h; }, setTitle: function (t) { raw.title = t; return h; }, addMetaTag: function () { return h; }, append: function (c) { raw.appended += c; return h; }, name: name, title: '', appended: '' }; var h = strict(raw, 'HtmlOutput'); return h; },
+  createHtmlOutputFromFile: function (name) { return htmlOutputOf(name, htmlFileOf(name)); },
+  // テンプレートは <?!= 式 ?> だけを解く（このアプリが使うのは include_ だけ）。ほかの書き方が残っていたら落とす
+  createTemplateFromFile: function (name) {
+    var src = htmlFileOf(name);
+    return strict({
+      evaluate: function () {
+        var html = src.replace(/<\?!=([\s\S]*?)\?>/g, function (m, expr) { return String((0, eval)(expr.trim().replace(/;$/, ''))); });
+        if (html.indexOf('<?') >= 0) throw new Error('テンプレート: 解いていないスクリプトレットがある ' + name);
+        return htmlOutputOf(name, html);
+      },
+    }, 'HtmlTemplate');
+  },
 }, 'HtmlService');
 
 // シートをテキストで出す
