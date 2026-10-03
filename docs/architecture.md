@@ -8,7 +8,7 @@
 
 Worker 1 つで、次の 3 つを受け持つ。
 
-- **画面**: `src/client` を Vite で組み立てた静的ファイル（Workers Static Assets）。`wrangler.jsonc` の `run_worker_first` にある道（`/api/*`・`/auth/*`・`/g/*`・`/dev/*`）だけ Worker が先に受ける
+- **画面**: `src/client` を Vite で組み立てた静的ファイル（Workers Static Assets）。`wrangler.jsonc` の `run_worker_first` にある道（`/api/*`・`/auth/*`・`/g/*`・`/dev/*`・`/admin`・`/admin/*`）だけ Worker が先に受ける。ここに無い道は、確かめずに静的ファイルとして配られる
 - **API**: Hono（`src/worker/app.ts`）
 - **知らせの見回り**: 5 分おきの cron（`scheduled`）
 
@@ -16,9 +16,12 @@ Worker 1 つで、次の 3 つを受け持つ。
 |---|---|
 | `/` | 入口（`src/client/index.html`）。`GET /api/me` でログインしているかを聞き、グループの一覧か「Discord でログイン」を出す |
 | `/g/:id/` | グループのアプリ。入れる人には `console/index.html`（データの入っていない骨組み）を返す。データは画面が API で読む |
+| `/g/:id/admin/` | グループの管理画面。同じ `console/index.html` を返し、画面が URL を見て管理の区域で開く。そのグループの管理者でなければ 403 の案内 |
+| `/admin/` | 運営の管理画面（`operator/index.html`）。ログインしていなければ Discord ログインへ、運営者でなければ 403 の案内 |
 | `/auth/login` `/auth/callback` `POST /auth/logout` | Discord ログイン |
 | `GET /api/me` `POST /api/groups` | 入口の画面が使う |
 | `POST /api/g/:id/:fn` | 画面からの呼び出し |
+| `GET` / `POST /api/admin/*` | 運営の管理画面が使う（下の「運営の管理画面」） |
 | `POST /dev/login` `POST /dev/reset` | 開発用ログイン（開発サーバーだけ） |
 
 ## ログインとメンバーの確認
@@ -39,20 +42,30 @@ Worker 1 つで、次の 3 つを受け持つ。
 
 **管理者**は、`members.is_admin` が付いた人と、そのサーバーの管理権限を持つ人。権限を持つ人はいつも管理者なので、管理者が 0 人になってグループを直せなくなることはない。
 
+**締め出し**。運営者が締め出した人は、`users.banned_at` に日時が入る。
+
+- `/auth/callback`（と開発用ログイン）は、プロフィールを書く前に見て、`/?login=banned` へ返す
+- `currentViewer` は締め出した人を「ログインしていない」として扱う。締め出す前に持っていた cookie も効かない（締め出すときに、その人のログインも消す）
+- users の行は消さない（印がそこにあるため）。Discord のユーザー ID は使い回されないので印は保てるが、別のアカウントは止められない
+
+**運営者**（`auth/operator.ts`）。`OPERATOR_IDS`（wrangler の vars か secret。カンマか空白で区切る）に書いた Discord ユーザー ID の人。開発サーバーでは、手元（localhost）から開いたときだけ、開発用ログインのひよりも運営者になる。運営者は締め出せない。
+
 **CSRF**（`auth/csrf.ts`）。cookie は SameSite=Lax。GET 以外は、`Origin` か `Sec-Fetch-Site` が自分のときだけ受ける。`/api` は JSON だけを受ける。
 
 ## データベース（D1）
 
-表の定義は `migrations/0001_init.sql`。日付（開催日・予定・メモ）は日本時間の `YYYY-MM-DD`、日時（〜した時刻）は UTC の ISO 文字列。
+表の定義は `migrations/`（`0001_init.sql` が最初の形、`0002_admin.sql` が締め出し・最後に使われた日と索引）。日付（開催日・予定・メモ）は日本時間の `YYYY-MM-DD`、日時（〜した時刻）は UTC の ISO 文字列。
 
-- `users`・`user_guilds`・`auth_sessions`: ログイン
-- `groups`: グループと設定（Webhook・知らせの日時・各種の ON/OFF・卓の番号の続き）
+- `users`・`user_guilds`・`auth_sessions`: ログイン。`users.banned_at`・`banned_reason` は締め出し
+- `groups`: グループと設定（Webhook・知らせの日時・各種の ON/OFF・卓の番号の続き）。`last_used_at` は最後に使われた日時（画面から呼ばれるたびに、10 分に 1 回まで書き換える）
 - `members`: メンバー。名前はグループの中で一意
 - `sessions`・`session_people`: 卓と、関わる人（GM・参加者・参加希望・興味あり）
 - `availability`・`avail_notes`・`day_notes`・`poll_votes`・`series_notify`・`notify_log`
-- `meta`: cron の「この時刻はもう回した」印
+- `meta`: cron の「この時刻はもう回した」印と、最後の見回りの記録
 
 **メンバーは中では ID で持つ**。画面とのやり取りは GAS 版と同じく名前で行い、`domain/people.ts` で変換する。名前を変えても 1 か所を直すだけで済む（GAS 版では、名前の変更が一部の表に伝わらなかった）。メンバーに無い人（ゲスト）は、`guest_name` に名前だけで持つ。メンバーを消すと、その人が入っていた卓と回答はゲストの名前に置き換わり、予定とメモは消える。
+
+グループを消すと、中身（メンバー・卓・予定・メモ・回答・送信の記録）は、表の決まり（`ON DELETE CASCADE`）で一緒に消える。
 
 **卓の ID** は画面には `S001` の形で見せる。グループごとの通し番号で、使った番号は使い直さない（S999 の次は S1000）。
 
@@ -63,8 +76,8 @@ Worker 1 つで、次の 3 つを受け持つ。
 - 画面とサーバーの約束（呼べる関数の名前・画面データ `ConsoleData`・返事の形・卓の状態）は `src/shared/api.ts` に置き、両方から読む。サーバーの一覧（`routes/rpc.ts`）は名前の型で固めてあり、足りなくても多すぎても型の確認で止まる。`consoleData()` は `ConsoleData` を返すと書いてあるので、返す形が変わると型の確認で分かる
 - `src/shared/` は、ブラウザの型も Workers の型も使わない（どちらからも読めるように）
 - 管理者だけの関数は、サーバーの一覧に書く
-- 書き込みの返事には、最新の画面データ（`data`）を付ける。画面は読み直さずに済む
-- エラーは `{ error }`。`AUTH:` で始まればログインし直し（画面がそのまま `/auth/login` へ送る）、`ADMIN:` で始まれば管理者だけの操作
+- 書き込みの返事には、最新の画面データ（`data`）を付ける。画面は読み直さずに済む。グループを消す `deleteGroup` だけは付けない（消したあとは読めないため）
+- エラーは `{ error }`。`AUTH:` で始まればログインし直し（画面がそのまま `/auth/login` へ送る）、`ADMIN:` で始まれば管理者だけの操作、`GONE:` で始まればグループが消えた（画面は控えを消し、自動の読み直しを止めて、入口へのリンクを出す。ほかのタブで消されたとき）
 
 **読み込み**（`domain/load.ts`）。グループ 1 つ分を 1 回の `db.batch` で読む。開催日が過ぎた「開催」の卓を「終了」にする UPDATE も、同じ回に入れてある。
 
@@ -91,6 +104,28 @@ Worker 1 つで、次の 3 つを受け持つ。
 - 開催前の知らせは、送り先と「あと何日」ごとに 1 通にまとめ、10 卓ごとに分ける（Discord の embed は 1 通に 10 個まで）
 - 問い合わせは、送る卓のあるグループだけを読む
 - 毎日 1 回（日本時間の 4 時以降）、期限切れのログイン、古い送信記録（グループごとに 500 件まで）、90 日より前の予定とメモ、1 年より前の日付メモを片付ける
+- 回ごとに、`runPatrol` が `meta` の `patrol`（時刻・かかった時間・成否・エラー）と、うまくいったら `patrol_ok_at` を書く。失敗は投げ直す（Cloudflare の cron の失敗としても残る）。記録が書けなくても、見回りの結果は変えない
+
+## 運営の管理画面
+
+公開した人（運営者）が、すべてのグループと利用者を見渡し、困ったときに手を入れる場所。API は `routes/admin.ts`、中身は `domain/admin.ts`、画面とサーバーの型は `src/shared/admin.ts`。
+
+| 道 | 中身 |
+|---|---|
+| `GET /api/admin/overview` | 数（グループ・利用者・有効なログイン・動いている卓）、見回りの様子、24 時間と 7 日の送信の失敗の数、最近の失敗（全グループで 50 件） |
+| `GET /api/admin/groups` `GET /api/admin/groups/:id` | グループの一覧と、メンバー（名前・ログインした人・管理者か・最後のログイン）を加えた中身 |
+| `POST /api/admin/groups/:id/admins` | 管理者の印を付け外しする。まだ開いていない人も、Discord ID で管理者として足せる。印が 0 人になる外し方は断る |
+| `POST /api/admin/groups/:id/guild` | Discord サーバーを付け替える。メンバーの行・管理者の印は残し、Webhook は選べば消す |
+| `POST /api/admin/groups/:id/delete` | グループを消す。名前を打ち込んで、一致したときだけ |
+| `GET /api/admin/users` `POST /api/admin/users/:id/logout` `POST /api/admin/users/:id/ban` | 利用者の一覧、ログインを切る、締め出す・戻す |
+
+- どの道も、ログインしていなければ `AUTH:` の 401、運営者でなければ 403。返事は `Cache-Control: no-store`
+- 読むものは GET、変えるものは POST（JSON）。CSRF の確かめは `/api` のほかの道と同じ
+- 変えた操作は、`{"audit":"operator",…}` の JSON 1 行を log に出す（Workers の Observability に残る監査の控え）。グループの管理者がグループを消したときも `{"audit":"group-admin",…}` を出す
+- 運営者は、グループの中身（卓・予定・Webhook の URL）は見ない。見るのは数と名前だけ
+- 送信の失敗に数えるのは、`送信失敗` と `送らず` で始まる記録だけ（`HTTP…`・`ERROR…` は送り直しの途中）
+- 見回りは、最後の回が 15 分より前なら止まっているかもしれない、として出す
+- Discord サーバーを付け替えると、新しいサーバーの人は、控えが 5 分より古くなったときに黙って読み直して入れるようになり、古いサーバーの人は入れなくなる
 
 ## 日本時間
 
@@ -98,7 +133,9 @@ Workers は UTC で動く。日付と時刻はすべて `lib/jst.ts` で日本�
 
 ## 画面（src/client/）
 
-TypeScript で書き、Vite が組み立てる。グループの画面は `console/main.ts` が入口で、画面ごとのファイルに分けてある。
+TypeScript で書き、Vite が組み立てる。ページは 3 つ: 入口（`index.html`・`home.ts`）、グループの画面（`console/`）、運営の管理画面（`operator/`。console の `dom.ts`・`modal.ts` と見た目を借りる）。グループの画面は `console/main.ts` が入口で、画面ごとのファイルに分けてある。
+
+**区域**（`area.ts`）。グループの画面は、1 つのページを URL で 2 つの区域に分ける。`/g/:id/` はふだんの区域（カレンダー・募集・調整・メンバーの予定・設定のタブ）、`/g/:id/admin/` は管理の区域（メンバーの登録・卓をまとめて変える・知らせ・この卓予定・管理者・送信の記録・グループを消す）。`body[data-area]` を置き、見せる・隠すは CSS で切り替える。描く処理は全部の要素を ID で触るので、ページを分けずに、同じ HTML のまま区域を分けている。管理の区域の区分は、URL の `#members` などで直接開ける。
 
 | ファイル | 中身 |
 |---|---|
@@ -107,10 +144,10 @@ TypeScript で書き、Vite が組み立てる。グループの画面は `conso
 | `dom.ts`・`dates.ts`・`model.ts`・`notify.ts` | 小道具（要素・日付）と、卓の読み方・知らせの決まり（D から読むだけ） |
 | `calendar.ts`・`day.ts`・`notices.ts`・`setup.ts` | カレンダーのタブ |
 | `recruit.ts`・`poll.ts` | 募集・調整のタブと、候補日を選ぶ窓 |
-| `avail.ts`・`avail-input.ts`・`ops.ts` | メンバーの予定のタブ（表とリスト・メモとまとめて入れる・卓をまとめて変える） |
+| `avail.ts`・`avail-input.ts`・`ops.ts` | メンバーの予定のタブ（表とリスト・メモとまとめて入れる）と、卓をまとめて変える（管理の区域） |
 | `form.ts`・`promote.ts` | 卓の登録・変更の窓 |
-| `members.ts`・`settings.ts`・`series-notify.ts` | メンバーの登録と設定のタブ |
-| `header.ts`・`tabs.ts`・`theme.ts`・`modal.ts`・`tips.ts` | 上の帯・タブ・見た目・窓・吹き出し |
+| `members.ts`・`settings.ts`・`series-notify.ts` | 設定のタブ（自分の名前と備考・この端末）と、管理の区域の区分（メンバーの登録・知らせ・管理者・送信の記録・グループを消す） |
+| `area.ts`・`header.ts`・`tabs.ts`・`theme.ts`・`modal.ts`・`tips.ts` | 区域・上の帯・タブ・見た目・窓・吹き出し |
 
 - 各ファイルは関数と定数だけを持ち、読み込んだときには何もしない。イベントの登録は `init()` に書き、`main.ts` が順に呼ぶ。ファイルどうしが互いを呼ぶ（描き直しは別のタブの描き直しも呼ぶ）ので、読み込んだときに別のファイルの値を読むと、読み込みの順で壊れるため
 - 押した瞬間に画面へ出し（D を書き換えて描き直す）、返事の `data` で本物に置き換える。失敗したら戻すか読み直す
@@ -128,4 +165,4 @@ TypeScript で書き、Vite が組み立てる。グループの画面は `conso
 
 - `npm run dev`: Vite と Cloudflare のプラグインで、Worker とローカルの D1 ごと動く。開発用ログイン（`auth/dev.ts`）は `import.meta.env.DEV` のときだけ登録され、本番のビルドからは消える（組み立てた JS に残っていたら、vite.config.ts の `noDevLogin` が組み立てを止める）
 - `npm test`: サーバーのテストは `@cloudflare/vitest-pool-workers` で、Workers の実行環境とローカルの D1 で動かす。テストごとに表を空にする。Discord への通信は `vi.spyOn(globalThis, 'fetch')` で差し替える
-- `npm run e2e`: Playwright で、開発用ログインから卓の登録・日程調整の回答までを通す
+- `npm run e2e`: Playwright で、開発用ログインから卓の登録・日程調整の回答、グループの管理画面、グループを消す、運営の管理画面（ログインを切る・締め出す）までを通す

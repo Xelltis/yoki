@@ -18,6 +18,7 @@ npm run dev
 `http://localhost:5173/` を開き、「開発用ログイン」でサンプルのグループに入る。Discord も Cloudflare のアカウントも要らない。データは手元の D1（`.wrangler/state/`）に入る。
 
 - ひよりは管理者、ほかの人はただのメンバーとして入れる（権限の違いを確かめられる）
+- ひよりは、手元（localhost）から開いたときだけ運営者にもなる。入口の「運営の管理画面」から `/admin/` を開ける
 - サンプルのグループは、初めて入ったときに作られる。作り直すときは `curl -X POST http://localhost:5173/dev/reset -H 'Origin: http://localhost:5173'`
 - 本物の Discord でログインを試すときは、`.dev.vars.example` を `.dev.vars` に写して、Discord アプリの値を入れる（下の「公開」の 1）
 - サーバー側（`src/worker`）と画面（`src/client`）のどちらを直しても、開いている画面に反映される
@@ -26,16 +27,17 @@ npm run dev
 
 ```
 src/worker/        サーバー（TypeScript、Hono）
-  routes/          道。auth（ログイン）・me（入口の API）・pages（グループのページ）・rpc（画面からの呼び出し）
-  auth/            Discord の OAuth・ログインの続き・グループに入れるかの確認・CSRF・開発用ログイン
-  domain/          卓・メンバー・予定・日程調整・設定・知らせの見回り（GAS 版の Sessions.js などを移したもの）
+  routes/          道。auth（ログイン）・me（入口の API）・pages（グループと管理画面のページ）・rpc（画面からの呼び出し）・admin（運営者の API）
+  auth/            Discord の OAuth・ログインの続き・グループに入れるかの確認・運営者の確認・CSRF・開発用ログイン
+  domain/          卓・メンバー・予定・日程調整・設定・知らせの見回り・グループを消す・運営者の操作（GAS 版の Sessions.js などを移したもの）
   discord/         送り先の選び方・文面・送信と送り直し
   lib/             日本時間の日付・文字・エラー・ID
   seed/            サンプルデータ
 src/client/        画面（TypeScript。Vite の root）
   index.html       入口（ログイン・グループの一覧・グループを作る）。動きは home.ts
-  console/         グループのアプリ（/g/:id/ で開く）。main.ts が入口で、画面ごとのファイル（calendar・recruit・avail・form・settings など）に分ける
-src/shared/        画面とサーバーの約束（画面データの型・呼び出しの名前・卓の状態）。両方から読む
+  console/         グループのアプリ（/g/:id/ と、管理者の画面 /g/:id/admin/ で開く）。main.ts が入口で、画面ごとのファイル（calendar・recruit・avail・form・settings など）に分ける
+  operator/        運営の管理画面（/admin/ で開く）
+src/shared/        画面とサーバーの約束（画面データの型・呼び出しの名前・卓の状態・運営者の API の型）。両方から読む
 migrations/        D1 の表の定義（wrangler d1 migrations）
 test/worker/       サーバーのテスト（Workers の実行環境と本物の D1 で動かす）
 test/client/       画面とサイトの約束（アイコン・リンク・依存など）と、書くときの決まり
@@ -87,6 +89,9 @@ Workers のテスト用の道具（`@cloudflare/vitest-pool-workers`）は、古
    ```
    npx wrangler secret put DISCORD_CLIENT_SECRET
    ```
+   運営者（下の「運営の管理画面」）にする人の Discord ユーザー ID も、`vars` の `OPERATOR_IDS` に書く。何人いても、カンマか空白で区切って並べる（`"OPERATOR_IDS": "123456789012345678, 234567890123456789"`）。ID は、Discord の設定の「詳細設定」で開発者モードを ON にし、自分のアイコンを右クリックして「ユーザー ID をコピー」で取れる
+   - Cloudflare の画面で vars を直しても、次の `npm run deploy` で `wrangler.jsonc` の値に戻る。値は `wrangler.jsonc` に書く
+   - リポジトリに ID を残したくなければ、`vars` の `OPERATOR_IDS` を消して `npx wrangler secret put OPERATOR_IDS` で入れてもよい（同じ名前を vars と secret の両方には置けない）
 4. **公開する**
    ```
    npm run deploy
@@ -96,6 +101,17 @@ Workers のテスト用の道具（`@cloudflare/vitest-pool-workers`）は、古
 最初は `https://yoki.<アカウント>.workers.dev` で公開される。独自のドメインはあとから Cloudflare の画面で足せる（そのときは APP_URL と Discord の Redirects も直す）。
 
 Cloudflare は無料のプランで動く。グループが増えて、知らせの見回りで送る数が多くなったら、有料のプラン（Workers Paid）にする。
+
+## 管理画面
+
+管理画面は 2 つある。
+
+- **グループの管理画面**（`/g/:id/admin/`）: そのグループの管理者が使う。メンバーの登録・卓をまとめて変える・Discord の知らせ・管理者・送信の記録・グループを消す、をまとめてある。ふだんの画面のタブの並びの「管理」（PC だけ）か、「設定」のタブから開く。管理者でなければ開けない
+- **運営の管理画面**（`/admin/`）: 公開した人（運営者。`OPERATOR_IDS` に書いた人）が使う。入口の画面に「運営の管理画面」のリンクが出る
+  - **様子**: グループ・利用者・有効なログイン・動いている卓の数、知らせの見回り（cron）が動いているか、Discord への送信の失敗
+  - **グループ**: 一覧と中身（Discord サーバー・メンバー・卓の数・最後に使われた日）。管理者の付け替え、Discord サーバーの付け替え、グループを消す（名前を打ち込んで確かめる。中身も消え、戻せない）
+  - **利用者**: ログインを切る、締め出す・戻す。締め出した人は Discord でログインできなくなり、残っていたログインも効かなくなる。Discord のアカウントで止めるので、別のアカウントを作られると止められない。運営者は締め出せない
+  - 運営者は、グループの中身（卓・予定・Webhook の URL）は見ない。運営者がした操作は、Cloudflare の Workers のログ（Observability）に 1 行ずつ残る（`"audit"` で探せる）
 
 ## サイト（GitHub Pages）
 
