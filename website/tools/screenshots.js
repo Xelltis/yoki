@@ -46,10 +46,18 @@ await withDevServer(async (base) => {
       await pg.click('#newSession'); await pg.waitForTimeout(400);
       await shot(pg, 'pc-new-session.png');
       await pg.click('#formClose'); await pg.waitForTimeout(200);
-      for (const [tab, name] of [['recruit', 'recruit'], ['avail', 'availability'], ['settings', 'settings']]) {
+      for (const [tab, name] of [['recruit', 'recruit'], ['avail', 'availability']]) {
         await pg.click(`nav.tabs button[data-tab=${tab}]`); await pg.waitForTimeout(400);
         await shot(pg, `pc-${name}.png`);
       }
+      // グループの管理画面（メンバーと知らせの区分）
+      await pg.goto(base + 'g/sample/admin/#members');
+      await pg.waitForFunction('window.yoki && yoki.D && yoki.D.sessions && yoki.D.sessions.length > 0', null, { timeout: 30000 });
+      await pg.addStyleTag({ content: HIDE });
+      await pg.waitForTimeout(600);
+      await shot(pg, 'pc-admin.png');
+      await pg.click('#setNav button[data-set=notify]'); await pg.waitForTimeout(400);
+      await shot(pg, 'pc-admin-notify.png');
     }
     await ctx.close();
     // スマホ
