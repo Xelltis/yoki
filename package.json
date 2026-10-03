@@ -42,5 +42,10 @@
   },
   "dependencies": {
     "hono": "^4.13.12"
+  },
+  "allowScripts": {
+    "workerd": true,
+    "esbuild": true,
+    "lefthook": true
   }
 }
