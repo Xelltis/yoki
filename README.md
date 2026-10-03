@@ -32,12 +32,13 @@ src/worker/        サーバー（TypeScript、Hono）
   discord/         送り先の選び方・文面・送信と送り直し
   lib/             日本時間の日付・文字・エラー・ID
   seed/            サンプルデータ
-src/client/        画面（Vite の root）
-  index.html       入口（ログイン・グループの一覧・グループを作る）
-  console/         グループのアプリ（/g/:id/ で開く）
+src/client/        画面（TypeScript。Vite の root）
+  index.html       入口（ログイン・グループの一覧・グループを作る）。動きは home.ts
+  console/         グループのアプリ（/g/:id/ で開く）。main.ts が入口で、画面ごとのファイル（calendar・recruit・avail・form・settings など）に分ける
+src/shared/        画面とサーバーの約束（画面データの型・呼び出しの名前・卓の状態）。両方から読む
 migrations/        D1 の表の定義（wrangler d1 migrations）
 test/worker/       サーバーのテスト（Workers の実行環境と本物の D1 で動かす）
-test/client/       画面のテスト（構文と、サーバーとの約束）
+test/client/       画面とサイトの約束（アイコン・リンク・依存など）と、書くときの決まり
 test/e2e/          ブラウザで通しで確かめる（npm run e2e）。開発サーバーを立てる小道具も
 website/           サイト（VitePress。GitHub Pages に公開する）。紹介と使い方
   guide/           使い方のページ（Markdown）
@@ -127,7 +128,9 @@ npm run site:build   組み立てる（website/.vitepress/dist/）
 ## 書くときの決まり
 
 - **日付は日本時間で扱う。** Workers は UTC で動く。日付と時刻は `src/worker/lib/jst.ts` を使い、`new Date(y, m, d)` や `getHours()` は使わない
-- **画面から呼べる関数は `src/worker/routes/rpc.ts` の一覧だけ。** 足すときは一覧と、画面の `API_FUNCS`（`src/client/console/app.js`）の両方に書く。管理者だけの関数は `admin` を付ける
+- **画面から呼べる関数は、`src/shared/api.ts` の `RPC_FUNCS` とサーバーの一覧（`src/worker/routes/rpc.ts`）だけ。** 足すときは両方に書く（片方だけだと型の確認で止まる）。管理者だけの関数は、サーバーの一覧で `admin` を付ける
+- **画面とサーバーで形を合わせるものは `src/shared/` に置く。** 画面データ（`ConsoleData`）や返事の型を変えるときは、ここを直す。サーバーは返す値を、画面は使う値を、型の確認で合わせる
+- **画面のファイルは、読み込んだときに何もしない。** 関数と定数だけを持ち、イベントの登録は `init()` に書いて `console/main.ts` から呼ぶ（ファイルどうしが互いを呼んでも、読み込みの順で壊れないように）
 - **D1 の問い合わせの数を増やしすぎない。** 1 回の呼び出しで使える数に上限がある（無料のプランで 50）。卓の数だけ文を作らず、JSON（`json_each`）で 1 文にまとめる
 - **表を変えるときは、マイグレーションを足す。** `migrations/` に番号の続くファイルを足し、すでにあるファイルは書き換えない
 - **画面にアイコンを足したら**、そのページの先頭の読み込みの `icon_names` にも名前をアルファベット順で足す（テストが確かめる）
