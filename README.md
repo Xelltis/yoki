@@ -49,6 +49,7 @@ docs/              作りの説明（architecture.md）
 wrangler.jsonc     Worker の設定（D1・cron・公開する値）
 vite.config.ts     開発サーバーと組み立て
 vitest.config.ts   テスト
+lefthook.yml       Git のフック（コミットの前の確認）
 ```
 
 ## テスト
@@ -60,6 +61,10 @@ npm run e2e          ブラウザで通しで確かめる（開発サーバー�
 ```
 
 サーバーのテストは、Workers の実行環境（`@cloudflare/vitest-pool-workers`）でローカルの D1 にマイグレーションを当てて動かす。Discord への送信は差し替えて記録する。
+
+コミットのときは、Git のフック（lefthook。`lefthook.yml`）が次を確かめる。フックは `npm install` のときに入る（入っていなければ `npx lefthook install`）。
+
+- コミットの前: 型の確認（TypeScript・Vue・tsconfig を変えたとき）とテスト（`src/`・`test/`・`migrations/`・`website/`・設定を変えたとき）
 
 ## 公開（Cloudflare）
 
