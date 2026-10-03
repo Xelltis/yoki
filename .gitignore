@@ -1,13 +1,27 @@
-# 本番のスクリプト ID。手元にだけ置く
-.clasp.json
-# 使わなくなった旧い版
-保管/
-# Google Drive と OS の同期用
-desktop.ini
-.tmp.drivedownload/
-.tmp.driveupload/
-# npm・Vite・Vitest
+# 依存と組み立て（npm・Vite・Vitest・VitePress。dist/ はアプリと website/.vitepress/dist/ の両方）
 node_modules/
+dist/
 coverage/
-# 書き出した画像（npm run screenshots / npm run promo）
-promo/images/
+website/.vitepress/cache/
+
+# wrangler（ローカルの D1 など）
+.wrangler/
+
+# 手元の秘密の値（見本の .dev.vars.example だけはリポジトリに入れる）
+.dev.vars*
+!.dev.vars.example
+.env
+.env.*
+
+# ログ
+*.log
+
+# OS とエディタ
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+*.swp
+
+# Claude Code の個人の設定
+.claude/settings.local.json

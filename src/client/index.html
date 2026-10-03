@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>卓予定</title>
+<link rel="icon" href="/icon.png">
+<!-- アイコンは Material Symbols Rounded。使う名前だけに絞って読み込む（icon_names はアルファベット順） -->
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..24,400,0..1,0&icon_names=add,arrow_forward,casino,group,login,logout,menu_book,refresh&display=block">
+<link rel="stylesheet" href="./home.css">
+<script>
+  // アプリで選んだ見た目（ライト／ダーク）があれば合わせる
+  (function () { try { var t = localStorage.getItem('taku.theme'); if (t === 'dark' || t === 'light') document.documentElement.setAttribute('data-theme', t); } catch (e) {} })();
+</script>
+</head>
+<body>
+<header class="bar">
+  <div class="brand"><span class="logo"><span class="ms" aria-hidden="true">casino</span></span>卓予定</div>
+  <div class="who" id="who" hidden></div>
+</header>
+
+<main>
+  <p class="notice" id="notice" hidden></p>
+
+  <section class="card" id="loading">読み込んでいます…</section>
+
+  <!-- ログインしていない -->
+  <section class="card" id="guest" hidden>
+    <h1>卓予定</h1>
+    <p class="lead">TRPG の卓の予定を、Discord サーバーの仲間と管理します。卓の登録・メンバーの予定・募集・日程調整をこの画面で行い、知らせを Discord に送ります。</p>
+    <a class="btn primary" id="loginBtn" href="/auth/login"><span class="ms" aria-hidden="true">login</span>Discord でログイン</a>
+    <p class="hint" id="noDiscord" hidden>Discord ログインの設定がありません（DISCORD_CLIENT_ID）。</p>
+    <form class="dev" id="devForm" method="post" action="/dev/login" hidden>
+      <h2>開発用ログイン</h2>
+      <p class="hint">開発サーバーだけで出ます。サンプルのグループに、選んだメンバーとして入ります（ひよりは管理者）。</p>
+      <div class="row">
+        <select name="as" id="devAs"></select>
+        <button class="btn" type="submit"><span class="ms" aria-hidden="true">arrow_forward</span>入る</button>
+      </div>
+    </form>
+  </section>
+
+  <!-- ログインしている -->
+  <section class="card" id="home" hidden>
+    <h2><span class="ms" aria-hidden="true">group</span>グループ</h2>
+    <ul class="groups" id="groups"></ul>
+    <p class="hint" id="noGroups" hidden>まだ入れるグループがありません。Discord サーバーの管理者がグループを作ると、ここに出ます。</p>
+    <p class="hint" id="stale" hidden><a href="/auth/login?return_to=/"><span class="ms sm" aria-hidden="true">refresh</span>Discord サーバーの一覧を読み直す</a>（最後に読んでから 1 日以上たっています）</p>
+  </section>
+
+  <section class="card" id="create" hidden>
+    <h2><span class="ms" aria-hidden="true">add</span>グループを作る</h2>
+    <p class="hint">グループは Discord サーバーに結びつきます。入れるのは、そのサーバーにいる人だけです。作れるのは、サーバーのオーナーか、サーバー管理の権限がある人です。作った人が最初の管理者になります。</p>
+    <form id="createForm">
+      <div class="row">
+        <label>Discord サーバー<select id="cGuild" required></select></label>
+        <label>グループの名前 <small>空ならサーバーの名前</small><input id="cTitle" maxlength="80"></label>
+      </div>
+      <button class="btn primary" type="submit" id="cOk"><span class="ms" aria-hidden="true">add</span>作る</button>
+      <span class="hint" id="cMsg"></span>
+    </form>
+  </section>
+
+  <p class="foot"><a href="https://xelltis.github.io/yoki/" target="_blank" rel="noopener"><span class="ms sm" aria-hidden="true">menu_book</span>使い方</a></p>
+</main>
+<script type="module" src="./home.js"></script>
+</body>
+</html>

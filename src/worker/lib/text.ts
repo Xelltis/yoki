@@ -1,0 +1,31 @@
+// 名前などの文字の扱い（GAS 版 Utils.js の splitNames_・uniq_ ほか）
+
+/** 名前の区切りに使う文字。メンバーの名前には使えない */
+export const NAME_SEPARATORS = /[、,，;；\n/／]+/;
+
+/** 予約語（都合の対象の選択で使う） */
+export const RESERVED_NAMES = ['全員', '（なし）'];
+
+export function splitNames(v: unknown): string[] {
+  return String(v ?? '')
+    .split(NAME_SEPARATORS)
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+export function uniq<T>(list: T[]): T[] {
+  return [...new Set(list)];
+}
+
+/**
+ * Discord の表示名から、メンバーの名前を作る。区切り文字と改行を抜き、空白をまとめ、40 文字まで。
+ * 予約語や空になったときは fallback（ユーザー名）を使う
+ */
+export function memberNameFrom(display: string | null | undefined, fallback: string): string {
+  const clean = (s: string) => s.replace(new RegExp(NAME_SEPARATORS.source, 'g'), ' ').replace(/\s+/g, ' ').trim().slice(0, 40);
+  for (const s of [display ?? '', fallback, 'メンバー']) {
+    const n = clean(s);
+    if (n && !RESERVED_NAMES.includes(n)) return n;
+  }
+  return 'メンバー';
+}

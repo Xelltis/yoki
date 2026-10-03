@@ -1,0 +1,8 @@
+# 改行は LF にそろえる（Windows で編集しても変わらないように）
+* text=auto eol=lf
+
+# 画像はそのまま扱う
+*.png binary
+
+# wrangler types が作るファイル（npm run types）。GitHub の差分では畳む
+worker-configuration.d.ts linguist-generated=true

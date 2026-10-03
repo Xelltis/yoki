@@ -1,145 +1,122 @@
-# Yoki（卓予定管理）
+# Yoki（卓予定）
 
-TRPG の卓の予定を、Google スプレッドシートと Apps Script で管理するツール。ウェブアプリの画面から、卓の登録、メンバーの都合（△×）、募集、日程調整を行い、知らせを Discord の Webhook に送る。
+TRPG の卓の予定を、Discord サーバーの仲間と管理する Web アプリ。卓の登録、メンバーの予定（△×）、募集、日程調整を画面で行い、知らせを Discord の Webhook に送る。
 
-手元の作業（開発サーバー・テスト・Apps Script への反映）は Node.js（22.12 以降か 24 以降）で行う。道具は Vite（開発サーバー）・Vitest（テスト）・clasp（Apps Script への反映）。最初に一度だけ次を実行する。
+- サーバーは Cloudflare Workers、データは D1（SQLite）、ログインは Discord
+- 1 つの Cloudflare に、Discord サーバーごとのグループを何個でも作れる。グループに入れるのは、そのサーバーにいる人だけ
+- 使う人向けの説明はサイト（https://xelltis.github.io/yoki/ 。中身は `website/`）、作りの説明は [docs/architecture.md](docs/architecture.md)
+
+## 手元で動かす
+
+Node.js（22.12 以降か 24 以降。`.node-version` は 24）が要る。
 
 ```
 npm install
-npm run dev           http://localhost:5173/ でアプリが動く（Apps Script もシートも無しで。下の「手元で動かす」）
+npm run dev
 ```
+
+`http://localhost:5173/` を開き、「開発用ログイン」でサンプルのグループに入る。Discord も Cloudflare のアカウントも要らない。データは手元の D1（`.wrangler/state/`）に入る。
+
+- ひよりは管理者、ほかの人はただのメンバーとして入れる（権限の違いを確かめられる）
+- サンプルのグループは、初めて入ったときに作られる。作り直すときは `curl -X POST http://localhost:5173/dev/reset -H 'Origin: http://localhost:5173'`
+- 本物の Discord でログインを試すときは、`.dev.vars.example` を `.dev.vars` に写して、Discord アプリの値を入れる（下の「公開」の 1）
+- サーバー側（`src/worker`）と画面（`src/client`）のどちらを直しても、開いている画面に反映される
 
 ## フォルダ構成
 
 ```
-src/                  Apps Script に送るのはここだけ（clasp の rootDir）
-  appsscript.json     Apps Script の設定（タイムゾーン、ウェブアプリの公開範囲など）
-  server/             サーバー側のスクリプト。役割ごとに分けてある
-  client/             画面の HTML。1 つの画面を、骨組み・CSS・JS の 3 つに分けてある
-test/                 Vitest のテスト。Apps Script のモックの上で src/server を通しで動かす
-index.html            開発サーバーの入口（アプリ）。中身は dev/ が組み立てる
-dev/                  アプリを手元で動かす部品（ブラウザの中で動くサーバー側と、サンプルデータ）
-mock/                 画面の作り直し案のモック
-promo/                X 用の告知画像と、広報用の画像を書き出すスクリプト
-tools/                src/ を Apps Script と同じ形で読む小道具、Vite のプラグイン、開発サーバーを立てる小道具
-vite.config.js        Vite（開発サーバー）と Vitest（テスト）の設定
-assets/               アイコンなどの素材
-docs/                 導入手順・使い方・検証の記録（guide.md）と、配布・画面の作り直しの案、セキュリティレビュー
+src/worker/        サーバー（TypeScript、Hono）
+  routes/          道。auth（ログイン）・me（入口の API）・pages（グループのページ）・rpc（画面からの呼び出し）
+  auth/            Discord の OAuth・ログインの続き・グループに入れるかの確認・CSRF・開発用ログイン
+  domain/          卓・メンバー・予定・日程調整・設定・知らせの見回り（GAS 版の Sessions.js などを移したもの）
+  discord/         送り先の選び方・文面・送信と送り直し
+  lib/             日本時間の日付・文字・エラー・ID
+  seed/            サンプルデータ
+src/client/        画面（Vite の root）
+  index.html       入口（ログイン・グループの一覧・グループを作る）
+  console/         グループのアプリ（/g/:id/ で開く）
+migrations/        D1 の表の定義（wrangler d1 migrations）
+test/worker/       サーバーのテスト（Workers の実行環境と本物の D1 で動かす）
+test/client/       画面のテスト（構文と、サーバーとの約束）
+test/e2e/          ブラウザで通しで確かめる（npm run e2e）。開発サーバーを立てる小道具も
+website/           サイト（VitePress。GitHub Pages に公開する）。紹介と使い方
+  guide/           使い方のページ（Markdown）
+  .vitepress/      サイトの設定と見た目・試せる例の部品
+  public/          アイコン・SNS 用の画像（og.png）・アプリのスクリーンショット
+  tools/           スクリーンショットと SNS 用の画像を作る道具
+.github/workflows/ サイトを GitHub Pages に公開する
+docs/              作りの説明（architecture.md）
+wrangler.jsonc     Worker の設定（D1・cron・公開する値）
+vite.config.ts     開発サーバーと組み立て
+vitest.config.ts   テスト
 ```
-
-### src/server
-
-| ファイル | 中身 |
-|---|---|
-| `Config.js` | 定数。シート名・列の並び・状態・設定の既定値 |
-| `Triggers.js` | シートのメニュー、`onOpen`・`onEdit`、トリガーの登録、表示の描き直しの予約、シートの版 |
-| `WebApp.js` | `doGet`（画面を返す）と、画面が最初に読む一式（`getConsoleData`） |
-| `Auth.js` | 合言葉と管理者の合言葉 |
-| `Sessions.js` | 卓の登録・変更・削除、まとめての変更、参加希望 |
-| `Members.js` | メンバーの登録・変更・削除 |
-| `Availability.js` | メンバーの予定（△×）、予定メモ、日付メモ |
-| `Polls.js` | 日程調整 |
-| `Settings.js` | 設定タブ（知らせの設定・シリーズごとの通知・接続テスト） |
-| `Notify.js` | 見回り（開催前の知らせ・期間前の催促・開始直前の知らせ） |
-| `Discord.js` | Discord への送信、送り直し、文面、通知ログ |
-| `Lock.js` | 書き込みの順番待ち（スクリプトロック） |
-| `Data.js` | シートからの読み込み（`loadContext_` など） |
-| `Model.js` | 読み込んだ卓の並べ替え、期間と候補日、卓に入っている人、全員空きの日 |
-| `Views.js` | 表示シート（カレンダー・一覧・管理・都合）の描き直し |
-| `Sheets.js` | シートの用意と整え直し |
-| `Sample.js` | サンプルデータ |
-| `Utils.js` | 日付・祝日・文字列の小道具 |
-
-### src/client
-
-| ファイル | 中身 |
-|---|---|
-| `Console.html` / `ConsoleCss.html` / `ConsoleJs.html` | ウェブアプリの画面（骨組み / 見た目 / 動き） |
-| `Tutorial.html` / `TutorialCss.html` / `TutorialJs.html` | 使い方のページ（`?page=tutorial` で開く） |
-
-`doGet` は `Console.html` をテンプレートとして読み、`<?!= include_('client/ConsoleCss'); ?>` の位置に CSS と JS のファイルを差し込んで返す。
-
-## 書くときの決まり
-
-- **トップレベル（関数の外）でほかのファイルの定数を使わない。** Apps Script はファイルを並びの順に 1 つずつ読み込み、並びは push の順やエディタの操作で変わる。関数の中からなら、どのファイルの定数も使える。定数どうしを組み合わせて作る定数は、相手と同じファイルに置く。テストは `server/` を逆の順でも読み込んで、これを確かめている。
-- 画面から `google.script.run` で呼べるのは、名前が `_` で終わらない関数。中だけで使う関数は `_` で終える。
-- 画面にアイコンを足したら、`Console.html` 先頭の読み込みの `icon_names` にも名前をアルファベット順で足す。
-- ファイルを足すときは、`src/server/` なら `.js`、`src/client/` なら `.html` にする（`.claspignore` がこの形だけを通す）。
 
 ## テスト
 
-[Vitest](https://vitest.dev/) で回す。
-
 ```
-npm test              一度だけ回す
-npm run test:watch    ファイルを保存するたびに回し直す
-```
-
-| ファイル | 中身 |
-|---|---|
-| `test/scheduler.test.js` | 1 枚のスプレッドシートを、初期設定から順に操作していく筋書き（48 節）。節は前の節が作った状態の上で動く |
-| `test/load-order.test.js` | `src/server` を名前順でも逆順でも読み込めるか（読み込む順に頼っていないか） |
-| `test/client.test.js` | 画面の `<script>` の構文と、CSS・JS の差し込み |
-| `test/dev.test.js` | 開発サーバーで動かすアプリの組み立て。ブラウザの中で動くサーバー側でサンプルが作れるか |
-| `test/mock_gas.js` | Apps Script（SpreadsheetApp など）のモック。無いメソッドを呼ぶとすぐ落ちる |
-| `test/helpers/load-gas.js` | モックと `src/server` を、Apps Script と同じく 1 ファイルずつ読み込む |
-
-「いま」は 2026-09-20 12:00 に固定し、タイムゾーンは Apps Script と同じ Asia/Tokyo にしてある（`vite.config.js`）。
-
-## Apps Script への反映
-
-[clasp](https://github.com/google/clasp) で送る。`.clasp.json`（スクリプト ID）はリポジトリに入れていない。`.clasp.json.example` を `.clasp.json` に写して、スクリプト ID を入れる。前から使っている `.clasp.json` には `"rootDir": "src"` を足す。
-
-```
-npm run push
-npx clasp redeploy <デプロイ ID> -d "卓予定管理シートverNN"
+npm test             サーバーと画面のテスト
+npm run typecheck    型の確認
+npm run e2e          ブラウザで通しで確かめる（開発サーバーをその場で立てる。初回は npx playwright install chromium）
 ```
 
-clasp は `npm install` で入る（版は `package.json` で決めてある）。`clasp login` がまだなら、先に `npx clasp login` を実行する。
+サーバーのテストは、Workers の実行環境（`@cloudflare/vitest-pool-workers`）でローカルの D1 にマイグレーションを当てて動かす。Discord への送信は差し替えて記録する。
 
-送るのは `src/` の中（`appsscript.json` と `server/`・`client/` のファイル）だけ。`rootDir` が無いと何も送らない。
+## 公開（Cloudflare）
 
-Apps Script 側のファイル名は `src/` からの相対パスになる（`server/Config`、`client/Console` など）。いまの構成を初めて送ると、Apps Script 側にあった `Code`・`Console`・`Tutorial` は消え、これらのファイルに置き換わる。関数の名前は変えていないので、トリガーはそのまま動く。公開中のウェブアプリは、2 行目の redeploy で新しい版に切り替わる（URL は変わらない）。
+1. **Discord アプリを作る**。[Discord Developer Portal](https://discord.com/developers/applications) で New Application → OAuth2 で、Redirects に `https://<公開するアドレス>/auth/callback` と `http://localhost:5173/auth/callback` を足す。Client ID と Client Secret を控える（Bot は要らない）
+2. **Cloudflare にログインし、D1 を作る**
+   ```
+   npx wrangler login
+   npx wrangler d1 create yoki
+   ```
+   出てきた `database_id` を `wrangler.jsonc` の `d1_databases` に書く
+3. **値を入れる**。`wrangler.jsonc` の `vars` に `APP_URL`（公開するアドレス）と `DISCORD_CLIENT_ID` を書き、シークレットを入れる
+   ```
+   npx wrangler secret put DISCORD_CLIENT_SECRET
+   ```
+4. **公開する**
+   ```
+   npm run deploy
+   ```
+   テスト → 組み立て（開発用ログインが残っていたら止まる）→ 本番の D1 にマイグレーション → 公開、の順に進む。公開には、組み立てた設定（`dist/yoki/wrangler.json`）を使う
 
-詳しい手順は `docs/guide.md` にある。
+最初は `https://yoki.<アカウント>.workers.dev` で公開される。独自のドメインはあとから Cloudflare の画面で足せる（そのときは APP_URL と Discord の Redirects も直す）。
 
-## 手元で動かす（開発サーバー）
+Cloudflare は無料のプランで動く。グループが増えて、知らせの見回りで送る数が多くなったら、有料のプラン（Workers Paid）にする。
+
+## サイト（GitHub Pages）
+
+紹介と使い方のページは `website/` にあり、VitePress で組み立てて GitHub Pages（https://xelltis.github.io/yoki/）に公開する。
 
 ```
-npm run dev
+npm run site         手元で開く（http://localhost:5174/yoki/。直すとすぐ反映される）
+npm run site:build   組み立てる（website/.vitepress/dist/）
 ```
 
-`http://localhost:5173/` を開くと、アプリが Apps Script もシートも無しに動く。本物の画面（`src/client`）とサーバー側（`src/server`）を、Apps Script のモック（`test/mock_gas.js`）の上でブラウザの中だけで動かし、サンプルデータで始まる。開発にも、画面を見せるのにも、スクリーンショットにも、これを使う。
-
-- `src/` や `dev/` のファイルを保存すると、開いている画面が読み込み直される。
-- 操作はどこにも保存されない。開き直すか、左下の「最初に戻す」で最初の状態に戻る。合言葉は聞かない。Discord へは送ったことにするだけで、どこにも届かない。
-
-| URL | ページ |
-|---|---|
-| `/` | アプリ |
-| `/?page=tutorial` | 使い方のページ。本物と同じく、アプリの URL の後ろに `?page=tutorial` を付ける |
-| `/mock/ui2026-v1.html` | UI 2026 案 ver1（手書きのモック） |
-| `/mock/ui2026-v2.html` | UI 2026 案 ver2（アプリに `mock/ver2-overlay.html` を重ねる） |
-| `/promo/x-announcement.html` | X 用の告知画像（1600×900） |
-
-アプリの URL の後ろには、次を付けられる（`&` でつなぐ）。`?clean` は左下の札を隠す（スクリーンショット用）。`?theme=dark` か `?theme=light` で配色、`?me=こまち` で「あなた」、`?tab=recruit` で最初の画面（cal・recruit・avail・members・settings）。
-
-`index.html` と `mock/ui2026-v2.html` は Vite に「ここにページがある」と知らせる入口で、中身は開くたびに組み立てる（`vite.config.js` の `pages` と `tools/vite-plugin-gas-pages.js`）。組み立ての部品は `dev/` にある。
-
-| ファイル | 中身 |
-|---|---|
-| `dev/pages.js` | 組み立て方。本物の画面を doGet と同じく組み立て、下の部品を差し込む |
-| `dev/seed.js` | サンプルデータ。ブラウザの中のサーバー側と同じ場所で動き、`saveSession` などを呼んで作る |
-| `dev/google-script-run.js` | `google.script.run` の代わり。呼ばれた関数を、ブラウザの中のサーバー側で動かす |
-| `dev/params.js` | URL の `?tab=`・`?me=`・`?theme=` を読む |
-| `dev/badge.html` | 左下の札（サンプルデータで動いていることと「最初に戻す」）。シートとログアウトのボタンは隠す |
+- 使い方のページは `website/guide/` の Markdown。試せる例・スクリーンショット・ボタンの名前は、`website/.vitepress/theme/components/` の部品を本文から使う（`<AvailDemo />`、`<Shot name="pc-calendar" themed alt="…" />`、`<Ui icon="settings">設定</Ui>` など）
+- 本文や部品にアイコンを足したら、`website/.vitepress/config.ts` の `ICONS` にも足す（テストが確かめる）
+- アプリの見た目を変えたら、`npm run screenshots` で撮り直してコミットする（サイトの組み立てでは撮らない）
+- アプリを公開したら、`config.ts` の `APP_URL` に書く。上のナビに「アプリを開く」が出る
+- アプリの「使い方」のボタンは、サイト（`config.ts` の `SITE_URL`）を指す。サイトのアドレスを変えたら、アプリの側も直す（テストが確かめる）
+- 公開は GitHub Actions（`.github/workflows/pages.yml`）が、main に `website/` の変更が入ったときに行う。初めてのときは、リポジトリの Settings → Pages の Source を「GitHub Actions」にする。非公開のリポジトリから Pages を公開するには、GitHub の有料のプランが要る
 
 ## ほかのコマンド
 
 | コマンド | すること |
 |---|---|
-| `npm run status` | clasp で送るファイルの一覧を出す（送りはしない） |
-| `npm run screenshots` | 開発サーバーを立て、アプリのスクリーンショットを `promo/images/` に撮る |
-| `npm run promo` | 開発サーバーを立て、X 用の告知画像を `promo/images/x-announcement.png` に書き出す |
+| `npm run build` | 公開する形に組み立てる（`dist/`） |
+| `npm run preview` | 組み立てたものを手元で動かす |
+| `npm run db:migrate:local` / `db:migrate:remote` | 手元・本番の D1 にマイグレーションを当てる |
+| `npm run types` | `wrangler.jsonc` から型（`worker-configuration.d.ts`）を作り直す |
+| `npm run site` / `site:build` / `site:preview` | サイトを手元で開く・組み立てる・組み立てたものを開く（下の「サイト」） |
+| `npm run screenshots` | サイトに載せるアプリのスクリーンショットを `website/public/screenshots/` に撮る（開発サーバーをその場で立てる） |
+| `npm run og-image` | SNS に貼ったときに出る画像を `website/public/og.png` に書き出す |
 
-`screenshots` と `promo` は、開発サーバーをその場で立てて止める（`npm run dev` を立てておく必要は無い）。ブラウザ（Playwright の Chromium）を使う。初めてのときは先に `npx playwright install chromium` を実行する。書き出した画像はリポジトリに入れない（`.gitignore`）。
+## 書くときの決まり
+
+- **日付は日本時間で扱う。** Workers は UTC で動く。日付と時刻は `src/worker/lib/jst.ts` を使い、`new Date(y, m, d)` や `getHours()` は使わない
+- **画面から呼べる関数は `src/worker/routes/rpc.ts` の一覧だけ。** 足すときは一覧と、画面の `API_FUNCS`（`src/client/console/app.js`）の両方に書く。管理者だけの関数は `admin` を付ける
+- **D1 の問い合わせの数を増やしすぎない。** 1 回の呼び出しで使える数に上限がある（無料のプランで 50）。卓の数だけ文を作らず、JSON（`json_each`）で 1 文にまとめる
+- **表を変えるときは、マイグレーションを足す。** `migrations/` に番号の続くファイルを足し、すでにあるファイルは書き換えない
+- **画面にアイコンを足したら**、そのページの先頭の読み込みの `icon_names` にも名前をアルファベット順で足す（テストが確かめる）
+- メンバーは中では ID で持ち、画面とのやり取りでは名前を使う（`src/worker/domain/people.ts`）

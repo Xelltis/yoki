@@ -1,0 +1,122 @@
+// 卓の登録・変更・削除・参加希望（GAS 版 scheduler.test.js の §6・10・24・29・33・38・43・45）
+import { env } from 'cloudflare:test';
+import { beforeEach, describe, expect, test } from 'vitest';
+import { addDays } from '../../src/worker/lib/jst';
+import { fail, ok, setupGroup, today } from './helpers';
+
+let G: Awaited<ReturnType<typeof setupGroup>>;
+let T: (n: number) => string;
+beforeEach(async () => {
+  G = await setupGroup();
+  const t0 = await today();
+  T = (n) => addDays(t0, n);
+});
+const sessionOf = (body: any, id: string) => body.data.sessions.find((s: any) => s.id === id);
+
+describe('登録と更新', () => {
+  test('新規は S001 から。参加者に、メンバーに無い人（ゲスト）も入れられる。登録者はログインした人', async () => {
+    const r = await ok(G.sora, G.id, 'saveSession', { name: 'テスト卓', gm: 'ひより', members: ['ソラ'], extra: 'ゲスト太郎、こまち', date: T(3), start: '21', status: '開催' });
+    expect(r.id).toBe('S001');
+    expect(r.message).toBe('登録しました: テスト卓（S001）');
+    const s = sessionOf(r, 'S001');
+    expect(s.members).toEqual(['ソラ', 'ゲスト太郎', 'こまち']);
+    expect(s.start).toBe('21:00');
+    expect(s.editor).toBe('ソラ');
+  });
+
+  test('「開催」なのに開催日が無ければ断る。読めない日付も断る', async () => {
+    expect((await fail(G.sora, G.id, 'saveSession', { name: 'x', status: '開催' })).error).toContain('開催日を入れてください');
+    expect((await fail(G.sora, G.id, 'saveSession', { name: 'x', status: '開催', date: '2026/02/31' })).error).toContain('読めません');
+    expect((await fail(G.sora, G.id, 'saveSession', { name: '', status: '募集' })).error).toContain('卓の名前');
+  });
+
+  test('更新しても ID は変わらない。開催日を変えると開催前の知らせの印が消え、変えなければ残る', async () => {
+    await ok(G.sora, G.id, 'saveSession', { name: 'A', gm: 'ひより', date: T(3), status: '開催' });
+    await env.DB.prepare("UPDATE sessions SET notified_at = '2026-01-01T00:00:00Z', soon_at = '2026-01-01T00:00:00Z'").run();
+    const same = await ok(G.sora, G.id, 'saveSession', { id: 'S001', name: 'A（改）', gm: 'ひより', date: T(3), status: '開催' });
+    expect(same.id).toBe('S001');
+    expect(sessionOf(same, 'S001').notified).not.toBe('');
+    const moved = await ok(G.sora, G.id, 'saveSession', { id: 'S001', name: 'A', gm: 'ひより', date: T(4), status: '開催' });
+    expect(sessionOf(moved, 'S001').notified).toBe('');
+    expect(await env.DB.prepare('SELECT soon_at FROM sessions').first('soon_at')).toBeNull();
+  });
+
+  test('募集は期間を持つ（片方だけは断る）。「開催」にすると期間は消える', async () => {
+    const r = await ok(G.sora, G.id, 'saveSession', { name: '募集の卓', gm: 'こまち', status: '募集', windowFrom: T(20), windowTo: T(10) });
+    const s = sessionOf(r, 'S001');
+    expect([s.windowFrom, s.windowTo]).toEqual([T(10), T(20)]);
+    expect(s.window).toBe(T(10).replace(/-/g, '/') + '〜' + T(20).replace(/-/g, '/'));
+    expect((await fail(G.sora, G.id, 'saveSession', { name: 'x', status: '募集', windowFrom: T(1) })).error).toContain('両方');
+    const held = await ok(G.sora, G.id, 'saveSession', { id: 'S001', name: '募集の卓', gm: 'こまち', status: '開催', date: T(15), windowFrom: T(10), windowTo: T(20) });
+    expect(sessionOf(held, 'S001').window).toBe('');
+  });
+
+  test('募集から「開催」にすると、参加希望の人は参加者に移り、選ばれなかった興味ありは外れる', async () => {
+    await ok(G.admin, G.id, 'saveSession', { name: '募集の卓', gm: 'ひより', status: '募集' });
+    await ok(G.sora, G.id, 'setInterest', { id: 'S001', name: 'ソラ', level: 'want' });
+    await ok(G.komachi, G.id, 'setInterest', { id: 'S001', name: 'こまち', level: 'interest' });
+    const r = await ok(G.admin, G.id, 'saveSession', { id: 'S001', name: '募集の卓', gm: 'ひより', status: '開催', date: T(5) });
+    expect(r.promoted).toEqual(['ソラ']);
+    expect(r.dropped).toEqual(['こまち']);
+    const s = sessionOf(r, 'S001');
+    expect(s.members).toEqual(['ソラ']);
+    expect([s.want, s.interest]).toEqual([[], []]);
+  });
+
+  test('複数日をまとめて登録すると、名前の末尾の数字が進む（新規・開催だけ）', async () => {
+    const r = await ok(G.sora, G.id, 'saveSession', { name: '鉄鳴界 #2', series: '鉄鳴界', gm: 'ひより', dates: [T(9), T(2), T(16)], date: T(2), status: '開催' });
+    expect(r.names).toEqual(['鉄鳴界 #2', '鉄鳴界 #3', '鉄鳴界 #4']);
+    expect(r.ids).toEqual(['S001', 'S002', 'S003']);
+    expect(r.data.sessions.map((s: any) => s.date)).toEqual([T(2), T(9), T(16)]);
+    const plain = await ok(G.sora, G.id, 'saveSession', { name: '単発', gm: 'ひより', dates: [T(1), T(8)], status: '開催' });
+    expect(plain.names).toEqual(['単発', '単発 #2']);
+    expect((await fail(G.sora, G.id, 'saveSession', { name: 'x', dates: [T(1), T(2)], status: '募集' })).error).toContain('「開催」');
+  });
+
+  test('単発の卓から「続けて登録」すると、元の回にも同じシリーズ名が入る', async () => {
+    await ok(G.sora, G.id, 'saveSession', { name: '港 #1', gm: 'ひより', date: T(1), status: '開催' });
+    const r = await ok(G.sora, G.id, 'saveSession', { name: '港 #2', series: '港', seriesFrom: 'S001', seriesEnd: T(60), gm: 'ひより', date: T(8), status: '開催' });
+    expect(r.message).toContain('前の回も「港」にまとめました');
+    expect(sessionOf(r, 'S001')).toMatchObject({ series: '港', seriesEnd: T(60) });
+  });
+
+  test('番号は S999 の次が S1000（S000 に戻らない）', async () => {
+    await env.DB.prepare('UPDATE groups SET next_session_seq = 999').run();
+    expect((await ok(G.sora, G.id, 'saveSession', { name: 'a', status: '募集' })).id).toBe('S999');
+    expect((await ok(G.sora, G.id, 'saveSession', { name: 'b', status: '募集' })).id).toBe('S1000');
+  });
+
+  test('調整中でなくなったら、日程調整の回答も消える', async () => {
+    await ok(G.admin, G.id, 'saveSession', { name: '迷宮', gm: 'ひより', members: ['ソラ'], status: '調整中' });
+    await ok(G.admin, G.id, 'startPoll', { id: 'S001', dates: [T(5), T(6)] });
+    expect(await env.DB.prepare('SELECT count(*) AS n FROM poll_votes').first('n')).toBe(2);
+    await ok(G.admin, G.id, 'saveSession', { id: 'S001', name: '迷宮', gm: 'ひより', members: ['ソラ'], status: '開催', date: T(5) });
+    expect(await env.DB.prepare('SELECT count(*) AS n FROM poll_votes').first('n')).toBe(0);
+  });
+});
+
+describe('参加希望・興味あり', () => {
+  test('自分のぶんは誰でも。ほかの人のぶんは管理者だけ。GM や参加者は付けられない', async () => {
+    await ok(G.admin, G.id, 'saveSession', { name: '募集', gm: 'ひより', members: ['こまち'], status: '募集' });
+    const r = await ok(G.sora, G.id, 'setInterest', { id: 'S001', name: 'ソラ', level: 'want' });
+    expect(sessionOf(r, 'S001').want).toEqual(['ソラ']);
+    expect((await fail(G.sora, G.id, 'setInterest', { id: 'S001', name: 'こまち', level: 'want' })).error).toMatch(/^ADMIN:/);
+    expect((await fail(G.komachi, G.id, 'setInterest', { id: 'S001', name: 'こまち', level: 'want' })).error).toContain('すでにこの卓の参加者');
+    const back = await ok(G.admin, G.id, 'setInterest', { id: 'S001', name: 'ソラ', level: 'none' });
+    expect(sessionOf(back, 'S001').want).toEqual([]);
+  });
+
+  test('募集中でない卓には付けられない', async () => {
+    await ok(G.admin, G.id, 'saveSession', { name: '開催', gm: 'ひより', status: '開催', date: T(3) });
+    expect((await fail(G.sora, G.id, 'setInterest', { id: 'S001', name: 'ソラ', level: 'want' })).error).toContain('募集中ではありません');
+  });
+});
+
+describe('削除', () => {
+  test('管理者だけが消せる', async () => {
+    await ok(G.sora, G.id, 'saveSession', { name: '消す卓', status: '募集' });
+    expect((await fail(G.sora, G.id, 'deleteSession', { id: 'S001' })).error).toBe('ADMIN: 卓の削除ができるのは管理者だけです。');
+    const r = await ok(G.admin, G.id, 'deleteSession', { id: 'S001' });
+    expect(r.data.sessions).toEqual([]);
+  });
+});

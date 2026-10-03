@@ -1,24 +1,43 @@
 {
   "name": "yoki",
   "private": true,
-  "description": "卓予定管理（Google スプレッドシート + Apps Script）",
+  "description": "卓予定（TRPG の卓の予定を管理する。Cloudflare Workers + D1 + Discord ログイン）",
   "type": "module",
   "engines": {
     "node": "^22.12.0 || >=24.0.0"
   },
   "scripts": {
+    "predev": "wrangler d1 migrations apply DB --local",
     "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "deploy": "npm test && vite build && wrangler d1 migrations apply DB --remote && wrangler deploy --config dist/yoki/wrangler.json",
     "test": "vitest run",
     "test:watch": "vitest",
-    "push": "clasp push --force",
-    "status": "clasp status",
-    "screenshots": "node promo/take-screenshots.js",
-    "promo": "node promo/export-png.js"
+    "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.node.json && tsc -p website/tsconfig.json",
+    "e2e": "node test/e2e/smoke.js",
+    "types": "wrangler types",
+    "db:migrate:local": "wrangler d1 migrations apply DB --local",
+    "db:migrate:remote": "wrangler d1 migrations apply DB --remote",
+    "site": "vitepress dev website",
+    "site:build": "vitepress build website",
+    "site:preview": "vitepress preview website",
+    "screenshots": "node website/tools/screenshots.js",
+    "og-image": "node website/tools/og-image.js"
   },
   "devDependencies": {
-    "@google/clasp": "^3.4.1",
+    "@cloudflare/vite-plugin": "^1.62.5",
+    "@cloudflare/vitest-pool-workers": "^0.22.0",
+    "@cloudflare/workers-types": "^5.20261003.1",
+    "@types/node": "^26.6.4",
     "playwright": "^1.63.0",
+    "typescript": "^7.0.2",
     "vite": "^8.3.2",
-    "vitest": "^5.0.3"
+    "vitepress": "^2.0.0-alpha.20",
+    "vitest": "^4.1.11",
+    "wrangler": "^4.147.0"
+  },
+  "dependencies": {
+    "hono": "^4.13.12"
   }
 }
