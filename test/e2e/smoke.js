@@ -1,5 +1,6 @@
 // ブラウザで通しで確かめる（npm run e2e）。開発サーバーを立て、開発用ログインでサンプルのグループに入り、
-// 卓の登録・日程調整の回答・予定の入力（PC の表とスマホのリスト）をして、画面にエラーが出ないことを見る。npm test には入れない（ブラウザが要るため）
+// 画面の主な操作（タブ・カレンダー・卓の登録と変更・募集・日程調整・予定・メンバー・設定）をして、
+// データに入ったことと、画面にエラーが出ないことを見る。npm test には入れない（ブラウザが要るため）
 import assert from 'node:assert/strict';
 import { chromium } from 'playwright';
 import { devLogin, withDevServer } from './dev-server.js';
@@ -12,48 +13,212 @@ await withDevServer(async (base) => {
   page.on('pageerror', (e) => errors.push(e.message));
   page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
   const D = () => page.evaluate(() => window.yoki.D);
+  /** 画面のデータが条件を満たすまで待つ（fn はブラウザの中で D と arg を受け取る） */
+  const until = (fn, arg) => page.waitForFunction(`(${fn})(window.yoki.D, ${JSON.stringify(arg ?? null)})`, null, { timeout: 15000 });
+  const tab = (name) => page.click(`nav.tabs button[data-tab=${name}]`);
+  const confirm = () => page.click('#confirmOk');
+  const step = async (name, fn) => { await fn(); console.log('ok - ' + name); };
   try {
-    await devLogin(page, base);
-    assert.equal((await D()).sessions.length, 11, 'サンプルの卓は 11 件');
-    console.log('ok - 開発用ログインでサンプルのグループに入れる');
+    await step('開発用ログインでサンプルのグループに入れる', async () => {
+      await devLogin(page, base);
+      assert.equal((await D()).sessions.length, 11, 'サンプルの卓は 11 件');
+    });
 
-    // 卓を登録する
-    await page.click('#newSession');
-    await page.fill('#name', 'e2e で登録した卓');
-    await page.selectOption('#status', '募集');
-    await page.click('#f button[type=submit]');
-    await page.waitForFunction(() => window.yoki.D.sessions.some((s) => s.name === 'e2e で登録した卓'), null, { timeout: 15000 });
-    console.log('ok - 卓を登録できる');
+    await step('タブと見た目（ライト・ダーク）を切り替えられる', async () => {
+      for (const t of ['recruit', 'avail', 'members', 'settings', 'cal']) {
+        await tab(t);
+        assert.equal(await page.getAttribute('body', 'data-tab'), t);
+      }
+      const before = await page.evaluate(() => document.documentElement.getAttribute('data-theme'));
+      await page.click('#theme');
+      assert.notEqual(await page.evaluate(() => document.documentElement.getAttribute('data-theme')), before);
+      await page.click('#theme');
+    });
 
-    // 日程調整に回答する（迷宮の底へ。ひよりはまだ答えていない候補日がある）
-    const maze = (await D()).sessions.find((s) => s.name === '迷宮の底へ');
-    const open = maze.candidates.find((k) => !(maze.votes[k] && maze.votes[k]['ひより']));
-    await page.evaluate(() => window.yoki.showTab('recruit'));
-    await page.click('button[data-vote="◯"][data-id="' + maze.id + '"][data-day="' + open + '"]');
-    await page.waitForFunction((k) => window.yoki.D.sessions.find((s) => s.name === '迷宮の底へ').votes[k]?.['ひより'] === '◯', open, { timeout: 15000 });
-    console.log('ok - 日程調整に回答できる');
+    await step('カレンダーで日を選ぶと内訳が出て、月を送れる', async () => {
+      const s = (await D()).sessions.find((x) => x.name === '連れて帰る');
+      await page.evaluate((k) => window.yoki.selectDay(k), s.date);
+      await page.click(`.cal .day[data-day="${s.date}"]`);   // もう一度押すと外れる
+      assert.match(await page.textContent('#dayTitle'), /日を選んでください/);
+      await page.click(`.cal .day[data-day="${s.date}"]`);
+      assert.match(await page.textContent('#dayBody'), /連れて帰る/);
+      const month = await page.textContent('#monthLabel');
+      await page.click('#next');
+      assert.notEqual(await page.textContent('#monthLabel'), month);
+      await page.click('#todayBtn');
+      assert.equal(await page.textContent('#monthLabel'), month);
+    });
 
-    // メンバーの予定: 自分のマスはボタンで、押すと 空 → △ と変わる
-    await page.evaluate(() => window.yoki.showTab('avail'));
-    const cell = page.locator('#availTable button.mk').first();
-    const day = await cell.getAttribute('data-day');
-    const before = (await D()).avail[day]?.['ひより'] ?? '';
-    const next = { '': '△', '△': '×', '×': '' }[before];
-    await cell.click();
-    await page.waitForFunction(([k, v]) => (window.yoki.D.avail[k]?.['ひより'] ?? '') === v, [day, next], { timeout: 15000 });
-    console.log('ok - 予定表の自分のマスを押すと印が変わる');
+    await step('卓を登録できる', async () => {
+      await page.click('#newSession');
+      await page.fill('#name', 'e2e で登録した卓');
+      await page.selectOption('#status', '募集');
+      await page.click('#f button[type=submit]');
+      await until((d) => d.sessions.some((s) => s.name === 'e2e で登録した卓' && !String(s.id).startsWith('__tmp__')));
+    });
 
-    // 狭い画面では日ごとのリストになり、◯ △ × のボタンで打てる
-    await page.setViewportSize({ width: 390, height: 844 });
-    assert.equal(await page.locator('#tab-avail .wrap.avail').isVisible(), false, '狭い画面では表を隠す');
-    const ng = page.locator('#availList button.pk[data-mark="×"][aria-pressed="false"]').first();
-    const ngDay = await ng.getAttribute('data-day');
-    await ng.click();
-    await page.waitForFunction((k) => window.yoki.D.avail[k]?.['ひより'] === '×', ngDay, { timeout: 15000 });
-    console.log('ok - 狭い画面では日ごとのリストで印を打てる');
+    await step('卓を変更できる（内訳の「編集」から）', async () => {
+      const s = (await D()).sessions.find((x) => x.name === '灰色の図書館');
+      await page.evaluate((k) => window.yoki.selectDay(k), s.date);
+      await page.click(`#dayBody button[data-edit="${s.id}"]`);
+      await page.fill('#name', '灰色の図書館（改）');
+      await page.click('#f button[type=submit]');
+      await until((d, id) => d.sessions.some((x) => x.id === id && x.name === '灰色の図書館（改）'), s.id);
+    });
 
-    assert.deepEqual(errors, [], '画面にエラーが出ない');
-    console.log('ok - 画面にエラーが出ない');
+    await step('卓を削除できる（確かめる窓を通る）', async () => {
+      const s = (await D()).sessions.find((x) => x.name === 'e2e で登録した卓');
+      await tab('recruit');
+      await page.click(`#recruitList button[data-edit="${s.id}"]`);
+      await page.click('#del');
+      await confirm();
+      await until((d, id) => !d.sessions.some((x) => x.id === id), s.id);
+    });
+
+    await step('募集中の卓に参加希望を付け、取り消せる', async () => {
+      const s = (await D()).sessions.find((x) => x.name === '雪原の古城');
+      await page.click(`#recruitList button[data-level="want"][data-id="${s.id}"]`);
+      await until((d, id) => d.sessions.find((x) => x.id === id).want.includes('ひより'), s.id);
+      await page.click(`#recruitList button[data-level="none"][data-id="${s.id}"]`);
+      await until((d, id) => !d.sessions.find((x) => x.id === id).want.includes('ひより'), s.id);
+    });
+
+    await step('調整中の卓を登録すると候補日を選ぶ窓が開き、候補日を出せる', async () => {
+      const d = await D();
+      await tab('cal');
+      await page.click('#newSession');
+      await page.fill('#name', 'e2e の日程調整');
+      await page.selectOption('#status', '調整中');
+      await page.check('#membersBox input.m[value="ソラ"]');
+      await page.fill('#winFrom', d.availDays[20]);
+      await page.fill('#winTo', d.availDays[26]);
+      await page.click('#f button[type=submit]');
+      await page.waitForSelector('#pollModal:not([hidden])', { timeout: 15000 });
+      const days = page.locator('#pollDays input.pdc');
+      await days.nth(0).check();
+      await days.nth(2).check();
+      await page.click('#pollSend');
+      await until((x) => (x.sessions.find((s) => s.name === 'e2e の日程調整')?.candidates || []).length === 2);
+    });
+
+    await step('日程調整に回答できる', async () => {
+      const maze = (await D()).sessions.find((s) => s.name === '迷宮の底へ');
+      const open = maze.candidates.find((k) => !(maze.votes[k] && maze.votes[k]['ひより']));
+      await tab('recruit');
+      await page.click(`button[data-vote="◯"][data-id="${maze.id}"][data-day="${open}"]`);
+      await until((d, k) => d.sessions.find((s) => s.name === '迷宮の底へ').votes[k]?.['ひより'] === '◯', open);
+    });
+
+    await step('管理者は候補日から開催日を決められる', async () => {
+      const s = (await D()).sessions.find((x) => x.name === 'e2e の日程調整');
+      const day = s.candidates[0];
+      await page.click(`#adjustList button[data-decide="${s.id}"][data-day="${day}"]`);
+      await confirm();
+      await until((d, a) => d.sessions.some((x) => x.id === a[0] && x.status === '開催' && x.date === a[1]), [s.id, day]);
+    });
+
+    await step('日付のメモを保存できる', async () => {
+      const day = (await D()).availDays[3];
+      await tab('cal');
+      await page.evaluate((k) => window.yoki.selectDay(k), day);
+      await page.fill('#dayNote', 'e2e のメモ');
+      await page.click('#dayNoteSave');
+      await until((d, k) => d.notes[k]?.text === 'e2e のメモ', day);
+    });
+
+    await step('予定表の自分のマスを押すと印が変わる', async () => {
+      await tab('avail');
+      const cell = page.locator('#availTable button.mk').first();
+      const day = await cell.getAttribute('data-day');
+      const before = (await D()).avail[day]?.['ひより'] ?? '';
+      const next = { '': '△', '△': '×', '×': '' }[before];
+      await cell.click();
+      await until((d, a) => (d.avail[a[0]]?.['ひより'] ?? '') === a[1], [day, next]);
+    });
+
+    await step('予定表の上のボタンで絞り込める', async () => {
+      const all = await page.locator('#availTable tr').count();
+      await page.click('#availChips button[data-chip="hol"]');
+      assert.ok((await page.locator('#availTable tr').count()) < all, '土日祝だけにすると行が減る');
+      await page.click('#availChips button[data-chip="mine"]');
+      assert.equal(await page.locator('#availTable tr').first().locator('th').count(), 4, '自分の列だけ（日付・曜・卓・自分）');
+      await page.click('#availChips button[data-chip="hol"]');
+      await page.click('#availChips button[data-chip="mine"]');
+      assert.equal(await page.locator('#availTable tr').count(), all);
+    });
+
+    await step('予定のメモを書ける（鉛筆から）', async () => {
+      const pen = page.locator('#availTable button[data-pen]').nth(4);
+      const day = await pen.getAttribute('data-pen');
+      await pen.click();
+      await page.fill('#memoText', 'e2e の予定メモ');
+      await page.click('#memoSave');
+      await until((d, k) => d.availNotes[k]?.['ひより']?.text === 'e2e の予定メモ', day);
+    });
+
+    await step('予定をまとめて入れられる', async () => {
+      if (await page.isHidden('#availBulk')) await page.click('#foldBulk');
+      await page.selectOption('#abMark', '×');
+      await page.click('#abRun');
+      await confirm();
+      await until((d) => Object.values(d.avail).filter((m) => m['ひより'] === '×').length >= 10);
+    });
+
+    await step('メンバーを足し、名前を変え、外せる', async () => {
+      await tab('members');
+      await page.click('#mclear');
+      await page.fill('#mname', 'e2e メンバー');
+      await page.click('#msave');
+      await until((d) => d.members.some((m) => m.name === 'e2e メンバー'));
+      await page.click('#memberTable tr[data-name="e2e メンバー"]');
+      await page.fill('#mname', 'e2e メンバー（改）');
+      await page.click('#msave');
+      await until((d) => d.members.some((m) => m.name === 'e2e メンバー（改）'));
+      await page.click('#mdel');
+      await confirm();
+      await until((d) => !d.members.some((m) => m.name.startsWith('e2e メンバー')));
+    });
+
+    await step('設定のつまみ・接続テスト・名前の変更ができる', async () => {
+      await tab('settings');
+      const urge = (await D()).settings.urge;
+      await page.locator('#stUrge').dispatchEvent('click');
+      await until((d, v) => d.settings.urge === !v, urge);
+      const logs = (await D()).log.length;
+      await page.locator('#stTest').dispatchEvent('click');
+      await until((d, n) => d.log.length > n, logs);
+      await page.click('#setNav button[data-set="table"]');
+      await page.fill('#stName', 'e2e のグループ');
+      await page.click('#stNameSave');
+      await confirm();
+      await until((d) => d.title === 'e2e のグループ');
+    });
+
+    await step('管理者はほかの人を選んで代わりに入れられる（代理の札が出る）', async () => {
+      await page.selectOption('#me', 'ソラ');
+      assert.equal(await page.isVisible('#proxyBadge'), true);
+      await page.selectOption('#me', 'ひより');
+      assert.equal(await page.isVisible('#proxyBadge'), false);
+    });
+
+    await step('「更新」で読み直せる', async () => {
+      await page.click('#reload');
+      await page.waitForFunction(() => /最新/.test(document.getElementById('toast').textContent), null, { timeout: 15000 });
+    });
+
+    await step('狭い画面では日ごとのリストで印を打てる', async () => {
+      await tab('avail');
+      await page.setViewportSize({ width: 390, height: 844 });
+      assert.equal(await page.locator('#tab-avail .wrap.avail').isVisible(), false, '狭い画面では表を隠す');
+      const soft = page.locator('#availList button.pk[data-mark="△"][aria-pressed="false"]').first();
+      const day = await soft.getAttribute('data-day');
+      await soft.click();
+      await until((d, k) => d.avail[k]?.['ひより'] === '△', day);
+    });
+
+    await step('画面にエラーが出ない', async () => {
+      assert.deepEqual(errors, []);
+    });
   } finally {
     await browser.close();
   }
