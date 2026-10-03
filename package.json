@@ -47,5 +47,11 @@
     "workerd": true,
     "esbuild": true,
     "lefthook": true
+  },
+  "overrides": {
+    "@cloudflare/vitest-pool-workers": {
+      "wrangler": "$wrangler",
+      "miniflare": "5.20261001.0-alpha"
+    }
   }
 }
