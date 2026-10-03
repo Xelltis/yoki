@@ -43,7 +43,7 @@ README の「書くときの決まり」に加えて、次を守る。
 
 ## コミット
 
-[Conventional Commits](https://www.conventionalcommits.org/ja/v1.0.0/) を採用する。
+[Conventional Commits](https://www.conventionalcommits.org/ja/v1.0.0/) を採用する。形は commitlint（`commitlint.config.js`。`@commitlint/config-conventional` に、日本語向けの調整を足したもの）が確かめる。
 
 ```
 <type>(<scope>): <説明>
@@ -74,7 +74,7 @@ README の「書くときの決まり」に加えて、次を守る。
 - **本文**（なくてもよい）: 空行のあとに、理由と中身を箇条書きで書く
 - **互換を壊す変更**（URL・表・設定の名前が変わるなど）: type のあとに `!` を付け、フッターに `BREAKING CHANGE: 何が変わり、どうすればよいか` を書く
 - 1 つのコミットには 1 つの目的だけを入れる
-- コミットのときは lefthook（`lefthook.yml`）が、型の確認とテストを回す。止まったら直してからコミットし直す。`LEFTHOOK=0` や `--no-verify` で飛ばさない
+- コミットのときは lefthook（`lefthook.yml`）が、型の確認・テストと、説明の形（commitlint）を確かめる。止まったら直してからコミットし直す。`LEFTHOOK=0` や `--no-verify` で飛ばさない
 
 例:
 
