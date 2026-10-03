@@ -171,6 +171,8 @@ export type MeResponse = {
   | {
       loggedIn: true;
       user: { id: string; name: string; avatar: string | null };
+      /** 運営者（/admin/ の管理画面に入れる） */
+      operator: boolean;
       /** 入れるグループ */
       groups: { id: string; title: string; guildName: string; guildIcon: string | null }[];
       /** グループを作れる Discord サーバー（管理できるサーバー） */

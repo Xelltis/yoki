@@ -2,19 +2,15 @@
 import { Hono } from 'hono';
 import type { AppEnv } from '../app';
 import { SNAPSHOT_HOURS, snapshotAgeMs } from '../auth/guard';
-import { currentViewer, isLocalHttp } from '../auth/session';
+import { currentViewer } from '../auth/session';
 import { AppError, authError, badRequest } from '../lib/errors';
 import { randomId } from '../lib/ids';
 import { memberNameFrom } from '../lib/text';
 import { DEV_USERS } from '../auth/dev-users';
+import { devAvailable, isOperator } from '../auth/operator';
 import type { CreateGroupResult, MeResponse } from '../../shared/api';
 
 export const meRoutes = new Hono<AppEnv>();
-
-/** 開発用ログインを出してよいか（開発サーバーで、手元から開いたときだけ） */
-export function devAvailable(url: URL): boolean {
-  return !!import.meta.env?.DEV && isLocalHttp(url);
-}
 
 meRoutes.get('/api/me', async (c) => {
   const url = new URL(c.req.url);
@@ -37,6 +33,7 @@ meRoutes.get('/api/me', async (c) => {
     ...base,
     loggedIn: true,
     user: { id: viewer.id, name: viewer.globalName || viewer.username, avatar: viewer.avatar },
+    operator: isOperator(c.env, viewer.id, url),
     groups: groups.results,
     creatable: creatable.results,
     stale: snapshotAgeMs(viewer, new Date()) > SNAPSHOT_HOURS * 3600_000,

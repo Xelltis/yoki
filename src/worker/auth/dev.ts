@@ -4,7 +4,7 @@ import type { Hono } from 'hono';
 import type { AppEnv } from '../app';
 import { seedSample } from '../seed/sample';
 import { saveProfile } from './oauth';
-import { isLocalHttp, startSession } from './session';
+import { isBanned, isLocalHttp, startSession } from './session';
 import { DEV_GUILD, DEV_USERS, SAMPLE_GROUP_ID } from './dev-users';
 
 /** サンプルのグループを用意する。無ければ作って、サンプルデータを入れる */
@@ -24,6 +24,7 @@ export function registerDevRoutes(app: Hono<AppEnv>): void {
     if (!isLocalHttp(new URL(c.req.url))) return c.notFound();
     const form = await c.req.parseBody();
     const who = DEV_USERS.find((u) => u.name === form.as) ?? DEV_USERS[0]!;
+    if (await isBanned(c.env.DB, who.id)) return c.redirect('/?login=banned', 303);
     const url = new URL(c.req.url);
     await ensureSampleGroup(c.env.DB, url.origin + '/g/' + SAMPLE_GROUP_ID + '/');
     await saveProfile(c.env.DB, { id: who.id, username: 'dev-' + who.id.slice(-2), global_name: who.name }, [

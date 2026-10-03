@@ -20,6 +20,8 @@ export default defineConfig(async () => {
                   DISCORD_CLIENT_ID: 'test-client',
                   DISCORD_CLIENT_SECRET: 'test-secret',
                   APP_URL: 'https://yoki.test',
+                  // 区切りの読み方（カンマと空白）も確かめる
+                  OPERATOR_IDS: '400000000000000098, 400000000000000099',
                 },
                 // 画面の静的ファイルの代わり（テストでは組み立てない）。グループのページの骨組みだけ返す
                 serviceBindings: {
