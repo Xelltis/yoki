@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "ask": ["Bash(git push *)"],
+    "allow": [
+      "Bash(grep *)",
+      "Bash(ls *)",
+      "Bash(npx vitest *)",
+      "Bash(npx tsc *)",
+      "Bash(npx eslint *)",
+      "Bash(npm test)",
+      "Bash(npm run lint)",
+      "Bash(npm run coverage:check)",
+      "Bash(npm ls *)"
+    ]
+  },
+  "attribution": {
+    "commit": "",
+    "pr": ""
+  },
+  "enabledPlugins": {
+    "natural-japanese@natural-japanese": true
+  },
+  "extraKnownMarketplaces": {
+    "natural-japanese": {
+      "source": {
+        "source": "github",
+        "repo": "coji/natural-japanese"
+      }
+    }
+  }
+}
