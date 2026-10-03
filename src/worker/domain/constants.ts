@@ -1,13 +1,8 @@
 // 卓の状態と、知らせの決まり（GAS 版 Config.js）
-/**
- * 卓の状態。募集 → 調整中 → 開催 → 終了 と進み、中止は別。
- *   募集   … 参加者を集めている。開催日の代わりに、開きたい期間を持つ。参加希望・興味ありを付けられる
- *   調整中 … 参加者は決まり、開催日を選んでいる。候補の期間を持つ。募集のときの参加希望の人は、このときに参加者へ移る
- *   開催   … 開催日が決まった
- *   終了   … 開催日が過ぎた（自動で変わる）
- */
-export const STATUS = { RECRUIT: '募集', ADJUSTING: '調整中', HELD: '開催', DONE: '終了', CANCELED: '中止' } as const;
-export type Status = (typeof STATUS)[keyof typeof STATUS];
+import { STATUS, type Status } from '../../shared/api';
+
+// 卓の状態（の名前と順番）は、画面と共有する（src/shared/api.ts）
+export { STATUS, type Status };
 export const STATUS_LIST: Status[] = [STATUS.RECRUIT, STATUS.ADJUSTING, STATUS.HELD, STATUS.DONE, STATUS.CANCELED];
 /** 稼働中。一覧と「卓予定」に出る */
 export const ACTIVE: Status[] = [STATUS.RECRUIT, STATUS.ADJUSTING, STATUS.HELD];
