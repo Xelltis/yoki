@@ -7,7 +7,7 @@
 <link rel="icon" href="/icon.png">
 <!-- アイコンは Material Symbols Rounded。使う名前だけに絞って読み込む（icon_names はアルファベット順） -->
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..24,400,0..1,0&icon_names=add,arrow_forward,casino,group,login,logout,menu_book,refresh&display=block">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..24,400,0..1,0&icon_names=add,arrow_forward,casino,group,login,logout,menu_book,refresh,shield&display=block">
 <link rel="stylesheet" href="./home.css">
 <script>
   // アプリで選んだ見た目（ライト／ダーク）があれば合わせる
@@ -43,6 +43,7 @@
 
   <!-- ログインしている -->
   <section class="card" id="home" hidden>
+    <a class="op-link" id="opLink" href="/admin/" hidden><span class="ms sm" aria-hidden="true">shield</span>運営の管理画面</a>
     <h2><span class="ms" aria-hidden="true">group</span>グループ</h2>
     <ul class="groups" id="groups"></ul>
     <p class="hint" id="noGroups" hidden>まだ入れるグループがありません。Discord サーバーの管理者がグループを作ると、ここに出ます。</p>

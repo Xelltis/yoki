@@ -53,3 +53,5 @@ input, select { height: 40px; padding: 0 10px; border-radius: 10px; border: 1px 
 .groups .ms { grid-column: 2; grid-row: 1 / span 2; color: var(--accent-strong); }
 .foot { text-align: center; }
 .foot a { display: inline-flex; align-items: center; gap: 4px; color: var(--accent-strong); font-weight: 600; text-decoration: none; }
+/* 運営者だけに出す、運営の管理画面への入口 */
+.op-link { float: right; display: inline-flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 600; text-decoration: none; }

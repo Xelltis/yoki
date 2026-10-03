@@ -25,9 +25,13 @@ await withDevServer(async (base) => {
   const main = async () => { await page.goto(base + 'g/sample/'); await page.waitForFunction(() => window.yoki && window.yoki.D, null, { timeout: 30000 }); };
   const confirm = () => page.click('#confirmOk');
   const step = async (name, fn) => { await fn(); console.log('ok - ' + name); };
+  const SORA = '400000000000000011';
+  /** ソラの締め出しを戻す（締め出しの印は users に残り、サンプルの作り直しでは消えないため、最初と最後に戻す） */
+  const unbanSora = () => page.evaluate((id) => fetch('/api/admin/users/' + id + '/ban', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ banned: false }) }), SORA);
   try {
     await step('開発用ログインでサンプルのグループに入れる', async () => {
       await devLogin(page, base);
+      await unbanSora();
       assert.equal((await D()).sessions.length, 11, 'サンプルの卓は 11 件');
     });
 
@@ -269,6 +273,39 @@ await withDevServer(async (base) => {
       await ctx.close();
     });
 
+    await step('運営の管理画面: 様子・グループ・利用者が見え、ログインを切って締め出し、戻せる', async () => {
+      await page.goto(base);
+      await page.waitForSelector('#opLink:not([hidden])', { timeout: 15000 });
+      await page.click('#opLink');
+      await page.waitForURL('**/admin/**');
+      await page.waitForSelector('#opCounts .op-count', { timeout: 15000 });
+      await page.click('#opNav button[data-set="groups"]');
+      await page.click('#opGroups tr[data-gid="sample"]');
+      await page.waitForSelector('#opGroup:not([hidden]) >> text=メンバーと管理者');
+      await page.click('#opNav button[data-set="users"]');
+      await page.waitForSelector(`#opUsers button[data-ban="${SORA}"]`);
+      if (await page.isVisible(`#opUsers button[data-logout="${SORA}"]`)) {
+        await page.click(`#opUsers button[data-logout="${SORA}"]`);
+        await confirm();
+        await page.waitForSelector(`#opUsers button[data-logout="${SORA}"]`, { state: 'detached', timeout: 15000 });
+      }
+      await page.click(`#opUsers button[data-ban="${SORA}"]`);
+      await page.fill('#banReason', 'e2e');
+      await page.click('#banForm button[type=submit]');
+      await page.waitForSelector(`#opUsers button[data-unban="${SORA}"]`, { timeout: 15000 });
+      // 締め出されたソラは、開発用ログインでも入れない
+      const ctx = await browser.newContext();
+      const sora = await ctx.newPage();
+      await sora.goto(base);
+      await sora.selectOption('#devAs', 'ソラ');
+      await Promise.all([sora.waitForURL('**/?login=banned'), sora.click('#devForm button')]);
+      assert.match(await sora.textContent('#notice'), /締め出しています/);
+      await ctx.close();
+      await page.click(`#opUsers button[data-unban="${SORA}"]`);
+      await page.waitForSelector(`#opUsers button[data-ban="${SORA}"]`, { timeout: 15000 });
+      await main();
+    });
+
     await step('狭い画面では日ごとのリストで印を打てる', async () => {
       await tab('avail');
       await page.setViewportSize({ width: 390, height: 844 });
@@ -283,6 +320,7 @@ await withDevServer(async (base) => {
       assert.deepEqual(errors, []);
     });
   } finally {
+    await unbanSora().catch(() => {});
     await browser.close();
   }
 });

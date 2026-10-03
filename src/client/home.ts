@@ -8,7 +8,13 @@ const esc = (s: unknown) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) =
 const avatarUrl = (u: { id: string; avatar: string | null }) => u.avatar ? 'https://cdn.discordapp.com/avatars/' + u.id + '/' + u.avatar + '.png?size=64' : '';
 
 const q = new URLSearchParams(location.search);
-if (q.get('login') === 'cancelled') { $('notice').textContent = 'ログインをやめました。'; $('notice').hidden = false; }
+const NOTICE: Record<string, string> = {
+  cancelled: 'ログインをやめました。',
+  banned: 'このアカウントでは入れません（運営者が締め出しています）。',
+  deleted: 'グループを消しました。',
+};
+const say = NOTICE[q.get('login') || ''] || (q.get('deleted') === '1' ? NOTICE.deleted : '');
+if (say) { $('notice').textContent = say; $('notice').hidden = false; }
 
 function showGuest(me: MeResponse): void {
   $('guest').hidden = false;
@@ -19,7 +25,7 @@ function showGuest(me: MeResponse): void {
     $('devAs').innerHTML = me.dev.users.map((n) => '<option>' + esc(n) + '</option>').join('');
   }
   const back = q.get('return_to');
-  if (back && /^\/g\/[a-z0-9-]+\/$/.test(back)) $<HTMLAnchorElement>('loginBtn').href = '/auth/login?return_to=' + encodeURIComponent(back);
+  if (back && /^\/(g\/[a-z0-9-]+\/(admin\/)?|admin\/)$/.test(back)) $<HTMLAnchorElement>('loginBtn').href = '/auth/login?return_to=' + encodeURIComponent(back);
 }
 
 function showHome(me: Extract<MeResponse, { loggedIn: true }>): void {
@@ -28,6 +34,7 @@ function showHome(me: Extract<MeResponse, { loggedIn: true }>): void {
   $('who').innerHTML = (av ? '<img src="' + esc(av) + '" alt="">' : '') + '<span>' + esc(me.user.name) + '</span>' +
     '<form method="post" action="/auth/logout"><button class="btn ghost" type="submit"><span class="ms" aria-hidden="true">logout</span>ログアウト</button></form>';
   $('home').hidden = false;
+  $('opLink').hidden = !me.operator;
   $('groups').innerHTML = me.groups.map((g) =>
     '<li><a href="/g/' + encodeURIComponent(g.id) + '/"><b>' + esc(g.title) + '</b><small>' + esc(g.guildName) + '</small><span class="ms" aria-hidden="true">arrow_forward</span></a></li>').join('');
   $('noGroups').hidden = me.groups.length > 0;
