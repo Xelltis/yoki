@@ -1,0 +1,27 @@
+# Git のフック（lefthook）。npm install のときに入る。入っていなければ npx lefthook install
+# 一度だけ止めたいときは LEFTHOOK=0 git commit …
+# 書き方: https://lefthook.dev/configuration/
+
+# コミットの前: 型の確認とテスト。関係するファイル（依存を変えたときの package-lock.json も）をコミットするときだけ回す
+pre-commit:
+  parallel: true
+  jobs:
+    - name: 型の確認
+      glob:
+        - "*.ts"
+        - "**/*.ts"
+        - "**/*.vue"
+        - "**/tsconfig*.json"
+        - "package-lock.json"
+      run: npm run typecheck
+
+    - name: テスト
+      glob:
+        - "src/**"
+        - "test/**"
+        - "migrations/**"
+        - "website/**"
+        - "*.config.ts"
+        - "wrangler.jsonc"
+        - "package-lock.json"
+      run: npm test
