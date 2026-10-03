@@ -1,0 +1,61 @@
+// Discord でログイン・ログアウト
+import { Hono } from 'hono';
+import { deleteCookie, getCookie, setCookie } from 'hono/cookie';
+import type { AppEnv } from '../app';
+import { authorizeUrl, fetchDiscordProfile, saveProfile } from '../auth/oauth';
+import { endSession, isLocalHttp, startSession } from '../auth/session';
+import { randomToken, safeEqual } from '../lib/ids';
+import { noticePage } from './html';
+
+/** ログインのあとに戻ってよい場所（入口か、グループのページ） */
+export const RETURN_TO = /^\/(g\/[a-z0-9-]{1,40}\/)?$/;
+const STATE_COOKIE = 'yoki_oauth';
+
+export const authRoutes = new Hono<AppEnv>();
+
+authRoutes.get('/auth/login', (c) => {
+  if (!c.env.DISCORD_CLIENT_ID) {
+    return c.html(noticePage('Discord ログインの設定がありません', 'DISCORD_CLIENT_ID が設定されていません（手元では .dev.vars、本番では wrangler.jsonc）。', { href: '/', label: '入口へ戻る' }), 500);
+  }
+  const url = new URL(c.req.url);
+  const want = c.req.query('return_to') ?? '/';
+  const returnTo = RETURN_TO.test(want) ? want : '/';
+  // 初めは prompt=none（許可済みなら画面を出さずに戻る）。Discord が断ったら一度だけ consent でやり直す
+  const consent = c.req.query('consent') === '1';
+  const state = randomToken();
+  setCookie(c, STATE_COOKIE, [state, consent ? 'c' : 'n', returnTo].join('|'), {
+    httpOnly: true,
+    secure: !isLocalHttp(url),
+    sameSite: 'Lax',
+    path: '/auth',
+    maxAge: 600,
+  });
+  return c.redirect(authorizeUrl(c.env, url.origin + '/auth/callback', state, consent ? 'consent' : 'none'));
+});
+
+authRoutes.get('/auth/callback', async (c) => {
+  const url = new URL(c.req.url);
+  const saved = getCookie(c, STATE_COOKIE);
+  deleteCookie(c, STATE_COOKIE, { path: '/auth', secure: !isLocalHttp(url) });
+  const retry = { href: '/auth/login', label: 'ログインをやり直す' };
+  if (!saved) return c.html(noticePage('ログインをやり直してください', 'ログインの途中の情報が見つかりませんでした（時間が経ちすぎたか、別のタブで開いた可能性があります）。', retry), 400);
+  const [state = '', mode, returnTo = '/'] = saved.split('|');
+  const error = c.req.query('error');
+  if (error) {
+    if (mode === 'n' && error !== 'access_denied') return c.redirect('/auth/login?consent=1&return_to=' + encodeURIComponent(returnTo));
+    return c.redirect('/?login=cancelled');
+  }
+  const code = c.req.query('code');
+  if (!code || !safeEqual(c.req.query('state') ?? '', state)) {
+    return c.html(noticePage('ログインをやり直してください', 'ログインの確認ができませんでした。', retry), 400);
+  }
+  const { user, guilds } = await fetchDiscordProfile(c.env, code, url.origin + '/auth/callback');
+  await saveProfile(c.env.DB, user, guilds);
+  await startSession(c, user.id);
+  return c.redirect(RETURN_TO.test(returnTo) ? returnTo : '/');
+});
+
+authRoutes.post('/auth/logout', async (c) => {
+  await endSession(c);
+  return c.redirect('/', 303);
+});

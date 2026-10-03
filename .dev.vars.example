@@ -1,0 +1,6 @@
+# 手元で動かすときの値。このファイルを .dev.vars に写して使う（.dev.vars はリポジトリに入れない）
+# Discord アプリ（https://discord.com/developers/applications）の OAuth2 の値。空なら開発用ログインだけで動く
+DISCORD_CLIENT_ID=
+DISCORD_CLIENT_SECRET=
+# Discord の文に付けるアプリの URL
+APP_URL=http://localhost:5173

@@ -1,0 +1,12 @@
+// テストの前に、ローカルの D1 にマイグレーションを当てる。テストごとに表を空にする（テストどうしが混ざらないように）
+import { applyD1Migrations, env } from 'cloudflare:test';
+import { beforeEach } from 'vitest';
+
+await applyD1Migrations(env.DB, env.TEST_MIGRATIONS);
+
+// 子の表から順に消す（外部キーのため）
+const TABLES = ['notify_log', 'poll_votes', 'day_notes', 'avail_notes', 'availability', 'session_people', 'sessions', 'series_notify', 'members', 'groups', 'auth_sessions', 'user_guilds', 'users', 'meta'];
+
+beforeEach(async () => {
+  await env.DB.batch(TABLES.map((t) => env.DB.prepare('DELETE FROM ' + t)));
+});

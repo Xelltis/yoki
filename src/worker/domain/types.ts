@@ -1,0 +1,85 @@
+// 読み込んだグループのデータ（GAS 版の ctx に当たる）
+import type { Actor } from '../auth/guard';
+import type { Status } from './constants';
+
+export type GroupRow = {
+  id: string;
+  guild_id: string;
+  guild_name: string;
+  title: string;
+  next_session_seq: number;
+  webhook_url: string;
+  remind_webhook_url: string;
+  recruit_webhook_url: string;
+  notify_on_save: number;
+  remind_enabled: number;
+  remind_set_by: string;
+  notify_days: number;
+  notify_hour: number;
+  urge: number;
+  soon: number;
+  soon_minutes: number;
+  auto_finish: number;
+  cal_months: number;
+  avail_days: number;
+};
+
+export type Member = { id: number; name: string; discordId: string; note: string; isAdmin: boolean; userId: string | null };
+
+export type Role = 'gm' | 'member' | 'want' | 'interest';
+
+export type Session = {
+  rowId: number;
+  /** 画面に見せる ID（S001） */
+  id: string;
+  seq: number;
+  name: string;
+  gm: string;
+  members: string[];
+  want: string[];
+  interest: string[];
+  date: string | null;
+  start: string;
+  end: string;
+  status: Status;
+  place: string;
+  memo: string;
+  series: string;
+  seriesEnd: string | null;
+  windowFrom: string | null;
+  windowTo: string | null;
+  candidates: string[];
+  editor: string;
+  updatedAt: string;
+  notifiedAt: string | null;
+  askedAt: string | null;
+  urgedAt: string | null;
+  soonAt: string | null;
+  pollReadyAt: string | null;
+};
+
+export type SeriesNotify = { webhook: string; alsoBase: boolean; days: number | null; hour: number | null };
+
+export type LogRow = { at: string; kind: string; target: string; result: string };
+
+export type Ctx = {
+  db: D1Database;
+  group: GroupRow;
+  members: Member[];
+  memberByName: Map<string, Member>;
+  sessions: Session[];
+  /** { 'YYYY-MM-DD': { 名前: '△' | '×' } }（今日から avail_days 日分） */
+  avail: Record<string, Record<string, string>>;
+  availNotes: Record<string, Record<string, { text: string; at: string }>>;
+  dayNotes: Record<string, { text: string; by: string; at: string }>;
+  /** 卓（rowId）ごとの回答 { 'YYYY-MM-DD': { 名前: '◯' | '×' } } */
+  votes: Map<number, Record<string, Record<string, string>>>;
+  seriesNotify: Record<string, SeriesNotify>;
+  log: LogRow[];
+  now: Date;
+  /** 今日（日本時間） */
+  today: string;
+  actor: Actor;
+  /** このグループの画面の URL（Discord の文に使う） */
+  appUrl: string;
+};
