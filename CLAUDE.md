@@ -39,6 +39,8 @@ README の「書くときの決まり」に加えて、次を守る。
 - 画面とサーバーの約束（呼べる関数の名前・画面データの型・返事の形）は `src/shared/api.ts` に置く。呼べる関数を足すときは、ここの `RPC_FUNCS` とサーバーの一覧（`src/worker/routes/rpc.ts`）の両方に足す
 - 画面（`src/client/console/`）のファイルは、読み込んだときに何もしない。イベントの登録は `init()` に書き、`main.ts` から呼ぶ
 - 開発用ログイン（`src/worker/auth/dev.ts`）は `import.meta.env.DEV` のときだけ登録する
+- 運営者の API（`src/worker/routes/admin.ts`）は、どの道も最初に `requireOperator` を呼ぶ。変える操作は監査の控え（`audit`）を log に出す。運営者にも、グループの中身（卓・予定・Webhook の URL）は返さない
+- グループの画面の管理者向けのものは、管理の区域（`/g/:id/admin/`。`src/client/console/area.ts`）に置く。ふだんの区域には、だれでも使うものだけを置く
 - Discord のトークンは保存しない。秘密の値（`.dev.vars`）はコミットしない
 - アイコンを足したら、読み込む一覧にも足す（画面は各ページの `icon_names`、サイトは `website/.vitepress/config.ts` の `ICONS`。テストが確かめる）
 
