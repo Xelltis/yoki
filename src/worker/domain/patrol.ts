@@ -3,6 +3,7 @@
 //   開始直前の知らせは毎回見る
 // 送る前に卓の「送った」印を取り（UPDATE … WHERE … IS NULL）、取れた卓だけを送る。重なって動いても二重には送らない。
 // 全部の送り先で失敗したら印を戻し、次の回で送り直す
+import type { PatrolRecord } from '../../shared/admin';
 import type { Actor } from '../auth/guard';
 import { mentionsOf, recruitLink, sessionEmbed } from '../discord/payloads';
 import { appendLog, postDiscord, postToTargets, realSleep, type Sleep } from '../discord/send';
@@ -22,6 +23,33 @@ const KEEP_AVAIL_DAYS = 90;
 const KEEP_DAY_NOTE_DAYS = 365;
 
 type Deps = { sleep: Sleep };
+
+/** 見回りの様子（meta の patrol）。運営者の管理画面が読む */
+export type { PatrolRecord };
+
+/**
+ * 見回りを回し、その様子を meta に残す（patrol: 最後の回の結果、patrol_ok_at: 最後にうまくいった時刻）。
+ * 失敗は記録してから投げ直す（Cloudflare の cron の失敗としても残す）。run はテストで差し替える
+ */
+export async function runPatrol(env: Bindings, scheduledTime: number, deps: Deps = { sleep: realSleep }, run = patrol): Promise<void> {
+  const t0 = Date.now();
+  let error = '';
+  try {
+    await run(env, scheduledTime, deps);
+  } catch (e) {
+    error = e instanceof Error ? e.message : String(e);
+    throw e;
+  } finally {
+    const at = new Date(scheduledTime).toISOString();
+    const rec: PatrolRecord = { at, ms: Date.now() - t0, ok: !error, error };
+    const put = 'INSERT INTO meta (key, value) VALUES (?1, ?2) ON CONFLICT (key) DO UPDATE SET value = excluded.value';
+    try {
+      await env.DB.batch([env.DB.prepare(put).bind('patrol', JSON.stringify(rec)), ...(error ? [] : [env.DB.prepare(put).bind('patrol_ok_at', at)])]);
+    } catch {
+      // 記録できなくても、見回りの結果は変えない
+    }
+  }
+}
 
 export async function patrol(env: Bindings, scheduledTime: number, deps: Deps = { sleep: realSleep }): Promise<void> {
   const now = new Date(scheduledTime);

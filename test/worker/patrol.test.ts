@@ -1,7 +1,7 @@
 // 知らせの見回り（§23・40・46・47）。時刻は scheduledTime で渡す（日本時間 = UTC + 9）
 import { env } from 'cloudflare:test';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
-import { patrol } from '../../src/worker/domain/patrol';
+import { type PatrolRecord, patrol, runPatrol } from '../../src/worker/domain/patrol';
 import { addDays } from '../../src/worker/lib/jst';
 import { makeGroup } from './helpers';
 
@@ -128,5 +128,26 @@ describe('毎時と毎日の仕事', () => {
     await patrol(env, at('05:00'), noWait);
     expect(await mark('昨日の卓', 'status')).toBe('終了');
     expect(await env.DB.prepare('SELECT count(*) AS n FROM notify_log').first('n')).toBe(500);
+  });
+});
+
+describe('見回りの様子の記録（運営者の管理画面が読む）', () => {
+  const meta = async (key: string) => env.DB.prepare('SELECT value FROM meta WHERE key = ?').bind(key).first<string>('value');
+
+  test('うまくいったら、最後の回の結果と、うまくいった時刻を残す', async () => {
+    await runPatrol(env, at('20:00'), noWait);
+    const rec = JSON.parse((await meta('patrol'))!) as PatrolRecord;
+    expect(rec).toMatchObject({ at: new Date(at('20:00')).toISOString(), ok: true, error: '' });
+    expect(rec.ms).toBeGreaterThanOrEqual(0);
+    expect(await meta('patrol_ok_at')).toBe(new Date(at('20:00')).toISOString());
+  });
+
+  test('失敗したら、理由を残してから投げ直す。うまくいった時刻は前のまま', async () => {
+    await runPatrol(env, at('20:00'), noWait);
+    const boom = async () => { throw new Error('D1 が応えない'); };
+    await expect(runPatrol(env, at('20:05'), noWait, boom)).rejects.toThrow('D1 が応えない');
+    const rec = JSON.parse((await meta('patrol'))!) as PatrolRecord;
+    expect(rec).toMatchObject({ at: new Date(at('20:05')).toISOString(), ok: false, error: 'D1 が応えない' });
+    expect(await meta('patrol_ok_at')).toBe(new Date(at('20:00')).toISOString());
   });
 });
