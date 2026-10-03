@@ -46,6 +46,7 @@ export default defineConfig({
           input: {
             index: path.join(root, 'index.html'),
             console: path.join(root, 'console/index.html'),
+            operator: path.join(root, 'operator/index.html'),
           },
         },
       },

@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>運営の管理画面 - 卓予定</title>
+  <link rel="icon" href="/icon.png">
+  <!-- 運営者の管理画面。/admin/ で開く（Worker が運営者かを確かめてから、このページを返す。/admin/* は Worker が受けるので、
+       ファイルは /operator/ に置き、絶対パスで読む）。運営者は OPERATOR_IDS。
+       アイコンは Material Symbols Rounded。使う名前だけに絞って読み込む（icon_names はアルファベット順） -->
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..24,400,0..1,0&icon_names=arrow_back,block,casino,close,delete,group,logout,monitor_heart,person,person_add,refresh,shield,swap_horiz,undo,warning&display=block">
+  <link rel="stylesheet" href="/console/app.css">
+  <link rel="stylesheet" href="/operator/admin.css">
+  <script>
+    // グループの画面で選んだ見た目（ライト／ダーク）があれば合わせる
+    (function () { try { var t = localStorage.getItem('taku.theme'); if (t === 'dark' || t === 'light') document.documentElement.setAttribute('data-theme', t); } catch (e) {} })();
+  </script>
+</head>
+<body data-area="operator">
+  <header class="appbar op-bar">
+    <a class="brand" href="/" title="入口へ"><span class="logo"><span class="material-icons" aria-hidden="true">casino</span></span><span>卓予定</span><span class="area-badge op">運営</span></a>
+    <div class="hdr-actions">
+      <a class="hbtn" href="/" title="入口（グループの一覧）へ"><span class="material-icons sm" aria-hidden="true">arrow_back</span><span class="btxt">入口へ</span></a>
+      <button type="button" id="reload" class="hbtn" title="読み直す"><span class="material-icons sm" aria-hidden="true">refresh</span><span class="btxt">更新</span></button>
+    </div>
+  </header>
+  <main>
+    <section class="settings op">
+      <div class="page-head">
+        <h1>運営の管理画面</h1>
+        <p class="lead">すべてのグループと利用者を見渡し、困ったときに手を入れます。グループの中身（卓・予定・Webhook の URL）は見ません。</p>
+      </div>
+      <div class="set2">
+        <nav class="set-nav" id="opNav" aria-label="管理の区分">
+          <button type="button" data-set="overview" aria-current="true">様子</button>
+          <button type="button" data-set="groups">グループ</button>
+          <button type="button" data-set="users">利用者</button>
+        </nav>
+        <div>
+          <!-- ===== 様子 ===== -->
+          <div class="set-pane" data-pane="overview">
+            <div class="op-counts" id="opCounts"></div>
+            <div class="card" id="opPatrol"></div>
+            <div class="card">
+              <h3><span class="material-icons sm" aria-hidden="true">warning</span>Discord への送信の失敗 <small class="hint">送り直しても届かなかったもの・送り先が無かったもの。新しい順 50 件</small></h3>
+              <p class="hint" id="opFailSum"></p>
+              <div class="wrap"><table id="opFails"></table></div>
+            </div>
+          </div>
+
+          <!-- ===== グループ ===== -->
+          <div class="set-pane" data-pane="groups" hidden>
+            <div class="card">
+              <h3><span class="material-icons sm" aria-hidden="true">group</span>グループ <small class="hint">最後に使われたのが新しい順。行を押すと詳しく出ます</small></h3>
+              <div class="wrap"><table id="opGroups" class="op-table"></table></div>
+            </div>
+            <div class="card op-detail" id="opGroup" hidden></div>
+          </div>
+
+          <!-- ===== 利用者 ===== -->
+          <div class="set-pane" data-pane="users" hidden>
+            <div class="card">
+              <h3><span class="material-icons sm" aria-hidden="true">person</span>利用者 <small class="hint">一度でもログインした人。最後にログインしたのが新しい順</small></h3>
+              <input type="search" id="opUserFilter" placeholder="名前か Discord ID で絞る" aria-label="利用者を絞る">
+              <div class="wrap"><table id="opUsers" class="op-table"></table></div>
+              <p class="hint">「ログインを切る」は、その人のログインをすべて消します（Discord でログインし直せば、また入れます）。「締め出す」と、ログインもできなくなります。別の Discord アカウントは止められません。</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- 締め出す理由を書く窓 -->
+  <div class="modal" id="banModal" hidden>
+    <form class="box confirm" id="banForm" role="dialog" aria-modal="true" aria-labelledby="banTitle" tabindex="-1">
+      <h3 id="banTitle">締め出す</h3>
+      <p id="banText"></p>
+      <label class="f" for="banReason">理由 <small>記録に残す（本人には見えない）</small></label>
+      <input type="text" id="banReason" maxlength="200">
+      <div class="btns">
+        <button type="button" class="btn" id="banCancel">やめる</button>
+        <button type="submit" class="btn danger-fill">締め出す</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- 確かめる窓（グループの画面と同じ部品） -->
+  <div class="modal" id="confirmModal" hidden>
+    <form class="box confirm" id="confirmForm" role="alertdialog" aria-modal="true" aria-labelledby="confirmTitle" aria-describedby="confirmText" tabindex="-1">
+      <h3 id="confirmTitle">確認</h3>
+      <p id="confirmText"></p>
+      <div class="btns">
+        <button type="button" class="btn" id="confirmCancel">やめる</button>
+        <button type="submit" class="btn primary" id="confirmOk">OK</button>
+      </div>
+    </form>
+  </div>
+  <div id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+  <script type="module" src="/operator/main.ts"></script>
+</body>
+</html>

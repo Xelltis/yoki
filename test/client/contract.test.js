@@ -29,6 +29,13 @@ test('グループの画面で使うアイコンが、読み込むアイコン�
   expect([...used].filter((n) => !names.has(n))).toEqual([]);
 });
 
+test('運営者の管理画面で使うアイコンが、読み込むアイコンの一覧にある', () => {
+  const html = read('src/client/operator/index.html');
+  const names = iconNames(html);
+  const used = new Set([...tsIcons(read('src/client/operator/main.ts')), ...htmlIcons(html)]);
+  expect([...used].filter((n) => !names.has(n))).toEqual([]);
+});
+
 test('入口の画面で使うアイコンが、読み込むアイコンの一覧にある', () => {
   const html = read('src/client/index.html');
   const names = iconNames(html);
