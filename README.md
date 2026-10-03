@@ -71,6 +71,8 @@ npm run e2e          ブラウザで通しで確かめる（開発サーバー�
 
 依存のインストールスクリプトは、`package.json` の `allowScripts` で信頼したもの（workerd・esbuild・lefthook）だけを動かす。足すときは中身を確かめてから `npm approve-scripts --no-allow-scripts-pin <パッケージ>` で足す。
 
+Workers のテスト用の道具（`@cloudflare/vitest-pool-workers`）は、古い wrangler と miniflare を固定して抱えている（npm audit に出る）。`package.json` の `overrides` で、アプリと同じ版にそろえている。wrangler を上げたら、`overrides` の miniflare も wrangler が使う版に合わせる（テストが確かめる）。
+
 ## 公開（Cloudflare）
 
 1. **Discord アプリを作る**。[Discord Developer Portal](https://discord.com/developers/applications) で New Application → OAuth2 で、Redirects に `https://<公開するアドレス>/auth/callback` と `http://localhost:5173/auth/callback` を足す。Client ID と Client Secret を控える（Bot は要らない）
