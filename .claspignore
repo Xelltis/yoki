@@ -1,0 +1,7 @@
+# clasp push で送るのは、Apps Script プロジェクトに置く 4 つだけ。
+# テスト（test/）・旧い版（保管/）・スクリーンショットなどは送らない
+**/**
+!appsscript.json
+!Code.gs
+!Console.html
+!Tutorial.html

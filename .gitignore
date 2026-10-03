@@ -1,0 +1,9 @@
+# 本番のスクリプト ID。手元にだけ置く
+.clasp.json
+# 使わなくなった旧い版
+保管/
+# Google Drive と OS の同期用
+desktop.ini
+.tmp.drivedownload/
+.tmp.driveupload/
+__pycache__/

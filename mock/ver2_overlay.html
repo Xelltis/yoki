@@ -1,0 +1,629 @@
+<!-- ============================================================
+     UI 2026 案 ver2 の差し替え
+     原盤（デモ＝本物の Console.html + Code.gs）はそのままに、
+     「メンバーの予定」の表と「設定」の並びだけを重ねて置き換える。
+     元の要素は消さずに隠すか、新しい枠の中へ移して使う。
+     ============================================================ -->
+<style>
+  /* ---- 共通 ---- */
+  .v2badge {
+    display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 10px;
+    border-radius: var(--radius-pill); background: var(--accent-soft); color: var(--accent-text);
+    border: 1px solid var(--accent-line); font-size: 12px; font-weight: 700; vertical-align: 3px; margin-left: 8px;
+  }
+  .v2note {
+    display: flex; gap: 10px; align-items: flex-start; margin: 10px 0 0;
+    padding: 10px 12px; border-radius: var(--radius); background: var(--out); color: var(--muted); font-size: 12.5px;
+  }
+  .v2fold { border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--card); margin-top: 12px; overflow: hidden; }
+  .v2fold > summary {
+    list-style: none; cursor: pointer; padding: 13px 16px; font-size: 14px; font-weight: 700;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .v2fold > summary::-webkit-details-marker { display: none; }
+  .v2fold > summary::after { content: "▾"; margin-left: auto; color: var(--muted); font-size: 12px; transition: transform var(--dur-fast) ease-out; }
+  .v2fold[open] > summary::after { transform: rotate(180deg); }
+  .v2fold > summary .hint { font-weight: 400; font-size: 12.5px; }
+  .v2fold > summary:hover { background: var(--hover); }
+  .v2foldbody { padding: 0 16px 8px; border-top: 1px solid var(--line); }
+  .v2foldbody > .card { border: 0; box-shadow: none; padding: 14px 0; margin: 0; border-radius: 0; }
+  .v2foldbody > .card + .card { border-top: 1px solid var(--line); }
+
+  /* ---- 設定: 左に区分、右に中身 ---- */
+  #tab-settings[data-v2] { max-width: 1120px; }   /* 2 ペインにしたぶん、原盤の 880px より広げる */
+  .v2set { display: grid; grid-template-columns: 196px minmax(0, 1fr); gap: 20px; align-items: start; }
+  .v2nav { position: sticky; top: calc(var(--appbar-h) + 14px); display: grid; gap: 2px; }
+  .v2nav button {
+    text-align: left; padding: 9px 12px; border: 0; border-radius: var(--radius); background: none;
+    color: var(--muted); font: 600 13.5px/1.5 inherit; cursor: pointer;
+    transition: background-color var(--dur-fast) ease-out, color var(--dur-fast) ease-out;
+  }
+  .v2nav button:hover { background: var(--hover); color: var(--text); }
+  .v2nav button[aria-current="true"] { background: var(--accent-soft); color: var(--accent-text); }
+  .v2pane[hidden] { display: none; }
+  .v2pane > .card:first-child { margin-top: 0; }
+
+  /* 知らせの表 */
+  .v2matrix { width: 100%; border-collapse: separate; border-spacing: 0; }
+  .v2matrix th, .v2matrix td { text-align: left; padding: 11px 12px; border-bottom: 1px solid var(--line); vertical-align: middle; font-size: 13px; }
+  .v2matrix thead th { background: var(--head); color: var(--muted); font-size: 11.5px; font-weight: 700; }
+  .v2matrix thead th:first-child { border-radius: var(--radius) 0 0 0; }
+  .v2matrix thead th:last-child { border-radius: 0 var(--radius) 0 0; }
+  .v2matrix tbody tr:last-child td { border-bottom: 0; }
+  .v2matrix .what b { display: block; font-size: 13.5px; }
+  .v2matrix .what .hint { font-size: 11.5px; }
+  .v2matrix td.dest { white-space: nowrap; }
+  .v2matrix td.tim { color: var(--muted); white-space: nowrap; }
+  .v2matrix td.tim input {
+    width: 58px; height: 30px; padding: 0 6px; text-align: center; font-variant-numeric: tabular-nums;
+    border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--card); color: var(--text);
+  }
+  .v2matrix td.on { width: 86px; text-align: right; white-space: nowrap; }
+  .v2dest {
+    display: inline-flex; align-items: center; gap: 5px; height: 24px; padding: 0 9px; border-radius: var(--radius-pill);
+    background: var(--out); color: var(--muted); font-size: 12px; font-weight: 600; border: 1px solid var(--line);
+  }
+  .v2dest.set { background: var(--accent-soft); border-color: var(--accent-line); color: var(--accent-text); }
+  .v2sw {
+    position: relative; width: 44px; height: 26px; border-radius: var(--radius-pill);
+    border: 1px solid var(--line-strong); background: var(--out); cursor: pointer; padding: 0;
+    transition: background-color var(--dur-fast) ease-out, border-color var(--dur-fast) ease-out;
+  }
+  .v2sw::after {
+    content: ""; position: absolute; top: 2px; left: 2px; width: 20px; height: 20px; border-radius: 50%;
+    background: var(--card); box-shadow: var(--shadow-sm); transition: transform var(--dur-fast) ease-out;
+  }
+  .v2sw[aria-checked="true"] { background: var(--accent); border-color: var(--accent); }
+  .v2sw[aria-checked="true"]::after { transform: translateX(18px); background: #fff; }
+  .v2rowmsg { font-size: 11.5px; color: var(--muted); white-space: nowrap; }
+
+  /* ---- メンバーの予定 ---- */
+  .v2chips { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin: 12px 0; }
+  .v2chip {
+    height: 32px; padding: 0 12px; border-radius: var(--radius-pill); border: 1px solid var(--line);
+    background: var(--card); color: var(--muted); font: 600 13px/1 inherit; cursor: pointer;
+    transition: background-color var(--dur-fast) ease-out, border-color var(--dur-fast) ease-out;
+  }
+  .v2chip:hover { background: var(--hover); }
+  .v2chip[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent-line); color: var(--accent-text); }
+  .v2chips select {
+    height: 32px; border-radius: var(--radius-pill); border: 1px solid var(--line); background: var(--card);
+    color: var(--text); padding: 0 30px 0 12px; font-size: 13px;
+  }
+  .v2chips .hint { margin-left: auto; }
+  .v2wrap { overflow: auto; border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--card); max-height: 72vh; }
+  table.v2av { border-collapse: separate; border-spacing: 0; width: 100%; min-width: 640px; }
+  .v2av th, .v2av td { border-bottom: 1px solid var(--line); height: 42px; padding: 0 8px; font-size: 13px; text-align: center; }
+  .v2av thead th { position: sticky; top: 0; z-index: 3; background: var(--head); color: var(--muted); font-size: 12px; font-weight: 700; }
+  .v2av thead th small { display: block; font-size: 10.5px; font-weight: 400; color: var(--muted); }
+  .v2av th.mine, .v2av td.mine { background: var(--accent-soft); }
+  .v2av th.mine { color: var(--accent-text); }
+  .v2av td.d, .v2av th.d { text-align: left; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .v2av td.c3 { text-align: left; white-space: normal; overflow-wrap: anywhere; line-height: 1.45; color: var(--muted); min-width: 150px; }
+  .v2av td.c3 b { color: var(--text); font-weight: 600; }
+  .v2av td.c3 .hol { display: block; font-size: 11px; }
+  .v2av tr.sun td.d { color: var(--sun); }
+  .v2av tr.sat td.d { color: var(--sat); }
+  .v2av tr.today td { background: var(--today); }
+  .v2av tr.today td.mine { background: var(--accent-soft); }
+  .v2av tr.free td.c3 { background: var(--soft); }
+  .v2cell { position: relative; }
+  .v2mk {
+    width: 100%; height: 32px; border: 0; border-radius: var(--radius-sm); background: none;
+    color: var(--muted); font: 700 13px/1 inherit; cursor: default;
+  }
+  .v2mk.can { cursor: pointer; }
+  .v2mk.can:hover { background: var(--hover); }
+  .v2mk[data-v="△"] { background: var(--soon); color: var(--violet); }
+  .v2mk[data-v="×"] { background: var(--warn); color: var(--err-text); }
+  .v2mk[data-v="参"], .v2mk[data-v="GM"] { background: var(--session); color: var(--booked-text); }
+  .v2pen {
+    position: absolute; top: 1px; right: 1px; width: 20px; height: 20px; border: 0; border-radius: 6px;
+    background: none; color: var(--muted); cursor: pointer; opacity: .5; display: grid; place-items: center;
+  }
+  .v2pen:hover { opacity: 1; background: var(--hover); }
+  .v2dot { position: absolute; left: 4px; top: 4px; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+  .v2list { display: none; }
+  .v2day {
+    display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+    border: 1px solid var(--line); border-radius: var(--radius); background: var(--card);
+  }
+  .v2day + .v2day { margin-top: 8px; }
+  .v2day.today { border-color: var(--accent-line); }
+  .v2day .d { width: 76px; flex: none; font-variant-numeric: tabular-nums; font-size: 13.5px; font-weight: 600; }
+  .v2day .d small { display: block; font-size: 11px; font-weight: 400; color: var(--muted); }
+  .v2day.sun .d { color: var(--sun); }
+  .v2day.sat .d { color: var(--sat); }
+  .v2day .info { flex: 1; min-width: 0; font-size: 12.5px; color: var(--muted); }
+  .v2day .info b { color: var(--text); font-weight: 600; }
+  .v2day .pick { display: flex; gap: 4px; flex: none; }
+  .v2day .pick button {
+    width: 40px; height: 34px; border-radius: var(--radius-sm); border: 1px solid var(--line);
+    background: var(--card); color: var(--muted); font: 700 13px/1 inherit; cursor: pointer;
+  }
+  .v2day .pick button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent-line); color: var(--accent-text); }
+  .v2day .pick .v2pen { position: static; width: 34px; height: 34px; opacity: .6; border: 1px solid var(--line); border-radius: var(--radius-sm); }
+
+  @media (max-width: 760px) {
+    .v2set { grid-template-columns: 1fr; }
+    .v2nav { position: static; grid-auto-flow: column; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
+    .v2nav::-webkit-scrollbar { display: none; }
+    .v2nav button { white-space: nowrap; }
+    .v2wrap { display: none; }
+    .v2list { display: block; }
+    .v2chips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin: 10px 0; }
+    .v2chips::-webkit-scrollbar { display: none; }
+    .v2chips .hint { display: none; }
+    .v2chip, .v2chips select { flex: none; }
+    .v2matrix, .v2matrix tbody, .v2matrix tr, .v2matrix td { display: block; width: 100%; }
+    .v2matrix thead { display: none; }
+    .v2matrix tr { border-bottom: 1px solid var(--line); padding: 10px 0; position: relative; }
+    .v2matrix tr:last-child { border-bottom: 0; }
+    .v2matrix td { border: 0; padding: 3px 0; }
+    .v2matrix td.on { position: absolute; top: 10px; right: 0; width: auto; }
+    .v2matrix td.what { padding-right: 60px; }
+  }
+</style>
+
+<script>
+/* ver2 の差し替え。原盤の関数と要素はそのまま使い、見せ方だけを置き換える */
+(function () {
+  'use strict';
+  var $$ = function (id) { return document.getElementById(id); };
+  var V2 = { we: false, free: false, mineOnly: false, target: '', pane: 'notify' };
+
+  function el(tag, cls, html) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (html != null) e.innerHTML = html;
+    return e;
+  }
+  function icon(name, size) { return '<span class="material-icons ' + (size || 'sm') + '" aria-hidden="true">' + name + '</span>'; }
+  function fire(node, type) { node.dispatchEvent(new Event(type, { bubbles: true })); }
+
+  /* =========================================================
+     1. 設定 — 左に 5 区分、右に中身。知らせは 1 枚の表に畳む
+     ========================================================= */
+  var PANES = [
+    { k: 'notify', t: '知らせ' },
+    { k: 'table', t: 'この卓予定' },
+    { k: 'device', t: 'この端末' },
+    { k: 'access', t: '入り口と合言葉' },
+    { k: 'log', t: '送信の記録' }
+  ];
+  var MATRIX = [
+    { k: 'remind', t: '開催前の知らせ', h: '開催日が近づいた卓を、GM と参加者に', dest: 'remind' },
+    { k: 'urge', t: '期間前の催促', h: '募集・調整のまま期間の前日になったら、GM に', dest: 'recruit' },
+    { k: 'soon', t: '開始直前の知らせ', h: '当日、開始の少し前に GM と参加者に', dest: 'remind' },
+    { k: 'change', t: '登録・変更・削除', h: '保存のときに「Discord に知らせる」を付けたぶん', dest: 'auto' },
+    { k: 'ask', t: '募集と参加確認', h: '募集の卓の案内と、興味ありの人への確認', dest: 'recruit' }
+  ];
+
+  function cardByTitle(sec, t) {
+    var cards = [].slice.call(sec.children).filter(function (n) { return n.classList && n.classList.contains('card'); });
+    for (var i = 0; i < cards.length; i++) {
+      var h = cards[i].querySelector('h3');
+      if (h && h.textContent.replace(/\s+/g, '').indexOf(t) === 0) return cards[i];
+    }
+    return null;
+  }
+
+  function buildSettings() {
+    var sec = $$('tab-settings');
+    if (!sec || sec.dataset.v2) return;
+    sec.dataset.v2 = '1';
+
+    var head = sec.querySelector('.page-head');
+    if (head) {
+      var h1 = head.querySelector('h1');
+      if (h1) h1.insertAdjacentHTML('beforeend', '<span class="v2badge">ver2</span>');
+      var lead = head.querySelector('.lead');
+      if (lead) lead.textContent = '左の区分で切り替えます。「この端末」以外は「設定」シートに書き込まれ、合言葉を知っている人なら誰でも変えられます。';
+    }
+
+    // もとのカードを覚えておく
+    var byT = {
+      device: cardByTitle(sec, 'この端末'), name: cardByTitle(sec, '名前'), discord: cardByTitle(sec, 'Discord'),
+      kind: cardByTitle(sec, '種類ごとのチャンネル'), remind: cardByTitle(sec, '事前通知'), other: cardByTitle(sec, 'そのほかの知らせ'),
+      series: cardByTitle(sec, 'シリーズごとの通知'), finish: cardByTitle(sec, '卓の後始末'), view: cardByTitle(sec, '表示'),
+      pw: cardByTitle(sec, '合言葉')
+    };
+    // 送信の記録は Discord のカードの中にあるので、見出しごと取り出す
+    var logTable = $$('stLog'), logWrap = logTable ? logTable.closest('.wrap') : null;
+    var logHead = logWrap ? logWrap.previousElementSibling : null;
+
+    var wrap = el('div', 'v2set');
+    wrap.innerHTML =
+      '<nav class="v2nav" aria-label="設定の区分">' +
+      PANES.map(function (p) { return '<button type="button" data-v2p="' + p.k + '"' + (p.k === 'notify' ? ' aria-current="true"' : '') + '>' + p.t + '</button>'; }).join('') +
+      '</nav><div class="v2panes">' +
+      PANES.map(function (p) { return '<div class="v2pane" data-v2pane="' + p.k + '"' + (p.k === 'notify' ? '' : ' hidden') + '></div>'; }).join('') +
+      '</div>';
+    sec.appendChild(wrap);
+    var pane = function (k) { return wrap.querySelector('[data-v2pane="' + k + '"]'); };
+
+    // 知らせ: 表 + 折りたたみ（チャンネル / シリーズ）
+    var mcard = el('div', 'card');
+    mcard.innerHTML =
+      '<h3>知らせ <small class="hint">何を・どこへ・いつ送るかを 1 枚で</small></h3>' +
+      '<div style="overflow-x:auto"><table class="v2matrix"><thead><tr>' +
+      '<th style="width:40%">知らせ</th><th>送り先</th><th>タイミング</th><th class="on">送る</th>' +
+      '</tr></thead><tbody id="v2matrixBody"></tbody></table></div>' +
+      '<div class="v2note"><span aria-hidden="true">💡</span><span>送り先は下の「チャンネル」で決めます。決めていない知らせは、基本のチャンネルに届きます。' +
+      'シリーズだけ別のチャンネル・別の時刻にしたいときは、その下で上書きします。</span></div>';
+    pane('notify').appendChild(mcard);
+
+    var f1 = el('details', 'v2fold');
+    f1.innerHTML = '<summary>' + icon('notifications') + 'チャンネル（Discord の Webhook URL）<span class="hint" id="v2chSum"></span></summary><div class="v2foldbody"></div>';
+    pane('notify').appendChild(f1);
+    [byT.discord, byT.kind].forEach(function (c) { if (c) f1.querySelector('.v2foldbody').appendChild(c); });
+
+    var f2 = el('details', 'v2fold');
+    f2.innerHTML = '<summary>' + icon('date_range') + 'シリーズごとの上書き<span class="hint" id="v2snSum"></span></summary><div class="v2foldbody"></div>';
+    pane('notify').appendChild(f2);
+    if (byT.series) f2.querySelector('.v2foldbody').appendChild(byT.series);
+
+    // この卓予定 / この端末 / 合言葉 / 記録
+    [byT.name, byT.finish, byT.view].forEach(function (c) { if (c) pane('table').appendChild(c); });
+    if (byT.device) pane('device').appendChild(byT.device);
+    if (byT.pw) pane('access').appendChild(byT.pw);
+    var logCard = el('div', 'card');
+    if (logHead && logHead.tagName === 'H3') { logHead.style.marginTop = '0'; logCard.appendChild(logHead); }
+    if (logWrap) logCard.appendChild(logWrap);
+    if (!logWrap) logCard.innerHTML = '<h3>送信の記録</h3><p class="hint">まだ送っていません。</p>';
+    pane('log').appendChild(logCard);
+
+    // 表に畳んだカードは隠して残す（値の出し入れに使う）
+    var hold = el('div', '');
+    hold.hidden = true;
+    hold.id = 'v2hold';
+    sec.appendChild(hold);
+    [byT.remind, byT.other].forEach(function (c) { if (c) hold.appendChild(c); });
+
+    wrap.querySelectorAll('[data-v2p]').forEach(function (b) {
+      b.onclick = function () {
+        V2.pane = b.getAttribute('data-v2p');
+        wrap.querySelectorAll('[data-v2p]').forEach(function (o) {
+          if (o === b) o.setAttribute('aria-current', 'true'); else o.removeAttribute('aria-current');
+        });
+        PANES.forEach(function (p) { pane(p.k).hidden = p.k !== V2.pane; });
+      };
+    });
+
+    buildMatrix();
+  }
+
+  function destChip(kind) {
+    var d = (window.D || {});
+    if (kind === 'auto') return '<span class="v2dest">卓に合わせて自動</span>';
+    if (kind === 'remind') return d.remindWebhookSet
+      ? '<span class="v2dest set">事前通知のチャンネル</span>'
+      : '<span class="v2dest">基本のチャンネル</span>';
+    return d.recruitWebhookSet
+      ? '<span class="v2dest set">募集のチャンネル</span>'
+      : '<span class="v2dest">基本のチャンネル</span>';
+  }
+
+  function buildMatrix() {
+    var body = $$('v2matrixBody');
+    if (!body) return;
+    body.innerHTML = '';
+    MATRIX.forEach(function (m) {
+      var tr = el('tr');
+      tr.innerHTML =
+        '<td class="what"><b>' + m.t + '</b><span class="hint">' + m.h + '</span></td>' +
+        '<td class="dest" data-v2dest="' + m.dest + '"></td>' +
+        '<td class="tim" data-v2tim="' + m.k + '"></td>' +
+        '<td class="on" data-v2on="' + m.k + '"></td>';
+      body.appendChild(tr);
+    });
+    syncMatrix();
+  }
+
+  /* 表の値は、隠してあるもとのカードの入力から読む。書き込みももとのボタンに任せる */
+  function syncMatrix() {
+    var body = $$('v2matrixBody');
+    if (!body || !window.D) return;
+    var st = D.settings || {};
+
+    body.querySelectorAll('[data-v2dest]').forEach(function (td) { td.innerHTML = destChip(td.getAttribute('data-v2dest')); });
+
+    var tim = function (k) { return body.querySelector('[data-v2tim="' + k + '"]'); };
+    var days = st.notifyDays === undefined ? 1 : st.notifyDays, hour = st.notifyHour === undefined ? 20 : st.notifyHour;
+    tim('remind').innerHTML = '開催日の <input type="text" inputmode="numeric" id="v2days" value="' + days + '" aria-label="何日前"> 日前 ' +
+      '<input type="text" inputmode="numeric" id="v2hour" value="' + hour + '" aria-label="何時台"> 時台';
+    tim('urge').textContent = '期間の前日（開催前の知らせと同じ時刻）';
+    tim('soon').innerHTML = '開始の <input type="text" inputmode="numeric" id="v2min" value="' + (st.soonMinutes === undefined ? 30 : st.soonMinutes) + '" aria-label="何分前"> 分前';
+    tim('change').textContent = 'その場で';
+    tim('ask').textContent = '押したときだけ';
+
+    var on = function (k) { return body.querySelector('[data-v2on="' + k + '"]'); };
+    function sw(td, checked, label, run) {
+      td.innerHTML = '';
+      var b = el('button', 'v2sw');
+      b.type = 'button';
+      b.setAttribute('role', 'switch');
+      b.setAttribute('aria-checked', String(!!checked));
+      b.setAttribute('aria-label', label);
+      b.onclick = run;
+      td.appendChild(b);
+    }
+    sw(on('remind'), !!st.setter, '開催前の知らせを送る', function () {
+      var btn = st.setter ? $$('stAutoOff') : $$('stAutoOn');
+      if (btn) btn.click();
+    });
+    sw(on('urge'), !!st.urge, '期間前の催促を送る', function () {
+      var c = $$('stUrge'); if (!c) return;
+      c.checked = !c.checked; fire(c, 'change');
+    });
+    sw(on('soon'), !!st.soon, '開始直前の知らせを送る', function () {
+      var c = $$('stSoon'), m = $$('stSoonMin'), v = $$('v2min');
+      if (!c) return;
+      if (m && v) m.value = v.value;
+      c.checked = !c.checked; fire(c, 'change');
+    });
+    sw(on('change'), !!st.notifyOnSave, '登録・変更・削除を知らせる', function () {
+      var c = $$('stNotifyOnSave'); if (!c) return;
+      c.checked = !c.checked; fire(c, 'change');
+    });
+    on('ask').innerHTML = '<span class="v2rowmsg">手で送る</span>';
+
+    // 日時の書き換え。欄を離れたときに、もとのカードのボタンへ渡す
+    var push = function () {
+      var d = $$('v2days'), h = $$('v2hour'), od = $$('stDays'), oh = $$('stHour');
+      if (!d || !od) return;
+      if (String(d.value).trim() === String(days) && String(h.value).trim() === String(hour)) return;
+      od.value = String(d.value).trim(); oh.value = String(h.value).trim();
+      fire(od, 'input'); fire(oh, 'input');
+      if ($$('stAutoOn')) $$('stAutoOn').click();
+    };
+    ['v2days', 'v2hour'].forEach(function (id) { var n = $$(id); if (n) n.addEventListener('change', push); });
+    var mn = $$('v2min');
+    if (mn) mn.addEventListener('change', function () {
+      var om = $$('stSoonMin'), sv = $$('stSoonSave');
+      if (!om || !sv) return;
+      om.value = String(mn.value).trim(); fire(om, 'input'); sv.click();
+    });
+
+    var ch = $$('v2chSum');
+    if (ch) ch.textContent = D.webhookSet ? '基本' + (D.remindWebhookSet ? '・事前通知' : '') + (D.recruitWebhookSet ? '・募集' : '') : '未設定';
+    var sn = $$('v2snSum');
+    if (sn) sn.textContent = (D.seriesNotify || []).length ? (D.seriesNotify || []).length + ' 件' : 'なし';
+  }
+
+  /* =========================================================
+     2. メンバーの予定 — 表を組み直し、狭い画面では日ごとのリストに
+     ========================================================= */
+  function buildAvail() {
+    var sec = $$('tab-avail');
+    if (!sec || sec.dataset.v2) return;
+    sec.dataset.v2 = '1';
+
+    var h1 = sec.querySelector('.page-head h1');
+    if (h1) h1.insertAdjacentHTML('beforeend', '<span class="v2badge">ver2</span>');
+
+    // もとの絞り込みは、上のチップに置き換える（畳んだパネルは残す）
+    var ff = $$('foldFilter');
+    if (ff) {
+      ff.hidden = true;
+      if (ff.nextElementSibling && ff.nextElementSibling.classList.contains('tip')) ff.nextElementSibling.hidden = true;
+    }
+    if ($$('afSummary')) $$('afSummary').hidden = true;
+
+    var chips = el('div', 'v2chips');
+    chips.innerHTML =
+      '<button type="button" class="v2chip" data-v2f="we" aria-pressed="false">土日祝だけ</button>' +
+      '<button type="button" class="v2chip" data-v2f="free" aria-pressed="false">全員空きだけ</button>' +
+      '<button type="button" class="v2chip" data-v2f="mineOnly" aria-pressed="false">自分の列だけ</button>' +
+      '<label class="sr-only" for="v2target">卓で絞る</label><select id="v2target"></select>' +
+      '<span class="hint">空欄 = 参加できる。自分の列のマスを押すと 空 → △ → × と変わります</span>';
+    var wrapOld = sec.querySelector('.wrap.avail');
+    sec.insertBefore(chips, wrapOld);
+
+    var mine = el('div', 'v2wrap', '<table class="v2av"><thead id="v2avHead"></thead><tbody id="v2avBody"></tbody></table>');
+    sec.insertBefore(mine, wrapOld);
+    var list = el('div', 'v2list');
+    list.id = 'v2avList';
+    sec.insertBefore(list, wrapOld);
+    wrapOld.hidden = true;   // もとの表は残したまま隠す（原盤の描き直しはそのまま動く）
+
+    chips.querySelectorAll('[data-v2f]').forEach(function (b) {
+      b.onclick = function () {
+        var k = b.getAttribute('data-v2f'), on = b.getAttribute('aria-pressed') !== 'true';
+        b.setAttribute('aria-pressed', String(on));
+        V2[k] = on;
+        renderV2Avail();
+      };
+    });
+    $$('v2target').onchange = function () { V2.target = this.value; renderV2Avail(); };
+  }
+
+  function v2Names() {
+    var mine = (window.me && me()) || '';
+    var names = (D.members || []).map(function (m) { return m.name; });
+    if (V2.mineOnly && mine) return [mine];
+    if (V2.target) {
+      var s = (D.sessions || []).filter(function (x) { return x.id === V2.target; })[0];
+      if (s) {
+        var inSes = [s.gm].concat(s.members || []).concat(s.want || []).filter(Boolean);
+        names = names.filter(function (n) { return inSes.indexOf(n) >= 0; });
+      }
+    }
+    // 卓の多い人を左に（原盤の並びに合わせる）
+    var act = (window.active ? active() : (D.sessions || []));
+    return names.sort(function (a, b) {
+      var ca = act.filter(function (s) { return s.gm === a || (s.members || []).indexOf(a) >= 0; }).length;
+      var cb = act.filter(function (s) { return s.gm === b || (s.members || []).indexOf(b) >= 0; }).length;
+      return cb - ca;
+    });
+  }
+
+  function v2Days() {
+    var out = [];
+    (D.availDays || []).forEach(function (key) {
+      var d = parseYmd(key), dow = d.getDay(), hol = window.holidayName ? holidayName(key) : '';
+      if (V2.we && !(dow === 0 || dow === 6 || hol)) return;
+      if (V2.free) {
+        var names = v2Names(), marks = D.avail[key] || {}, bk = D.booked[key] || {};
+        if (!names.length || !names.every(function (n) { return !(bk[n] || marks[n]); })) return;
+      }
+      out.push(key);
+    });
+    return out;
+  }
+
+  function setMark(key, next) {
+    var name = me();
+    if (!name) { if (window.needMe) needMe(); return; }
+    var cur = (D.avail[key] || {})[name] || '';
+    if (next === cur) return;
+    if (!D.avail[key]) D.avail[key] = {};
+    if (next) D.avail[key][name] = next; else delete D.avail[key][name];
+    renderV2Avail();
+    if (window.renderCal) renderCal();
+    api().withSuccessHandler(function () { toast(fmtJa(key) + ' ' + name + ': ' + (next || '空欄')); })
+      .withFailureHandler(function (e) {
+        if (cur) D.avail[key][name] = cur; else delete D.avail[key][name];
+        renderV2Avail(); toast('保存に失敗: ' + e.message);
+      })
+      .setAvailability(name, key, next);
+  }
+
+  function dayPlans(key) {
+    var out = [];
+    (window.active ? active() : []).forEach(function (s) { if (s.date === key) out.push(s); });
+    return out;
+  }
+
+  function renderV2Avail() {
+    if (!window.D || !D.availDays || !$$('v2avBody')) return;
+    var names = v2Names(), mine = (window.me && me()) || '', days = v2Days();
+    var act = window.active ? active() : [];
+
+    // 卓の絞り込みの選択肢
+    var sel = $$('v2target');
+    if (sel && sel.dataset.n !== String(act.length)) {
+      sel.dataset.n = String(act.length);
+      sel.innerHTML = '<option value="">卓で絞らない</option>' +
+        act.map(function (s) { return '<option value="' + esc(s.id) + '">' + esc(s.name) + '</option>'; }).join('');
+      sel.value = V2.target;
+    }
+
+    $$('v2avHead').innerHTML = '<tr><th class="d">日付</th><th class="d">その日の卓</th>' +
+      names.map(function (n) {
+        var gm = act.filter(function (s) { return s.gm === n; }).length;
+        var pl = act.filter(function (s) { return s.gm !== n && (s.members || []).indexOf(n) >= 0; }).length;
+        return '<th class="' + (n === mine ? 'mine' : '') + '">' + esc(n) + '<small>GM ' + gm + '・PL ' + pl + '</small></th>';
+      }).join('') + '</tr>';
+
+    var body = $$('v2avBody');
+    body.innerHTML = '';
+    days.forEach(function (key) {
+      var d = parseYmd(key), dow = d.getDay(), hol = window.holidayName ? holidayName(key) : '';
+      var marks = D.avail[key] || {}, bk = D.booked[key] || {}, notes = (D.availNotes || {})[key] || {};
+      var plans = dayPlans(key);
+      var free = names.length && names.every(function (n) { return !(bk[n] || marks[n]); });
+      var tr = el('tr', (dow === 0 ? 'sun ' : dow === 6 ? 'sat ' : '') + (key === D.today ? 'today ' : '') + (free ? 'free' : ''));
+      tr.innerHTML = '<td class="d">' + (d.getMonth() + 1) + '/' + d.getDate() + ' <span class="hint">' + WD[dow] + '</span></td>' +
+        '<td class="c3">' + (plans.length ? '<b>' + plans.map(function (s) { return esc(s.name); }).join('、') + '</b>' : (free ? '<span class="hint">全員空き</span>' : '')) +
+        (hol ? '<span class="hol hint">' + esc(hol) + '</span>' : '') + '</td>';
+      names.forEach(function (n) {
+        var td = el('td', 'v2cell' + (n === mine ? ' mine' : ''));
+        var v = bk[n] || marks[n] || '';
+        var canEdit = n === mine && !bk[n];
+        var b = el('button', 'v2mk' + (canEdit ? ' can' : ''), v || '<span class="hint">・</span>');
+        b.type = 'button';
+        b.setAttribute('data-v', v);
+        b.setAttribute('aria-label', fmtJa(key) + ' ' + n + ' ' + (v || '参加できる'));
+        if (canEdit) {
+          b.onclick = function () { setMark(key, { '': '△', '○': '△', '△': '×', '×': '' }[v]); };
+        } else {
+          b.disabled = true;
+        }
+        td.appendChild(b);
+        if (n === mine) {
+          var pen = el('button', 'v2pen', icon('edit', 'xs'));
+          pen.type = 'button';
+          pen.title = 'この日のメモを書く';
+          pen.setAttribute('aria-label', fmtJa(key) + ' のメモを書く');
+          pen.onclick = function (ev) { ev.stopPropagation(); if (window.openMemo) openMemo(key); };
+          td.appendChild(pen);
+        }
+        if (notes[n]) {
+          var dot = el('span', 'v2dot');
+          dot.title = notes[n].text;
+          td.appendChild(dot);
+        }
+        tr.appendChild(td);
+      });
+      body.appendChild(tr);
+    });
+
+    // 狭い画面: 日ごとのリスト
+    var box = $$('v2avList');
+    box.innerHTML = '';
+    days.forEach(function (key) {
+      var d = parseYmd(key), dow = d.getDay(), hol = window.holidayName ? holidayName(key) : '';
+      var marks = D.avail[key] || {}, bk = D.booked[key] || {};
+      var plans = dayPlans(key);
+      var ng = names.filter(function (n) { return n !== mine && marks[n] === '×'; });
+      var sk = names.filter(function (n) { return n !== mine && marks[n] === '△'; });
+      var row = el('div', 'v2day' + (dow === 0 ? ' sun' : dow === 6 ? ' sat' : '') + (key === D.today ? ' today' : ''));
+      row.innerHTML = '<div class="d">' + (d.getMonth() + 1) + '/' + d.getDate() + '<small>' + WD[dow] + (hol ? ' ' + esc(hol) : '') + '</small></div>' +
+        '<div class="info">' + (plans.length ? '<b>' + plans.map(function (s) { return esc(s.name); }).join('、') + '</b>' : '') +
+        (ng.length || sk.length ? '<div>' + (ng.length ? '× ' + esc(ng.join('、')) : '') + (ng.length && sk.length ? ' ／ ' : '') + (sk.length ? '△ ' + esc(sk.join('、')) : '') + '</div>' : '') +
+        '</div>';
+      var pick = el('div', 'pick');
+      if (bk[mine]) {
+        pick.innerHTML = '<span class="v2mk" data-v="' + bk[mine] + '" style="width:40px;height:34px;display:grid;place-items:center">' + bk[mine] + '</span>';
+      } else {
+        [['', '◯'], ['△', '△'], ['×', '×']].forEach(function (p) {
+          var b = el('button', '', p[1]);
+          b.type = 'button';
+          b.setAttribute('aria-pressed', String((marks[mine] || '') === p[0]));
+          b.setAttribute('aria-label', fmtJa(key) + 'を' + (p[0] === '' ? '参加できる' : p[0] === '△' ? '調整すれば可' : '不可') + 'にする');
+          b.onclick = function () { setMark(key, p[0]); };
+          pick.appendChild(b);
+        });
+        var pen2 = el('button', 'v2pen', icon('edit', 'xs'));
+        pen2.type = 'button';
+        pen2.setAttribute('aria-label', fmtJa(key) + ' のメモを書く');
+        pen2.onclick = function () { if (window.openMemo) openMemo(key); };
+        pick.appendChild(pen2);
+      }
+      row.appendChild(pick);
+      box.appendChild(row);
+    });
+  }
+
+  /* =========================================================
+     3. 原盤の描き直しに相乗りする
+     ========================================================= */
+  function hook(name, after) {
+    var orig = window[name];
+    if (typeof orig !== 'function') return;
+    window[name] = function () {
+      var r = orig.apply(this, arguments);
+      try { after(); } catch (e) { if (window.console) console.warn('v2:' + name, e); }
+      return r;
+    };
+  }
+
+  function boot() {
+    if (!window.D || !D.members) { setTimeout(boot, 120); return; }
+    // 設定は ver47 で本体に入ったので、本体に 2 ペインがあれば差し替えない
+    if (!document.querySelector('#tab-settings .set2')) { buildSettings(); syncMatrix(); }
+    buildAvail();
+    renderV2Avail();
+  }
+
+  hook('renderAvail', renderV2Avail);
+  hook('renderSettings', function () {
+    if (document.querySelector('#tab-settings .set2')) return;   // 本体に入ったぶんは触らない
+    buildSettings(); syncMatrix();
+  });
+  hook('renderAll', function () { renderV2Avail(); syncMatrix(); });
+  document.addEventListener('DOMContentLoaded', boot);
+  if (document.readyState !== 'loading') boot();
+})();
+</script>
