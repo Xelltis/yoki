@@ -25,3 +25,10 @@ pre-commit:
         - "wrangler.jsonc"
         - "package-lock.json"
       run: npm test
+
+# コミットの説明: Conventional Commits の形か（commitlint。決まりは commitlint.config.js と CLAUDE.md の「コミット」）。
+# Git が作る説明（Merge・Revert・fixup! など）は commitlint がそのまま通す
+commit-msg:
+  jobs:
+    - name: commitlint
+      run: npx --no -- commitlint --edit "{1}"
