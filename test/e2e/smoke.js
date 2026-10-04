@@ -16,7 +16,11 @@ await withDevServer(async (base) => {
   const D = () => page.evaluate(() => window.yoki.D);
   /** 画面のデータが条件を満たすまで待つ（fn はブラウザの中で D と arg を受け取る） */
   const until = (fn, arg) => page.waitForFunction(`(${fn})(window.yoki.D, ${JSON.stringify(arg ?? null)})`, null, { timeout: 15000 });
-  const tab = (name) => page.click(`nav.tabs button[data-tab=${name}]`);
+  /** タブを押して、タブの中身が出るのを待つ（中身はあとから読み込んで描くことがある） */
+  const tab = async (name) => {
+    await page.click(`nav.tabs button[data-tab=${name}]`);
+    await page.waitForSelector(`#tab-${name}`, { state: 'visible', timeout: 15000 });
+  };
   /** グループの管理画面を開き、区分を選ぶ */
   const admin = async (pane) => {
     if (!page.url().includes('/admin/')) { await page.goto(base + 'g/sample/admin/'); await page.waitForFunction(() => window.yoki && window.yoki.D, null, { timeout: 30000 }); }
