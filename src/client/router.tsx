@@ -3,7 +3,7 @@
 // 見た目（CSS）がぶつからないように、ページを読み直す（ふつうの <a href>）
 import type { QueryClient } from '@tanstack/react-query';
 import { createRootRouteWithContext, createRoute, createRouter, lazyRouteComponent, notFound, Outlet, redirect } from '@tanstack/react-router';
-import { ADMIN_PANES, type AdminPane } from '../shared/routes';
+import { ADMIN_PANES, type AdminPane, OPERATOR_PANES, type OperatorPane } from '../shared/routes';
 import { queryClient } from './app/queryClient';
 import { load } from './app/storage';
 
@@ -76,9 +76,36 @@ const adminPaneRoute = createRoute({
   component: lazyRouteComponent(() => import('./features/console/admin/AdminPaneView'), 'AdminPaneView'),
 });
 
+/* 運営者の管理画面（/admin/<区分>/）。Worker が運営者かを確かめてから、この画面を返す */
+const isOpPane = (p: string): p is OperatorPane => (OPERATOR_PANES as readonly string[]).includes(p);
+const operatorRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/admin',
+  component: lazyRouteComponent(() => import('./features/operator/OperatorLayout'), 'OperatorLayout'),
+});
+/** /admin/ は区分へ移る。前の画面の #legal などの # が付いていればそれ、無ければ前に見ていた区分、それも無ければ様子 */
+const operatorIndexRoute = createRoute({
+  getParentRoute: () => operatorRoute,
+  path: '/',
+  beforeLoad: ({ location }) => {
+    const fromHash = location.hash.replace(/^#/, ''), saved = load('opPane');
+    const pane: OperatorPane = isOpPane(fromHash) ? fromHash : isOpPane(saved) ? saved : 'overview';
+    throw redirect({ to: '/admin/$pane/', params: { pane }, hash: '' });
+  },
+});
+const operatorPaneRoute = createRoute({
+  getParentRoute: () => operatorRoute,
+  path: '$pane',
+  /** グループの区分で開いているグループ（?open=<id>） */
+  validateSearch: (s: Record<string, unknown>): { open?: string } => (typeof s.open === 'string' && s.open ? { open: s.open } : {}),
+  beforeLoad: ({ params }) => { if (!isOpPane(params.pane)) throw notFound(); },
+  component: lazyRouteComponent(() => import('./features/operator/OperatorPaneView'), 'OperatorPaneView'),
+});
+
 const routeTree = rootRoute.addChildren([
   homeRoute,
   groupRoute.addChildren([calRoute, recruitRoute, availRoute, settingsRoute, adminRoute.addChildren([adminIndexRoute, adminPaneRoute])]),
+  operatorRoute.addChildren([operatorIndexRoute, operatorPaneRoute]),
 ]);
 
 /** 検索の文字（?login=… など）は、文字のまま読み書きする（TanStack Router の既定は JSON として読むので、数字や引用符が変わる） */
