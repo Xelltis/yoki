@@ -34,7 +34,9 @@ src/worker/        サーバー（TypeScript、Hono）
   lib/             日本時間の日付・文字・エラー・ID・規約の本文の書き方
   seed/            サンプルデータ
 src/client/        画面（TypeScript。Vite の root）
-  index.html       入口（ログイン・グループの一覧・グループを作る）。動きは home.ts
+  index.html       React の画面の骨組み。main.tsx が入口（いまは入口のページ /。ログイン・グループの一覧・グループを作る）
+  app/  ui/        React の画面の共通の道具（TanStack Query・リンク）と部品（アイコン）
+  features/home/   入口のページ（React）
   console/         グループのアプリ（/g/:id/ と、管理者の画面 /g/:id/admin/ で開く）。main.ts が入口で、画面ごとのファイル（calendar・recruit・avail・form・settings など）に分ける
   operator/        運営の管理画面（/admin/ で開く）
 src/shared/        画面とサーバーの約束（画面データの型・呼び出しの名前・卓の状態・運営者の API の型）。両方から読む
@@ -65,6 +67,7 @@ LICENSE            ライセンス（MIT）
 npm test             サーバーと画面のテスト
 npm run test:coverage  テストのカバレッジ（サーバーと共有の型。表に出し、coverage/index.html にも書く。100% を下回ると失敗する）
 npm run typecheck    型の確認
+npm run lint         lint（oxlint。正しさの決まりと、React の hooks・アクセシビリティの決まり）
 npm run e2e          ブラウザで通しで確かめる（開発サーバーをその場で立てる。初回は npx playwright install chromium）
 ```
 
@@ -72,9 +75,11 @@ npm run e2e          ブラウザで通しで確かめる（開発サーバー�
 
 サーバー（`src/worker`）と共有の型（`src/shared`）のカバレッジは、文・分岐・関数・行のすべてで 100% を保つ。通らない道を足したら、テストも足す。テストの環境では動かせない道（本番だけの分かれ道など）だけ、理由を書いて `/* istanbul ignore … -- @preserve 理由 */` で外す（`@preserve` が無いと、組み立てのときにコメントが消えて効かない）。画面（`src/client`）は e2e で確かめる。
 
+lint は oxlint（`.oxlintrc.json`）。ESLint の TypeScript 対応（typescript-eslint）が、このリポジトリの TypeScript 7 にまだ対応していないため。警告も止める（`--deny-warnings`）。
+
 コミットのときは、Git のフック（lefthook。`lefthook.yml`）が次を確かめる。フックは `npm install` のときに入る（入っていなければ `npx lefthook install`）。
 
-- コミットの前: 型の確認（TypeScript・Vue・tsconfig を変えたとき）とテスト（`src/`・`test/`・`migrations/`・`website/`・設定を変えたとき）
+- コミットの前: 型の確認（TypeScript・TSX・Vue・tsconfig を変えたとき）、lint（TypeScript・TSX・JavaScript・`.oxlintrc.json` を変えたとき）とテスト（`src/`・`test/`・`migrations/`・`website/`・設定を変えたとき）
 - コミットの説明: [Conventional Commits](https://www.conventionalcommits.org/ja/v1.0.0/) の形か（commitlint。`commitlint.config.js`。書き方は [CLAUDE.md](CLAUDE.md) の「コミット」）
 
 依存のインストールスクリプトは、`package.json` の `allowScripts` で信頼したもの（workerd・esbuild・lefthook）だけを動かす。足すときは中身を確かめてから `npm approve-scripts --no-allow-scripts-pin <パッケージ>` で足す。
@@ -188,7 +193,7 @@ npm run site:build   組み立てる（website/.vitepress/dist/）
 - **画面のファイルは、読み込んだときに何もしない。** 関数と定数だけを持ち、イベントの登録は `init()` に書いて `console/main.ts` から呼ぶ（ファイルどうしが互いを呼んでも、読み込みの順で壊れないように）
 - **D1 の問い合わせの数を増やしすぎない。** 1 回の呼び出しで使える数に上限がある（無料のプランで 50）。卓の数だけ文を作らず、JSON（`json_each`）で 1 文にまとめる
 - **表を変えるときは、マイグレーションを足す。** `migrations/` に番号の続くファイルを足し、すでにあるファイルは書き換えない
-- **画面にアイコンを足したら**、そのページの先頭の読み込みの `icon_names` にも名前をアルファベット順で足す（テストが確かめる）
+- **画面にアイコンを足したら**、React の画面（`<Icon name>`）は `src/client/ui/icons.ts` の `ICON_NAMES` に、名前をアルファベット順で足す（無い名前は型の確認で止まる。`index.html` の読み込みには、組み立てのときに入る）。React にまだ移していないページ（`console/`・`operator/`）は、そのページの先頭の読み込みの `icon_names` に足す（テストが確かめる）
 - メンバーは中では ID で持ち、画面とのやり取りでは名前を使う（`src/worker/domain/people.ts`）
 
 ## ライセンス
