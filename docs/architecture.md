@@ -15,9 +15,9 @@ Worker 1 つで、次の 3 つを受け持つ。
 | 道 | 中身 |
 |---|---|
 | `/` | 入口（`src/client/index.html` と React の `features/home/`）。`GET /api/me` でログインしているかを聞き、グループの一覧か「Discord でログイン」を出す |
-| `/g/:id/` | グループのアプリ。入れる人には `console/index.html`（データの入っていない骨組み）を返す。データは画面が API で読む |
-| `/g/:id/admin/` | グループの管理画面。同じ `console/index.html` を返し、画面が URL を見て管理の区域で開く。そのグループの管理者でなければ 403 の案内 |
-| `/admin/` | 運営の管理画面（`operator/index.html`）。ログインしていなければ Discord ログインへ、運営者でなければ 403 の案内 |
+| `/g/:id/` と `/g/:id/<タブ>/` | グループの画面。入れる人には、入口と同じ骨組み（`index.html`。データは入っていない）を返す。中身は画面の道が決め、データは画面が API で読む |
+| `/g/:id/admin/` と `/g/:id/admin/<区分>/` | グループの管理画面。同じ骨組みを返す。そのグループの管理者でなければ 403 の案内 |
+| `/admin/` と `/admin/<区分>/` | 運営の管理画面。同じ骨組みを返す（控えさせない）。ログインしていなければ Discord ログインへ、運営者でなければ 403 の案内 |
 | `/terms` `/privacy` | 利用規約とプライバシーポリシー。だれでも読める。Worker が D1 から本文を読み、その場で HTML にして返す（JS は使わない。`routes/html.ts` の `legalPage`） |
 | `/auth/login` `/auth/callback` `POST /auth/logout` | Discord ログイン |
 | `GET /api/me` `POST /api/groups` | 入口の画面が使う |
@@ -72,7 +72,7 @@ Worker 1 つで、次の 3 つを受け持つ。
 
 ## 画面からの呼び出し
 
-`POST /api/g/:id/:fn` に、GAS 版と同じ形の form を JSON で送り、同じ形の返事（`{ ok, message, data }`）を返す。画面の `api()`（`src/client/console/api.ts`）は、`google.script.run` と同じ使い方のまま、通信だけを `fetch` に替えてある。
+`POST /api/g/:id/:fn` に、GAS 版と同じ形の form を JSON で送り、同じ形の返事（`{ ok, message, data }`）を返す。画面は `rpc()`（`src/client/features/console/api/rpc.ts`）で呼び、読み込みと書き込みの順番は `ConsoleSync`（同じフォルダの `sync.ts`。下の「画面」）が整える。
 
 - 画面とサーバーの約束（呼べる関数の名前・画面データ `ConsoleData`・返事の形・卓の状態）は `src/shared/api.ts` に置き、両方から読む。サーバーの一覧（`routes/rpc.ts`）は名前の型で固めてあり、足りなくても多すぎても型の確認で止まる。`consoleData()` は `ConsoleData` を返すと書いてあるので、返す形が変わると型の確認で分かる
 - `src/shared/` は、ブラウザの型も Workers の型も使わない（どちらからも読めるように）
@@ -148,27 +148,53 @@ Workers は UTC で動く。日付と時刻はすべて `lib/jst.ts` で日本�
 
 ## 画面（src/client/）
 
-TypeScript で書き、Vite が組み立てる。ページは 3 つ: 入口（`index.html`・`main.tsx`・`features/home/`。React）、グループの画面（`console/`）、運営の管理画面（`operator/`。console の `dom.ts`・`modal.ts` と見た目を借りる）。グループの画面は `console/main.ts` が入口で、画面ごとのファイルに分けてある。グループの画面と運営の管理画面も、React に作り直していく（入口が初めの 1 つ）。
+TypeScript と React 19 で書き、Vite が組み立てる。1 つの SPA で、Worker はどの画面の道でも同じ骨組み（`index.html`）を返し（入れるかは先に確かめる）、画面の道（`router.tsx`）が中身を決める。
 
-**React の画面**（いまは入口）。React 19 と TanStack Query（サーバーのデータの読み書き。既定では自動で読み直さない。`app/queryClient.ts`）。アイコンは `<Icon name>`（`ui/`）で、名前は `ui/icons.ts` の `ICON_NAMES` に置き、型で確かめる。Google Fonts から読む名前の一覧は、Vite のプラグイン（`vite.config.ts` の `iconNames`）が `index.html` の `%ICON_NAMES%` に入れる。開発用ログインの部品は `import.meta.env.DEV` のときだけ描くので、本番の組み立てでは消える（`noDevLogin` が JS を見て確かめる）。ログアウトと開発用ログインは、素のフォームの POST（サーバーが cookie を付けて移す）。
+**道**（TanStack Router。道はコードで書き、生成ファイルは使わない）。末尾はいつも `/`。
 
-**区域**（`area.ts`）。グループの画面は、1 つのページを URL で 2 つの区域に分ける。`/g/:id/` はふだんの区域（カレンダー・募集・調整・メンバーの予定・設定のタブ）、`/g/:id/admin/` は管理の区域（メンバーの登録・卓をまとめて変える・知らせ・この卓予定・管理者・送信の記録・グループを消す）。`body[data-area]` を置き、見せる・隠すは CSS で切り替える。描く処理は全部の要素を ID で触るので、ページを分けずに、同じ HTML のまま区域を分けている。管理の区域の区分は、URL の `#members` などで直接開ける。
-
-| ファイル | 中身 |
+| 道 | 中身 |
 |---|---|
-| `state.ts` | 共有する状態（画面データ `D`・選んでいる日など）。書き換えは set〜 を通す |
-| `api.ts`・`load.ts`・`render.ts` | 通信と Discord への送信、読み込みと自動更新、各タブを描き直す |
-| `dom.ts`・`dates.ts`・`model.ts`・`notify.ts` | 小道具（要素・日付）と、卓の読み方・知らせの決まり（D から読むだけ） |
-| `calendar.ts`・`day.ts`・`notices.ts`・`setup.ts` | カレンダーのタブ |
-| `recruit.ts`・`poll.ts` | 募集・調整のタブと、候補日を選ぶ窓 |
-| `avail.ts`・`avail-input.ts`・`ops.ts` | メンバーの予定のタブ（表とリスト・メモとまとめて入れる）と、卓をまとめて変える（管理の区域） |
-| `form.ts`・`promote.ts` | 卓の登録・変更の窓 |
-| `members.ts`・`settings.ts`・`series-notify.ts` | 設定のタブ（自分の名前と備考・この端末）と、管理の区域の区分（メンバーの登録・知らせ・管理者・送信の記録・グループを消す） |
-| `area.ts`・`header.ts`・`tabs.ts`・`theme.ts`・`modal.ts`・`tips.ts` | 区域・上の帯・タブ・見た目・窓・吹き出し |
+| `/` | 入口（`features/home/`）。ログイン・グループの一覧・グループを作る |
+| `/g/:id/`・`/g/:id/recruit/`・`avail/`・`settings/` | グループの画面のタブ。`/g/:id/` を初めて開いたときだけ、前に見ていたタブへ移る |
+| `/g/:id/admin/<区分>/` | 管理の区域。区分は `members`・`ops`・`notify`・`table`・`admins`・`log`・`danger`。`/g/:id/admin/` は前に開いていた区分へ移る |
+| `/admin/<区分>/` | 運営の管理画面。区分は `overview`・`groups`・`users`・`legal`。開いているグループは `?open=<ID>` |
 
-- 各ファイルは関数と定数だけを持ち、読み込んだときには何もしない。イベントの登録は `init()` に書き、`main.ts` が順に呼ぶ。ファイルどうしが互いを呼ぶ（描き直しは別のタブの描き直しも呼ぶ）ので、読み込んだときに別のファイルの値を読むと、読み込みの順で壊れるため
-- 押した瞬間に画面へ出し（D を書き換えて描き直す）、返事の `data` で本物に置き換える。失敗したら戻すか読み直す
-- 画面は見る人の手元の暦で日付を扱う（今日は、サーバーが日本時間で決めた `D.today`）
+- タブと区分の一覧は `src/shared/routes.ts` に置き、Worker（`routes/pages.ts`。知らない区分は 404）と画面の道の両方から読む。ログインのあとに戻る先も、この一覧で確かめる（`isReturnPath`）
+- 検索の文字（`?login=…` など）は `URLSearchParams` のまま読む（TanStack Router の既定は JSON として読むため）
+- JS は、入口・グループの画面の外枠・タブ・管理の区域・運営の管理画面ごとに分けて読む。公開で古い JS が消えていたら、1 度だけページを読み直す（`main.tsx`）
+- 入口・グループの画面・運営の管理画面をまたぐ移りは、ふつうのリンクでページを読み直す（それぞれの見た目の CSS がぶつからないように）
+
+**データ**（TanStack Query。既定では自動で読み直さない。`app/queryClient.ts`）。
+
+- グループの画面のデータは、キー `['console', グループの ID]` に 1 つだけ置き、`ConsoleSync`（`features/console/api/sync.ts`）が読み書きする。部品は `useData()` で読み、書くのは `sync.write()` だけ
+- 読み込むのは、開いたとき・「更新」・自動更新（既定 3 分。この端末で変えられる。隠れている・窓が開いている・表をつかんでいる・文字を打っているあいだは待つ）・書き込みのあと
+- 書き込みが始まると、走っている読み込みを取り消す（古いデータで上書きしないため）。書き込みの返事の `data` は、ほかの書き込みが残っていれば当てずに、全部が終わってからそっと読み直す。順番は単体テスト（`test/client/console-sync.test.ts`）で確かめる
+- 押した瞬間に画面へ出し（楽観的な書き換え。`model/optimistic.ts` の、データを受けて新しいデータを返す関数。仮の ID は `__tmp__`）、返事の `data` で本物に置き換える。失敗したら戻して読み直す
+- ブラウザの控え（`taku.cache:<ID>`）には、サーバーから来たデータだけを書き、開いたときにまず出す。ログアウトと「見つかりません」で消す
+- ログインが切れていたらログインし直す（続けて 2 回まで）。グループが消えていたら「見つかりません」を出す
+- 運営の管理画面のデータは `['admin', …]`（`features/operator/api.ts`）。変えたあとと「更新」のときだけ読み直す
+
+**部品**（`ui/`）。
+
+- 窓（`Modal.tsx`）は body の直下の層に描き、`hidden` で開け閉めする。開いているあいだは後ろを触れなくし（inert）、閉じたらフォーカスを戻す。Esc はいちばん手前の窓だけを閉じる。確かめる窓（`confirm.tsx`）は、ほかの窓より手前の層に出す
+- 画面の状態（選んでいる日・開いている窓など）は、小さな入れ物（`store.ts`。`useSyncExternalStore`）に置く。書きかけの入力は、保存するまで読み直しで上書きしない
+- アイコンは `<Icon name>` で、名前は `icons.ts` の `ICON_NAMES` に置き、型で確かめる。Google Fonts から読む名前の一覧は、Vite のプラグイン（`vite.config.ts` の `iconNames`）が `index.html` の `%ICON_NAMES%` に入れる
+- 開発用ログインの部品は `import.meta.env.DEV` のときだけ描くので、本番の組み立てでは消える（`noDevLogin` が JS を見て確かめる）。ログアウトと開発用ログインは、素のフォームの POST（サーバーが cookie を付けて移す）
+- 確かめの道具（e2e・スクリーンショット）は、要素の ID・`data-*`・`body[data-area|data-tab]`・`window.yoki`（`D`・`selectDay`・`showTab`）を使う。変えるときは道具も直す
+
+**グループの画面**（`features/console/`）。ふだんの区域（カレンダー・募集・調整・メンバーの予定・設定のタブ）と、管理の区域（メンバーの登録・卓をまとめて変える・知らせ・この卓予定・管理者・送信の記録・グループを消す）に分ける。外枠（`shell/ConsoleLayout.tsx`）は 1 つで、`body[data-area]` と `body[data-tab]` を置く。
+
+| フォルダ | 中身 |
+|---|---|
+| `api/` | 呼び出し（`rpc.ts`）・読み書きの順番（`sync.ts`）・Discord への送信（`discord.ts`） |
+| `model/` | 卓の読み方・日付・知らせの決まり・楽観的な書き換え（データを受けて返すだけの関数） |
+| `shell/` | 外枠・上の帯とタブ・読み込み中 |
+| `calendar/`・`recruit/`・`avail/`・`settings/` | タブ（募集・調整のタブには、候補日を選ぶ窓も） |
+| `form/` | 卓の登録・変更の窓と、参加者を決める窓 |
+| `admin/` | 管理の区域の区分 |
+
+- 画面は見る人の手元の暦で日付を扱う（今日は、サーバーが日本時間で決めた `today`）
+- 見た目は `ui/app.css`（グループの画面と運営の管理画面）・`features/home/home.css`（入口）・`features/operator/operator.css`
 
 ## サイト（website/）
 
