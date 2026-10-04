@@ -57,7 +57,7 @@ export async function loadGroup(db: D1Database, groupId: string, actor: Actor, a
     db.prepare('SELECT series, webhook_url, also_base, days, hour FROM series_notify WHERE group_id = ?').bind(groupId),
     db.prepare('SELECT at, kind, target, result FROM notify_log WHERE group_id = ? ORDER BY id DESC LIMIT 10').bind(groupId),
   ]);
-  const rows = <T>(i: number) => (res[i]!.results ?? []) as T[];
+  const rows = <T>(i: number) => res[i]!.results as T[];
   const group = rows<GroupRow>(1)[0];
   if (!group) throw new Error('グループが見つかりません: ' + groupId);
 

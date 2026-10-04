@@ -23,7 +23,7 @@ export function uniq<T>(list: T[]): T[] {
  */
 export function memberNameFrom(display: string | null | undefined, fallback: string): string {
   const clean = (s: string) => s.replace(new RegExp(NAME_SEPARATORS.source, 'g'), ' ').replace(/\s+/g, ' ').trim().slice(0, 40);
-  for (const s of [display ?? '', fallback, 'メンバー']) {
+  for (const s of [display ?? '', fallback]) {
     const n = clean(s);
     if (n && !RESERVED_NAMES.includes(n)) return n;
   }

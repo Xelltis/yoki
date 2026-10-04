@@ -20,7 +20,8 @@ export async function saveMember(ctx: Ctx, form: Form) {
   // ログインした人の Discord ID は、ログインから自動で入るので変えられない
   let discordId = str(form.discordId).replace(/[<@!>\s]/g, '');
   if (target?.userId) discordId = target.discordId;
-  else if (!ctx.actor.isAdmin) discordId = target?.discordId ?? '';
+  // 管理者のほかは、上で自分の行（target）だけに絞ってある
+  else if (!ctx.actor.isAdmin) discordId = target!.discordId;
   if (discordId && !/^\d{5,}$/.test(discordId)) throw badRequest('Discord ユーザーID は数字だけです（例: 123456789012345678）。');
   const note = str(form.note);
   if (target) {

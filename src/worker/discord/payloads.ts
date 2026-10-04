@@ -110,11 +110,11 @@ export function pollReadyPayload(ctx: PayloadCtx, s: Session): Payload {
   };
 }
 
-/** 日程が決まった。卓予定の URL を添える */
+/** 日程が決まった。卓予定の URL を添える。開催日のある卓だけに使う（step.ts と polls.ts が確かめてから呼ぶ） */
 export function decidedPayload(ctx: PayloadCtx, s: Session): Payload {
   const mentions = mentionsOf(ctx, [s]);
   return {
-    content: '✅ 「' + s.name + '」の日程が決まりました: ' + fmtDateJa(s.date ?? '') + ' ' + timeRange(s) + (mentions ? '\n' + mentions : '') + (ctx.appUrl ? '\n🔗 卓予定: ' + ctx.appUrl : ''),
+    content: '✅ 「' + s.name + '」の日程が決まりました: ' + fmtDateJa(s.date!) + ' ' + timeRange(s) + (mentions ? '\n' + mentions : '') + (ctx.appUrl ? '\n🔗 卓予定: ' + ctx.appUrl : ''),
     embeds: [sessionEmbed(ctx, s)],
   };
 }

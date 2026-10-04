@@ -43,7 +43,7 @@ type MemberRow = { id: number; name: string; is_admin: number };
  * ログインした人に結びつくメンバーを返す。無ければ、管理者が Discord ID 付きで先に登録していた行に結びつけ、
  * それも無ければ Discord の表示名で新しく作る（同じ名前があれば「 (2)」を付ける）
  */
-export async function resolveMember(db: D1Database, groupId: string, viewer: Viewer, canManage: boolean, now = new Date()): Promise<Actor> {
+export async function resolveMember(db: D1Database, groupId: string, viewer: Viewer, canManage: boolean, now: Date): Promise<Actor> {
   const byUser = () =>
     db.prepare('SELECT id, name, is_admin FROM members WHERE group_id = ? AND user_id = ?').bind(groupId, viewer.id).first<MemberRow>();
   let m = await byUser();

@@ -17,8 +17,7 @@ export const pageRoutes = new Hono<AppEnv>();
 const toLogin = (c: Context<AppEnv>, path: string) =>
   c.redirect(c.env.DISCORD_CLIENT_ID ? '/auth/login?return_to=' + encodeURIComponent(path) : '/?return_to=' + encodeURIComponent(path));
 
-async function groupPage(c: Context<AppEnv>, admin: boolean) {
-  const id = c.req.param('id') ?? '';
+async function groupPage(c: Context<AppEnv>, id: string, admin: boolean) {
   const path = '/g/' + id + '/' + (admin ? 'admin/' : '');
   const access = await groupAccess(c.env.DB, await currentViewer(c), id);
   if (access.ok) {
@@ -39,9 +38,9 @@ async function groupPage(c: Context<AppEnv>, admin: boolean) {
 }
 
 pageRoutes.get('/g/:id', (c) => c.redirect('/g/' + c.req.param('id') + '/', 301));
-pageRoutes.get('/g/:id/', (c) => groupPage(c, false));
+pageRoutes.get('/g/:id/', (c) => groupPage(c, c.req.param('id'), false));
 pageRoutes.get('/g/:id/admin', (c) => c.redirect('/g/' + c.req.param('id') + '/admin/', 301));
-pageRoutes.get('/g/:id/admin/', (c) => groupPage(c, true));
+pageRoutes.get('/g/:id/admin/', (c) => groupPage(c, c.req.param('id'), true));
 
 pageRoutes.get('/admin', (c) => c.redirect('/admin/', 301));
 pageRoutes.get('/admin/', async (c) => {

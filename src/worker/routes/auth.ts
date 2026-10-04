@@ -39,7 +39,8 @@ authRoutes.get('/auth/callback', async (c) => {
   deleteCookie(c, STATE_COOKIE, { path: '/auth', secure: !isLocalHttp(url) });
   const retry = { href: '/auth/login', label: 'ログインをやり直す' };
   if (!saved) return c.html(noticePage('ログインをやり直してください', 'ログインの途中の情報が見つかりませんでした（時間が経ちすぎたか、別のタブで開いた可能性があります）。', retry), 400);
-  const [state = '', mode, returnTo = '/'] = saved.split('|');
+  // split は少なくとも 1 つを返す。途中の情報が欠けていたら、戻り先は入口
+  const [state, mode, returnTo = '/'] = saved.split('|') as [string, string?, string?];
   const error = c.req.query('error');
   if (error) {
     if (mode === 'n' && error !== 'access_denied') return c.redirect('/auth/login?consent=1&return_to=' + encodeURIComponent(returnTo));

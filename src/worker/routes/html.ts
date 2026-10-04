@@ -1,7 +1,9 @@
 // 入れないとき・見つからないときに出す、短いお知らせのページ
-const esc = (s: string) => s.replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch] ?? ch);
+const ESC: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+const esc = (s: string) => s.replace(/[&<>"']/g, (ch) => ESC[ch]!);
 
-export function noticePage(title: string, message: string, link?: { href: string; label: string }): string {
+/** お知らせのページ。どのページにも、次に行く先のリンクを 1 つ付ける */
+export function noticePage(title: string, message: string, link: { href: string; label: string }): string {
   return `<!doctype html>
 <html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${esc(title)} - 卓予定</title><link rel="icon" href="/icon.png">
@@ -13,5 +15,5 @@ export function noticePage(title: string, message: string, link?: { href: string
   h1 { font-size: 18px; margin: 0 0 8px; }
   a { color: #0e7490; font-weight: 600; }
 </style></head>
-<body><div class="card"><h1>${esc(title)}</h1><p>${esc(message)}</p>${link ? `<p><a href="${esc(link.href)}">${esc(link.label)}</a></p>` : ''}</div></body></html>`;
+<body><div class="card"><h1>${esc(title)}</h1><p>${esc(message)}</p><p><a href="${esc(link.href)}">${esc(link.label)}</a></p></div></body></html>`;
 }

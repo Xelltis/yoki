@@ -2,7 +2,7 @@
 const BASE32 = 'abcdefghijklmnopqrstuvwxyz234567';
 
 /** 小文字の base32 で n 文字（グループの ID など） */
-export function randomId(n = 10): string {
+export function randomId(n: number): string {
   const bytes = crypto.getRandomValues(new Uint8Array(n));
   return Array.from(bytes, (b) => BASE32[b % 32]).join('');
 }
