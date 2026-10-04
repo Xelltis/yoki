@@ -18,6 +18,7 @@
 | `npm test` | サーバーと画面のテスト |
 | `npm run test:coverage` | テストのカバレッジ（サーバーと共有の型。`coverage/index.html` にも出る） |
 | `npm run typecheck` | 型の確認（アプリ・設定ファイル・サイト） |
+| `npm run lint` | lint（oxlint。React の hooks とアクセシビリティの決まりも） |
 | `npm run e2e` | ブラウザで通しで確かめる（開発サーバーをその場で立てる） |
 | `npm run build` | 組み立てる。開発用ログインが残っていたら止まる |
 | `npm run site` / `npm run site:build` | サイトを手元で開く・組み立てる |
@@ -28,7 +29,7 @@
 
 ## 変えたら確かめること
 
-- いつも: `npm test` と `npm run typecheck`
+- いつも: `npm test`・`npm run typecheck`・`npm run lint`
 - サーバー（`src/worker`）を変えたら: `npm run test:coverage`。カバレッジは 100% を保つ（下回ると失敗する）。外すのは、テストの環境で動かせない道だけ（README の「テスト」）
 - 画面（`src/client/`）を変えたら: `npm run e2e`。見た目が変わったら `npm run screenshots` で撮り直し、画像もコミットする
 - サイト（`website/`）を変えたら: `npm run site:build`
@@ -42,12 +43,12 @@ README の「書くときの決まり」に加えて、次を守る。
 - 日付と時刻は `src/worker/lib/jst.ts` で日本時間として扱う（Workers は UTC で動く）
 - 画面とサーバーの約束（呼べる関数の名前・画面データの型・返事の形）は `src/shared/api.ts` に置く。呼べる関数を足すときは、ここの `RPC_FUNCS` とサーバーの一覧（`src/worker/routes/rpc.ts`）の両方に足す
 - 画面（`src/client/console/`）のファイルは、読み込んだときに何もしない。イベントの登録は `init()` に書き、`main.ts` から呼ぶ
-- 開発用ログイン（`src/worker/auth/dev.ts`）は `import.meta.env.DEV` のときだけ登録する
+- 開発用ログイン（`src/worker/auth/dev.ts`）は `import.meta.env.DEV` のときだけ登録する。画面の開発用ログインの部品も `import.meta.env.DEV` のときだけ描く（本番の組み立てから消すため）
 - 運営者の API（`src/worker/routes/admin.ts`）は、どの道も最初に `requireOperator` を呼ぶ。変える操作は監査の控え（`audit`）を log に出す。運営者にも、グループの中身（卓・予定・Webhook の URL）は返さない
 - グループの画面の管理者向けのものは、管理の区域（`/g/:id/admin/`。`src/client/console/area.ts`）に置く。ふだんの区域には、だれでも使うものだけを置く
 - ログインした人の Discord のトークン（OAuth）は保存しない。知らせに使う Bot のトークンは Worker の secret（`DISCORD_BOT_TOKEN`）に置き、画面にもログにも出さない。秘密の値（`.dev.vars`）はコミットしない
 - 公開する Cloudflare ごとの値（D1 の ID・アプリのアドレス・Discord アプリの値と Bot のトークン・運営者の ID・API トークン）は、リポジトリに書かない。GitHub の environment「production」に置き、`wrangler.jsonc` には仮の値だけを置く（README の「公開」）
-- アイコンを足したら、読み込む一覧にも足す（画面は各ページの `icon_names`、サイトは `website/.vitepress/config.ts` の `ICONS`。テストが確かめる）
+- アイコンを足したら、読み込む一覧にも足す（React の画面は `src/client/ui/icons.ts` の `ICON_NAMES`、React にまだ移していないページは各ページの `icon_names`、サイトは `website/.vitepress/config.ts` の `ICONS`。型の確認とテストが確かめる）
 
 ## コミット
 

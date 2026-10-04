@@ -14,7 +14,7 @@ Worker 1 つで、次の 3 つを受け持つ。
 
 | 道 | 中身 |
 |---|---|
-| `/` | 入口（`src/client/index.html`）。`GET /api/me` でログインしているかを聞き、グループの一覧か「Discord でログイン」を出す |
+| `/` | 入口（`src/client/index.html` と React の `features/home/`）。`GET /api/me` でログインしているかを聞き、グループの一覧か「Discord でログイン」を出す |
 | `/g/:id/` | グループのアプリ。入れる人には `console/index.html`（データの入っていない骨組み）を返す。データは画面が API で読む |
 | `/g/:id/admin/` | グループの管理画面。同じ `console/index.html` を返し、画面が URL を見て管理の区域で開く。そのグループの管理者でなければ 403 の案内 |
 | `/admin/` | 運営の管理画面（`operator/index.html`）。ログインしていなければ Discord ログインへ、運営者でなければ 403 の案内 |
@@ -148,7 +148,9 @@ Workers は UTC で動く。日付と時刻はすべて `lib/jst.ts` で日本�
 
 ## 画面（src/client/）
 
-TypeScript で書き、Vite が組み立てる。ページは 3 つ: 入口（`index.html`・`home.ts`）、グループの画面（`console/`）、運営の管理画面（`operator/`。console の `dom.ts`・`modal.ts` と見た目を借りる）。グループの画面は `console/main.ts` が入口で、画面ごとのファイルに分けてある。
+TypeScript で書き、Vite が組み立てる。ページは 3 つ: 入口（`index.html`・`main.tsx`・`features/home/`。React）、グループの画面（`console/`）、運営の管理画面（`operator/`。console の `dom.ts`・`modal.ts` と見た目を借りる）。グループの画面は `console/main.ts` が入口で、画面ごとのファイルに分けてある。グループの画面と運営の管理画面も、React に作り直していく（入口が初めの 1 つ）。
+
+**React の画面**（いまは入口）。React 19 と TanStack Query（サーバーのデータの読み書き。既定では自動で読み直さない。`app/queryClient.ts`）。アイコンは `<Icon name>`（`ui/`）で、名前は `ui/icons.ts` の `ICON_NAMES` に置き、型で確かめる。Google Fonts から読む名前の一覧は、Vite のプラグイン（`vite.config.ts` の `iconNames`）が `index.html` の `%ICON_NAMES%` に入れる。開発用ログインの部品は `import.meta.env.DEV` のときだけ描くので、本番の組み立てでは消える（`noDevLogin` が JS を見て確かめる）。ログアウトと開発用ログインは、素のフォームの POST（サーバーが cookie を付けて移す）。
 
 **区域**（`area.ts`）。グループの画面は、1 つのページを URL で 2 つの区域に分ける。`/g/:id/` はふだんの区域（カレンダー・募集・調整・メンバーの予定・設定のタブ）、`/g/:id/admin/` は管理の区域（メンバーの登録・卓をまとめて変える・知らせ・この卓予定・管理者・送信の記録・グループを消す）。`body[data-area]` を置き、見せる・隠すは CSS で切り替える。描く処理は全部の要素を ID で触るので、ページを分けずに、同じ HTML のまま区域を分けている。管理の区域の区分は、URL の `#members` などで直接開ける。
 
