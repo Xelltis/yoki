@@ -19,8 +19,8 @@
 }
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.7 system-ui, -apple-system, 'Hiragino Sans', 'Noto Sans JP', sans-serif; }
-.ms { font-family: 'Material Symbols Rounded'; font-weight: normal; font-style: normal; font-size: 20px; line-height: 1; display: inline-block; vertical-align: -4px; -webkit-font-feature-settings: 'liga'; font-feature-settings: 'liga'; }
-.ms.sm { font-size: 17px; vertical-align: -3px; }
+.material-icons { font-family: 'Material Symbols Rounded'; font-weight: normal; font-style: normal; font-size: 20px; line-height: 1; display: inline-block; vertical-align: -4px; -webkit-font-feature-settings: 'liga'; font-feature-settings: 'liga'; }
+.material-icons.sm { font-size: 17px; vertical-align: -3px; }
 .bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 20px; background: var(--bar); color: #fff; }
 .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 17px; }
 .logo { display: block; width: 34px; height: 34px; }
@@ -51,7 +51,7 @@ input, select { height: 40px; padding: 0 10px; border-radius: 10px; border: 1px 
 .groups a:hover { background: var(--hover); }
 .groups b { grid-column: 1; }
 .groups small { grid-column: 1; color: var(--muted); font-size: 12px; }
-.groups .ms { grid-column: 2; grid-row: 1 / span 2; color: var(--accent-strong); }
+.groups .material-icons { grid-column: 2; grid-row: 1 / span 2; color: var(--accent-strong); }
 .foot { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 20px; }
 .foot a { display: inline-flex; align-items: center; gap: 4px; color: var(--accent-strong); font-weight: 600; text-decoration: none; }
 /* 運営者だけに出す、運営の管理画面への入口 */
