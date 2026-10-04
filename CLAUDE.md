@@ -45,6 +45,7 @@ README の「書くときの決まり」に加えて、次を守る。
 - 画面の道（URL）を足すときは、`src/shared/routes.ts`（タブ・区分の一覧）・`src/worker/routes/pages.ts`・`src/client/router.tsx` にそろえて足す
 - グループの画面のデータは `ConsoleSync`（`src/client/features/console/api/sync.ts`）だけで読み書きする。楽観的な書き換えは `model/optimistic.ts` の純粋な関数にし、仮の ID は `'__tmp__'`
 - e2e とスクリーンショットの道具が使う要素の ID・`data-*`・`window.yoki`（`D`・`selectDay`・`showTab`）は保つ。変えるなら `test/e2e/smoke.js` と `website/tools/screenshots.js` も直す
+- 見た目は Tailwind CSS のクラスで書く。色・寸法・文字の大きさは `src/client/styles/theme.css` のトークンを使い、色を直に書かない。クラスの名前を文字列のつなぎで組み立てない（CSS が出ない）。くり返す形は `ui/` か `features/…/styles.ts` の定数にする
 - 開発用ログイン（`src/worker/auth/dev.ts`）は `import.meta.env.DEV` のときだけ登録する。画面の開発用ログインの部品も `import.meta.env.DEV` のときだけ描く（本番の組み立てから消すため）
 - 運営者の API（`src/worker/routes/admin.ts`）は、どの道も最初に `requireOperator` を呼ぶ。変える操作は監査の控え（`audit`）を log に出す。運営者にも、グループの中身（卓・予定・Webhook の URL）は返さない
 - グループの画面の管理者向けのものは、管理の区域（`/g/:id/admin/<区分>/`。`src/client/features/console/admin/`）に置く。ふだんの区域には、だれでも使うものだけを置く

@@ -34,9 +34,10 @@ src/worker/        サーバー（TypeScript、Hono）
   lib/             日本時間の日付・文字・エラー・ID・規約の本文の書き方
   seed/            サンプルデータ
 src/client/        画面（TypeScript・React。Vite の root）。1 つの SPA で、どの道も index.html から開く
-  index.html       骨組み。main.tsx が入口、router.tsx が画面の道（TanStack Router）
+  index.html       骨組み。main.tsx が入口、router.tsx が画面の道（TanStack Router）、index.css が見た目の入口（Tailwind CSS）
+  styles/          見た目のトークン（theme.css）・要素の既定（base.css）・いくつもの画面で使う部品（components.css）
   app/             共通の道具（TanStack Query・この端末の控え・見た目のテーマ・リンク）
-  ui/              共通の部品（アイコン・窓・確かめる窓・吹き出し）と、アプリの見た目（app.css）
+  ui/              共通の部品（アイコン・窓・確かめる窓・吹き出し・見出し・上の帯）
   features/home/   入口のページ（/。ログイン・グループの一覧・グループを作る）
   features/console/  グループの画面（/g/:id/ とタブ、管理の区域 /g/:id/admin/<区分>/）。api（読み書き）・model（卓の読み方）・shell（外枠）と、タブごとのフォルダ
   features/operator/ 運営の管理画面（/admin/<区分>/）
@@ -196,6 +197,7 @@ npm run site:build   組み立てる（website/.vitepress/dist/）
 - **D1 の問い合わせの数を増やしすぎない。** 1 回の呼び出しで使える数に上限がある（無料のプランで 50）。卓の数だけ文を作らず、JSON（`json_each`）で 1 文にまとめる
 - **表を変えるときは、マイグレーションを足す。** `migrations/` に番号の続くファイルを足し、すでにあるファイルは書き換えない
 - **画面にアイコンを足したら**（`<Icon name>`）、`src/client/ui/icons.ts` の `ICON_NAMES` に、名前をアルファベット順で足す（無い名前は型の確認で止まる。`index.html` の読み込みには、組み立てのときに入る。使っていない名前が残っていたらテストが止まる）
+- **見た目は Tailwind CSS のクラスで書く。** 色・寸法・文字の大きさは `src/client/styles/theme.css` のトークンを使い、色を直に書かない（`bg-card`・`text-muted`・`p-10` など。寸法は px で数える: `p-10` は 10px）。いくつもの画面でくり返す形は、`ui/` や `features/…/styles.ts` に Tailwind のクラスの組み合わせとして置く。クラスの名前を文字列のつなぎで組み立てない（Tailwind が見つけられず、CSS が出ない）
 - **e2e とスクリーンショットの道具が使う形を保つ。** 要素の ID・`data-*`・`window.yoki`（`D`・`selectDay`・`showTab`）を変えるときは、`test/e2e/smoke.js` と `website/tools/screenshots.js` も直す
 - メンバーは中では ID で持ち、画面とのやり取りでは名前を使う（`src/worker/domain/people.ts`）
 
