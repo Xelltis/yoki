@@ -77,7 +77,7 @@ export function init(): void {
     const names = ids.map((id) => { const s = byId(id); return s ? s.name : id; });
     const what = $('bulkAction').options[$('bulkAction').selectedIndex]!.textContent + (a === 'delete' ? '' : '（' + (value || (a === 'setSeries' ? '外す' : '')) + '）');
     if (a !== 'delete' && a !== 'setSeries' && !value) { $('bulkMsg').textContent = '値を選んでください。'; return; }
-    askConfirm({ title: ids.length + ' 件を「' + what + '」しますか？', message: names.join('、'), ok: a === 'delete' ? '削除する' : '実行する', danger: a === 'delete' }, () => {
+    askConfirm({ title: ids.length + ' 件の卓で「' + what + '」を実行しますか？', message: names.join('、'), ok: a === 'delete' ? '削除する' : '実行する', danger: a === 'delete' }, () => {
       $('bulkRun').disabled = true; $('bulkMsg').textContent = '保存しています…';
       const wantBulkNotify = $('bulkNotify').checked;
       api().withSuccessHandler((res) => {

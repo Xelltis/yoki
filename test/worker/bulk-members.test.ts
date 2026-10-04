@@ -22,19 +22,23 @@ describe('まとめての変更', () => {
 
   test('参加者の追加と除外、GM の変更、シリーズ', async () => {
     let r = await ok(G.admin, G.id, 'bulkUpdateSessions', { ids: ['S001', 'S002'], action: 'addMember', value: 'こまち' });
-    expect(r.message).toBe('2 件を参加者に こまち を追加しました: A、B');
+    expect(r.message).toBe('2 件の卓の参加者に こまち を足しました: A、B');
     expect(byId(r).S001.members).toEqual(['ソラ', 'こまち']);
     r = await ok(G.admin, G.id, 'bulkUpdateSessions', { ids: ['S001'], action: 'removeMember', value: 'ソラ' });
+    expect(r.message).toBe('1 件の卓の参加者から ソラ を外しました: A');
     expect(byId(r).S001.members).toEqual(['こまち']);
     r = await ok(G.admin, G.id, 'bulkUpdateSessions', { ids: ['S001'], action: 'setGm', value: 'ソラ' });
+    expect(r.message).toBe('1 件の卓の GM を ソラ にしました: A');
     expect(byId(r).S001.gm).toBe('ソラ');
     r = await ok(G.admin, G.id, 'bulkUpdateSessions', { ids: ['S001', 'S002'], action: 'setSeries', value: '港' });
+    expect(r.message).toBe('2 件の卓のシリーズを「港」にしました: A、B');
     expect([byId(r).S001.series, byId(r).S002.series]).toEqual(['港', '港']);
   });
 
   test('開催日をずらすと、開催前の知らせの印が消える。日付の無い卓は飛ばす', async () => {
     await env.DB.prepare("UPDATE sessions SET notified_at = '2026-01-01T00:00:00Z'").run();
     const r = await ok(G.admin, G.id, 'bulkUpdateSessions', { ids: ['S001', 'S002'], action: 'shiftDays', value: '7' });
+    expect(r.message).toBe('2 件の卓の開催日を 7 日後ろにずらしました: A、B');
     expect(byId(r).S001).toMatchObject({ date: T(10), notified: '' });
     expect(byId(r).S002.date).toBe('');
     expect((await fail(G.admin, G.id, 'bulkUpdateSessions', { ids: ['S001'], action: 'shiftDays', value: 'x' })).error).toContain('ずらす日数');
@@ -52,7 +56,7 @@ describe('まとめての変更', () => {
     await ok(G.admin, G.id, 'saveSession', { name: 'C', gm: 'ひより', members: ['ソラ'], status: '調整中' });
     await ok(G.admin, G.id, 'startPoll', { id: 'S003', dates: [T(5)] });
     const r = await ok(G.admin, G.id, 'bulkUpdateSessions', { ids: ['S002', 'S003'], action: 'status', value: '中止' });
-    expect(r.message).toBe('2 件を状態を「中止」にしました: B、C');
+    expect(r.message).toBe('2 件の卓の状態を「中止」にしました: B、C');
     expect(byId(r).S002).toMatchObject({ status: '中止', window: '', want: ['ソラ'], members: [] });
     expect(byId(r).S003).toMatchObject({ status: '中止', candidates: [], votes: {} });
     expect(await env.DB.prepare('SELECT count(*) AS n FROM poll_votes').first('n')).toBe(0);
@@ -62,22 +66,25 @@ describe('まとめての変更', () => {
     const r = await ok(G.admin, G.id, 'bulkUpdateSessions', { ids: ['S001', 'S002'], action: 'status', value: '調整中' });
     expect(byId(r).S001).toMatchObject({ status: '調整中', members: ['ソラ'], want: [] });
     expect(byId(r).S002).toMatchObject({ status: '調整中', members: ['ソラ'], want: [] });
-    expect(r.message).toBe('2 件を状態を「調整中」にしました: A、B　参加希望の人を参加者に加えました: ソラ（B）');
+    expect(r.message).toBe('2 件の卓の状態を「調整中」にしました: A、B　参加希望の人を参加者に加えました: ソラ（B）');
   });
 
   test('開催日を前にずらす。シリーズを外す', async () => {
     let r = await ok(G.admin, G.id, 'bulkUpdateSessions', { ids: ['S001'], action: 'shiftDays', value: '-1' });
     expect(r.label).toBe('開催日を -1 日');
+    expect(r.message).toBe('1 件の卓の開催日を 1 日前にずらしました: A');
     expect(byId(r).S001.date).toBe(T(2));
     await ok(G.admin, G.id, 'bulkUpdateSessions', { ids: ['S001', 'S002'], action: 'setSeries', value: '港' });
     r = await ok(G.admin, G.id, 'bulkUpdateSessions', { ids: ['S001', 'S002'], action: 'setSeries', value: '' });
     expect(r.label).toBe('シリーズを外す');
+    expect(r.message).toBe('2 件の卓のシリーズを外しました: A、B');
     expect([byId(r).S001.series, byId(r).S002.series]).toEqual(['', '']);
   });
 
   test('削除と、管理者だけ', async () => {
     expect((await fail(G.sora, G.id, 'bulkUpdateSessions', { ids: ['S001'], action: 'delete' })).error).toMatch(/^ADMIN:/);
     const r = await ok(G.admin, G.id, 'bulkUpdateSessions', { ids: ['S001', 'S002'], action: 'delete' });
+    expect(r.message).toBe('2 件の卓を削除しました: A、B');
     expect(r.data.sessions).toEqual([]);
   });
 });
