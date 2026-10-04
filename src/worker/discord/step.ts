@@ -123,7 +123,7 @@ export async function sendDiscordStep(ctx: Ctx, form: Form, io: { data: () => Pr
     default:
       throw badRequest('送る種類が不正です: ' + kind);
   }
-  if (!targets.length) throw badRequest('Webhook URL が空です。設定タブに貼って「URL を保存」してから送ってください。');
+  if (!targets.length) throw badRequest('Webhook URL が空です。管理画面の「知らせ」で貼って「URL を保存」してから送ってください。');
   const to = Math.min(Math.max(Math.trunc(Number(form.to)) || 0, 0), targets.length - 1);
   const t = targets[to]!;
   const r = await discordAttempt({ db: ctx.db, groupId: ctx.group.id }, payload, label, target + targetNote(t), Number(form.attempt) || 1, t.url);

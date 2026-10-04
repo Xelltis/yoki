@@ -9,6 +9,10 @@ export const RETRY_WAITS_MS = [3000, 8000];
 export const SAMPLE_WEBHOOK = 'https://discord.com/api/webhooks/000000000000000000/sample';
 export const MAX_TRIES = RETRY_WAITS_MS.length + 1;
 const MAX_WAIT_MS = 15000;
+/** 通信が切れたときのエラーの文。種類分け（通信）と、送り直してよいかの両方で使う */
+const NETWORK_ERROR = /DNS|address|resolve|timed out|timeout|network/i;
+/** 送り先が Discord の Webhook URL の形でないとき（送らずに記録する） */
+const NOT_DISCORD = 'Discord の Webhook URL ではありません';
 
 export type Reason = { kind: string; label: string; toolFault: boolean; text: string; advice: string };
 
@@ -41,14 +45,15 @@ export function classifyFailure(code: number, errText: string): Reason {
       text: 'Discord が、送る回数が多いことを理由に受け取りを断りました（Discord の手前の Cloudflare が断ることもあります）。', advice: '数分おいて、もう一度送ってください。' };
   }
   if (code >= 500) return { kind: 'discord_down', label: 'Discord 側の不調', toolFault: false, text: 'Discord が一時的に応答できていません。', advice: '時間をおいて送り直してください。' };
-  if (code === 401 || code === 403 || code === 404) {
-    return { kind: 'bad_url', label: 'Webhook URL', toolFault: false, text: 'Webhook URL が違うか、Discord 側でウェブフックが消されています。', advice: '設定タブで貼り直して「接続テスト」を。' };
+  if (code === 401 || code === 403 || code === 404 || (!code && errText === NOT_DISCORD)) {
+    return { kind: 'bad_url', label: 'Webhook URL', toolFault: false,
+      text: code ? 'Webhook URL が違うか、Discord 側でウェブフックが消されています。' : 'Webhook URL が Discord のものではありません。', advice: '管理画面の「知らせ」で貼り直して「接続テスト」を。' };
   }
   if (code === 400) {
     return { kind: 'bad_payload', label: '本文', toolFault: true, text: 'Discord が本文を受け付けませんでした。',
       advice: '卓名やメモが極端に長くないか確かめてください。直らなければツール側の問題かもしれないので、送信記録の詳細を添えて知らせてください。' };
   }
-  if (/DNS|address|resolve|timed out|timeout|network/i.test(errText)) return { kind: 'network', label: '通信', toolFault: false, text: 'Discord に届く前に通信が切れました。', advice: '時間をおいて送り直してください。' };
+  if (NETWORK_ERROR.test(errText)) return { kind: 'network', label: '通信', toolFault: false, text: 'Discord に届く前に通信が切れました。', advice: '時間をおいて送り直してください。' };
   return { kind: 'unknown', label: '原因不明', toolFault: true, text: '原因を判別できませんでした。', advice: '送信記録の詳細を添えて知らせてください。' };
 }
 
@@ -73,7 +78,7 @@ export async function discordAttempt(log: LogTo, payload: Payload, kind: string,
   if (url === SAMPLE_WEBHOOK) {
     code = 204;
   } else if (!isDiscordWebhook(url)) {
-    errText = 'Discord の Webhook URL ではありません';
+    errText = NOT_DISCORD;
   } else {
     try {
       const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
@@ -85,7 +90,7 @@ export async function discordAttempt(log: LogTo, payload: Payload, kind: string,
     }
   }
   const ok = code >= 200 && code < 300;
-  const canRetry = !ok && (code === 429 || code >= 500 || (!code && /timed out|timeout|DNS|address|network/i.test(errText)));
+  const canRetry = !ok && (code === 429 || code >= 500 || (!code && NETWORK_ERROR.test(errText)));
   const last = attempt >= MAX_TRIES || !canRetry;
   // 送り直すのは 1・2 回目だけなので、RETRY_WAITS_MS にいつも値がある
   const waitMs = canRetry && !last ? Math.min(Math.max(RETRY_WAITS_MS[attempt - 1]!, retryAfter), MAX_WAIT_MS) : 0;

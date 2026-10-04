@@ -1,4 +1,4 @@
-// 設定タブ（GAS 版 Settings.js）。知らせの設定・グループの名前・シリーズごとの知らせ
+// グループの設定（管理画面の「知らせ」と「この卓予定」。GAS 版 Settings.js）。知らせの設定・グループの名前・シリーズごとの知らせ
 import { isDiscordWebhook, WEBHOOK_FORMAT_ERROR } from '../discord/webhook';
 import { badRequest } from '../lib/errors';
 import { fmtDateTime } from '../lib/jst';
