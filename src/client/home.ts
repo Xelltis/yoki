@@ -12,6 +12,7 @@ const NOTICE: Record<string, string> = {
   cancelled: 'ログインをやめました。',
   banned: 'このアカウントでは入れません（運営者が締め出しています）。',
   deleted: 'グループを消しました。',
+  closed: '今は新しい登録を受け付けていません。すでに使っている人は、そのままログインできます。',
 };
 const say = NOTICE[q.get('login') || ''] || (q.get('deleted') === '1' ? NOTICE.deleted : '');
 if (say) { $('notice').textContent = say; $('notice').hidden = false; }
@@ -20,6 +21,7 @@ function showGuest(me: MeResponse): void {
   $('guest').hidden = false;
   $('loginBtn').hidden = !me.discord;
   $('noDiscord').hidden = me.discord || !!me.dev;
+  $('closedGuest').hidden = me.registration;
   if (me.dev) {
     $('devForm').hidden = false;
     $('devAs').innerHTML = me.dev.users.map((n) => '<option>' + esc(n) + '</option>').join('');
@@ -40,7 +42,11 @@ function showHome(me: Extract<MeResponse, { loggedIn: true }>): void {
   $('noGroups').hidden = me.groups.length > 0;
   $('stale').hidden = !me.stale;
   if (me.creatable.length) {
+    // 受付を止めていても、運営者は作れる
+    const closed = !me.registration && !me.operator;
     $('create').hidden = false;
+    $('createClosed').hidden = !closed;
+    $('createForm').hidden = closed;
     $('cGuild').innerHTML = me.creatable.map((g) => '<option value="' + esc(g.guildId) + '">' + esc(g.name) + '</option>').join('');
   }
 }

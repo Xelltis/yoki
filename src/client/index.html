@@ -31,6 +31,7 @@
     <p class="lead">TRPG の卓の予定を、Discord サーバーの仲間と管理します。卓の登録・メンバーの予定・募集・日程調整をこの画面で行い、知らせを Discord に送ります。</p>
     <a class="btn primary" id="loginBtn" href="/auth/login"><span class="ms" aria-hidden="true">login</span>Discord でログイン</a>
     <p class="hint" id="noDiscord" hidden>Discord ログインの設定がありません（DISCORD_CLIENT_ID）。</p>
+    <p class="hint" id="closedGuest" hidden>今は新しい登録を受け付けていません。すでに使っている人は、そのままログインできます。</p>
     <form class="dev" id="devForm" method="post" action="/dev/login" hidden>
       <h2>開発用ログイン</h2>
       <p class="hint">開発サーバーだけで出ます。サンプルのグループに、選んだメンバーとして入ります（ひよりは管理者）。</p>
@@ -53,6 +54,7 @@
   <section class="card" id="create" hidden>
     <h2><span class="ms" aria-hidden="true">add</span>グループを作る</h2>
     <p class="hint">グループは Discord サーバーに結びつきます。入れるのは、そのサーバーにいる人だけです。作れるのは、サーバーのオーナーか、サーバー管理の権限がある人です。作った人が最初の管理者になります。</p>
+    <p class="hint" id="createClosed" hidden>今は新しいグループの受付を止めています。</p>
     <form id="createForm">
       <div class="row">
         <label>Discord サーバー<select id="cGuild" required></select></label>

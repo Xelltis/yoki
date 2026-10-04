@@ -8,6 +8,7 @@ import type { Viewer } from '../auth/session';
 import { changeGuild, groupDetail, listGroups, listUsers, logoutUser, overview, setBan, setGroupAdmin } from '../domain/admin';
 import { readForm, str } from '../domain/form';
 import { deleteGroupById } from '../domain/groups';
+import { setRegistrationOpen } from '../domain/registration';
 
 export const adminRoutes = new Hono<AppEnv>();
 
@@ -25,6 +26,14 @@ adminRoutes.use('/api/admin/*', async (c, next) => {
 adminRoutes.get('/api/admin/overview', async (c) => {
   await requireOperator(c);
   return c.json(await overview(c.env.DB));
+});
+
+adminRoutes.post('/api/admin/registration', async (c) => {
+  const op = await requireOperator(c);
+  const open = (await readForm(c.req)).open === true;
+  await setRegistrationOpen(c.env.DB, open);
+  audit(op, 'setRegistration', open ? 'open' : 'closed');
+  return c.json(done(open ? '新規登録を受け付けます。' : '新規登録の受付を止めました。もう使っている人と運営者は、そのまま使えます。'));
 });
 
 adminRoutes.get('/api/admin/groups', async (c) => {

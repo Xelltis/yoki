@@ -3,7 +3,9 @@ import { Hono } from 'hono';
 import { deleteCookie, getCookie, setCookie } from 'hono/cookie';
 import type { AppEnv } from '../app';
 import { authorizeUrl, fetchDiscordProfile, saveProfile } from '../auth/oauth';
+import { isOperator } from '../auth/operator';
 import { appOrigin } from '../auth/origin';
+import { mayLogIn } from '../domain/registration';
 import { endSession, isBanned, isLocalHttp, startSession } from '../auth/session';
 import { randomToken, safeEqual } from '../lib/ids';
 import { noticePage } from './html';
@@ -55,8 +57,9 @@ authRoutes.get('/auth/callback', async (c) => {
     return c.html(noticePage('ログインをやり直してください', 'ログインの確認ができませんでした。', retry), 400);
   }
   const { user, guilds } = await fetchDiscordProfile(c.env, code, callbackUrl(c.env, c.req.url));
-  // 締め出された人は、ログインの記録も残さずに入口へ戻す
+  // 締め出された人と、受付を止めているときの初めての人は、ログインの記録も残さずに入口へ戻す
   if (await isBanned(c.env.DB, user.id)) return c.redirect('/?login=banned');
+  if (!(await mayLogIn(c.env.DB, user.id, isOperator(c.env, user.id, url)))) return c.redirect('/?login=closed');
   await saveProfile(c.env.DB, user, guilds);
   await startSession(c, user.id);
   return c.redirect(RETURN_TO.test(returnTo) ? returnTo : '/');

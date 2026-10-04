@@ -27,7 +27,7 @@ const count = (sql: string, ...args: unknown[]) => env.DB.prepare(sql).bind(...a
 
 describe('入れる人', () => {
   const reads = ['/api/admin/overview', '/api/admin/groups', '/api/admin/groups/grp', '/api/admin/users'];
-  const writes = ['/api/admin/groups/grp/admins', '/api/admin/groups/grp/guild', '/api/admin/groups/grp/delete', '/api/admin/users/x/logout', '/api/admin/users/x/ban'];
+  const writes = ['/api/admin/groups/grp/admins', '/api/admin/groups/grp/guild', '/api/admin/groups/grp/delete', '/api/admin/users/x/logout', '/api/admin/users/x/ban', '/api/admin/registration'];
 
   test('ログインしていなければ AUTH:、運営者でなければ 403。グループの管理者でも入れない', async () => {
     const { admin } = await setupGroup();

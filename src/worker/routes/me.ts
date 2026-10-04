@@ -9,13 +9,14 @@ import { memberNameFrom } from '../lib/text';
 import { DEV_USERS } from '../auth/dev-users';
 import { devAvailable, isOperator } from '../auth/operator';
 import { readForm, str } from '../domain/form';
+import { registrationOpen } from '../domain/registration';
 import type { CreateGroupResult, MeResponse } from '../../shared/api';
 
 export const meRoutes = new Hono<AppEnv>();
 
 meRoutes.get('/api/me', async (c) => {
   const url = new URL(c.req.url);
-  const base = { discord: !!c.env.DISCORD_CLIENT_ID, dev: devAvailable(url) ? { users: DEV_USERS.map((u) => u.name) } : null };
+  const base = { discord: !!c.env.DISCORD_CLIENT_ID, dev: devAvailable(url) ? { users: DEV_USERS.map((u) => u.name) } : null, registration: await registrationOpen(c.env.DB) };
   const viewer = await currentViewer(c);
   if (!viewer) return c.json({ ...base, loggedIn: false } satisfies MeResponse);
   const db = c.env.DB;
@@ -46,6 +47,7 @@ meRoutes.post('/api/groups', async (c) => {
   if (!viewer) throw authError();
   const now = new Date();
   if (snapshotAgeMs(viewer, now) > SNAPSHOT_HOURS * 3600_000) throw authError('サーバーの一覧が古くなりました。ログインし直してください。');
+  if (!isOperator(c.env, viewer.id, new URL(c.req.url)) && !(await registrationOpen(c.env.DB))) throw new AppError(403, '今は新しいグループの受付を止めています。');
   const body = await readForm(c.req);
   const guildId = str(body.guildId);
   if (!guildId) throw badRequest('Discord サーバーを選んでください。');

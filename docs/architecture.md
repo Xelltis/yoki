@@ -61,7 +61,7 @@ Worker 1 つで、次の 3 つを受け持つ。
 - `members`: メンバー。名前はグループの中で一意
 - `sessions`・`session_people`: 卓と、関わる人（GM・参加者・参加希望・興味あり）
 - `availability`・`avail_notes`・`day_notes`・`poll_votes`・`series_notify`・`notify_log`
-- `meta`: cron の「この時刻はもう回した」印と、最後の見回りの記録
+- `meta`: cron の「この時刻はもう回した」印、最後の見回りの記録、新規登録の受付（`registration`）
 
 **メンバーは中では ID で持つ**。画面とのやり取りは GAS 版と同じく名前で行い、`domain/people.ts` で変換する。名前を変えても 1 か所を直すだけで済む（GAS 版では、名前の変更が一部の表に伝わらなかった）。メンバーに無い人（ゲスト）は、`guest_name` に名前だけで持つ。メンバーを消すと、その人が入っていた卓と回答はゲストの名前に置き換わり、予定とメモは消える。
 
@@ -118,6 +118,7 @@ Worker 1 つで、次の 3 つを受け持つ。
 | `POST /api/admin/groups/:id/guild` | Discord サーバーを付け替える。メンバーの行・管理者の印は残し、Webhook は選べば消す |
 | `POST /api/admin/groups/:id/delete` | グループを消す。名前を打ち込んで、一致したときだけ |
 | `GET /api/admin/users` `POST /api/admin/users/:id/logout` `POST /api/admin/users/:id/ban` | 利用者の一覧、ログインを切る、締め出す・戻す |
+| `POST /api/admin/registration` | 新規登録を受け付ける・止める（`{open}`） |
 
 - どの道も、ログインしていなければ `AUTH:` の 401、運営者でなければ 403。返事は `Cache-Control: no-store`
 - 読むものは GET、変えるものは POST（JSON）。CSRF の確かめは `/api` のほかの道と同じ
@@ -125,6 +126,7 @@ Worker 1 つで、次の 3 つを受け持つ。
 - 運営者は、グループの中身（卓・予定・Webhook の URL）は見ない。見るのは数と名前だけ
 - 送信の失敗に数えるのは、`送信失敗` と `送らず` で始まる記録だけ（`HTTP…`・`ERROR…` は送り直しの途中）
 - 見回りは、最後の回が 15 分より前なら止まっているかもしれない、として出す
+- 新規登録の受付（`domain/registration.ts`）。止めると、グループを作る道（`POST /api/groups`）と、初めての人のログイン（`/auth/callback`・開発用ログイン。users に行が無い人）を断る。もう使っている人と運営者は通す。運営者が自分を締め出さないように、運営者はいつでも入れて、グループも作れる。画面には `/api/me` の `registration` で知らせる
 - Discord サーバーを付け替えると、新しいサーバーの人は、控えが 5 分より古くなったときに黙って読み直して入れるようになり、古いサーバーの人は入れなくなる
 
 ## 日本時間

@@ -31,6 +31,8 @@ export type AdminOverview = {
     stale: boolean;
   };
   failures: { day: number; week: number; recent: AdminFailure[] };
+  /** 新規登録を受け付けているか */
+  registrationOpen: boolean;
 };
 
 /** グループの一覧の 1 行（GET /api/admin/groups） */

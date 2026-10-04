@@ -26,12 +26,16 @@ await withDevServer(async (base) => {
   const confirm = () => page.click('#confirmOk');
   const step = async (name, fn) => { await fn(); console.log('ok - ' + name); };
   const SORA = '400000000000000011';
-  /** ソラの締め出しを戻す（締め出しの印は users に残り、サンプルの作り直しでは消えないため、最初と最後に戻す） */
-  const unbanSora = () => page.evaluate((id) => fetch('/api/admin/users/' + id + '/ban', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ banned: false }) }), SORA);
+  /** ソラの締め出しと、新規登録の受付を戻す（印は users と meta に残り、サンプルの作り直しでは消えないため、最初と最後に戻す） */
+  const restoreOperator = () => page.evaluate(async (id) => {
+    const post = (path, body) => fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    await post('/api/admin/users/' + id + '/ban', { banned: false });
+    await post('/api/admin/registration', { open: true });
+  }, SORA);
   try {
     await step('開発用ログインでサンプルのグループに入れる', async () => {
       await devLogin(page, base);
-      await unbanSora();
+      await restoreOperator();
       assert.equal((await D()).sessions.length, 11, 'サンプルの卓は 11 件');
     });
 
@@ -273,7 +277,7 @@ await withDevServer(async (base) => {
       await ctx.close();
     });
 
-    await step('運営の管理画面: 様子・グループ・利用者が見え、ログインを切って締め出し、戻せる', async () => {
+    await step('運営の管理画面: 様子・グループ・利用者が見え、ログインを切って締め出し、戻せる。新規登録の受付を止めて戻せる', async () => {
       await page.goto(base);
       await page.waitForSelector('#opLink:not([hidden])', { timeout: 15000 });
       await page.click('#opLink');
@@ -303,6 +307,14 @@ await withDevServer(async (base) => {
       await ctx.close();
       await page.click(`#opUsers button[data-unban="${SORA}"]`);
       await page.waitForSelector(`#opUsers button[data-ban="${SORA}"]`, { timeout: 15000 });
+      // 新規登録の受付を止めると入口にも出る。戻す
+      await page.click('#opNav button[data-set="overview"]');
+      await page.click('#opRegToggle');
+      await confirm();
+      await page.waitForSelector('#opReg >> text=止めています', { timeout: 15000 });
+      assert.equal((await page.evaluate(() => fetch('/api/me').then((r) => r.json()))).registration, false);
+      await page.click('#opRegToggle');
+      await page.waitForSelector('#opReg >> text=受け付けています', { timeout: 15000 });
       await main();
     });
 
@@ -320,7 +332,7 @@ await withDevServer(async (base) => {
       assert.deepEqual(errors, []);
     });
   } finally {
-    await unbanSora().catch(() => {});
+    await restoreOperator().catch(() => {});
     await browser.close();
   }
 });

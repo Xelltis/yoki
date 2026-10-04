@@ -166,6 +166,8 @@ export type MeResponse = {
   discord: boolean;
   /** 開発用ログイン（開発サーバーで、手元から開いたときだけ） */
   dev: { users: string[] } | null;
+  /** 新規登録を受け付けているか（止めていると、新しいグループの作成と初めての人のログインを断る。運営者は別） */
+  registration: boolean;
 } & (
   | { loggedIn: false }
   | {
