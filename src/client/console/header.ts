@@ -1,13 +1,7 @@
-// 上の帯（「あなた」・代理の札・ログアウト）
-import { afLoadMine, renderAvail } from './avail';
-import { renderDayDetail } from './day';
+// 上の帯（ログアウト）。「あなた」の名前は render.ts が出す
 import { $ } from './dom';
 import { clearCache } from './load';
 import { askConfirm } from './modal';
-import { me } from './model';
-import { renderNotices } from './notices';
-import { renderRecruit } from './recruit';
-import { D } from './state';
 
 /** ログアウト。サーバーのログインを消して、入口へ戻る */
 function logout(): void {
@@ -18,17 +12,7 @@ function logout(): void {
     document.body.appendChild(f); f.submit();
   });
 }
-/** 「代理で入力中」の札。管理者が、ほかの人を選んでいるとき */
-export function updateProxy(): void { $('proxyBadge').hidden = !(D && D.me && me() && me() !== D.me.name); }
-
 export function init(): void {
   $('logoutBtn').onclick = logout;
   $('stLogout').onclick = logout;
-  const sel = $('me');
-  sel.addEventListener('change', () => {
-    setTimeout(() => { afLoadMine(); renderAvail(); }, 0);
-    updateProxy();
-    sel.classList.toggle('need', !sel.value); sel.classList.remove('attn');
-    renderAvail(); renderDayDetail(); renderRecruit(); renderNotices();
-  });
 }

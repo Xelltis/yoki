@@ -6,7 +6,7 @@ import { fmtJa, holidayName, parseYmd, timeRange } from './dates';
 import { $, esc, hit, mi, store, toast } from './dom';
 import { fillForm, openForm, openNewWithStatus, syncStatusUi } from './form';
 import { askConfirm } from './modal';
-import { byId, hasPoll, isAdjusting, isAdmin, isRecruit, me, needMe, peopleOf, periodOfSession, pollPending, sortSessions } from './model';
+import { byId, hasPoll, isAdjusting, isAdmin, isRecruit, me, peopleOf, periodOfSession, pollPending, pollVoters, sortSessions } from './model';
 import { renderNotices } from './notices';
 import { hookFor } from './notify';
 import { renderOps } from './ops';
@@ -63,7 +63,7 @@ export function renderRecruit(): void {
     ah += peopleHtml(s, 'GM・参加者 未定');
     if (s.place) ah += '<div class="row2">場所: ' + esc(s.place) + '</div>';
     if (s.memo) ah += '<div class="row2 hint">' + esc(s.memo) + '</div>';
-    const poll = hasPoll(s), who = me(), voters = peopleOf(s), isVoter = !!who && voters.indexOf(who) >= 0;
+    const poll = hasPoll(s), who = me(), voters = pollVoters(s), isVoter = !!who && voters.indexOf(who) >= 0;
     // 開催日を選べるのは GM と管理者
     const canDecide = (!!who && who === s.gm) || isAdmin();
     if (poll) {
@@ -86,7 +86,10 @@ export function renderRecruit(): void {
         ah += '</div>';
       });
       if (canDecide && !pollPending(s).length) ah += '<p class="next">' + mi('arrow_forward', 'sm') + '<span>全員の回答がそろいました。開催日を「この日に決める」で選んでください。</span></p>';
-      if (!isVoter) ah += '<p class="hint">' + (who ? esc(who) + ' はこの卓の GM でも参加者でもないので、回答できません。' : '回答するには、上の「あなた」で自分を選んでください。') + '</p>';
+      // 回答は本人だけが入れる。ゲストと、Discord の ID の無いメンバーは答えられないので数えない
+      const cant = peopleOf(s).filter((n) => voters.indexOf(n) < 0);
+      if (cant.length) ah += '<p class="hint">' + esc(cant.join('、')) + ' は Discord で入らないので、回答できません（数えません）。</p>';
+      if (!isVoter) ah += '<p class="hint">' + esc(who) + ' はこの卓の GM でも参加者でもないので、回答できません。</p>';
       ah += '</div>';
     }
     if (!poll) ah += '<p class="next">' + mi('arrow_forward', 'sm') + '<span>' + (s.members.length ? '次は「日程を調整する」で候補日を選び、参加者に聞きます。' : '次は「編集」で参加者を入れてから、「日程を調整する」で候補日を選びます。') + '</span></p>';
@@ -101,7 +104,7 @@ export function renderRecruit(): void {
 
 /** 「どの日でもいい」。これからの候補日すべてに ◯ を付ける。もう一度押すと、自分の回答をすべて取り消す */
 function castAny(id: string, off: boolean): void {
-  const name = me(); if (!name) { needMe(); return; }
+  const name = me(); if (!name) return;
   const s = byId(id); if (!s) return;
   const days = s.candidates.filter((k) => k >= D.today);
   if (!days.length) { toast('これからの候補日がありません'); return; }
@@ -125,7 +128,7 @@ function castAny(id: string, off: boolean): void {
 }
 /** 回答。同じ印をもう一度押すと取り消す。押した瞬間に画面へ出し、返事で確定する */
 function castVote(id: string, k: string, mark: string): void {
-  const name = me(); if (!name) { needMe(); return; }
+  const name = me(); if (!name) return;
   const s = byId(id); if (!s) return;
   s.votes = s.votes || {};
   if (!s.votes[k]) s.votes[k] = {};
@@ -203,7 +206,7 @@ export function init(): void {
     const ask = hit(ev, 'button[data-ask]');
     if (ask) { openAsk(ask.dataset.ask!); return; }
     const b = hit(ev, 'button[data-level]'); if (!b) return;
-    const name = me(); if (!name) { needMe(); return; }
+    const name = me(); if (!name) return;
     const s = byId(b.dataset.id); if (!s) return;
     const level = b.dataset.level!;
     // 押した瞬間に付け替える。失敗したら読み直す

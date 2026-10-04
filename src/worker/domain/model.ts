@@ -47,16 +47,27 @@ export function bookedMap(sessions: Session[]): Record<string, Record<string, st
   return out;
 }
 
-/** まだ回答していない候補日がある人（過ぎた候補日は数えない）（GAS 版 pollPending_） */
+/**
+ * 日程調整に答えられる人。GM と参加者のうち、ログインしたことがあるか、Discord の ID が入っている（あとでログインできる）メンバー。
+ * 回答は本人だけが入れるので、ゲストと、Discord の ID の無いメンバーは答えられない。「全員そろった」はこの人たちで数える
+ */
+export function pollVoters(ctx: Pick<Ctx, 'memberByName'>, s: Pick<Session, 'gm' | 'members'>): string[] {
+  return peopleOf(s).filter((n) => {
+    const m = ctx.memberByName.get(n);
+    return !!m && (!!m.userId || !!m.discordId);
+  });
+}
+
+/** まだ回答していない候補日がある人（答えられる人のうち。過ぎた候補日は数えない）（GAS 版 pollPending_） */
 export function pollPending(ctx: Ctx, s: Session): string[] {
   const votes = ctx.votes.get(s.rowId) ?? {};
   const future = s.candidates.filter((k) => k >= ctx.today);
-  return peopleOf(s).filter((n) => future.some((k) => !votes[k]?.[n]));
+  return pollVoters(ctx, s).filter((n) => future.some((k) => !votes[k]?.[n]));
 }
 
 /** 全員が、これからの候補日すべてに答えたか（GAS 版 pollComplete_） */
 export function pollComplete(ctx: Ctx, s: Session): boolean {
-  return peopleOf(s).length > 0 && s.candidates.some((k) => k >= ctx.today) && pollPending(ctx, s).length === 0;
+  return pollVoters(ctx, s).length > 0 && s.candidates.some((k) => k >= ctx.today) && pollPending(ctx, s).length === 0;
 }
 
 /** 日程調整中の卓を探す（GAS 版 findAdjusting_） */

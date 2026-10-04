@@ -1,6 +1,6 @@
 // Discord に送る文面（GAS 版 Discord.js・Polls.js の …Payload_）
 import { STATUS } from '../domain/constants';
-import { peopleOf, windowInfo } from '../domain/model';
+import { peopleOf, pollVoters, windowInfo } from '../domain/model';
 import type { Ctx, Session } from '../domain/types';
 import { fmtDateJa, timeRange } from '../lib/jst';
 
@@ -98,7 +98,7 @@ export function pollReadyPayload(ctx: PayloadCtx, s: Session): Payload {
   const gmId = discordIdOf(ctx, s.gm);
   const call = gmId ? '<@' + gmId + '>' : s.gm ? s.gm + ' さん' : '';
   const votes = ctx.votes.get(s.rowId) ?? {};
-  const voters = peopleOf(s);
+  const voters = pollVoters(ctx, s);
   const days = s.candidates
     .filter((k) => k >= ctx.today)
     .map((k) => {

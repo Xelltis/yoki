@@ -5,7 +5,6 @@ import { renderCal } from './calendar';
 import { parseYmd } from './dates';
 import { $, fillSelect, load } from './dom';
 import { fillForm, syncNotifyUi } from './form';
-import { updateProxy } from './header';
 import { showLoadedAt } from './load';
 import { fillMemberForm, renderMeCard, renderMembers } from './members';
 import { active, byId, isAdmin, pickLabel, seriesNames, sortedActive, sortSessions } from './model';
@@ -21,14 +20,9 @@ export function buildStatic(): void {
   $('title').textContent = D.title;
   showLoadedAt();
   const names = D.members.map((m) => ({ value: m.name, text: m.name }));
-  // 「あなた」はログインした本人。管理者だけ、ほかの人を選んで代わりに入れられる
-  const cur = $('me').value;
-  fillSelect($('me'), isAdmin() ? names : names.filter((o) => o.value === D.me.name));
-  $('me').value = isAdmin() && D.members.some((m) => m.name === cur) ? cur : D.me.name;
-  $('me').disabled = !isAdmin();
-  $('me').classList.toggle('need', !$('me').value);
-  updateProxy();
-  // 管理画面への入口（管理者だけ。代理で入れているあいだも、本人が管理者かで決める）
+  // 「あなた」はログインした本人（ほかの人に切り替えない）
+  $('me').textContent = D.me.name;
+  // 管理画面への入口（管理者だけ）
   $('adminLink').hidden = !D.isAdmin;
   $('adminEntry').hidden = !D.isAdmin;
   const dl = $('memberList');

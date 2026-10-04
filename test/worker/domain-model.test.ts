@@ -1,8 +1,8 @@
 // 読み込んだデータから計算するだけの小道具（src/worker/domain/model.ts）。DB を使わずに、作った卓で確かめる
 import { describe, expect, test } from 'vitest';
 import { STATUS } from '../../src/worker/domain/constants';
-import { bookedMap } from '../../src/worker/domain/model';
-import type { Session } from '../../src/worker/domain/types';
+import { bookedMap, pollVoters } from '../../src/worker/domain/model';
+import type { Member, Session } from '../../src/worker/domain/types';
 
 /** 卓を 1 つ作る。指定しない項目は空 */
 function session(over: Partial<Session>): Session {
@@ -24,5 +24,16 @@ describe('予定表の「参」「GM」（bookedMap）', () => {
       session({ date: null, gm: 'ひより' }),
     ]);
     expect(booked).toEqual({ [day]: { こまち: 'GM', ソラ: '参', ひより: '参' } });
+  });
+});
+
+describe('日程調整に答えられる人（pollVoters）', () => {
+  test('GM と参加者のうち、ログインしたか Discord の ID があるメンバーだけ。ゲストと Discord の無いメンバーは入らない', () => {
+    const member = (id: number, name: string, discordId: string, userId: string | null): Member => ({ id, name, discordId, note: '', isAdmin: false, userId });
+    const memberByName = new Map(
+      [member(1, 'ひより', '', 'u1'), member(2, 'ソラ', '400000000000000011', null), member(3, 'こまち', '', null)].map((m) => [m.name, m]),
+    );
+    expect(pollVoters({ memberByName }, { gm: 'ひより', members: ['ソラ', 'こまち', 'ゲスト太郎'] })).toEqual(['ひより', 'ソラ']);
+    expect(pollVoters({ memberByName }, { gm: '', members: ['こまち', 'ゲスト太郎'] })).toEqual([]);
   });
 });

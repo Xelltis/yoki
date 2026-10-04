@@ -126,13 +126,14 @@ describe('登録と更新', () => {
 });
 
 describe('参加希望・興味あり', () => {
-  test('自分のぶんは誰でも。ほかの人のぶんは管理者だけ。GM や参加者は付けられない', async () => {
+  test('自分のぶんは誰でも。ほかの人のぶんは、管理者も付けられない。GM や参加者は付けられない', async () => {
     await ok(G.admin, G.id, 'saveSession', { name: '募集', gm: 'ひより', members: ['こまち'], status: '募集' });
     const r = await ok(G.sora, G.id, 'setInterest', { id: 'S001', name: 'ソラ', level: 'want' });
     expect(sessionOf(r, 'S001').want).toEqual(['ソラ']);
-    expect((await fail(G.sora, G.id, 'setInterest', { id: 'S001', name: 'こまち', level: 'want' })).error).toMatch(/^ADMIN:/);
+    expect(await fail(G.sora, G.id, 'setInterest', { id: 'S001', name: 'こまち', level: 'want' })).toEqual({ status: 403, error: '入れられるのは自分のぶんだけです。' });
     expect((await fail(G.komachi, G.id, 'setInterest', { id: 'S001', name: 'こまち', level: 'want' })).error).toContain('すでにこの卓の参加者');
-    const back = await ok(G.admin, G.id, 'setInterest', { id: 'S001', name: 'ソラ', level: 'none' });
+    expect((await fail(G.admin, G.id, 'setInterest', { id: 'S001', name: 'ソラ', level: 'none' })).error).toBe('入れられるのは自分のぶんだけです。');
+    const back = await ok(G.sora, G.id, 'setInterest', { id: 'S001', name: 'ソラ', level: 'none' });
     expect(sessionOf(back, 'S001').want).toEqual([]);
   });
 

@@ -6,28 +6,23 @@ import { sessionTargets } from '../discord/targets';
 import { adminError, badRequest } from '../lib/errors';
 import { fmtDateJa, normTime, parseYmd } from '../lib/jst';
 import { POLL_MARKS, POLL_MAX_DATES, STATUS } from './constants';
-import { type Form, list, requireSelfOrAdmin, str } from './form';
+import { type Form, list, requireSelf, str } from './form';
 import { findAdjusting, findSession, peopleOf, pollComplete } from './model';
-import { personRef } from './people';
 import type { Ctx, Session } from './types';
 
 /** 書いたあとで読み直す道具と、Discord の送り直しを待つ道具（routes/rpc.ts が渡す） */
 export type Io = { reload: () => Promise<Ctx>; data: () => Promise<unknown>; sleep: Sleep };
 
-/** 回答を書く文。vote が空なら消す */
-function voteStmts(ctx: Ctx, s: Session, name: string, days: string[], vote: string): D1PreparedStatement {
-  const ref = personRef(ctx, name);
-  const json = JSON.stringify(days);
-  const who = ref.member_id !== null ? 'member_id = ?3' : 'guest_name = ?3';
-  const whoValue = ref.member_id ?? ref.guest_name;
-  if (!vote) return ctx.db.prepare(`DELETE FROM poll_votes WHERE session_id = ?1 AND date IN (SELECT value FROM json_each(?2)) AND ${who}`).bind(s.rowId, json, whoValue);
-  const conflict = ref.member_id !== null ? '(session_id, date, member_id) WHERE member_id IS NOT NULL' : '(session_id, date, guest_name) WHERE guest_name IS NOT NULL';
+/** 本人（ログインした人）の回答を書く文。vote が空なら消す。回答は本人だけが入れるので、いつもメンバーの行で書く */
+function voteStmts(ctx: Ctx, s: Session, days: string[], vote: string): D1PreparedStatement {
+  const json = JSON.stringify(days), memberId = ctx.actor.memberId;
+  if (!vote) return ctx.db.prepare('DELETE FROM poll_votes WHERE session_id = ?1 AND date IN (SELECT value FROM json_each(?2)) AND member_id = ?3').bind(s.rowId, json, memberId);
   return ctx.db
     .prepare(
-      `INSERT INTO poll_votes (session_id, date, member_id, guest_name, vote, updated_at) SELECT ?1, value, ?3, ?4, ?5, ?6 FROM json_each(?2) WHERE true
-       ON CONFLICT ${conflict} DO UPDATE SET vote = excluded.vote, updated_at = excluded.updated_at`,
+      `INSERT INTO poll_votes (session_id, date, member_id, vote, updated_at) SELECT ?1, value, ?3, ?4, ?5 FROM json_each(?2) WHERE true
+       ON CONFLICT (session_id, date, member_id) WHERE member_id IS NOT NULL DO UPDATE SET vote = excluded.vote, updated_at = excluded.updated_at`,
     )
-    .bind(s.rowId, json, ref.member_id, ref.guest_name, vote, ctx.now.toISOString());
+    .bind(s.rowId, json, memberId, vote, ctx.now.toISOString());
 }
 
 /** 送った結果を、返事の文に添える */
@@ -101,16 +96,14 @@ export async function startPoll(ctx: Ctx, form: Form) {
   ];
   const me = ctx.actor.name;
   const added = dates.filter((k) => fresh || !s.candidates.includes(k));
-  if (peopleOf(s).includes(me) && added.length) stmts.push(voteStmts(ctx, s, me, added, '◯'));
+  if (peopleOf(s).includes(me) && added.length) stmts.push(voteStmts(ctx, s, added, '◯'));
   await db.batch(stmts);
   return { ok: true, id: s.id, dates, fresh, message: '「' + s.name + '」の日程調整を' + (fresh ? '始めました' : '更新しました') + '（候補 ' + dates.length + ' 日）。' };
 }
 
 /** 候補日に回答する。form: { id, ymd, name, vote: '◯' | '×' | '' }。この回答で全員がそろったら、GM に知らせる */
 export async function setPollVote(ctx: Ctx, form: Form, io: Io) {
-  requireSelfOrAdmin(ctx, form.name);
-  const name = str(form.name);
-  if (!name) throw badRequest('上の「あなた」で自分を選んでください。');
+  const name = requireSelf(ctx, form.name);
   const vote = str(form.vote);
   if (vote && !POLL_MARKS.includes(vote)) throw badRequest('回答は ◯ か × です。');
   const s = findAdjusting(ctx, form.id);
@@ -120,7 +113,7 @@ export async function setPollVote(ctx: Ctx, form: Form, io: Io) {
   if (k < ctx.today) throw badRequest('過ぎた候補日には回答できません。');
   if (!peopleOf(s).includes(name)) throw badRequest(name + ' は「' + s.name + '」の GM でも参加者でもないので、回答できません。');
   const wasComplete = pollComplete(ctx, s);
-  await voteStmts(ctx, s, name, [k], vote).run();
+  await voteStmts(ctx, s, [k], vote).run();
   const after = await afterVote(ctx, s.id, wasComplete, io);
   const message = fmtDateJa(k) + ' ' + name + ': ' + (vote || '回答を取り消しました') + after.message;
   return { ok: true, id: s.id, ymd: k, vote, ready: after.ready, notified: after.notified, message };
@@ -131,9 +124,7 @@ export async function setPollVote(ctx: Ctx, form: Form, io: Io) {
  * vote が '◯' なら全部に ◯（× の日も ◯ に）、空なら自分の回答を全部消す
  */
 export async function setPollVoteAll(ctx: Ctx, form: Form, io: Io) {
-  requireSelfOrAdmin(ctx, form.name);
-  const name = str(form.name);
-  if (!name) throw badRequest('上の「あなた」で自分を選んでください。');
+  const name = requireSelf(ctx, form.name);
   const vote = form.vote === undefined ? POLL_MARKS[0]! : str(form.vote);
   if (vote && vote !== POLL_MARKS[0]) throw badRequest('おまかせで付けられるのは ◯ だけです。');
   const s = findAdjusting(ctx, form.id);
@@ -141,7 +132,7 @@ export async function setPollVoteAll(ctx: Ctx, form: Form, io: Io) {
   const days = s.candidates.filter((k) => k >= ctx.today);
   if (!days.length) throw badRequest('「' + s.name + '」には、これからの候補日がありません。');
   const wasComplete = pollComplete(ctx, s);
-  await voteStmts(ctx, s, name, days, vote).run();
+  await voteStmts(ctx, s, days, vote).run();
   const after = await afterVote(ctx, s.id, wasComplete, io);
   const message = (vote ? name + ': 候補日 ' + days.length + ' 日すべてに ◯ を付けました（どの日でもいい）' : name + ': 「' + s.name + '」の回答を取り消しました') + after.message;
   return { ok: true, id: s.id, days, vote, ready: after.ready, notified: after.notified, message };

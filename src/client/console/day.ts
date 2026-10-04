@@ -5,7 +5,7 @@ import { daysBetween, fmtJa, timeRange } from './dates';
 import { $, esc, hit, mi, toast } from './dom';
 import { applySeries, continueFrom, fillForm, openForm, syncNewSessionLabel, syncStatusUi } from './form';
 import { askConfirm } from './modal';
-import { byId, hasPoll, isActive, isAdjusting, isDated, me, peopleOf, pollOk, seriesNames, sortSessions, targetPeople, windowByDay } from './model';
+import { byId, hasPoll, isActive, isAdjusting, isDated, me, peopleOf, pollOk, pollVoters, seriesNames, sortSessions, targetPeople, windowByDay } from './model';
 import { hookFor, kindOf, notifyState } from './notify';
 import { openPoll } from './poll';
 import { D, selDay } from './state';
@@ -34,7 +34,7 @@ export function renderDayDetail(): void {
   list.forEach((s) => {
     const cand = isAdjusting(s) && s.date !== selDay, pollDay = cand && hasPoll(s);
     html += '<div class="sess' + (s.status === '募集' || isAdjusting(s) ? ' adj' : s.status === '終了' ? ' done' : s.status === '中止' ? ' cancel' : '') + '" data-id="' + esc(s.id) + '">';
-    html += '<div class="sess-h"><b>' + esc(s.name) + '</b><span>' + (pollDay ? '日程調整の候補日　◯ ' + pollOk(s, selDay).length + '/' + peopleOf(s).length : cand ? '候補の期間 ' + esc(s.windowLabel) + ' のどこか' : esc(timeRange(s))) + '</span><span class="st">' + esc(s.status) + (s.status === '募集' ? '（仮の日）' : cand ? '（候補日）' : '') + '</span></div>';
+    html += '<div class="sess-h"><b>' + esc(s.name) + '</b><span>' + (pollDay ? '日程調整の候補日　◯ ' + pollOk(s, selDay).length + '/' + pollVoters(s).length : cand ? '候補の期間 ' + esc(s.windowLabel) + ' のどこか' : esc(timeRange(s))) + '</span><span class="st">' + esc(s.status) + (s.status === '募集' ? '（仮の日）' : cand ? '（候補日）' : '') + '</span></div>';
     html += '<div class="people">' + peopleOf(s).map((p) => {
       const isGm = p === s.gm, known = D.members.some((m) => m.name === p);
       return '<span class="' + (isGm ? 'gm' : '') + (known ? '' : ' no') + '" title="' + (known ? '' : 'メンバーに未登録') + '">' + (isGm ? 'GM ' : '') + esc(p) + '</span>';

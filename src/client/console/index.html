@@ -33,10 +33,7 @@
         <span class="sync-at" id="loadedAt"></span>
         <button type="button" id="reload" class="hbtn" aria-label="更新" title="最新の状態を読み込む"><span class="material-icons sm" aria-hidden="true">refresh</span><span class="btxt">更新</span></button>
       </span>
-      <label class="me"><span class="me-l">あなた</span>
-        <select id="me"><option value="">（選ぶ）</option></select>
-        <span class="proxy" id="proxyBadge" hidden title="管理者として、ほかの人のぶんを入れています">代理で入力中</span>
-      </label>
+      <span class="me"><span class="me-l">あなた</span><b class="me-name" id="me"></b></span>
       <button type="button" id="guideBtnM" class="hbtn icon guide-m" aria-label="はじめの 3 ステップ" aria-controls="setupGuide" aria-expanded="false" title="はじめの 3 ステップをカレンダーの上に出す"><span class="material-icons sm" aria-hidden="true">flag</span></button>
       <a id="helpLinkM" class="hbtn help-m" href="https://xelltis.github.io/yoki/" target="_blank" rel="noopener" title="使い方のページを新しいタブで開く"><span class="material-icons sm" aria-hidden="true">help</span>使い方</a>
       <button type="button" id="theme" class="hbtn icon" title="ライト／ダークを切り替える（このブラウザだけ）" aria-label="ダークに切り替える"><span class="material-icons sm" aria-hidden="true">dark_mode</span></button>
@@ -102,7 +99,7 @@
         <h1>募集・調整</h1>
         <p class="lead">参加者を集めている卓と、開催日を選んでいる卓です。</p>
       </div>
-      <div class="bar"><h2><span class="material-icons sm" aria-hidden="true">campaign</span>募集中</h2><button type="button" class="tip" data-tip="参加者を集めている卓です。上の「あなた」で自分を選び、カードの「参加希望」か「興味あり」を押します。押しても Discord には流れません。" aria-label="募集中とは"><span class="material-icons xs" aria-hidden="true">help</span></button><button type="button" class="btn small primary" id="barRecruit"><span class="material-icons sm" aria-hidden="true">add</span>募集を始める</button></div>
+      <div class="bar"><h2><span class="material-icons sm" aria-hidden="true">campaign</span>募集中</h2><button type="button" class="tip" data-tip="参加者を集めている卓です。カードの「参加希望」か「興味あり」を押します。押しても Discord には流れません。" aria-label="募集中とは"><span class="material-icons xs" aria-hidden="true">help</span></button><button type="button" class="btn small primary" id="barRecruit"><span class="material-icons sm" aria-hidden="true">add</span>募集を始める</button></div>
       <div id="recruitList" class="recruit-list"></div>
       <div class="bar"><h2><span class="material-icons sm" aria-hidden="true">edit_calendar</span>日程調整中</h2><button type="button" class="tip" data-tip="開催日を選んでいる卓です。GM が候補日を出すと知らせが届き、候補日ごとに ◯ か × を押します。全員が答えると GM に知らせが届き、GM が選んだ日に決まって、状態は「開催」になります。" aria-label="日程調整中とは"><span class="material-icons xs" aria-hidden="true">help</span></button><button type="button" class="btn small" id="barAdjust"><span class="material-icons sm" aria-hidden="true">add</span>日程調整を始める</button></div>
       <div id="adjustList" class="recruit-list"></div>
@@ -424,7 +421,7 @@
 
           <div class="set-pane" data-pane="admin" hidden>
             <div class="card">
-              <h3>管理者 <small class="hint">ほかの人のぶんを入れる・卓を消す・メンバーと設定を変える</small></h3>
+              <h3>管理者 <small class="hint">卓を消す・メンバーと設定を変える・日程調整の開催日を決める</small></h3>
               <div id="admState" class="adm-state"></div>
               <p class="hint" id="admLead"></p>
               <div class="adm-list" id="admList"></div>

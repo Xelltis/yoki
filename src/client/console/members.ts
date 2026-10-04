@@ -29,7 +29,7 @@ export function fillMemberForm(name: string): void {
   $('mmsg').textContent = ''; $('mmsg').className = '';
   drafts.member = false;
 }
-/** 設定の「あなたの名前と備考」。ログインした本人のぶん（管理者が代わりに入れているあいだも、本人） */
+/** 設定の「あなたの名前と備考」。ログインした本人のぶん */
 export function renderMeCard(): void {
   const m = D.members.filter((x) => x.name === D.me.name)[0];
   const card = $('meCard');

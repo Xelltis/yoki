@@ -2,16 +2,9 @@
 import { badRequest } from '../lib/errors';
 import { addDays, dowOf, fmtDateJa, parseYmd } from '../lib/jst';
 import { AVAIL_NOTE_MAX, DAY_NOTE_MAX, MARKS } from './constants';
-import { type Form, requireSelfOrAdmin, str } from './form';
+import { type Form, requireSelf, str } from './form';
 import { bookedMap } from './model';
-import type { Ctx, Member } from './types';
-
-function memberOf(ctx: Ctx, name: string): Member {
-  if (!name) throw badRequest('名前を選んでください。');
-  const m = ctx.memberByName.get(name);
-  if (!m) throw badRequest('「' + name + '」はメンバーにいません。');
-  return m;
-}
+import type { Ctx } from './types';
 
 function readMark(v: unknown): string {
   const mark = str(v);
@@ -26,18 +19,16 @@ function inRange(ctx: Ctx, ymd: string): boolean {
 
 const upsertMark = 'INSERT INTO availability (member_id, date, mark) VALUES (?1, ?2, ?3) ON CONFLICT (member_id, date) DO UPDATE SET mark = excluded.mark';
 
-/** 予定の 1 マスを書く。form: { name, ymd, mark }。卓に入っている日は変えられない */
+/** 予定の 1 マスを書く。form: { name（本人）, ymd, mark }。卓に入っている日は変えられない */
 export async function setAvailability(ctx: Ctx, form: Form) {
-  requireSelfOrAdmin(ctx, form.name);
-  const name = str(form.name);
-  const m = memberOf(ctx, name);
+  const name = requireSelf(ctx, form.name), memberId = ctx.actor.memberId;
   const mark = readMark(form.mark);
   const ymd = parseYmd(form.ymd);
   if (!ymd) throw badRequest('日付が読めません: ' + str(form.ymd));
   if (!inRange(ctx, ymd)) throw badRequest(fmtDateJa(ymd) + ' は予定表の範囲外です。設定の「予定の日数」を増やしてください。');
   if (bookedMap(ctx.sessions)[ymd]?.[name]) throw badRequest(fmtDateJa(ymd) + ' は ' + name + ' が卓に入っている日なので、都合は変えられません。');
-  if (mark) await ctx.db.prepare(upsertMark).bind(m.id, ymd, mark).run();
-  else await ctx.db.prepare('DELETE FROM availability WHERE member_id = ? AND date = ?').bind(m.id, ymd).run();
+  if (mark) await ctx.db.prepare(upsertMark).bind(memberId, ymd, mark).run();
+  else await ctx.db.prepare('DELETE FROM availability WHERE member_id = ? AND date = ?').bind(memberId, ymd).run();
   return { ok: true, name, ymd, mark };
 }
 
@@ -46,9 +37,7 @@ export async function setAvailability(ctx: Ctx, form: Form) {
  * form: { name, from, to, weekdays: [0-6], mark: '△'|'×'|'', keep: true なら入力済みのマスは残す }
  */
 export async function setAvailabilityBulk(ctx: Ctx, form: Form) {
-  requireSelfOrAdmin(ctx, form.name);
-  const name = str(form.name);
-  const m = memberOf(ctx, name);
+  const name = requireSelf(ctx, form.name), memberId = ctx.actor.memberId;
   const mark = readMark(form.mark);
   const from = parseYmd(form.from), to = parseYmd(form.to);
   if (!from || !to) throw badRequest('期間を入れてください。');
@@ -73,10 +62,10 @@ export async function setAvailabilityBulk(ctx: Ctx, form: Form) {
       await ctx.db
         .prepare(`INSERT INTO availability (member_id, date, mark) SELECT ?1, value, ?3 FROM json_each(?2) WHERE true
                   ON CONFLICT (member_id, date) DO UPDATE SET mark = excluded.mark`)
-        .bind(m.id, json, mark)
+        .bind(memberId, json, mark)
         .run();
     } else {
-      await ctx.db.prepare('DELETE FROM availability WHERE member_id = ? AND date IN (SELECT value FROM json_each(?))').bind(m.id, json).run();
+      await ctx.db.prepare('DELETE FROM availability WHERE member_id = ? AND date IN (SELECT value FROM json_each(?))').bind(memberId, json).run();
     }
   }
   let message = name + ' の ' + days.length + ' 日に「' + (mark || '空欄') + '」を入れました。';
@@ -89,9 +78,7 @@ export async function setAvailabilityBulk(ctx: Ctx, form: Form) {
 
 /** 予定の 1 マスにメモを書く。△×とは別で、卓に入っている日にも書ける。空にすると消える */
 export async function setAvailNote(ctx: Ctx, form: Form) {
-  requireSelfOrAdmin(ctx, form.name);
-  const name = str(form.name);
-  const m = memberOf(ctx, name);
+  const name = requireSelf(ctx, form.name), memberId = ctx.actor.memberId;
   const ymd = parseYmd(form.ymd);
   if (!ymd) throw badRequest('日付が読めません: ' + str(form.ymd));
   const text = str(form.text);
@@ -99,10 +86,10 @@ export async function setAvailNote(ctx: Ctx, form: Form) {
   if (text) {
     await ctx.db
       .prepare('INSERT INTO avail_notes (member_id, date, text, updated_at) VALUES (?1, ?2, ?3, ?4) ON CONFLICT (member_id, date) DO UPDATE SET text = excluded.text, updated_at = excluded.updated_at')
-      .bind(m.id, ymd, text, ctx.now.toISOString())
+      .bind(memberId, ymd, text, ctx.now.toISOString())
       .run();
   } else {
-    await ctx.db.prepare('DELETE FROM avail_notes WHERE member_id = ? AND date = ?').bind(m.id, ymd).run();
+    await ctx.db.prepare('DELETE FROM avail_notes WHERE member_id = ? AND date = ?').bind(memberId, ymd).run();
   }
   return { ok: true, ymd, name, message: fmtDateJa(ymd) + ' ' + name + ' のメモを' + (text ? '保存' : '消') + 'しました。' };
 }

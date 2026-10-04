@@ -3,7 +3,7 @@ import type { ConsoleSession } from '../../shared/api';
 import { WD, holidayName, parseYmd, ymdOf } from './dates';
 import { renderDayDetail } from './day';
 import { $, esc, hit, mi, reducedMotion, store } from './dom';
-import { STATUS_ICON, active, availMap, hasPoll, isActive, isAdjusting, peopleOf, pollOk, sortSessions, windowByDay } from './model';
+import { STATUS_ICON, active, availMap, hasPoll, isActive, isAdjusting, peopleOf, pollOk, pollVoters, sortSessions, windowByDay } from './model';
 import { D, selDay, setSelDay, view } from './state';
 
 /** カレンダーの下のアイコンの読み方。[アイコン, 名前, 付ける印] */
@@ -49,7 +49,7 @@ export function renderCal(): void {
     });
     const icos = list.filter((s) => isAdjusting(s) && wins.indexOf(s) < 0).concat(wins).map((s) => {
       const poll = hasPoll(s);
-      const label = s.name + (poll ? '（日程調整の候補日　◯ ' + pollOk(s, key).length + '/' + peopleOf(s).length + '）' : '（調整中' + (s.windowLabel ? '　' + s.windowLabel + ' のどこか' : '') + '）');
+      const label = s.name + (poll ? '（日程調整の候補日　◯ ' + pollOk(s, key).length + '/' + pollVoters(s).length + '）' : '（調整中' + (s.windowLabel ? '　' + s.windowLabel + ' のどこか' : '') + '）');
       return '<span class="cal-ico ' + (poll ? 'cand' : 'win') + '" role="img" aria-label="' + esc(label) + '" title="' + esc(label) + '">' + mi(poll ? 'how_to_vote' : 'edit_calendar', 'xs') + '</span>';
     }).join('');
     if (icos) html += '<span class="cal-icos">' + icos + '</span>';
