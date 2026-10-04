@@ -27,7 +27,7 @@ const count = (sql: string, ...args: unknown[]) => env.DB.prepare(sql).bind(...a
 
 describe('入れる人', () => {
   const reads = ['/api/admin/overview', '/api/admin/groups', '/api/admin/groups/grp', '/api/admin/users', '/api/admin/legal'];
-  const writes = ['/api/admin/groups/grp/admins', '/api/admin/groups/grp/guild', '/api/admin/groups/grp/delete', '/api/admin/users/x/logout', '/api/admin/users/x/ban', '/api/admin/registration', '/api/admin/legal'];
+  const writes = ['/api/admin/groups/grp/admins', '/api/admin/groups/grp/guild', '/api/admin/groups/grp/delete', '/api/admin/users/x/logout', '/api/admin/users/x/ban', '/api/admin/users/x/delete', '/api/admin/registration', '/api/admin/legal'];
 
   test('ログインしていなければ AUTH:、運営者でなければ 403。グループの管理者でも入れない', async () => {
     const { admin } = await setupGroup();
@@ -232,6 +232,42 @@ describe('利用者', () => {
     expect(logs.filter((l) => l.includes('"audit":"operator"')).map((l) => JSON.parse(l).action)).toEqual(['ban', 'unban']);
   });
 
+  test('消す。利用者の行・ログイン・サーバーの控えと、どのグループのメンバーの行も消える。卓と回答には名前が残る', async () => {
+    const SORA = '400000000000000011';
+    const { admin, sora } = await setupGroup();
+    await rpc(admin, 'grp', 'saveSession', { name: '迷宮', gm: 'ひより', members: ['ソラ'], status: '調整中' });
+    const soraId = await env.DB.prepare("SELECT id FROM members WHERE group_id = 'grp' AND user_id = ?").bind(SORA).first<number>('id');
+    const sid = await env.DB.prepare('SELECT id FROM sessions').first<number>('id');
+    await env.DB.batch([
+      env.DB.prepare("INSERT INTO poll_votes (session_id, date, member_id, vote, updated_at) VALUES (?, '2026-12-01', ?, '◯', '')").bind(sid, soraId),
+      env.DB.prepare("INSERT INTO availability (member_id, date, mark) VALUES (?, '2026-12-01', '×')").bind(soraId),
+      // ソラが作った別のグループ。そこでは、まだ開いていない人として Discord ID で先に登録されていた
+      env.DB.prepare("INSERT INTO groups (id, guild_id, guild_name, title, created_by, created_at) VALUES ('g2', 'guild-2', 'S2', '二つ目', ?, '2026-10-01T00:00:00Z')").bind(SORA),
+      env.DB.prepare("INSERT INTO members (group_id, name, discord_id, created_at) VALUES ('g2', 'そら', ?, '')").bind(SORA),
+    ]);
+    const r = await post('/api/admin/users/' + SORA + '/delete', {});
+    expect(r.body.message).toBe('ソラ を消しました（グループのメンバーの行 2 件も消しました）。Discord サーバーにいれば、次に開いたときにまた入れます。');
+    for (const sql of ['SELECT count(*) AS n FROM users WHERE id = ?1', 'SELECT count(*) AS n FROM auth_sessions WHERE user_id = ?1', 'SELECT count(*) AS n FROM user_guilds WHERE user_id = ?1', 'SELECT count(*) AS n FROM members WHERE user_id = ?1 OR discord_id = ?1']) {
+      expect(await count(sql, SORA), sql).toBe(0);
+    }
+    expect(await count('SELECT count(*) AS n FROM availability')).toBe(0);
+    expect(await env.DB.prepare("SELECT guest_name FROM session_people WHERE role = 'member'").first('guest_name')).toBe('ソラ');
+    expect(await env.DB.prepare('SELECT guest_name, member_id FROM poll_votes').first()).toEqual({ guest_name: 'ソラ', member_id: null });
+    expect(await env.DB.prepare("SELECT created_by FROM groups WHERE id = 'g2'").first('created_by')).toBe('');
+    expect((await rpc(sora, 'grp', 'getConsoleData')).status).toBe(401);
+    // ほかの人はそのまま
+    expect(await count("SELECT count(*) AS n FROM members WHERE group_id = 'grp'")).toBe(2);
+    expect(logs.filter((l) => l.includes('"audit":"operator"')).map((l) => JSON.parse(l))).toEqual([{ audit: 'operator', by: OP.id, action: 'deleteUser', target: SORA }]);
+  });
+
+  test('運営者と、締め出している人は消せない。いない人は 404', async () => {
+    await setupGroup();
+    expect((await post('/api/admin/users/' + OP.id + '/delete', {})).body.error).toBe('運営者は消せません（OPERATOR_IDS から外してからにしてください）。');
+    await post('/api/admin/users/400000000000000012/ban', { banned: true });
+    expect((await post('/api/admin/users/400000000000000012/delete', {})).body.error).toMatch(/^締め出している人は消せません。/);
+    expect(await count("SELECT count(*) AS n FROM users WHERE id = '400000000000000012'")).toBe(1);
+    expect((await post('/api/admin/users/none/delete', {})).status).toBe(404);
+  });
 });
 
 

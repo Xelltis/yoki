@@ -192,8 +192,8 @@ export async function listUsers(db: D1Database, isOp: (id: string) => boolean, n
   );
 }
 
-async function requireUser(db: D1Database, id: string): Promise<{ id: string; name: string }> {
-  const u = await db.prepare('SELECT id, coalesce(global_name, username) AS name FROM users WHERE id = ?').bind(id).first<{ id: string; name: string }>();
+async function requireUser(db: D1Database, id: string): Promise<{ id: string; name: string; banned_at: string | null }> {
+  const u = await db.prepare('SELECT id, coalesce(global_name, username) AS name, banned_at FROM users WHERE id = ?').bind(id).first<{ id: string; name: string; banned_at: string | null }>();
   if (!u) throw notFound('利用者が見つかりません。');
   return u;
 }
@@ -218,4 +218,28 @@ export async function setBan(db: D1Database, id: string, form: Form, isOp: (id: 
     db.prepare('DELETE FROM auth_sessions WHERE user_id = ?').bind(id),
   ]);
   return { message: u.name + ' を締め出しました。ログインも消しました。' };
+}
+
+/**
+ * 利用者を消す（本人から消してほしいと頼まれたとき）。消すのは、利用者の行（ログインと、入っているサーバーの控えも一緒に消える）と、
+ * どのグループでもその人のメンバーの行（ログインで結びついた行と、その Discord ID で先に登録されていた行）。メンバーの行の消し方は、
+ * グループの管理者がメンバーを消すときと同じで、予定とメモは消え、卓と回答には名前だけが残る。グループの「作った人」の ID も外す。
+ * Discord サーバーにいれば、次に開いたときにまた入れる。運営者は消せない。締め出している人は、消すと締め出しの印も消えるので消せない
+ */
+export async function deleteUser(db: D1Database, id: string, isOp: (id: string) => boolean): Promise<{ message: string }> {
+  const u = await requireUser(db, id);
+  if (isOp(id)) throw badRequest('運営者は消せません（OPERATOR_IDS から外してからにしてください）。');
+  if (u.banned_at) throw badRequest('締め出している人は消せません。消すと締め出しの印も消え、また入れるようになるためです。消すなら、先に締め出しから戻してください。');
+  const mine = 'SELECT id FROM members WHERE user_id = ?1 OR discord_id = ?1';
+  // 消すメンバーの行の数は、消す前に同じ batch の中で数える（DELETE の changes は、一緒に消えた予定の行も数えるため）
+  const [counted] = await db.batch([
+    db.prepare(`SELECT count(*) AS n FROM (${mine})`).bind(id),
+    db.prepare(`UPDATE OR IGNORE session_people SET guest_name = (SELECT name FROM members m WHERE m.id = session_people.member_id), member_id = NULL WHERE member_id IN (${mine})`).bind(id),
+    db.prepare(`UPDATE OR IGNORE poll_votes SET guest_name = (SELECT name FROM members m WHERE m.id = poll_votes.member_id), member_id = NULL WHERE member_id IN (${mine})`).bind(id),
+    db.prepare('DELETE FROM members WHERE user_id = ?1 OR discord_id = ?1').bind(id),
+    db.prepare("UPDATE groups SET created_by = '' WHERE created_by = ?").bind(id),
+    db.prepare('DELETE FROM users WHERE id = ?').bind(id),
+  ]);
+  const n = (counted!.results[0] as { n: number }).n;
+  return { message: u.name + ' を消しました（グループのメンバーの行 ' + n + ' 件も消しました）。Discord サーバーにいれば、次に開いたときにまた入れます。' };
 }

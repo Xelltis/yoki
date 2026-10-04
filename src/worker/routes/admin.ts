@@ -5,7 +5,7 @@ import type { AdminResult } from '../../shared/admin';
 import type { AppEnv } from '../app';
 import { isOperator, requireOperator } from '../auth/operator';
 import type { Viewer } from '../auth/session';
-import { changeGuild, groupDetail, listGroups, listUsers, logoutUser, overview, setBan, setGroupAdmin } from '../domain/admin';
+import { changeGuild, deleteUser, groupDetail, listGroups, listUsers, logoutUser, overview, setBan, setGroupAdmin } from '../domain/admin';
 import { readForm, str } from '../domain/form';
 import { deleteGroupById } from '../domain/groups';
 import { readLegal, saveLegal } from '../domain/legal';
@@ -93,6 +93,14 @@ adminRoutes.post('/api/admin/users/:id/logout', async (c) => {
   const op = await requireOperator(c);
   const r = await logoutUser(c.env.DB, c.req.param('id'));
   audit(op, 'logoutUser', c.req.param('id'));
+  return c.json(done(r.message));
+});
+
+adminRoutes.post('/api/admin/users/:id/delete', async (c) => {
+  const op = await requireOperator(c);
+  const url = new URL(c.req.url);
+  const r = await deleteUser(c.env.DB, c.req.param('id'), (id) => isOperator(c.env, id, url));
+  audit(op, 'deleteUser', c.req.param('id'));
   return c.json(done(r.message));
 });
 
