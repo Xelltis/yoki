@@ -1,0 +1,76 @@
+# アプリ（Worker と D1）を Cloudflare に公開する。
+# main にアプリの変更が入ったときと、Actions の画面から手で動かしたときに動く。
+# 公開する Cloudflare ごとの値はリポジトリに置かず、GitHub の environment「production」に置く（書き方は README の「公開」）
+#   変数（vars）: CLOUDFLARE_ACCOUNT_ID・YOKI_D1_DATABASE_ID・YOKI_APP_URL・YOKI_DISCORD_CLIENT_ID
+#   秘密（secrets）: CLOUDFLARE_API_TOKEN・DISCORD_CLIENT_SECRET・OPERATOR_IDS
+name: アプリを公開する
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - src/**
+      - migrations/**
+      - wrangler.jsonc
+      - vite.config.ts
+      - package.json
+      - package-lock.json
+      - .node-version
+      - .github/workflows/deploy.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# 公開は 1 つずつ。途中の公開は止めない（表の変更の途中で止まらないように）
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: ${{ vars.YOKI_APP_URL }}
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      # テストとカバレッジ（100% を下回ったら止まる）
+      - run: npm run test:coverage
+
+      - name: 組み立てる（公開する Cloudflare の値を入れる。欠けていたら止まる）
+        run: npm run build
+        env:
+          YOKI_DEPLOY: '1'
+          YOKI_D1_DATABASE_ID: ${{ vars.YOKI_D1_DATABASE_ID }}
+          YOKI_APP_URL: ${{ vars.YOKI_APP_URL }}
+          YOKI_DISCORD_CLIENT_ID: ${{ vars.YOKI_DISCORD_CLIENT_ID }}
+
+      - name: 本番の D1 に表の変更を当てる
+        run: npx wrangler d1 migrations apply DB --remote --config dist/yoki/wrangler.json
+
+      # 秘密の値は、公開する版と一緒に送る（ファイルは runner の一時の場所に置き、送ったら消す）
+      - name: 公開する
+        env:
+          DISCORD_CLIENT_SECRET: ${{ secrets.DISCORD_CLIENT_SECRET }}
+          OPERATOR_IDS: ${{ secrets.OPERATOR_IDS }}
+        run: |
+          test -n "$CLOUDFLARE_API_TOKEN" || { echo '::error::secret の CLOUDFLARE_API_TOKEN がありません'; exit 1; }
+          test -n "$DISCORD_CLIENT_SECRET" || { echo '::error::secret の DISCORD_CLIENT_SECRET がありません'; exit 1; }
+          secrets="$RUNNER_TEMP/secrets.json"
+          trap 'rm -f "$secrets"' EXIT
+          node -e "
+            const s = { DISCORD_CLIENT_SECRET: process.env.DISCORD_CLIENT_SECRET };
+            if (process.env.OPERATOR_IDS) s.OPERATOR_IDS = process.env.OPERATOR_IDS;
+            require('fs').writeFileSync(process.argv[1], JSON.stringify(s), { mode: 0o600 });
+          " "$secrets"
+          npx wrangler deploy --config dist/yoki/wrangler.json --secrets-file "$secrets"
