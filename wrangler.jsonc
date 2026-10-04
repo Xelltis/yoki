@@ -27,7 +27,7 @@
   },
   "vars": {
     // Discord の文に付けるアプリの URL と、Discord アプリのクライアント ID。手元では .dev.vars で、本番では公開のときに入れる。
-    // 秘密の値（DISCORD_CLIENT_SECRET）と運営者の ID（OPERATOR_IDS）は vars に置かず、Worker の secret にする（src/worker/env.ts）
+    // 秘密の値（DISCORD_CLIENT_SECRET・DISCORD_BOT_TOKEN）と運営者の ID（OPERATOR_IDS）は vars に置かず、Worker の secret にする（src/worker/env.ts）
     "APP_URL": "",
     "DISCORD_CLIENT_ID": ""
   },

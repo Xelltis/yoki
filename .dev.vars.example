@@ -2,6 +2,8 @@
 # Discord アプリ（https://discord.com/developers/applications）の OAuth2 の値。空なら開発用ログインだけで動く
 DISCORD_CLIENT_ID=
 DISCORD_CLIENT_SECRET=
+# 知らせを送る Bot（同じ Discord アプリの Bot）のトークン。空なら Discord に送らない（サンプルのグループのチャンネルにだけ、送ったことにする）
+DISCORD_BOT_TOKEN=
 # Discord の文に付けるアプリの URL
 APP_URL=http://localhost:5173
 # 運営者（/admin/）の Discord ユーザー ID。カンマで区切って何人でも書ける。開発用ログインでは、空でもひよりが運営者になる

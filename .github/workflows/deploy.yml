@@ -2,7 +2,7 @@
 # main にアプリの変更が入ったときと、Actions の画面から手で動かしたときに動く。
 # 公開する Cloudflare ごとの値はリポジトリに置かず、GitHub の environment「production」に置く（書き方は README の「公開」）
 #   変数（vars）: CLOUDFLARE_ACCOUNT_ID・YOKI_D1_DATABASE_ID・YOKI_APP_URL・YOKI_DISCORD_CLIENT_ID
-#   秘密（secrets）: CLOUDFLARE_API_TOKEN・DISCORD_CLIENT_SECRET・OPERATOR_IDS
+#   秘密（secrets）: CLOUDFLARE_API_TOKEN・DISCORD_CLIENT_SECRET・DISCORD_BOT_TOKEN・OPERATOR_IDS
 name: アプリを公開する
 
 on:
@@ -62,14 +62,16 @@ jobs:
       - name: 公開する
         env:
           DISCORD_CLIENT_SECRET: ${{ secrets.DISCORD_CLIENT_SECRET }}
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
           OPERATOR_IDS: ${{ secrets.OPERATOR_IDS }}
         run: |
           test -n "$CLOUDFLARE_API_TOKEN" || { echo '::error::secret の CLOUDFLARE_API_TOKEN がありません'; exit 1; }
           test -n "$DISCORD_CLIENT_SECRET" || { echo '::error::secret の DISCORD_CLIENT_SECRET がありません'; exit 1; }
+          test -n "$DISCORD_BOT_TOKEN" || { echo '::error::secret の DISCORD_BOT_TOKEN がありません'; exit 1; }
           secrets="$RUNNER_TEMP/secrets.json"
           trap 'rm -f "$secrets"' EXIT
           node -e "
-            const s = { DISCORD_CLIENT_SECRET: process.env.DISCORD_CLIENT_SECRET };
+            const s = { DISCORD_CLIENT_SECRET: process.env.DISCORD_CLIENT_SECRET, DISCORD_BOT_TOKEN: process.env.DISCORD_BOT_TOKEN };
             if (process.env.OPERATOR_IDS) s.OPERATOR_IDS = process.env.OPERATOR_IDS;
             require('fs').writeFileSync(process.argv[1], JSON.stringify(s), { mode: 0o600 });
           " "$secrets"
