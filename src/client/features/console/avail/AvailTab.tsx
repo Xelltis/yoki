@@ -5,6 +5,8 @@ import { load, store } from '../../../app/storage';
 import { askConfirm } from '../../../ui/confirm';
 import { Icon } from '../../../ui/Icon';
 import { Modal } from '../../../ui/Modal';
+import { PageHead } from '../../../ui/PageHead';
+import { Tip } from '../../../ui/Tip';
 import { createStore, useStore } from '../../../ui/store';
 import { toast } from '../../../ui/toast';
 import { useConsole, useData } from '../context';
@@ -23,6 +25,16 @@ export const sortStore = createStore(load('sortByLoad') !== '0');
 const afKey = (k: string, mine: string) => 'av' + k + ':' + (mine || '-');
 /** まとめて入れるの入力（タブを移っても残す） */
 const bulkStore = createStore({ mark: '△', from: '', to: '', wds: ALL_WDS, keep: true });
+
+/** 絞り込み・まとめて入れるの枠（名前と欄を 2 列に並べる。狭い画面では 1 列） */
+const pgrid = 'grid grid-cols-[max-content_minmax(0,1fr)] items-center gap-x-16 gap-y-10 max-sm:grid-cols-[minmax(0,1fr)] max-sm:gap-4';
+const plabel = 'm-0 text-12 font-semibold text-muted max-sm:mt-6';
+const pctl = 'flex min-w-0 flex-wrap items-center gap-6';
+const panelBtns = 'btns mt-14 border-t border-line pt-12';
+/** 曜日やメンバーのチェック（選ぶと水色） */
+const chkPill = 'm-0 inline-flex cursor-pointer items-center gap-6 rounded-full border border-line-strong bg-card py-3 pr-10 pl-8 text-13 font-normal has-checked:border-accent-line has-checked:bg-accent-soft has-checked:text-accent-text ';
+/** 表の上の絞り込みのボタン（押すたびに入り切り） */
+const avChip = 'h-32 cursor-pointer rounded-full border border-line bg-card px-12 py-0 font-inherit text-13 font-semibold text-muted hover:bg-hover aria-pressed:border-accent-line aria-pressed:bg-accent-soft aria-pressed:text-accent-text max-tab:flex-none';
 
 const COND_TEXT: Record<string, string> = { '': 'すべての日', has: '卓のある日', free: '卓のない日', soft: '表示中の誰も × を付けていない日' };
 
@@ -127,14 +139,14 @@ export function AvailTab() {
     });
   };
   const hotChip = (s: ConsoleSession, label: string) => (
-    <button type="button" className={target === s.name ? 'on' : ''} data-hot={s.name} key={s.id} onClick={() => setF({ target: target === s.name ? '（なし）' : s.name })}>
+    <button type="button" className={'h-28 cursor-pointer rounded-full border px-10 py-0 font-inherit text-12 font-semibold ' + (target === s.name ? 'border-transparent bg-accent-strong text-accent-ink' : 'border-line bg-card text-fg hover:bg-hover')} data-hot={s.name} key={s.id} onClick={() => setF({ target: target === s.name ? '（なし）' : s.name })}>
       {s.name}<span className="hint">{' ' + label}</span>
     </button>
   );
   const wdsBox = (sel: number[], set: (wds: number[]) => void, cls: string) => (
-    <span className="wds" id={cls === 'afwd' ? 'afWds' : 'abWds'}>
+    <span className="inline-flex flex-wrap gap-6" id={cls === 'afwd' ? 'afWds' : 'abWds'}>
       {WD.map((w, i) => (
-        <label className={i === 0 ? 'sun' : i === 6 ? 'sat' : ''} key={i}>
+        <label className={chkPill + (i === 0 ? 'text-sun' : i === 6 ? 'text-sat' : '')} key={i}>
           <input type="checkbox" className={cls} value={i} checked={sel.indexOf(i) >= 0} onChange={(ev) => set(ev.target.checked ? sel.concat(i) : sel.filter((x) => x !== i))} />
           {w}
         </label>
@@ -146,45 +158,44 @@ export function AvailTab() {
 
   return (
     <section id="tab-avail">
-      <div className="page-head">
-        <h1>メンバーの予定 <button type="button" className="tip" data-tip="自分の列のマスをタップすると 空 → △ → × → 空 と変わります。空欄は「参加できる」扱いです。マスの右上の鉛筆で、その日のメモ（「21 時から」など）を書けます。ほかの人の列は見るだけです。スマホでは日ごとのリストになり、◯ △ × のボタンで選べます。" aria-label="予定表の使い方"><Icon name="help" size="xs" /></button></h1>
-        <p className="lead">空欄は「参加できる」扱いです。都合の悪い日だけ、自分の印（△ か ×）を付けます。</p>
-      </div>
+      <PageHead
+        title={<>メンバーの予定 <Tip text="自分の列のマスをタップすると 空 → △ → × → 空 と変わります。空欄は「参加できる」扱いです。マスの右上の鉛筆で、その日のメモ（「21 時から」など）を書けます。ほかの人の列は見るだけです。スマホでは日ごとのリストになり、◯ △ × のボタンで選べます。" label="予定表の使い方" /></>}
+        lead="空欄は「参加できる」扱いです。都合の悪い日だけ、自分の印（△ か ×）を付けます。" />
       <UnknownWarn d={d} />
-      <div id="availHot" className="hot-bar" hidden={!hotRec.length && !hotAdj.length}>
+      <div id="availHot" className="mb-12 flex flex-wrap items-center gap-x-8 gap-y-6 rounded-lg border border-[color-mix(in_srgb,var(--violet)_35%,var(--line))] bg-soon px-10 py-8 text-13" hidden={!hotRec.length && !hotAdj.length}>
         {(hotRec.length > 0 || hotAdj.length > 0) && (
           <>
-            <span className="hb-l"><Icon name="campaign" size="sm" />日が未定の卓</span>
+            <span className="inline-flex items-center gap-4 font-semibold"><Icon name="campaign" size="sm" className="text-violet" />日が未定の卓</span>
             {hotRec.map((s) => hotChip(s, '募集 ' + (s.windowLabel || '期間未定')))}
             {hotAdj.map((s) => hotChip(s, '調整 ' + (s.windowLabel || '期間未定')))}
             <span className="hint">押すと、その卓の人だけに絞ります</span>
           </>
         )}
       </div>
-      <div className="fold-bar">
-        <button type="button" className={'btn small fold' + (fold.availFilter ? ' on' : '')} id="foldFilter" data-target="availFilter" aria-expanded={fold.availFilter ? 'true' : 'false'} onClick={() => toggleFold('availFilter')}>
-          <Icon name={fold.availFilter ? 'expand_more' : 'chevron_right'} size="sm" />絞り込み
+      <div className="mb-12 flex flex-wrap items-center gap-8">
+        <button type="button" className={'btn small' + (fold.availFilter ? ' on bg-head' : '')} id="foldFilter" data-target="availFilter" aria-expanded={fold.availFilter ? 'true' : 'false'} onClick={() => toggleFold('availFilter')}>
+          <Icon name={fold.availFilter ? 'expand_more' : 'chevron_right'} size="sm" className="-ml-4" />絞り込み
         </button>
-        <button type="button" className="tip" data-tip="出す人・期間・曜日をしぼります。卓を選ぶと、その卓の GM と参加者だけになります。" aria-label="絞り込みとは"><Icon name="help" size="xs" /></button>
+        <Tip className="ml-2" text="出す人・期間・曜日をしぼります。卓を選ぶと、その卓の GM と参加者だけになります。" label="絞り込みとは" />
         <span className="hint" id="afSummary">{summary}</span>
-        <button type="button" className={'btn small fold' + (fold.availBulk ? ' on' : '')} id="foldBulk" data-target="availBulk" aria-expanded={fold.availBulk ? 'true' : 'false'} onClick={() => toggleFold('availBulk')}>
-          <Icon name={fold.availBulk ? 'expand_more' : 'chevron_right'} size="sm" />まとめて入れる
+        <button type="button" className={'btn small' + (fold.availBulk ? ' on bg-head' : '')} id="foldBulk" data-target="availBulk" aria-expanded={fold.availBulk ? 'true' : 'false'} onClick={() => toggleFold('availBulk')}>
+          <Icon name={fold.availBulk ? 'expand_more' : 'chevron_right'} size="sm" className="-ml-4" />まとめて入れる
         </button>
-        <button type="button" className="tip" data-tip="自分の列に、期間と曜日を決めて △ か × をまとめて入れます。卓のある日は飛ばします。" aria-label="まとめて入れるとは"><Icon name="help" size="xs" /></button>
-        <label className="chk" style={{ marginLeft: 'auto' }}>
+        <Tip className="ml-2" text="自分の列に、期間と曜日を決めて △ か × をまとめて入れます。卓のある日は飛ばします。" label="まとめて入れるとは" />
+        <label className="chk ml-auto">
           <input type="checkbox" id="sortByLoad" checked={sortByLoad} onChange={(ev) => { store('sortByLoad', ev.target.checked ? '1' : '0'); sortStore.set(ev.target.checked); }} /> 卓の多い人を左に
         </label>
-        <button type="button" className="tip" data-tip="いま動いている卓に多く入っている人ほど、左の列に並べます。外すと登録した順になります。" aria-label="並び順"><Icon name="help" size="xs" /></button>
+        <Tip className="ml-2" text="いま動いている卓に多く入っている人ほど、左の列に並べます。外すと登録した順になります。" label="並び順" />
       </div>
-      <div className="card panel" id="availFilter" hidden={!fold.availFilter}>
-        <div className="pgrid">
-          <span className="plabel">卓</span>
-          <div className="pctl"><label className="chk"><input type="checkbox" id="afOnly" checked={f.only} onChange={(ev) => setF({ only: ev.target.checked })} /> どれかの卓に入っている人だけ</label></div>
-          <span className="plabel">メンバー</span>
-          <div className="pctl">
-            <span className="wds" id="afMembers">
+      <div className="card" id="availFilter" hidden={!fold.availFilter}>
+        <div className={pgrid}>
+          <span className={plabel}>卓</span>
+          <div className={pctl}><label className="chk"><input type="checkbox" id="afOnly" checked={f.only} onChange={(ev) => setF({ only: ev.target.checked })} /> どれかの卓に入っている人だけ</label></div>
+          <span className={plabel}>メンバー</span>
+          <div className={pctl}>
+            <span className="inline-flex flex-wrap gap-6" id="afMembers">
               {d.members.map((m) => (
-                <label key={m.name}>
+                <label className={chkPill} key={m.name}>
                   <input type="checkbox" className="afm" value={m.name} checked={memberChecked(m.name)}
                     onChange={(ev) => { const cur = d.members.map((x) => x.name).filter(memberChecked); setMembers(ev.target.checked ? cur.concat(m.name) : cur.filter((x) => x !== m.name)); }} />
                   {m.name}
@@ -194,65 +205,66 @@ export function AvailTab() {
             <button type="button" className="btn small" id="afMe" onClick={() => { if (mine) setMembers([mine]); }}>自分だけ</button>
             <button type="button" className="btn small" id="afAllMembers" onClick={() => setF({ members: null })}>全員</button>
           </div>
-          <span className="plabel">期間</span>
-          <div className="pctl">
+          <span className={plabel}>期間</span>
+          <div className={pctl}>
             <input type="date" id="afFrom" aria-label="絞り込みの始まり" value={f.from} onChange={(ev) => setF({ from: ev.target.value })} /><span>〜</span>
             <input type="date" id="afTo" aria-label="絞り込みの終わり" value={f.to} onChange={(ev) => setF({ to: ev.target.value })} />
           </div>
-          <span className="plabel">曜日</span>
-          <div className="pctl">{wdsBox(f.wds, (wds) => setF({ wds }), 'afwd')}</div>
-          <label className="plabel" htmlFor="afCond">条件</label>
-          <div className="pctl">
+          <span className={plabel}>曜日</span>
+          <div className={pctl}>{wdsBox(f.wds, (wds) => setF({ wds }), 'afwd')}</div>
+          <label className={plabel} htmlFor="afCond">条件</label>
+          <div className={pctl}>
             <select id="afCond" value={f.cond} onChange={(ev) => setF({ cond: ev.target.value })}>
               {Object.keys(COND_TEXT).map((k) => <option value={k} key={k}>{COND_TEXT[k]}</option>)}
             </select>
           </div>
         </div>
-        <div className="btns">
+        <div className={panelBtns}>
           <button type="button" className="btn small" id="afReset" onClick={() => setF({ from: '', to: '', cond: '', target: '（なし）', only: false, hol: false, free: false, mineOnly: false, members: null, wds: ALL_WDS })}>解除</button>
           <span id="afMsg" className="hint">{filtering ? rows.length + ' 日を表示' : ''}</span>
         </div>
       </div>
-      <div className="card panel" id="availBulk" hidden={!fold.availBulk}>
-        <div className="pgrid">
-          <label className="plabel" htmlFor="abMark">印</label>
-          <div className="pctl">
+      <div className="card" id="availBulk" hidden={!fold.availBulk}>
+        <div className={pgrid}>
+          <label className={plabel} htmlFor="abMark">印</label>
+          <div className={pctl}>
             <select id="abMark" value={bulk.mark} onChange={(ev) => bulkStore.set((x) => ({ ...x, mark: ev.target.value }))}>
               <option value="△">△ 調整すれば可</option><option value="×">× 不可</option><option value="">空欄に戻す（参加できる）</option>
             </select>
           </div>
-          <span className="plabel">期間</span>
-          <div className="pctl">
+          <span className={plabel}>期間</span>
+          <div className={pctl}>
             <input type="date" id="abFrom" aria-label="入れる期間の始まり" value={bulkFrom} onChange={(ev) => bulkStore.set((x) => ({ ...x, from: ev.target.value }))} /><span>〜</span>
             <input type="date" id="abTo" aria-label="入れる期間の終わり" value={bulkTo} onChange={(ev) => bulkStore.set((x) => ({ ...x, to: ev.target.value }))} />
           </div>
-          <span className="plabel">曜日</span>
-          <div className="pctl">
+          <span className={plabel}>曜日</span>
+          <div className={pctl}>
             {wdsBox(bulk.wds, (wds) => bulkStore.set((x) => ({ ...x, wds })), 'wd')}
             <button type="button" className="btn small" id="abWeekday" onClick={() => bulkStore.set((x) => ({ ...x, wds: [1, 2, 3, 4, 5] }))}>平日</button>
             <button type="button" className="btn small" id="abWeekend" onClick={() => bulkStore.set((x) => ({ ...x, wds: [0, 6] }))}>土日</button>
             <button type="button" className="btn small" id="abAll" onClick={() => bulkStore.set((x) => ({ ...x, wds: ALL_WDS }))}>全曜日</button>
           </div>
         </div>
-        <div className="btns">
+        <div className={panelBtns}>
           <label className="chk"><input type="checkbox" id="abKeep" checked={bulk.keep} onChange={(ev) => bulkStore.set((x) => ({ ...x, keep: ev.target.checked }))} /> 入力済みは残す</label>
           <button type="button" className="btn primary" id="abRun" disabled={bulkMsg.running} onClick={runBulk}>自分の列に入れる</button>
           <span id="abMsg" className="hint">{bulkMsg.text}</span>
         </div>
       </div>
       {/* よく使う絞り込みは、表の上に常に出す（詳しい条件は上の「絞り込み」） */}
-      <div className="av-chips" id="availChips" role="group" aria-label="予定表をしぼる">
-        <button type="button" className="av-chip" data-chip="hol" aria-pressed={f.hol ? 'true' : 'false'} onClick={() => setF({ hol: !f.hol })}>土日祝だけ</button>
-        <button type="button" className="av-chip" data-chip="free" aria-pressed={f.free ? 'true' : 'false'} onClick={() => setF({ free: !f.free })}>全員空きだけ</button>
-        <button type="button" className="av-chip" data-chip="mine" aria-pressed={f.mineOnly ? 'true' : 'false'} onClick={() => setF({ mineOnly: !f.mineOnly })}>自分の列だけ</button>
+      <div className="mb-10 flex flex-wrap items-center gap-8 max-tab:flex-nowrap max-tab:overflow-x-auto max-tab:[scrollbar-width:none] max-tab:[&::-webkit-scrollbar]:hidden" id="availChips" role="group" aria-label="予定表をしぼる">
+        <button type="button" className={avChip} data-chip="hol" aria-pressed={f.hol ? 'true' : 'false'} onClick={() => setF({ hol: !f.hol })}>土日祝だけ</button>
+        <button type="button" className={avChip} data-chip="free" aria-pressed={f.free ? 'true' : 'false'} onClick={() => setF({ free: !f.free })}>全員空きだけ</button>
+        <button type="button" className={avChip} data-chip="mine" aria-pressed={f.mineOnly ? 'true' : 'false'} onClick={() => setF({ mineOnly: !f.mineOnly })}>自分の列だけ</button>
         <label className="sr-only" htmlFor="afTarget">卓で絞る</label>
-        <select id="afTarget" value={target} onChange={(ev) => setF({ target: ev.target.value })}>
+        <select className="h-32 min-h-0 w-auto max-w-[16em] rounded-full text-13 max-tab:flex-none" id="afTarget" value={target} onChange={(ev) => setF({ target: ev.target.value })}>
           <option value="（なし）">卓で絞らない</option>
           {targetOpts.map((n) => <option value={n} key={n}>{n}</option>)}
         </select>
-        <span className="hint">自分のマスを押すと 空 → △ → × と変わります</span>
+        <span className="hint ml-auto max-tab:hidden">自分のマスを押すと 空 → △ → × と変わります</span>
       </div>
-      <div className="wrap avail" ref={wrapRef}><AvailTable d={d} names={names} mine={mine} rows={rows} onMark={setMark} onPen={openMemo} /></div>
+      {/* 表をつかんで動かせる（dragging は動かしているあいだ）。狭い画面では隠して、下の日ごとのリストを出す。wrap・avail・dragging は確かめと自動の読み直しが探す印 */}
+      <div className={'wrap avail max-h-[max(360px,calc((100dvh-40px)/var(--zoom,1)-var(--appbar-h)-var(--nav-h)))] cursor-grab overflow-auto [&.dragging]:cursor-grabbing [&.dragging]:select-none max-tab:hidden'} ref={wrapRef}><AvailTable d={d} names={names} mine={mine} rows={rows} onMark={setMark} onPen={openMemo} /></div>
       {/* 狭い画面（760px 以下）では、表の代わりに日ごとのリストを出す。横にスクロールせずに自分の印を打てる */}
       <AvailList d={d} names={names} mine={mine} rows={rows} onMark={setMark} onPen={openMemo} />
 
@@ -264,7 +276,7 @@ export function AvailTab() {
           <div className="btns">
             <button type="submit" className="btn primary" id="memoSave">保存</button>
             <button type="button" className="btn" id="memoClear" hidden={!memo || !memo.had} onClick={() => saveMemo('')}>消す</button>
-            <button type="button" className="btn" id="memoCancel" style={{ marginLeft: 'auto' }} onClick={() => setMemo(null)}>閉じる</button>
+            <button type="button" className="btn ml-auto" id="memoCancel" onClick={() => setMemo(null)}>閉じる</button>
           </div>
         </form>
       </Modal>

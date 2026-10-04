@@ -4,7 +4,24 @@ import type { ConsoleData } from '../../../../shared/api';
 import { Icon } from '../../../ui/Icon';
 import { WD, fmtJa } from '../model/dates';
 import { active, hasPoll, isRecruit } from '../model/model';
+import { mdot } from '../styles';
 import { MARK_NEXT, MARK_WORD, type Mark, markIn, type Row } from './rows';
+
+/** 予定表のマスの共通（右に線。下の線は行ごとに決める）。色の無いマスは、線の下に色を塗らない（clip） */
+const cell = 'border-0 border-r border-line ';
+const clip = 'bg-clip-padding ';
+/** 下の線。土曜の行は太い線で週を区切る。最後の行には引かない */
+const bottom = (sat: boolean, last: boolean) => (sat ? 'border-b-2 border-b-week-line ' : last ? '' : 'border-b ');
+/** 左に固定する 3 列（日付・曜・その日の卓）。left と幅は決め打ちにする（ずれると、横に送ったときに重なる） */
+const COL = {
+  c1: 'left-0 w-62 min-w-62 ',
+  c2: 'left-62 w-52 min-w-52 text-center ',
+  c3: 'left-114 w-220 min-w-220 max-w-220 max-sm:w-140 max-sm:min-w-140 max-sm:max-w-140 ',
+};
+/** その日の卓に入っている札（参・GM）。押せないことを形で示す */
+export const bkTag = 'inline-block min-w-[2.4em] whitespace-nowrap rounded-full border border-current px-6 text-center text-12 leading-[20px] font-bold text-booked-text';
+/** 自分のマスの △ × の色 */
+const MARK_BG: Record<string, string> = { '△': 'bg-soft ', '×': 'bg-warn ' };
 
 /** その日の卓（募集は「募集」を付ける）と、調整中の卓の名前。「、」でつなぐ */
 function Plans({ r }: { r: Row }): ReactNode {
@@ -19,8 +36,12 @@ function Plans({ r }: { r: Row }): ReactNode {
 }
 const hasPlans = (r: Row) => r.list.length > 0 || r.wins.length > 0;
 
-function Pen({ day, onPen }: { day: string; onPen: (day: string) => void }) {
-  return <button type="button" className="pen" data-pen={day} title="この日のメモを書く" aria-label={fmtJa(day) + ' のメモを書く'} onClick={() => onPen(day)}><Icon name="edit" size="xs" /></button>;
+/** メモを書く鉛筆。表ではマスの右上に小さく、リストでは四角いボタンにする */
+function Pen({ day, onPen, list }: { day: string; onPen: (day: string) => void; list?: boolean }) {
+  const cls = list
+    ? 'grid h-38 w-34 cursor-pointer place-items-center rounded-sm border border-line bg-card p-0 text-muted focus-visible:outline-offset-1'
+    : 'absolute top-1 right-1 cursor-pointer rounded-[4px] border-0 bg-transparent p-2 leading-none text-fg opacity-45 hover:bg-hover hover:opacity-100';
+  return <button type="button" className={cls} data-pen={day} title="この日のメモを書く" aria-label={fmtJa(day) + ' のメモを書く'} onClick={() => onPen(day)}><Icon name="edit" size="xs" /></button>;
 }
 
 type Props = { d: ConsoleData; names: string[]; mine: string; rows: Row[]; onMark: (day: string, next: Mark) => void; onPen: (day: string) => void };
@@ -31,81 +52,105 @@ export function AvailTable({ d, names, mine, rows, onMark, onPen }: Props) {
     <table id="availTable">
       <tbody>
         <tr>
-          <th className="d c1">日付</th><th className="d c2">曜</th><th className="d c3">その日の卓</th>
+          <th className={cell + 'sticky top-0 z-(--z-cell-corner) border-b bg-head px-8 py-6 text-fg ' + COL.c1}>日付</th>
+          <th className={cell + 'sticky top-0 z-(--z-cell-corner) border-b bg-head px-8 py-6 text-fg ' + COL.c2}>曜</th>
+          <th className={cell + 'sticky top-0 z-(--z-cell-corner) border-b bg-head px-8 py-6 text-fg ' + COL.c3}>その日の卓</th>
           {names.map((n) => {
-            const gmN = act.filter((s) => s.gm === n).length, plN = act.filter((s) => s.gm !== n && s.members.indexOf(n) >= 0).length;
-            return <th className={n === mine ? 'mine' : ''} key={n}>{n}<small title="いま動いている卓で GM をしている数と参加している数">{'GM ' + gmN + '・PL ' + plN}</small></th>;
+            const gmN = act.filter((s) => s.gm === n).length, plN = act.filter((s) => s.gm !== n && s.members.indexOf(n) >= 0).length, mineCol = n === mine;
+            return (
+              <th className={cell + 'sticky top-0 z-(--z-cell-head) border-b px-8 py-6 ' + (mineCol ? 'bg-accent-strong text-accent-ink' : clip + 'text-fg')} key={n}>
+                {n}<small className={'block text-10 leading-[1.2] font-normal ' + (mineCol ? 'text-inherit opacity-85' : 'text-muted')} title="いま動いている卓で GM をしている数と参加している数">{'GM ' + gmN + '・PL ' + plN}</small>
+              </th>
+            );
           })}
         </tr>
-        {rows.map((r) => {
-          const key = r.key;
-          const cls = (r.wk ? 'wk ' : '') + (r.dow === 0 ? 'sun ' : r.dow === 6 ? 'sat ' : '') + (r.hol ? 'hol ' : '') + (key === d.today ? 'today ' : '') + (r.list.length ? 'has ' : '') + (r.free ? 'free' : '');
+        {rows.map((r, ri) => {
+          const key = r.key, sat = r.dow === 6, last = ri === rows.length - 1 && !!d.members.length;
+          const line = bottom(sat, last);
+          // 左の 3 列の色。今日・土日と祝日の順。その日の卓の列は、卓のある日・全員空きの日にも色を付ける
+          const dBg = key === d.today ? 'bg-today ' : r.wk || r.hol ? 'bg-weekend ' : '';
+          const c3Bg = dBg || (r.list.length ? 'bg-session ' : r.free ? 'bg-soft ' : '');
+          const dCell = cell + line + 'sticky z-(--z-cell) px-8 py-6 ' + (r.dow === 0 || r.hol ? 'text-sun ' : sat ? 'text-sat ' : '');
           return (
-            <tr className={cls} key={key}>
-              <td className="d c1">{(r.date.getMonth() + 1) + '/' + r.date.getDate()}</td>
-              <td className="d c2" title={r.hol}>{WD[r.dow]}{r.hol && <span className="hol-badge">祝</span>}</td>
-              <td className="d c3">{hasPlans(r) ? <Plans r={r} /> : r.free ? <span className="hint">全員空き</span> : null}{r.hol && <span className="c3-h">{r.hol}</span>}</td>
+            <tr key={key}>
+              <td className={dCell + COL.c1 + (dBg || 'bg-card')}>{(r.date.getMonth() + 1) + '/' + r.date.getDate()}</td>
+              <td className={dCell + COL.c2 + (dBg || 'bg-card')} title={r.hol}>{WD[r.dow]}{r.hol && <span className="ml-3 inline-block rounded-[4px] bg-sun px-4 align-[1px] text-10 text-card">祝</span>}</td>
+              <td className={dCell + COL.c3 + 'whitespace-normal leading-[1.45] wrap-anywhere ' + (c3Bg || 'bg-card')}>
+                {hasPlans(r) ? <Plans r={r} /> : r.free ? <span className="hint">全員空き</span> : null}{r.hol && <span className="block text-11 text-muted">{r.hol}</span>}
+              </td>
               {names.map((n) => {
                 const memo = r.notes[n] ? r.notes[n].text : '', own = n === mine;
-                const dot = memo ? <span className="mdot" /> : null, pen = own ? <Pen day={key} onPen={onPen} /> : null;
+                const dot = memo ? <span className={mdot} /> : null, pen = own ? <Pen day={key} onPen={onPen} /> : null;
                 if (r.bk[n]) {
                   return (
-                    <td className={'booked' + (own ? ' own' : '') + (memo ? ' has-memo' : '')} key={n} data-memo-of={n} data-day={key} data-memo={memo || undefined} title={memo ? undefined : 'この日の卓に入っています'}>
-                      <span className="bk-tag">{r.bk[n]}</span>{dot}{pen}
+                    <td className={cell + line + 'bg-session py-6 pl-8 text-center font-bold text-booked-text ' + (own ? 'relative pr-18 ' : 'pr-8 ') + (memo ? 'relative cursor-pointer' : 'cursor-default')}
+                      key={n} data-memo-of={n} data-day={key} data-memo={memo || undefined} title={memo ? undefined : 'この日の卓に入っています'}>
+                      <span className={bkTag}>{r.bk[n]}</span>{dot}{pen}
                     </td>
                   );
                 }
-                const v = markIn(r.marks, n), mcls = v === '△' ? 'm-soft' : v === '×' ? 'm-ng' : '';
+                const v = markIn(r.marks, n);
                 if (own) {
                   return (
-                    <td className={'mine own ' + mcls} key={n} data-memo={memo || undefined}>
-                      <button type="button" className="mk" data-day={key} aria-label={fmtJa(key) + ' ' + n + ' ' + MARK_WORD[v] + '。押すと' + MARK_WORD[MARK_NEXT[v]]} onClick={() => onMark(key, MARK_NEXT[v])}>{v || '·'}</button>
+                    <td className={cell + line + 'relative select-none py-0 pr-18 pl-0 text-center text-16 hover:shadow-[inset_0_0_0_2px_var(--accent)] ' + (MARK_BG[v] || clip)} key={n} data-memo={memo || undefined}>
+                      <button type="button" className="mk block min-h-34 w-full cursor-pointer rounded-sm border-0 bg-transparent py-0 pr-0 pl-18 font-inherit text-inherit focus-visible:outline-offset-[-2px]" data-day={key} aria-label={fmtJa(key) + ' ' + n + ' ' + MARK_WORD[v] + '。押すと' + MARK_WORD[MARK_NEXT[v]]} onClick={() => onMark(key, MARK_NEXT[v])}>{v || '·'}</button>
                       {dot}{pen}
                     </td>
                   );
                 }
-                return <td className={'other ' + mcls + (memo ? ' has-memo' : '')} key={n} data-memo-of={n} data-day={key} data-memo={memo || undefined}>{v}{dot}</td>;
+                return (
+                  <td className={cell + line + 'px-8 py-6 text-center text-muted ' + (MARK_BG[v] || clip) + (memo ? 'relative cursor-pointer' : '')} key={n} data-memo-of={n} data-day={key} data-memo={memo || undefined}>
+                    {v}{dot}
+                  </td>
+                );
               })}
             </tr>
           );
         })}
-        {!d.members.length ? <tr><td colSpan={3} className="hint">メンバーが登録されていません。</td></tr>
-          : !rows.length ? <tr><td colSpan={3 + names.length} className="hint">条件に合う日がありません。</td></tr> : null}
+        {!d.members.length ? <tr><td colSpan={3} className={cell + clip + 'hint px-8 py-6'}>メンバーが登録されていません。</td></tr>
+          : !rows.length ? <tr><td colSpan={3 + names.length} className={cell + clip + 'hint px-8 py-6'}>条件に合う日がありません。</td></tr> : null}
       </tbody>
     </table>
   );
 }
 
+/** 日ごとのリストは、狭い画面だけに出す（pk は e2e が探す印） */
+const list = 'hidden max-tab:block';
+const pick = 'pk h-38 w-38 cursor-pointer rounded-sm border font-inherit text-14 font-bold focus-visible:outline-offset-1 ';
+
 /** 日ごとのリスト（狭い画面）。1 日 1 行で、ほかの人の × と △ を名前で並べ、自分の印は ◯ △ × のボタンで打つ */
 export function AvailList({ d, names, mine, rows, onMark, onPen }: Props) {
-  if (!d.members.length) return <div className="avail-list" id="availList"><p className="hint">メンバーが登録されていません。</p></div>;
-  if (!rows.length) return <div className="avail-list" id="availList"><p className="hint">条件に合う日がありません。</p></div>;
+  if (!d.members.length) return <div className={list} id="availList"><p className="hint">メンバーが登録されていません。</p></div>;
+  if (!rows.length) return <div className={list} id="availList"><p className="hint">条件に合う日がありません。</p></div>;
   const others = names.filter((n) => n !== mine), withMe = !!mine && names.indexOf(mine) >= 0;
   return (
-    <div className="avail-list" id="availList">
-      {rows.map((r) => {
+    <div className={list} id="availList">
+      {rows.map((r, ri) => {
         const key = r.key;
         const ng = others.filter((n) => !r.bk[n] && markIn(r.marks, n) === '×');
         const sk = others.filter((n) => !r.bk[n] && markIn(r.marks, n) === '△');
         const v = markIn(r.marks, mine);
-        const cls = 'avl-day' + (r.dow === 0 || r.hol ? ' sun' : r.dow === 6 ? ' sat' : '') + (key === d.today ? ' today' : '') + (r.free ? ' free' : '');
+        const today = key === d.today;
+        const cls = 'flex items-center gap-10 rounded-md border px-12 py-10 ' + (ri > 0 ? 'mt-8 ' : '') + (today ? 'border-accent-line shadow-[inset_3px_0_0_var(--accent)] ' : 'border-line ') + (r.free ? 'bg-soft' : 'bg-card');
         return (
           <div className={cls} key={key}>
-            <div className="d">{(r.date.getMonth() + 1) + '/' + r.date.getDate()}<small>{WD[r.dow] + (r.hol ? ' ' + r.hol : '')}</small></div>
-            <div className="info">
-              {hasPlans(r) && <div className="plans"><Plans r={r} /></div>}
+            <div className={'w-58 flex-none text-14 leading-[1.3] font-bold tabular-nums ' + (r.dow === 0 || r.hol ? 'text-sun' : r.dow === 6 ? 'text-sat' : '')}>
+              {(r.date.getMonth() + 1) + '/' + r.date.getDate()}<small className="block text-11 font-normal text-muted">{WD[r.dow] + (r.hol ? ' ' + r.hol : '')}</small>
+            </div>
+            <div className="min-w-0 flex-1 text-[12.5px] leading-[1.5] text-muted wrap-anywhere">
+              {hasPlans(r) && <div className="font-semibold text-fg"><Plans r={r} /></div>}
               {ng.length || sk.length
-                ? <div>{ng.length > 0 && <span className="ng">{'× ' + ng.join('、')}</span>}{sk.length > 0 && <span className="sk">{'△ ' + sk.join('、')}</span>}</div>
+                ? <div>{ng.length > 0 && <span className="mr-8 text-err-text">{'× ' + ng.join('、')}</span>}{sk.length > 0 && <span className="text-ok-text">{'△ ' + sk.join('、')}</span>}</div>
                 : r.free ? <div>全員空き</div> : null}
-              {names.filter((n) => r.notes[n]).map((n) => <div className="memo" key={n}>{n + ': ' + r.notes[n]!.text}</div>)}
+              {names.filter((n) => r.notes[n]).map((n) => <div className="text-[11.5px]" key={n}>{n + ': ' + r.notes[n]!.text}</div>)}
             </div>
             {withMe && (
-              <div className="pick">
-                {r.bk[mine] ? <span className="bk-tag" title="この日の卓に入っています">{r.bk[mine]}</span>
+              <div className="flex flex-none items-center gap-4">
+                {r.bk[mine] ? <span className={bkTag} title="この日の卓に入っています">{r.bk[mine]}</span>
                   : ([['', '◯'], ['△', '△'], ['×', '×']] as [Mark, string][]).map(([m, label]) => (
-                    <button type="button" className="pk" key={label} data-day={key} data-mark={m} aria-pressed={v === m} aria-label={fmtJa(key) + 'を「' + MARK_WORD[m] + '」にする'} onClick={() => onMark(key, m)}>{label}</button>
+                    <button type="button" className={pick + (v !== m ? 'border-line bg-card text-muted' : m === '△' ? 'border-ok-text bg-soft text-ok-text' : m === '×' ? 'border-err-text bg-warn text-err-text' : 'border-accent-line bg-accent-soft text-accent-text')} key={label} data-day={key} data-mark={m} aria-pressed={v === m} aria-label={fmtJa(key) + 'を「' + MARK_WORD[m] + '」にする'} onClick={() => onMark(key, m)}>{label}</button>
                   ))}
-                <Pen day={key} onPen={onPen} />
+                <Pen day={key} onPen={onPen} list />
               </div>
             )}
           </div>
