@@ -5,6 +5,7 @@
 // リポジトリの直下で動かす wrangler からは見えないので、deploy.yml は組み立てた dist/yoki/wrangler.json を直接渡す
 import path from 'node:path';
 import { cloudflare, type WorkerConfig } from '@cloudflare/vite-plugin';
+import react from '@vitejs/plugin-react';
 import { defineConfig, type Plugin } from 'vite';
 
 /** 公開する Cloudflare ごとに違う値（環境変数の名前 → 入れる先）。リポジトリの wrangler.jsonc には仮の値だけを置く */
@@ -45,6 +46,8 @@ function noDevLogin(): Plugin {
 export default defineConfig(({ command }) => ({
   root,
   plugins: [
+    // 画面の React（JSX と、開発サーバーで直すとすぐ反映される Fast Refresh）
+    react(),
     cloudflare({
       configPath: path.join(import.meta.dirname, 'wrangler.jsonc'),
       // ローカルの D1 などを、wrangler のコマンド（npm run db:migrate:local）と同じ場所に置く
