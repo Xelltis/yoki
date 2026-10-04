@@ -73,7 +73,7 @@ function Who({ me }: { me: LoggedIn }) {
       {avatar && <img className="h-28 w-28 rounded-full" src={avatar} alt="" />}
       <span>{me.user.name}</span>
       <form className="m-0" method="post" action="/auth/logout">
-        <button className="inline-flex h-32 cursor-pointer items-center gap-6 rounded-full border border-[rgba(255,255,255,.25)] bg-transparent px-12 font-home text-13 leading-[1.7] font-semibold text-inherit no-underline" type="submit">
+        <button className="inline-flex h-32 cursor-pointer items-center gap-6 rounded-full border border-[rgba(255,255,255,.25)] bg-transparent px-12 py-0 font-home text-13 leading-[1.7] font-semibold text-inherit no-underline" type="submit">
           <Icon name="logout" className={icon} />
           ログアウト
         </button>
