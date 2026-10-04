@@ -22,6 +22,7 @@
 | `npm run build` | 組み立てる。開発用ログインが残っていたら止まる |
 | `npm run site` / `npm run site:build` | サイトを手元で開く・組み立てる |
 | `npm run screenshots` | サイトに載せるアプリのスクリーンショットを撮り直す |
+| `npm run icons` | `brand/yoki.png` からファビコンなどのアイコンを書き出す |
 
 アプリの公開は GitHub Actions（`.github/workflows/deploy.yml`）が、main にアプリの変更が push されたときに行う。手元から `wrangler deploy` や本番の D1 へのマイグレーションはしない。main への push は本番への公開になるので、頼まれたときだけ、確かめてから push する。
 
@@ -31,6 +32,7 @@
 - サーバー（`src/worker`）を変えたら: `npm run test:coverage`。カバレッジは 100% を保つ（下回ると失敗する）。外すのは、テストの環境で動かせない道だけ（README の「テスト」）
 - 画面（`src/client/`）を変えたら: `npm run e2e`。見た目が変わったら `npm run screenshots` で撮り直し、画像もコミットする
 - サイト（`website/`）を変えたら: `npm run site:build`
+- サービスアイコン（`brand/yoki.png`）を変えたら: `npm run icons` で書き出し、出したファイルもコミットする。ロゴが写るので `npm run screenshots` も撮り直す
 - 表（D1）を変えたら: `migrations/` に番号の続くファイルを足す。すでにあるファイルは書き換えない
 
 ## 守ること

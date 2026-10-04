@@ -42,11 +42,12 @@ migrations/        D1 の表の定義（wrangler d1 migrations）
 test/worker/       サーバーのテスト（Workers の実行環境と本物の D1 で動かす）
 test/client/       画面とサイトの約束（アイコン・リンク・依存など）と、書くときの決まり
 test/e2e/          ブラウザで通しで確かめる（npm run e2e）。開発サーバーを立てる小道具も
+brand/             サービスアイコンの元の絵（yoki.png。配らない。ファビコンなどは npm run icons で書き出す）
 website/           サイト（VitePress。GitHub Pages に公開する）。紹介と使い方
   guide/           使い方のページ（Markdown）
   .vitepress/      サイトの設定と見た目・試せる例の部品
   public/          アイコン・SNS 用の画像（og.png）・アプリのスクリーンショット
-  tools/           スクリーンショットと SNS 用の画像を作る道具
+  tools/           スクリーンショット・SNS 用の画像・アイコンを作る道具
 .github/workflows/ アプリを Cloudflare に（deploy.yml）、サイトを GitHub Pages に（pages.yml）公開する
 docs/              作りの説明（architecture.md）
 wrangler.jsonc     Worker の設定（D1・cron）。公開する Cloudflare ごとの値は仮の値だけ
@@ -177,6 +178,7 @@ npm run site:build   組み立てる（website/.vitepress/dist/）
 | `npm run site` / `site:build` / `site:preview` | サイトを手元で開く・組み立てる・組み立てたものを開く（下の「サイト」） |
 | `npm run screenshots` | サイトに載せるアプリのスクリーンショットを `website/public/screenshots/` に撮る（開発サーバーをその場で立てる） |
 | `npm run og-image` | SNS に貼ったときに出る画像を `website/public/og.png` に書き出す |
+| `npm run icons` | `brand/yoki.png` から、ファビコン（`favicon.ico`）・ホーム画面と上の帯のロゴ（`icon-192.png`）・iPhone と Android のアイコンを、`src/client/public/` と `website/public/` に書き出す。元の絵を変えたら回して、出したファイルをコミットする |
 
 ## 書くときの決まり
 
