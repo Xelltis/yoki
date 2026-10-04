@@ -12,7 +12,7 @@
   <!-- アイコンは Material Symbols Rounded。使う名前だけに絞って読み込む（icon_names はアルファベット順）。
        アイコンを足したら、ここにも名前を足す。読み込みが済むまでは空白で待つ（display=block） -->
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..24,400,0..1,0&icon_names=add,arrow_back,arrow_forward,block,calendar_month,campaign,casino,check,chevron_left,chevron_right,close,dark_mode,date_range,delete,edit,edit_calendar,event,event_available,expand_more,flag,help,history,how_to_vote,light_mode,logout,menu_book,notifications,open_in_new,person,person_add,play_circle,refresh,settings,shield,sticky_note_2,table_view,task_alt,today,warning&display=block">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..24,400,0..1,0&icon_names=add,arrow_back,arrow_forward,block,calendar_month,campaign,check,chevron_left,chevron_right,close,dark_mode,date_range,delete,edit,edit_calendar,event,event_available,expand_more,flag,help,history,how_to_vote,light_mode,logout,menu_book,notifications,open_in_new,person,person_add,play_circle,refresh,settings,shield,sticky_note_2,table_view,task_alt,today,warning&display=block">
   <link rel="stylesheet" href="/console/app.css">
   <script>
     // 保存したテーマを描画前に当てる。無ければ OS の設定（prefers-color-scheme）に任せる
@@ -30,7 +30,7 @@
 </head>
 <body>
   <header class="appbar">
-    <a class="brand" href="/" title="グループの一覧へ"><span class="logo"><span class="material-icons" aria-hidden="true">casino</span></span><span id="title">卓予定</span><span class="area-badge">管理</span></a>
+    <a class="brand" href="/" title="グループの一覧へ"><img class="logo" src="/icon-192.png" alt="" width="32" height="32"><span id="title">卓予定</span><span class="area-badge">管理</span></a>
     <div class="hdr-actions">
       <a id="toMain" class="hbtn to-main" href="../" title="カレンダーなどの、ふだんの画面へ戻る"><span class="material-icons sm" aria-hidden="true">arrow_back</span><span class="btxt">予定の画面へ</span></a>
       <span class="sync">

@@ -23,7 +23,7 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.7 syst
 .ms.sm { font-size: 17px; vertical-align: -3px; }
 .bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 20px; background: var(--bar); color: #fff; }
 .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 17px; }
-.logo { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 10px; background: #22d3ee; color: #042f37; }
+.logo { display: block; width: 34px; height: 34px; }
 .who { display: flex; align-items: center; gap: 10px; font-size: 14px; }
 .who img { width: 28px; height: 28px; border-radius: 50%; }
 .who form { margin: 0; }
