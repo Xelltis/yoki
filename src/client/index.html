@@ -13,8 +13,10 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..24,400,0..1,0&icon_names=%ICON_NAMES%&display=block">
 <script>
-  // この端末で選んだ見た目（ライト／ダーク）と文字の大きさを、描く前に当てる。無ければ OS の設定（prefers-color-scheme）に任せる
+  // この端末で選んだ見た目（ライト／ダーク）と文字の大きさを、描く前に当てる。無ければ OS の設定（prefers-color-scheme）に任せる。
+  // 入口（/）には data-page="home" を付ける（入口には、文字の大きさとグループの画面の欄の見た目を当てない。src/client/styles/base.css）
   (function () {
+    if (location.pathname === '/') document.documentElement.setAttribute('data-page', 'home');
     try { var t = localStorage.getItem('taku.theme'); if (t === 'dark' || t === 'light') document.documentElement.setAttribute('data-theme', t); } catch (e) {}
     try {
       var f = localStorage.getItem('taku.font');
