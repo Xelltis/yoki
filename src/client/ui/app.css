@@ -4,7 +4,6 @@
 
 /* ---- 土台と部品は styles/base.css・styles/components.css ---- */
 .lead { text-wrap: pretty; }
-.rc, .res, .poll { font-variant-numeric: tabular-nums; }
 
 
 /* ページの見出しと「使い方」 */
@@ -20,8 +19,6 @@ details.howto .howto-body { margin-top: 6px; padding: 12px 16px; border-radius: 
 details.howto .howto-body p { margin: 0 0 8px; max-width: none; }
 details.howto .howto-body p:last-child { margin-bottom: 0; }
 
-.empty { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
-.empty p { margin: 0; }
 
 
 /* 同じ日の重なりや × の注意。止めはせず、気づけるようにするだけ */
@@ -36,62 +33,12 @@ details.howto .howto-body p:last-child { margin-bottom: 0; }
 .hot-bar button { font: inherit; font-size: 12px; font-weight: 600; height: 28px; padding: 0 10px; border-radius: var(--radius-pill); border: 1px solid var(--line); background: var(--card); color: var(--text); cursor: pointer; }
 .hot-bar button:hover { background: var(--hover); }
 .hot-bar button.on { background: var(--accent-strong); border-color: transparent; color: var(--accent-ink); }
-.rc .res { font-size: 12px; color: var(--muted); }
-.people { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px; }
-.people span { padding: 1px 10px; border-radius: var(--radius-pill); border: 1px solid var(--line); font-size: 12px; background: var(--card); }
-.people span.gm { background: var(--primary); border-color: var(--primary); color: var(--primary-ink); font-weight: 700; }
-.people span.no { color: var(--muted); border-style: dashed; }
 
-/* ---- 日程調整: カードの中の回答欄と、候補日を選ぶ窓 ---- */
-.poll { margin-top: 12px; padding: 10px 12px; border-radius: var(--radius-md); background: var(--head); }
-.poll-h { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-weight: 600; margin-bottom: 4px; }
-.poll-h .poll-time { font-weight: normal; }
-.poll-h .hint { font-weight: normal; }
-.poll-h .btn.any { margin-left: auto; }
-.poll-h .btn.any.on { background: var(--ok); border-color: var(--ok); color: var(--ok-text); }
-.poll-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 8px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--line); }
-.poll-row:last-of-type { border-bottom: 0; }
-.poll-row.past { opacity: .55; }
-.poll-date { display: flex; align-items: baseline; gap: 8px; }
-.poll-date .sun { color: var(--sun); } .poll-date .sat { color: var(--sat); }
-.poll-cnt { font-size: 12px; color: var(--muted); }
-.poll-btns { display: flex; gap: 4px; }
-.poll-names { grid-column: 1 / -1; }
-.poll-decide { grid-column: 1 / -1; }
-.btn.vote { min-width: 44px; font-size: 14px; }
-.btn.vote.on-ok { background: var(--ok); border-color: var(--ok-text); color: var(--ok-text); }
-.btn.vote.on-ng { background: var(--warn); border-color: var(--err-text); color: var(--err-text); }
-.poll-pick-h { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin: 14px 0 8px; }
-.poll-pick-h .plbl { font-weight: 600; }
-.poll-days { border: 1px solid var(--line); border-radius: var(--radius-md); max-height: calc(46dvh / var(--zoom, 1)); overflow: auto; }
-#pollDays label.pday { display: flex; align-items: center; gap: 10px; margin: 0; padding: 8px 12px; border-bottom: 1px solid var(--line); font-weight: normal; cursor: pointer; }
-#pollDays label.pday:last-child { border-bottom: 0; }
-#pollDays label.pday:hover { background: var(--hover); }
-#pollDays label.pday.checked { background: var(--accent-soft); }
-.pday .pd-date { min-width: 6.5em; font-weight: 600; }
-.pday .pd-date.sun { color: var(--sun); } .pday .pd-date.sat { color: var(--sat); }
-.pday .pd-date small { font-weight: normal; font-size: 10px; }
-.pday .pd-av { display: flex; flex-wrap: wrap; gap: 4px; font-size: 12px; }
-.pday .pd-av span { padding: 0 8px; border-radius: var(--radius-pill); background: var(--head); }
-.pday .pd-av .ok { background: var(--ok); } .pday .pd-av .soft { background: var(--soft); } .pday .pd-av .ng { background: var(--warn); } .pday .pd-av .bk { background: var(--session); } .pday .pd-av .na { color: var(--muted); background: none; border: 1px dashed var(--line-strong); }
-.poll-add { margin-top: 10px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-#pollAddDate { width: auto; }
-#pollMsg { margin-top: 6px; color: var(--err-text); } #pollMsg:empty { display: none; }
 
 /* ---- 募集・調整 ---- */
 .bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 24px 0 10px; }
 .bar:first-of-type { margin-top: 0; }
 .bar h2 { margin: 0; display: inline-flex; align-items: center; gap: 6px; }
-.recruit-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 380px), 1fr)); gap: 14px; }
-.rc { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 16px 18px; box-shadow: var(--elev-sm); }
-.rc h3 { font-size: 16px; margin: 0 0 2px; }
-.rc .when { font-weight: 600; color: var(--accent-text); }
-.rc .lists { margin-top: 10px; font-size: 13px; display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 2px 12px; }
-.rc .lists div { display: contents; }
-.rc .lists b { color: var(--muted); font-weight: 600; }
-.rc .row2 { margin-top: 6px; }
-.rc .btns { margin-top: 12px; gap: 6px; }
-.rc .btns.gm { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
 #wantInfo { margin-top: 12px; padding: 8px 12px; border-radius: var(--radius-md); background: var(--soon); font-size: 13px; }
 
 /* ---- 表（土台は styles/base.css・styles/components.css） ---- */
@@ -316,9 +263,6 @@ details.howto .howto-body p:last-child { margin-bottom: 0; }
 .flow li.done { color: var(--muted); }
 .flow li.done .n { border-color: transparent; background: var(--ok); color: var(--ok-text); }
 .flow .tag { display: inline-block; margin-left: 6px; padding: 0 8px; border-radius: var(--radius-pill); background: var(--accent-strong); color: var(--accent-ink); font-size: 11px; font-weight: 700; line-height: 18px; vertical-align: 1px; }
-/* 募集・調整のカード: 次にすること */
-.next { display: flex; align-items: flex-start; gap: 6px; margin: 10px 0 0; padding: 8px 10px; border-radius: var(--radius-md); background: var(--accent-soft); color: var(--text); font-size: 13px; line-height: 1.55; }
-.next .material-icons { color: var(--accent-text); margin-top: 1px; }
 #kwCard .kw + .kw { margin-top: 18px; padding-top: 6px; border-top: 1px solid var(--line); }
 .settings .when { margin-top: 12px; }
 .settings .when span.f { display: block; font-weight: 600; font-size: 13px; margin-bottom: 6px; }

@@ -3,6 +3,7 @@ import { useState } from 'react';
 import type { ConsoleData, ConsoleSession, RpcResult } from '../../../../shared/api';
 import { Icon } from '../../../ui/Icon';
 import { Modal } from '../../../ui/Modal';
+import { formActions, wideBar, wideBarTitle } from '../../../ui/modal';
 import { useStore } from '../../../ui/store';
 import { toast } from '../../../ui/toast';
 import { discordSend, failToast } from '../api/discord';
@@ -20,6 +21,10 @@ function pollRange(d: ConsoleData, s: ConsoleSession, sel: string[], extra: stri
   sel.concat(extra).forEach((k) => { if (k >= d.today && out.indexOf(k) < 0) out.push(k); });
   return out.sort();
 }
+/** その日の予定の札（△・×・卓あり） */
+const avChip = 'rounded-full px-8 ';
+const AV_BG: Record<string, string> = { soft: 'bg-soft', ng: 'bg-warn', bk: 'bg-session' };
+
 /** その日の GM・参加者の予定。空欄は参加できる扱い */
 function dayAvail(d: ConsoleData, s: ConsoleSession, k: string): { free: boolean; items: { c: string; text: string }[] | null } {
   if (d.availDays.indexOf(k) < 0) return { free: false, items: null };
@@ -73,47 +78,49 @@ export function PollModal() {
   return (
     <Modal id="pollModal" open={open && !!s} onClose={close}>
       <form className="box wide" id="pollForm" role="dialog" aria-modal="true" aria-labelledby="pollTitle" tabIndex={-1} onSubmit={(ev) => { ev.preventDefault(); submit(); }}>
-        <div className="bar">
-          <h2 id="pollTitle">{s ? '「' + s.name + '」の日程を調整する' : '日程を調整する'}</h2>
-          <button type="button" className="btn small" id="pollClose" style={{ marginLeft: 'auto' }} onClick={close}><Icon name="close" size="sm" />閉じる</button>
+        <div className={wideBar}>
+          <h2 className={wideBarTitle} id="pollTitle">{s ? '「' + s.name + '」の日程を調整する' : '日程を調整する'}</h2>
+          <button type="button" className="btn small ml-auto" id="pollClose" onClick={close}><Icon name="close" size="sm" />閉じる</button>
         </div>
         <p className="hint" id="pollWho">{s ? '候補日を選んでください。各日の右に、' + peopleOf(s).join('、') + ' の予定が出ます。' + '全員が答えると GM に知らせが届き、GM が選んだ日が開催日になります。' : ''}</p>
         <div className="row">
           <div className="narrow"><label htmlFor="pollStart">開始</label><input type="time" id="pollStart" step="300" value={st.start} onChange={(ev) => setSt((x) => ({ ...x, start: ev.target.value }))} /></div>
           <div className="narrow"><label htmlFor="pollEnd">終了</label><input type="time" id="pollEnd" step="300" value={st.end} onChange={(ev) => setSt((x) => ({ ...x, end: ev.target.value }))} /></div>
         </div>
-        <div className="poll-pick-h">
-          <span className="plbl">候補日 <small className="hint" id="pollCount">{st.sel.length ? st.sel.length + ' 日を選んでいます' : ''}</small></span>
+        <div className="mt-14 mb-8 flex flex-wrap items-center justify-between gap-8">
+          <span className="font-semibold">候補日 <small className="hint" id="pollCount">{st.sel.length ? st.sel.length + ' 日を選んでいます' : ''}</small></span>
           <label className="chk"><input type="checkbox" id="pollOkOnly" checked={st.okOnly} onChange={(ev) => setSt((x) => ({ ...x, okOnly: ev.target.checked }))} /> 全員空きの日だけ</label>
         </div>
-        <div id="pollDays" className="poll-days">
+        <div id="pollDays" className="max-h-[calc(46dvh/var(--zoom,1))] overflow-auto rounded-md border border-line">
           {days.length ? days.map(({ k, a, on }) => {
             const dow = parseYmd(k).getDay(), hol = holidayName(k);
             return (
-              <label className={'pday' + (on ? ' checked' : '')} key={k}>
+              <label className={'m-0 flex cursor-pointer items-center gap-10 border-b border-line px-12 py-8 font-normal last:border-b-0 ' + (on ? 'bg-accent-soft' : 'hover:bg-hover')} key={k}>
                 <input type="checkbox" className="pdc" value={k} checked={on} onChange={(ev) => toggle(k, ev.target.checked)} />
-                <span className={'pd-date' + (dow === 0 || hol ? ' sun' : dow === 6 ? ' sat' : '')}>{fmtJa(k)}{hol && <small>{' ' + hol}</small>}</span>
-                <span className="pd-av">
-                  {!a.items ? <span className="na">予定表の範囲外</span> : a.free ? <span className="ok">全員空き</span> : a.items.map((x) => <span className={x.c} key={x.text}>{x.text}</span>)}
+                <span className={'min-w-[6.5em] font-semibold' + (dow === 0 || hol ? ' text-sun' : dow === 6 ? ' text-sat' : '')}>{fmtJa(k)}{hol && <small className="text-10 font-normal">{' ' + hol}</small>}</span>
+                <span className="flex flex-wrap gap-4 text-12">
+                  {!a.items ? <span className={avChip + 'border border-dashed border-line-strong bg-transparent text-muted'}>予定表の範囲外</span>
+                    : a.free ? <span className={avChip + 'bg-ok'}>全員空き</span>
+                      : a.items.map((x) => <span className={avChip + (AV_BG[x.c] || 'bg-head')} key={x.text}>{x.text}</span>)}
                 </span>
               </label>
             );
-          }) : <div className="hint" style={{ padding: 10 }}>{st.okOnly ? '全員が空いている日はありません。「全員空きの日だけ」を外してください。' : '選べる日がありません。下の欄で日を足してください。'}</div>}
+          }) : <div className="hint p-10">{st.okOnly ? '全員が空いている日はありません。「全員空きの日だけ」を外してください。' : '選べる日がありません。下の欄で日を足してください。'}</div>}
         </div>
-        <div className="pctl poll-add">
-          <input type="date" id="pollAddDate" aria-label="候補に足す日" value={st.add} onChange={(ev) => setSt((x) => ({ ...x, add: ev.target.value }))} />
+        <div className="mt-10 flex flex-wrap items-center gap-8">
+          <input type="date" className="w-auto" id="pollAddDate" aria-label="候補に足す日" value={st.add} onChange={(ev) => setSt((x) => ({ ...x, add: ev.target.value }))} />
           <button type="button" className="btn small" id="pollAddBtn" onClick={() => {
             const k = st.add; if (!k) return;
             if (k < d.today) { setSt((x) => ({ ...x, msg: '過ぎた日は候補にできません。' })); return; }
             setSt((x) => ({ ...x, msg: '', extra: x.extra.concat(k), sel: x.sel.indexOf(k) >= 0 ? x.sel : x.sel.concat(k), add: '' }));
           }}><Icon name="add" size="sm" />日を足す</button>
         </div>
-        <div className="form-actions">
-          <div className="btns">
+        <div className={formActions}>
+          <div className="btns mt-0">
             <label><input type="checkbox" id="pollNotify" disabled={!canPoll} checked={st.notify && canPoll} onChange={(ev) => setSt((x) => ({ ...x, notify: ev.target.checked }))} /> Discord で知らせる <span className="hint" id="pollNotifyHint">{canPoll ? '' : '（チャンネル未設定）'}</span></label>
-            <button type="submit" className="btn primary" id="pollSend" style={{ marginLeft: 'auto' }} disabled={!st.sel.length || st.sending}>{s && hasPoll(s) ? 'この候補日に変える' : 'この候補日で聞く'}</button>
+            <button type="submit" className="btn primary ml-auto" id="pollSend" disabled={!st.sel.length || st.sending}>{s && hasPoll(s) ? 'この候補日に変える' : 'この候補日で聞く'}</button>
           </div>
-          <div id="pollMsg" role="alert">{st.msg}</div>
+          <div className="mt-6 text-err-text empty:hidden" id="pollMsg" role="alert">{st.msg}</div>
         </div>
       </form>
     </Modal>
