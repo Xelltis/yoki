@@ -9,7 +9,7 @@ import { sendDiscordStep } from '../discord/step';
 import { realSleep } from '../discord/send';
 import { setAvailability, setAvailabilityBulk, setAvailNote, setDayNote } from '../domain/availability';
 import { consoleData } from '../domain/console-data';
-import type { Form } from '../domain/form';
+import { type Form, readForm } from '../domain/form';
 import { loadGroup } from '../domain/load';
 import { deleteMember, saveMember, setAdmin } from '../domain/members';
 import { cancelPoll, decidePoll, type Io, setPollVote, setPollVoteAll, startPoll } from '../domain/polls';
@@ -80,7 +80,7 @@ rpcRoutes.post('/api/g/:groupId/:fn', async (c) => {
   const ctx = await load();
   if (!entry) return c.json(consoleData(ctx));
   if (entry.admin && !access.actor.isAdmin) throw adminError(entry.admin);
-  const form = ((await c.req.json().catch(() => ({}))) ?? {}) as Form;
+  const form = await readForm(c.req);
   const io: Io = { reload: load, data: async () => consoleData(await load()), sleep: realSleep };
   const result = await entry.run(ctx, form, io);
   if (entry.data) result.data = await io.data();
