@@ -8,9 +8,10 @@
   "compatibility_date": "2026-08-15",
   "assets": {
     // 画面（src/client を Vite で組み立てたもの）。次の道は Worker が先に受ける（ログインの確認やデータのため）。
-    // /admin（運営者の管理画面）も、運営者かを確かめてから返すので、ここに入れる（入れないと、確かめずに配ってしまう）
+    // /admin（運営者の管理画面）も、運営者かを確かめてから返すので、ここに入れる（入れないと、確かめずに配ってしまう）。
+    // /terms・/privacy（利用規約・プライバシーポリシー）は、運営者が直した本文を D1 から読んで返す
     "binding": "ASSETS",
-    "run_worker_first": ["/api/*", "/auth/*", "/g/*", "/dev/*", "/admin", "/admin/*"]
+    "run_worker_first": ["/api/*", "/auth/*", "/g/*", "/dev/*", "/admin", "/admin/*", "/terms", "/privacy"]
   },
   "d1_databases": [
     {

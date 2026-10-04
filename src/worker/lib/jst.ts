@@ -56,6 +56,12 @@ export function fmtDateJa(ymd: string): string {
   return m + '/' + d + '（' + WD[dowOf(ymd)] + '）';
 }
 
+/** '2026年10月3日' */
+export function fmtDateLong(ymd: string): string {
+  const [y, m, d] = ymdParts(ymd);
+  return y + '年' + m + '月' + d + '日';
+}
+
 /** '2026/10/03' */
 export function fmtYmdSlash(ymd: string): string {
   return ymd.replace(/-/g, '/');

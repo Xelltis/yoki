@@ -26,11 +26,12 @@ await withDevServer(async (base) => {
   const confirm = () => page.click('#confirmOk');
   const step = async (name, fn) => { await fn(); console.log('ok - ' + name); };
   const SORA = '400000000000000011';
-  /** ソラの締め出しと、新規登録の受付を戻す（印は users と meta に残り、サンプルの作り直しでは消えないため、最初と最後に戻す） */
+  /** ソラの締め出し・新規登録の受付・規約を戻す（印は users と meta に残り、サンプルの作り直しでは消えないため、最初と最後に戻す） */
   const restoreOperator = () => page.evaluate(async (id) => {
     const post = (path, body) => fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     await post('/api/admin/users/' + id + '/ban', { banned: false });
     await post('/api/admin/registration', { open: true });
+    await post('/api/admin/legal', { operator: '', contact: '', terms: '', privacy: '' });
   }, SORA);
   try {
     await step('開発用ログインでサンプルのグループに入れる', async () => {
@@ -317,6 +318,35 @@ await withDevServer(async (base) => {
       await page.click('#opRegToggle');
       await page.waitForSelector('#opReg >> text=受け付けています', { timeout: 15000 });
       await main();
+    });
+
+    await step('運営の管理画面: 規約の運営者・問い合わせ先・本文を直すと、/terms に出る。入口と設定タブから開ける', async () => {
+      await page.goto(base + 'admin/#legal');
+      await page.waitForFunction(() => document.getElementById('lgTerms').value.includes('本サービス'), null, { timeout: 15000 });
+      assert.match(await page.textContent('#lgTermsState'), /既定の文/);
+      await page.fill('#lgOperator', 'e2e の運営');
+      await page.fill('#lgContact', 'https://example.com/contact');
+      await page.fill('#lgTerms', '## e2e の決まり\n- 仲良く遊ぶ');
+      await page.click('#opLegal button[type=submit]');
+      await page.waitForSelector('#lgTermsState >> text=直した文', { timeout: 15000 });
+      const doc = await context.newPage();
+      await doc.goto(base + 'terms');
+      assert.equal(await doc.textContent('h1'), '利用規約');
+      assert.match(await doc.textContent('dl.who'), /e2e の運営/);
+      assert.equal(await doc.getAttribute('dl.who a', 'href'), 'https://example.com/contact');
+      assert.equal(await doc.textContent('article h2'), 'e2e の決まり');
+      await Promise.all([doc.waitForURL('**/privacy'), doc.click('nav a[href="/privacy"]')]);
+      assert.equal(await doc.textContent('h1'), 'プライバシーポリシー');
+      await doc.close();
+      // 既定の文に戻す（入力に入れて保存する）
+      await page.click('#opLegal button[data-default="terms"]');
+      await page.click('#opLegal button[type=submit]');
+      await page.waitForSelector('#lgTermsState >> text=既定の文', { timeout: 15000 });
+      await page.goto(base);
+      assert.equal(await page.isVisible('.foot a[href="/terms"]'), true, '入口の下にリンクがある');
+      await main();
+      await tab('settings');
+      assert.equal(await page.isVisible('#tab-settings a[href="/privacy"]'), true, '設定タブにリンクがある');
     });
 
     await step('狭い画面では日ごとのリストで印を打てる', async () => {

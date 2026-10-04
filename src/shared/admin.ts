@@ -93,5 +93,24 @@ export type AdminUserRow = {
   operator: boolean;
 };
 
+/** 利用規約（/terms）とプライバシーポリシー（/privacy） */
+export type LegalKind = 'terms' | 'privacy';
+export const LEGAL_KINDS: readonly LegalKind[] = ['terms', 'privacy'];
+export const LEGAL_TITLES: Record<LegalKind, string> = { terms: '利用規約', privacy: 'プライバシーポリシー' };
+/** 運営者の名前・問い合わせ先・本文の長さの上限 */
+export const LEGAL_MAX = { operator: 100, contact: 300, text: 20000 } as const;
+
+/** 本文 1 つ。直していなければ既定の文（text と defaultText が同じ、custom が偽） */
+export type LegalDoc = {
+  text: string;
+  custom: boolean;
+  /** 更新日（YYYY-MM-DD）。既定の文なら、既定の文を最後に直した日 */
+  updatedAt: string;
+  defaultText: string;
+};
+
+/** 利用規約とプライバシーポリシーの設定（GET /api/admin/legal）。POST は { operator?, contact?, terms?, privacy? }（省いたものは変えない） */
+export type AdminLegal = { operator: string; contact: string; terms: LegalDoc; privacy: LegalDoc };
+
 /** 変える操作の返事 */
 export type AdminResult = { ok: true; message: string };

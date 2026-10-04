@@ -2,6 +2,7 @@
 //   /g/:id/        グループの予定の画面（console）
 //   /g/:id/admin/  グループの管理画面（同じ console の画面を、管理の区域で開く）。グループの管理者だけ
 //   /admin/        運営者の管理画面（operator）。運営者（OPERATOR_IDS）だけ
+//   /terms /privacy 利用規約とプライバシーポリシー。だれでも読める。その場で HTML にして返す
 // ここの確かめは道を示すためのもの。データの読み書きの確かめは API の側（routes/rpc.ts・routes/admin.ts）でする
 import type { Context } from 'hono';
 import { Hono } from 'hono';
@@ -9,7 +10,8 @@ import type { AppEnv } from '../app';
 import { groupAccess } from '../auth/guard';
 import { isOperator } from '../auth/operator';
 import { currentViewer } from '../auth/session';
-import { noticePage } from './html';
+import { readLegal } from '../domain/legal';
+import { legalPage, noticePage } from './html';
 
 export const pageRoutes = new Hono<AppEnv>();
 
@@ -54,3 +56,6 @@ pageRoutes.get('/admin/', async (c) => {
   out.headers.set('Cache-Control', 'no-store');
   return out;
 });
+
+pageRoutes.get('/terms', async (c) => c.html(legalPage('terms', await readLegal(c.env.DB))));
+pageRoutes.get('/privacy', async (c) => c.html(legalPage('privacy', await readLegal(c.env.DB))));
