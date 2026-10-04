@@ -3,6 +3,7 @@ import { Hono } from 'hono';
 import { deleteCookie, getCookie, setCookie } from 'hono/cookie';
 import type { AppEnv } from '../app';
 import { authorizeUrl, fetchDiscordProfile, saveProfile } from '../auth/oauth';
+import { appOrigin } from '../auth/origin';
 import { endSession, isBanned, isLocalHttp, startSession } from '../auth/session';
 import { randomToken, safeEqual } from '../lib/ids';
 import { noticePage } from './html';
@@ -12,6 +13,9 @@ export const RETURN_TO = /^\/(g\/[a-z0-9-]{1,40}\/(admin\/)?|admin\/)?$/;
 const STATE_COOKIE = 'yoki_oauth';
 
 export const authRoutes = new Hono<AppEnv>();
+
+/** Discord から戻ってくる先。公開のアドレスで作る（Discord アプリの Redirects に書いたものと同じにする） */
+const callbackUrl = (env: { APP_URL?: string }, reqUrl: string) => appOrigin(env, reqUrl) + '/auth/callback';
 
 authRoutes.get('/auth/login', (c) => {
   if (!c.env.DISCORD_CLIENT_ID) {
@@ -30,7 +34,7 @@ authRoutes.get('/auth/login', (c) => {
     path: '/auth',
     maxAge: 600,
   });
-  return c.redirect(authorizeUrl(c.env, url.origin + '/auth/callback', state, consent ? 'consent' : 'none'));
+  return c.redirect(authorizeUrl(c.env, callbackUrl(c.env, c.req.url), state, consent ? 'consent' : 'none'));
 });
 
 authRoutes.get('/auth/callback', async (c) => {
@@ -50,7 +54,7 @@ authRoutes.get('/auth/callback', async (c) => {
   if (!code || !safeEqual(c.req.query('state') ?? '', state)) {
     return c.html(noticePage('ログインをやり直してください', 'ログインの確認ができませんでした。', retry), 400);
   }
-  const { user, guilds } = await fetchDiscordProfile(c.env, code, url.origin + '/auth/callback');
+  const { user, guilds } = await fetchDiscordProfile(c.env, code, callbackUrl(c.env, c.req.url));
   // 締め出された人は、ログインの記録も残さずに入口へ戻す
   if (await isBanned(c.env.DB, user.id)) return c.redirect('/?login=banned');
   await saveProfile(c.env.DB, user, guilds);
