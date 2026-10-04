@@ -86,11 +86,11 @@ export function Header({ tab }: { tab: Tab }) {
   };
   return (
     <header className={appbar}>
-      <a className={brand} href="/" title="グループの一覧へ">
+      <Link className={brand} to="/" title="グループの一覧へ">
         <img className={logo} src="/icon-192.png" alt="" width={32} height={32} />
         <span className="min-w-0 truncate max-sm:text-14" id="title">{d ? d.title : '卓予定'}</span>
         <span className={areaBadge + (admin ? ' inline-block' : ' hidden')}>管理</span>
-      </a>
+      </Link>
       <div className={actions}>
         <Link id="toMain" className={hbtn(admin ? 'inline-flex' : 'hidden')} to="/g/$groupId/" params={{ groupId }} title="カレンダーなどの、ふだんの画面へ戻る">
           <Icon name="arrow_back" size="sm" className={hbtnIcon} /><span className={btxt}>予定の画面へ</span>
