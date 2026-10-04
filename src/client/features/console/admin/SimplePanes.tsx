@@ -1,6 +1,7 @@
 // 管理画面の小さな区分: 管理者・この卓予定（名前・後始末・表示）・送信の記録・グループを消す
 import { useState } from 'react';
 import { askConfirm } from '../../../ui/confirm';
+import { checkRow, field, fieldLabel, fieldNote } from '../../../ui/fields';
 import { Icon } from '../../../ui/Icon';
 import { toast } from '../../../ui/toast';
 import { useConsole, useData } from '../context';
@@ -15,18 +16,18 @@ export function AdminsPane() {
   const [pick, setPick] = useState('');
   const chosen = others.indexOf(pick) >= 0 ? pick : others[0] || '';
   return (
-    <div className="set-pane" data-pane="admin">
+    <div data-pane="admin">
       <div className="card">
         <h3>管理者 <small className="hint">卓を消す・メンバーと設定を変える・日程調整の開催日を決める</small></h3>
-        <div id="admState" className={'adm-state' + (d.isAdmin ? ' on' : '')}>{d.isAdmin ? 'あなたは管理者です' : 'あなたは管理者ではありません'}</div>
+        <div id="admState" className={'inline-flex items-center gap-6 rounded-full px-12 py-4 text-13 ' + (d.isAdmin ? 'bg-ok font-semibold text-ok-text' : 'bg-head')}>{d.isAdmin ? 'あなたは管理者です' : 'あなたは管理者ではありません'}</div>
         <p className="hint" id="admLead">{d.isAdmin ? '管理者は、卓を消す・メンバーと設定を変える・日程調整の開催日を決める、ができます。' : '管理者の操作が要るときは、管理者に頼んでください。'}</p>
-        <div className="adm-list" id="admList">
-          {!list.length && <span className="adm-none">名簿はまだ空です。</span>}
+        <div className="mt-10 mb-4 flex flex-wrap gap-8" id="admList">
+          {!list.length && <span className="text-13 text-muted">名簿はまだ空です。</span>}
           {list.map((n) => (
-            <span className="adm-chip" key={n}>
+            <span className="inline-flex h-30 items-center gap-6 rounded-full border border-accent-line bg-accent-soft py-0 pr-6 pl-12 text-13 font-semibold text-accent-text" key={n}>
               {n}
               {d.isAdmin && list.length > 1 && (
-                <button type="button" title="管理者から外す" aria-label={n + ' を管理者から外す'}
+                <button type="button" className="grid cursor-pointer place-items-center rounded-[50%] border-0 bg-transparent p-2 text-inherit opacity-70 hover:bg-chrome-hover hover:opacity-100" title="管理者から外す" aria-label={n + ' を管理者から外す'}
                   onClick={() => askConfirm({ title: '管理者から外しますか？', message: '「' + n + '」を管理者の名簿から外します。', ok: '外す', danger: true }, () => { void call('admAdd', 'admMsg', 'setAdmin', { name: n, admin: false }); })}>
                   <Icon name="close" size="xs" />
                 </button>
@@ -39,7 +40,7 @@ export function AdminsPane() {
       <div className="card" id="admAddCard" hidden={!d.isAdmin}>
         <h3>管理者を足す</h3>
         <div className="row">
-          <div><label className="f" htmlFor="admPick">メンバー</label><select id="admPick" value={chosen} onChange={(ev) => setPick(ev.target.value)}>{others.map((n) => <option value={n} key={n}>{n}</option>)}</select></div>
+          <div><label className={fieldLabel} htmlFor="admPick">メンバー</label><select className={field} id="admPick" value={chosen} onChange={(ev) => setPick(ev.target.value)}>{others.map((n) => <option value={n} key={n}>{n}</option>)}</select></div>
         </div>
         <div className="btns">
           <button type="button" className="btn primary" id="admAdd" disabled={!others.length || !!busy.admAdd} onClick={() => { if (chosen) void call('admAdd', 'admMsg', 'setAdmin', { name: chosen, admin: true }); }}>管理者にする</button>
@@ -65,23 +66,23 @@ export function TablePane() {
     askConfirm({ title: '名前を変えますか？', message: '画面の左上と、Discord の知らせに出る名前が「' + n + '」になります。', ok: '変える' }, () => { void call('stNameSave', 'stNameMsg', 'renameGroup', { name: n }).then((r) => { if (r) setName(null); }); });
   };
   return (
-    <div className="set-pane" data-pane="table">
+    <div data-pane="table">
       <div className="card">
         <h3>名前</h3>
         <p className="hint">画面の左上と、Discord の知らせに出る名前です。みんなに見えます。</p>
-        <label className="f" htmlFor="stName">グループの名前 <small>80 文字まで</small></label>
-        <input type="text" id="stName" maxLength={80} value={nameV} onChange={(ev) => setName(ev.target.value)} />
+        <label className={fieldLabel} htmlFor="stName">グループの名前 <small className={fieldNote}>80 文字まで</small></label>
+        <input type="text" className={field} id="stName" maxLength={80} value={nameV} onChange={(ev) => setName(ev.target.value)} />
         <div className="btns"><button type="button" className="btn primary" id="stNameSave" disabled={!!busy.stNameSave} onClick={rename}>名前を変える</button><span className="hint" id="stNameMsg">{msg.stNameMsg || ''}</span></div>
       </div>
       <div className="card">
         <h3>卓の後始末</h3>
-        <label className="c"><input type="checkbox" id="stAutoFinish" checked={!!d.settings.autoFinish} onChange={(ev) => { void call('stSave', 'stMsg', 'saveConsoleSettings', { autoFinish: ev.target.checked }); }} /> 開催日を過ぎた卓を「終了」にする</label>
+        <label className={checkRow}><input type="checkbox" id="stAutoFinish" checked={!!d.settings.autoFinish} onChange={(ev) => { void call('stSave', 'stMsg', 'saveConsoleSettings', { autoFinish: ev.target.checked }); }} /> 開催日を過ぎた卓を「終了」にする</label>
         <p className="hint">終了になってもカレンダーからは消えず、灰色で残ります。「卓をまとめて変える」で見るには「終了・中止も表示」を付けてください。</p>
       </div>
       <div className="card">
         <h3>表示</h3>
         <div className="row">
-          <div><label className="f" htmlFor="stAvailDays">メンバーの予定の日数 <small>7〜366</small></label><input type="text" id="stAvailDays" inputMode="numeric" value={daysV} onChange={(ev) => setDays(ev.target.value)} /></div>
+          <div><label className={fieldLabel} htmlFor="stAvailDays">メンバーの予定の日数 <small className={fieldNote}>7〜366</small></label><input type="text" className="w-[8em] max-w-640" id="stAvailDays" inputMode="numeric" value={daysV} onChange={(ev) => setDays(ev.target.value)} /></div>
         </div>
         <div className="btns"><button type="button" className="btn primary" id="stSave" disabled={!!busy.stSave} onClick={() => { void call('stSave', 'stMsg', 'saveConsoleSettings', { availDays: daysV.trim() }).then((r) => { if (r) setDays(null); }); }}>保存</button><span className="hint" id="stMsg">{msg.stMsg || ''}</span></div>
       </div>
@@ -94,7 +95,7 @@ export function LogPane() {
   const d = useData();
   const lg = d.log || [];
   return (
-    <div className="set-pane" data-pane="log">
+    <div data-pane="log">
       <div className="card">
         <h3>送信の記録 <small className="hint">届かないときはここを見る。新しい順 10 件</small></h3>
         <div className="wrap">
@@ -103,7 +104,7 @@ export function LogPane() {
               <tr><th>日時</th><th>種別</th><th>対象</th><th>結果</th></tr>
               {lg.map((row, i) => (
                 <tr className={/^(HTTP|ERROR|送らず|送信失敗)/.test(row.result) ? 'r-past' : undefined} key={i}>
-                  <td className="nw">{row.at}</td><td className="nw">{row.kind}</td><td className="txt">{row.target}</td><td className="txt">{row.result}</td>
+                  <td className="nw">{row.at}</td><td className="nw">{row.kind}</td><td className="min-w-[11em]">{row.target}</td><td className="min-w-[11em]">{row.result}</td>
                 </tr>
               ))}
               {!lg.length && <tr><td colSpan={4} className="hint">まだ送っていません。「接続テスト」を押すとここに記録が出ます。</td></tr>}
@@ -132,12 +133,12 @@ export function DangerPane() {
     });
   };
   return (
-    <div className="set-pane" data-pane="danger">
-      <div className="card danger-card">
-        <h3><Icon name="delete" size="sm" />グループを消す</h3>
+    <div data-pane="danger">
+      <div className="card border-[color-mix(in_srgb,var(--err-text)_40%,var(--line))]">
+        <h3><Icon name="delete" size="sm" className="mr-4 text-err-text" />グループを消す</h3>
         <p>このグループの卓・メンバーの予定・メモ・日程調整の回答・送信の記録が、すべて消えます。<b>元に戻せません。</b></p>
-        <label className="f" htmlFor="delConfirm">確かめのために、グループの名前「<span id="delTitle">{d.title}</span>」を入れてください</label>
-        <input type="text" id="delConfirm" autoComplete="off" value={confirm} onChange={(ev) => setConfirm(ev.target.value)} />
+        <label className={fieldLabel} htmlFor="delConfirm">確かめのために、グループの名前「<span id="delTitle">{d.title}</span>」を入れてください</label>
+        <input type="text" className={field} id="delConfirm" autoComplete="off" value={confirm} onChange={(ev) => setConfirm(ev.target.value)} />
         <div className="btns"><button type="button" className="btn danger-fill" id="delGroup" disabled={!ok || st.busy} onClick={del}>グループを消す</button><span className="hint" id="delMsg">{st.msg}</span></div>
       </div>
     </div>

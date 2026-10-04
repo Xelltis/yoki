@@ -1,6 +1,7 @@
 // 管理画面の「知らせ」。何を・どこへ・いつ送るかの表（つまみと日時）、チャンネル（Bot・基本・種類ごと）、シリーズごとの上書き
 import { useEffect, useRef, useState } from 'react';
 import { askConfirm } from '../../../ui/confirm';
+import { field, fieldLabel, fieldNote } from '../../../ui/fields';
 import { Icon } from '../../../ui/Icon';
 import { toast } from '../../../ui/toast';
 import { discordSend, failToast } from '../api/discord';
@@ -8,6 +9,7 @@ import { useConsole, useData } from '../context';
 import { addDaysYmd, fmtJa } from '../model/dates';
 import { baseDays, baseHour, kindSet, readWhen, whenText } from '../model/notify';
 import { ChannelSelect, botStateText, canPick, ensureChannels, loadChannels, useChannels } from './channels';
+import { foldBody, foldCard, foldInner, foldSummary } from './fold';
 import { SeriesNotify } from './SeriesNotify';
 import { useCall } from './useCall';
 
@@ -21,10 +23,33 @@ function soonMin(v: string): { n: number; err: string } {
   return !/^\d+$/.test(s) || n < 5 || n > 720 ? { n, err: '開始の何分前は 5〜720 の数で入れてください。' } : { n, err: '' };
 }
 
-/** ON/OFF のつまみ。checkbox ではなく button[role=switch] で持つ */
+/** ON/OFF のつまみ。checkbox ではなく button[role=switch] で持つ。入れると水色になり、丸が右へ動く */
 function Switch({ id, on, label, busy, onClick }: { id: string; on: boolean; label: string; busy: boolean; onClick: () => void }) {
-  return <button type="button" className="sw-btn" id={id} role="switch" aria-checked={on} aria-label={label} disabled={busy} onClick={onClick}></button>;
+  return (
+    <button type="button" id={id} role="switch" aria-checked={on} aria-label={label} disabled={busy} onClick={onClick}
+      className={'relative h-26 w-44 cursor-pointer rounded-full border p-0 transition-[background-color,border-color] duration-(--dur-fast) ease-out disabled:cursor-default disabled:opacity-50 '
+        + 'after:absolute after:top-2 after:left-2 after:h-20 after:w-20 after:rounded-[50%] after:shadow-card after:transition-[transform] after:duration-(--dur-fast) after:ease-out after:content-[""] '
+        + (on ? 'border-accent bg-accent after:bg-white after:[transform:translateX(18px)]' : 'border-line-strong bg-out after:bg-card')} />
+  );
 }
+
+/** 知らせの表の見出し */
+const nth = 'border-b border-line px-12 py-11 text-left align-middle text-[11.5px] font-bold text-muted ';
+/** 知らせの表のマス。狭い画面では表をやめて、行ごとに縦に並べる（つまみは右上） */
+const ntd = (last: boolean) => 'px-12 py-11 align-middle text-13 max-tab:block max-tab:border-0 max-tab:px-0 max-tab:py-3 ' + (last ? '' : 'border-b border-line ');
+const ntdText = 'text-left max-tab:w-full ';
+const ntdSw = 'w-78 text-right whitespace-nowrap max-tab:absolute max-tab:top-10 max-tab:right-0 max-tab:w-auto';
+const ntr = 'max-tab:relative max-tab:block max-tab:w-full max-tab:py-10 ';
+/** 知らせの名前と説明 */
+const what = (last: boolean) => ntd(last) + ntdText + 'max-tab:pr-62';
+const whatTitle = 'block text-[13.5px]';
+const whatHint = 'hint text-[11.5px]';
+/** 送り先といつ（字を折り返さない） */
+const plain = (last: boolean) => ntd(last) + ntdText + 'whitespace-nowrap text-muted';
+/** 何日前・何時台・何分前の欄 */
+const num = (bad: boolean) => 'w-[3.4em] max-w-640 text-center tabular-nums' + (bad ? ' border-err-text' : '');
+/** 送り先の札。種類ごとのチャンネルを決めていれば水色 */
+const chip = (set: boolean) => 'inline-flex h-24 items-center gap-5 rounded-full border px-9 text-12 font-semibold ' + (set ? 'border-accent-line bg-accent-soft text-accent-text' : 'border-line bg-out text-muted');
 
 export function NotifyPane() {
   const d = useData();
@@ -34,16 +59,14 @@ export function NotifyPane() {
   const [days, setDays] = useState<string | null>(null);
   const [hour, setHour] = useState<string | null>(null);
   const [soon, setSoon] = useState<string | null>(null);
-  const [ntBad, setNtBad] = useState(false);
   const daysRef = useRef<HTMLInputElement>(null), soonRef = useRef<HTMLInputElement>(null);
   const daysV = days ?? String(baseDays(d)), hourV = hour ?? String(baseHour(d));
   const soonNow = st.soonMinutes === undefined ? 30 : st.soonMinutes, soonV = soon ?? String(soonNow);
   const wn = readWhen(daysV, hourV);
   const save = (btn: string, form: object, after?: () => void) => {
-    setNtBad(false);
     void call(btn, 'ntMsg', 'saveConsoleSettings', form).then((r) => { if (r && after) after(); });
   };
-  const bad = (t: string) => { setMsg('ntMsg', t); setNtBad(true); };
+  const bad = (t: string) => { setMsg('ntMsg', t); };
   /** 基本の日時の例え。「9/26（土）の卓なら、9/25（金）の 20 時台に届きます」 */
   const ex = addDaysYmd(d.today, 7);
   const line = wn.err ? wn.err : '例: ' + fmtJa(ex) + 'の卓なら、' + fmtJa(addDaysYmd(ex, -wn.days)) + 'の ' + wn.hour + ' 時台に届きます。' + (st.setter ? '' : '（いまは送っていません。右のつまみで始められます）');
@@ -75,71 +98,74 @@ export function NotifyPane() {
   };
   // 送り先の札。種類ごとのチャンネルを決めていれば、そちらを出す
   const destR = d.remindChannelSet ? '開催前のチャンネル' : '基本のチャンネル', destC = d.recruitChannelSet ? '募集のチャンネル' : '基本のチャンネル';
-  const chip = (set: boolean) => 'dest-chip' + (set ? ' set' : '');
   const sl = d.seriesNotify || [];
   return (
-    <div className="set-pane" data-pane="notify">
+    <div data-pane="notify">
       <div className="card">
         <h3>知らせ <small className="hint">何を・どこへ・いつ送るか</small></h3>
         <div className="wrap">
-          <table className="ntx">
-            <thead><tr><th style={{ width: '38%' }}>知らせ</th><th>送り先</th><th>いつ</th><th className="sw">送る</th></tr></thead>
-            <tbody>
+          <table className="max-tab:block max-tab:w-full">
+            <thead className="max-tab:hidden">
               <tr>
-                <td className="what"><b>開催前の知らせ</b><span className="hint">開催日が近づいた卓を、GM と参加者に</span></td>
-                <td className="dest"><span className={chip(!!d.remindChannelSet)} id="ntDestRemind">{destR}</span></td>
-                <td className="when2">開催日の <input type="text" className={'num' + (wn.dOk ? '' : ' bad')} id="stDays" ref={daysRef} inputMode="numeric" maxLength={2} aria-label="何日前（0〜30）" value={daysV} onChange={(ev) => setDays(ev.target.value)} onBlur={blurWhen} /> 日前 <input type="text" className={'num' + (wn.hOk ? '' : ' bad')} id="stHour" inputMode="numeric" maxLength={2} aria-label="何時台（0〜23）" value={hourV} onChange={(ev) => setHour(ev.target.value)} onBlur={blurWhen} /> 時台</td>
-                <td className="sw"><Switch id="ntRemind" on={!!st.setter} label="開催前の知らせを送る" busy={!!busy.ntRemind} onClick={toggleRemind} /></td>
+                <th className={nth + 'w-[38%] rounded-tl-md'}>知らせ</th><th className={nth}>送り先</th><th className={nth}>いつ</th><th className={nth + 'rounded-tr-md'}>送る</th>
               </tr>
-              <tr>
-                <td className="what"><b>期間前の催促</b><span className="hint">募集中・調整中のまま、期間の前日になったら GM に</span></td>
-                <td className="dest"><span className={chip(!!d.recruitChannelSet)} id="ntDestUrge">{destC}</span></td>
-                <td className="when2">期間の前日（開催前の知らせと同じ時刻）</td>
-                <td className="sw"><Switch id="stUrge" on={!!st.urge} label="期間前の催促を送る" busy={!!busy.stUrge} onClick={() => save('stUrge', { urge: !st.urge })} /></td>
+            </thead>
+            <tbody className="max-tab:block max-tab:w-full">
+              <tr className={ntr + 'max-tab:border-b max-tab:border-line'}>
+                <td className={what(false)}><b className={whatTitle}>開催前の知らせ</b><span className={whatHint}>開催日が近づいた卓を、GM と参加者に</span></td>
+                <td className={plain(false)}><span className={chip(!!d.remindChannelSet)} id="ntDestRemind">{destR}</span></td>
+                <td className={plain(false)}>開催日の <input type="text" className={num(!wn.dOk)} id="stDays" ref={daysRef} inputMode="numeric" maxLength={2} aria-label="何日前（0〜30）" value={daysV} onChange={(ev) => setDays(ev.target.value)} onBlur={blurWhen} /> 日前 <input type="text" className={num(!wn.hOk)} id="stHour" inputMode="numeric" maxLength={2} aria-label="何時台（0〜23）" value={hourV} onChange={(ev) => setHour(ev.target.value)} onBlur={blurWhen} /> 時台</td>
+                <td className={ntd(false) + ntdSw}><Switch id="ntRemind" on={!!st.setter} label="開催前の知らせを送る" busy={!!busy.ntRemind} onClick={toggleRemind} /></td>
               </tr>
-              <tr>
-                <td className="what"><b>開始直前の知らせ</b><span className="hint">当日、開始の少し前に GM と参加者に</span></td>
-                <td className="dest"><span className={chip(!!d.remindChannelSet)} id="ntDestSoon">{destR}</span></td>
-                <td className="when2">開始の <input type="text" className="num" id="stSoonMin" ref={soonRef} inputMode="numeric" maxLength={3} aria-label="開始の何分前（5〜720）" value={soonV} onChange={(ev) => setSoon(ev.target.value)} onBlur={blurSoon} /> 分前</td>
-                <td className="sw"><Switch id="stSoon" on={!!st.soon} label="開始直前の知らせを送る" busy={!!busy.stSoon} onClick={toggleSoon} /></td>
+              <tr className={ntr + 'max-tab:border-b max-tab:border-line'}>
+                <td className={what(false)}><b className={whatTitle}>期間前の催促</b><span className={whatHint}>募集中・調整中のまま、期間の前日になったら GM に</span></td>
+                <td className={plain(false)}><span className={chip(!!d.recruitChannelSet)} id="ntDestUrge">{destC}</span></td>
+                <td className={plain(false)}>期間の前日（開催前の知らせと同じ時刻）</td>
+                <td className={ntd(false) + ntdSw}><Switch id="stUrge" on={!!st.urge} label="期間前の催促を送る" busy={!!busy.stUrge} onClick={() => save('stUrge', { urge: !st.urge })} /></td>
               </tr>
-              <tr>
-                <td className="what"><b>登録・変更・削除</b><span className="hint">保存のときに「Discord に知らせる」を付けたぶん</span></td>
-                <td className="dest"><span className="dest-chip">卓に合わせて自動</span></td>
-                <td className="when2">保存したとき</td>
-                <td className="sw"><Switch id="stNotifyOnSave" on={!!st.notifyOnSave} label="登録・変更・削除を知らせる" busy={!!busy.stNotifyOnSave} onClick={() => save('stNotifyOnSave', { notifyOnSave: !st.notifyOnSave })} /></td>
+              <tr className={ntr + 'max-tab:border-b max-tab:border-line'}>
+                <td className={what(false)}><b className={whatTitle}>開始直前の知らせ</b><span className={whatHint}>当日、開始の少し前に GM と参加者に</span></td>
+                <td className={plain(false)}><span className={chip(!!d.remindChannelSet)} id="ntDestSoon">{destR}</span></td>
+                <td className={plain(false)}>開始の <input type="text" className={num(false)} id="stSoonMin" ref={soonRef} inputMode="numeric" maxLength={3} aria-label="開始の何分前（5〜720）" value={soonV} onChange={(ev) => setSoon(ev.target.value)} onBlur={blurSoon} /> 分前</td>
+                <td className={ntd(false) + ntdSw}><Switch id="stSoon" on={!!st.soon} label="開始直前の知らせを送る" busy={!!busy.stSoon} onClick={toggleSoon} /></td>
               </tr>
-              <tr>
-                <td className="what"><b>募集と参加確認</b><span className="hint">募集の卓の案内と、興味ありの人への確認</span></td>
-                <td className="dest"><span className={chip(!!d.recruitChannelSet)} id="ntDestRecruit">{destC}</span></td>
-                <td className="when2">押したときだけ</td>
-                <td className="sw"><span className="manual">自動では送らない</span></td>
+              <tr className={ntr + 'max-tab:border-b max-tab:border-line'}>
+                <td className={what(false)}><b className={whatTitle}>登録・変更・削除</b><span className={whatHint}>保存のときに「Discord に知らせる」を付けたぶん</span></td>
+                <td className={plain(false)}><span className={chip(false)}>卓に合わせて自動</span></td>
+                <td className={plain(false)}>保存したとき</td>
+                <td className={ntd(false) + ntdSw}><Switch id="stNotifyOnSave" on={!!st.notifyOnSave} label="登録・変更・削除を知らせる" busy={!!busy.stNotifyOnSave} onClick={() => save('stNotifyOnSave', { notifyOnSave: !st.notifyOnSave })} /></td>
+              </tr>
+              <tr className={ntr}>
+                <td className={what(true)}><b className={whatTitle}>募集と参加確認</b><span className={whatHint}>募集の卓の案内と、興味ありの人への確認</span></td>
+                <td className={plain(true)}><span className={chip(!!d.recruitChannelSet)} id="ntDestRecruit">{destC}</span></td>
+                <td className={plain(true)}>押したときだけ</td>
+                <td className={ntd(true) + ntdSw}><span className="text-[11.5px] text-muted">自動では送らない</span></td>
               </tr>
             </tbody>
           </table>
         </div>
-        <p className={'hint' + (wn.err ? ' bad' : '')} id="stWhenSay">{line}</p>
-        <p className={'hint' + (ntBad ? ' bad' : '')} id="ntMsg">{msg.ntMsg || ''}</p>
+        <p className={'hint mt-6 mb-0' + (wn.err ? ' text-err-text' : '')} id="stWhenSay">{line}</p>
+        <p className="hint" id="ntMsg">{msg.ntMsg || ''}</p>
         <p className="hint">開催前の知らせは、0 日前なら当日、1 日前なら前日です。開始直前の知らせを ON にすると見回りが 5 分ごとになり、指定した時刻を過ぎた最初の見回りで届きます。送り先は下の「チャンネル」で決めます。</p>
       </div>
 
-      <details className="fold-card" id="chFold">
-        <summary><Icon name="notifications" size="sm" />チャンネル<span className="hint" id="chSum">{d.channelSet ? '基本' + (d.remindChannelSet ? '・開催前' : '') + (d.recruitChannelSet ? '・募集' : '') : 'まだ決めていません'}</span></summary>
-        <div className="fold-body">
+      <details className={foldCard} id="chFold">
+        <summary className={foldSummary}><Icon name="notifications" size="sm" />チャンネル<span className="hint font-normal" id="chSum">{d.channelSet ? '基本' + (d.remindChannelSet ? '・開催前' : '') + (d.recruitChannelSet ? '・募集' : '') : 'まだ決めていません'}</span></summary>
+        <div className={foldBody}>
           <BotCard />
           <BaseChannel />
-          <div className="card" id="kwCard">
+          <div className={foldInner(false)} id="kwCard">
             <h3>種類ごとのチャンネル</h3>
             <p className="hint">開催前の知らせと募集の知らせを、別のチャンネルに送れます。「基本のチャンネルと同じ」なら基本へ。シリーズ専用のチャンネルがあれば、そちらが先です。</p>
-            <KindChannel kind="remind" label="開催前の知らせ" note="期間前の催促と、開始直前の知らせもここへ" />
+            <KindChannel kind="remind" label="開催前の知らせ" note="期間前の催促と、開始直前の知らせもここへ" first />
             <KindChannel kind="recruit" label="募集" note="募集の卓の登録・変更・削除・案内と、興味ありの人への参加確認" />
           </div>
         </div>
       </details>
 
-      <details className="fold-card" id="snFold">
-        <summary><Icon name="date_range" size="sm" />シリーズごとの上書き<span className="hint" id="snSum">{sl.length ? sl.length + ' 件' : 'なし'}</span></summary>
-        <div className="fold-body">
+      <details className={foldCard} id="snFold">
+        <summary className={foldSummary}><Icon name="date_range" size="sm" />シリーズごとの上書き<span className="hint font-normal" id="snSum">{sl.length ? sl.length + ' 件' : 'なし'}</span></summary>
+        <div className={foldBody}>
           <SeriesNotify />
         </div>
       </details>
@@ -156,10 +182,10 @@ function BotCard() {
   useEffect(() => { ensureChannels(sync); }, [sync, d.bot.ready]);
   const state = botStateText(d, ch);
   return (
-    <div className="card" id="botCard">
+    <div className={foldInner(true)} id="botCard">
       <h3>卓予定の Bot</h3>
       <p className="hint">知らせは、卓予定の Bot がチャンネルに書き込みます。はじめに、このグループの Discord サーバーに Bot を招きます（サーバーの管理の権限が要ります）。</p>
-      <p className={'hint' + (state.bad ? ' bad' : '')} id="botState">{state.text}</p>
+      <p className={'hint' + (state.bad ? ' text-err-text' : '')} id="botState">{state.text}</p>
       <div className="btns">
         <a className="btn primary" id="botInvite" href={d.bot.inviteUrl || '#'} target="_blank" rel="noopener" hidden={!d.bot.inviteUrl}><Icon name="add" size="sm" />Bot をサーバーに招く</a>
         <button type="button" className="btn" id="botReload" disabled={ch.loading || !d.bot.ready} onClick={() => loadChannels(sync)}><Icon name="refresh" size="sm" />読み直す</button>
@@ -198,11 +224,11 @@ function BaseChannel() {
     else askConfirm({ title: '基本のチャンネルを外しますか？', message: '種類ごとやシリーズ専用のチャンネルを決めていない知らせは、Discord に送られなくなります。', ok: '外す', danger: true }, go);
   };
   return (
-    <div className="card">
+    <div className={foldInner(false)}>
       <h3>基本のチャンネル</h3>
       <p className="hint">種類ごとのチャンネルやシリーズ専用のチャンネルを決めていない知らせは、ここへ送ります。</p>
-      <label className="f" htmlFor="stChannel">チャンネル</label>
-      <ChannelSelect id="stChannel" value={v} empty="（選んでいません）" onChange={setPick} />
+      <label className={fieldLabel} htmlFor="stChannel">チャンネル</label>
+      <ChannelSelect className={field} id="stChannel" value={v} empty="（選んでいません）" onChange={setPick} />
       <div className="btns">
         <button type="button" className="btn primary" id="stChannelSave" disabled={!canPick(ch) || !!busy.stChannelSave} onClick={saveIt}>保存</button>
         <button type="button" className="btn" id="stTest" disabled={!d.channelSet || testing} onClick={() => test({ kind: 'test' }, 'Discord に届きました')}>接続テスト</button>
@@ -213,7 +239,7 @@ function BaseChannel() {
 }
 
 /** 種類ごとのチャンネル 1 つ（開催前の知らせ・募集） */
-function KindChannel({ kind, label, note }: { kind: Kind; label: string; note: string }) {
+function KindChannel({ kind, label, note, first }: { kind: Kind; label: string; note: string; first?: boolean }) {
   const d = useData();
   const { busy, msg, setMsg, call } = useCall();
   const id = KW[kind].id;
@@ -226,9 +252,9 @@ function KindChannel({ kind, label, note }: { kind: Kind; label: string; note: s
     void call(id + 'Save', id + 'Msg', 'saveConsoleSettings', { kindChannel: { kind, channelId: v } }).then((r) => { if (r) setPick(null); });
   };
   return (
-    <div className="kw">
-      <label className="f" htmlFor={id}>{label + ' '}<small>{note}</small></label>
-      <ChannelSelect id={id} value={v} empty="基本のチャンネルと同じ" onChange={setPick} />
+    <div className={first ? '' : 'mt-18 border-t border-line pt-6'}>
+      <label className={fieldLabel} htmlFor={id}>{label + ' '}<small className={fieldNote}>{note}</small></label>
+      <ChannelSelect className={field} id={id} value={v} empty="基本のチャンネルと同じ" onChange={setPick} />
       <div className="btns">
         <button type="button" className="btn primary" id={id + 'Save'} disabled={!canPick(ch) || !!busy[id + 'Save']} onClick={saveIt}>保存</button>
         <button type="button" className="btn" id={id + 'Test'} disabled={!kindSet(d, kind) || testing} onClick={() => test({ kind: 'test', channel: kind }, KW[kind].label + 'に届きました')}>接続テスト</button>

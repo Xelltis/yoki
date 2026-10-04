@@ -3,6 +3,8 @@ import { Outlet, useRouterState } from '@tanstack/react-router';
 import { useEffect } from 'react';
 import { ADMIN_PANES, type AdminPane } from '../../../../shared/routes';
 import { store } from '../../../app/storage';
+import { PageHead } from '../../../ui/PageHead';
+import { SetLayout, setNavBtn } from '../../../ui/SetNav';
 import { useData } from '../context';
 import { useGoPane } from '../shell/nav';
 
@@ -26,25 +28,19 @@ export function AdminLayout() {
   useEffect(() => { if (pane) store('adminPane', pane); }, [pane]);
   if (!d.isAdmin) {
     return (
-      <section id="tab-admin" className="settings">
+      <section id="tab-admin" className="max-w-1120">
         <div className="card"><h3>管理者だけが開けます</h3><p className="hint">グループの管理画面は、そのグループの管理者だけが開けます。管理者に頼むか、管理者にしてもらってください。</p></div>
       </section>
     );
   }
   return (
-    <section id="tab-admin" className="settings">
-      <div className="page-head">
-        <h1>グループの管理</h1>
-        <p className="lead">ここで変えたことは、グループの全員に効きます。管理者だけが開けます。</p>
-      </div>
-      <div className="set2">
-        <nav className="set-nav" id="setNav" aria-label="管理の区分">
-          {PANES.map(([p, set, label]) => (
-            <button type="button" key={p} data-set={set} aria-current={pane === p ? 'true' : undefined} onClick={() => goPane(p)}>{label}</button>
-          ))}
-        </nav>
-        <div><Outlet /></div>
-      </div>
+    <section id="tab-admin" className="max-w-1120">
+      <PageHead title="グループの管理" lead="ここで変えたことは、グループの全員に効きます。管理者だけが開けます。" />
+      <SetLayout id="setNav" label="管理の区分" nav={PANES.map(([p, set, label]) => (
+        <button type="button" className={setNavBtn} key={p} data-set={set} aria-current={pane === p ? 'true' : undefined} onClick={() => goPane(p)}>{label}</button>
+      ))}>
+        <Outlet />
+      </SetLayout>
     </section>
   );
 }
