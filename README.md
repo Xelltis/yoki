@@ -33,12 +33,13 @@ src/worker/        サーバー（TypeScript、Hono）
   discord/         Bot の API（チャンネル）・送り先の選び方・文面・送信と送り直し
   lib/             日本時間の日付・文字・エラー・ID・規約の本文の書き方
   seed/            サンプルデータ
-src/client/        画面（TypeScript。Vite の root）
-  index.html       React の画面の骨組み。main.tsx が入口（いまは入口のページ /。ログイン・グループの一覧・グループを作る）
-  app/  ui/        React の画面の共通の道具（TanStack Query・リンク）と部品（アイコン）
-  features/home/   入口のページ（React）
-  console/         グループのアプリ（/g/:id/ と、管理者の画面 /g/:id/admin/ で開く）。main.ts が入口で、画面ごとのファイル（calendar・recruit・avail・form・settings など）に分ける
-  operator/        運営の管理画面（/admin/ で開く）
+src/client/        画面（TypeScript・React。Vite の root）。1 つの SPA で、どの道も index.html から開く
+  index.html       骨組み。main.tsx が入口、router.tsx が画面の道（TanStack Router）
+  app/             共通の道具（TanStack Query・この端末の控え・見た目のテーマ・リンク）
+  ui/              共通の部品（アイコン・窓・確かめる窓・吹き出し）と、アプリの見た目（app.css）
+  features/home/   入口のページ（/。ログイン・グループの一覧・グループを作る）
+  features/console/  グループの画面（/g/:id/ とタブ、管理の区域 /g/:id/admin/<区分>/）。api（読み書き）・model（卓の読み方）・shell（外枠）と、タブごとのフォルダ
+  features/operator/ 運営の管理画面（/admin/<区分>/）
 src/shared/        画面とサーバーの約束（画面データの型・呼び出しの名前・卓の状態・運営者の API の型）。両方から読む
 migrations/        D1 の表の定義（wrangler d1 migrations）
 test/worker/       サーバーのテスト（Workers の実行環境と本物の D1 で動かす）
@@ -73,7 +74,7 @@ npm run e2e          ブラウザで通しで確かめる（開発サーバー�
 
 サーバーのテストは、Workers の実行環境（`@cloudflare/vitest-pool-workers`）でローカルの D1 にマイグレーションを当てて動かす。Discord への送信は差し替えて記録する。
 
-サーバー（`src/worker`）と共有の型（`src/shared`）のカバレッジは、文・分岐・関数・行のすべてで 100% を保つ。通らない道を足したら、テストも足す。テストの環境では動かせない道（本番だけの分かれ道など）だけ、理由を書いて `/* istanbul ignore … -- @preserve 理由 */` で外す（`@preserve` が無いと、組み立てのときにコメントが消えて効かない）。画面（`src/client`）は e2e で確かめる。
+サーバー（`src/worker`）と共有の型（`src/shared`）のカバレッジは、文・分岐・関数・行のすべてで 100% を保つ。通らない道を足したら、テストも足す。テストの環境では動かせない道（本番だけの分かれ道など）だけ、理由を書いて `/* istanbul ignore … -- @preserve 理由 */` で外す（`@preserve` が無いと、組み立てのときにコメントが消えて効かない）。画面（`src/client`）は e2e で確かめる。グループの画面のデータの読み書きの順番（`features/console/api/sync.ts`）だけは、単体テスト（`test/client/console-sync.test.ts`）でも確かめる。
 
 lint は oxlint（`.oxlintrc.json`）。ESLint の TypeScript 対応（typescript-eslint）が、このリポジトリの TypeScript 7 にまだ対応していないため。警告も止める（`--deny-warnings`）。
 
@@ -146,8 +147,8 @@ Cloudflare は無料のプランで動く。グループが増えて、知らせ
 
 管理画面は 2 つある。
 
-- **グループの管理画面**（`/g/:id/admin/`）: そのグループの管理者が使う。メンバーの登録・卓をまとめて変える・Discord の知らせ・管理者・送信の記録・グループを消す、をまとめてある。ふだんの画面のタブの並びの「管理」（PC だけ）か、「設定」のタブから開く。管理者でなければ開けない
-- **運営の管理画面**（`/admin/`）: 公開した人（運営者。秘密の `OPERATOR_IDS` に書いた人）が使う。入口の画面に「運営の管理画面」のリンクが出る
+- **グループの管理画面**（`/g/:id/admin/`）: そのグループの管理者が使う。メンバーの登録・卓をまとめて変える・Discord の知らせ・管理者・送信の記録・グループを消す、をまとめてある。ふだんの画面のタブの並びの「管理」（PC だけ）か、「設定」のタブから開く。管理者でなければ開けない。区分ごとに URL がある（`/g/:id/admin/notify/` など。`/g/:id/admin/` は前に開いていた区分へ移る）
+- **運営の管理画面**（`/admin/`）: 公開した人（運営者。秘密の `OPERATOR_IDS` に書いた人）が使う。入口の画面に「運営の管理画面」のリンクが出る。区分ごとに URL がある（`/admin/users/` など）
   - **様子**: グループ・利用者・有効なログイン・動いている卓の数、知らせの見回り（cron）が動いているか、Discord への送信の失敗
   - **新規登録の受付**（様子の中）: 止めると、新しいグループの作成と、初めての人のログインを断る。もう使っている人と今あるグループは、そのまま使える。運営者は、止めていてもログインでき、グループも作れる。初めは受け付けている
   - **グループ**: 一覧と中身（Discord サーバー・メンバー・卓の数・最後に使われた日）。管理者の付け替え、Discord サーバーの付け替え、グループを消す（名前を打ち込んで確かめる。中身も消え、戻せない）
@@ -190,10 +191,12 @@ npm run site:build   組み立てる（website/.vitepress/dist/）
 - **日付は日本時間で扱う。** Workers は UTC で動く。日付と時刻は `src/worker/lib/jst.ts` を使い、`new Date(y, m, d)` や `getHours()` は使わない
 - **画面から呼べる関数は、`src/shared/api.ts` の `RPC_FUNCS` とサーバーの一覧（`src/worker/routes/rpc.ts`）だけ。** 足すときは両方に書く（片方だけだと型の確認で止まる）。管理者だけの関数は、サーバーの一覧で `admin` を付ける
 - **画面とサーバーで形を合わせるものは `src/shared/` に置く。** 画面データ（`ConsoleData`）や返事の型を変えるときは、ここを直す。サーバーは返す値を、画面は使う値を、型の確認で合わせる
-- **画面のファイルは、読み込んだときに何もしない。** 関数と定数だけを持ち、イベントの登録は `init()` に書いて `console/main.ts` から呼ぶ（ファイルどうしが互いを呼んでも、読み込みの順で壊れないように）
+- **画面の道（URL）を足すときは、3 か所にそろえる。** タブ・区分の一覧（`src/shared/routes.ts`）、Worker のページ（`src/worker/routes/pages.ts`）、画面の道（`src/client/router.tsx`）
+- **グループの画面のデータは、`ConsoleSync`（`src/client/features/console/api/sync.ts`）だけで読み書きする。** 部品は `useData()` で読み、書くのは `sync.write()`。押した瞬間に画面へ出すときは、`model/optimistic.ts` の、データを受けて新しいデータを返す関数を渡す（仮の ID は `__tmp__`）
 - **D1 の問い合わせの数を増やしすぎない。** 1 回の呼び出しで使える数に上限がある（無料のプランで 50）。卓の数だけ文を作らず、JSON（`json_each`）で 1 文にまとめる
 - **表を変えるときは、マイグレーションを足す。** `migrations/` に番号の続くファイルを足し、すでにあるファイルは書き換えない
-- **画面にアイコンを足したら**、React の画面（`<Icon name>`）は `src/client/ui/icons.ts` の `ICON_NAMES` に、名前をアルファベット順で足す（無い名前は型の確認で止まる。`index.html` の読み込みには、組み立てのときに入る）。React にまだ移していないページ（`console/`・`operator/`）は、そのページの先頭の読み込みの `icon_names` に足す（テストが確かめる）
+- **画面にアイコンを足したら**（`<Icon name>`）、`src/client/ui/icons.ts` の `ICON_NAMES` に、名前をアルファベット順で足す（無い名前は型の確認で止まる。`index.html` の読み込みには、組み立てのときに入る。使っていない名前が残っていたらテストが止まる）
+- **e2e とスクリーンショットの道具が使う形を保つ。** 要素の ID・`data-*`・`window.yoki`（`D`・`selectDay`・`showTab`）を変えるときは、`test/e2e/smoke.js` と `website/tools/screenshots.js` も直す
 - メンバーは中では ID で持ち、画面とのやり取りでは名前を使う（`src/worker/domain/people.ts`）
 
 ## ライセンス
