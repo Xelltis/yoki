@@ -45,7 +45,7 @@ const calRoute = createRoute({
     const t = load('tab');
     if (t === 'recruit' || t === 'avail' || t === 'settings') throw redirect({ to: `/g/$groupId/${t}/`, params });
   },
-  component: lazyRouteComponent(() => import('./features/console/shell/Placeholder'), 'CalendarTab'),
+  component: lazyRouteComponent(() => import('./features/console/calendar/CalendarTab'), 'CalendarTab'),
 });
 const recruitRoute = createRoute({ getParentRoute: () => groupRoute, path: 'recruit', component: lazyRouteComponent(() => import('./features/console/shell/Placeholder'), 'RecruitTab') });
 const availRoute = createRoute({ getParentRoute: () => groupRoute, path: 'avail', component: lazyRouteComponent(() => import('./features/console/shell/Placeholder'), 'AvailTab') });
