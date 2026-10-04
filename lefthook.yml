@@ -10,6 +10,7 @@ pre-commit:
       glob:
         - "*.ts"
         - "**/*.ts"
+        - "**/*.tsx"
         - "**/*.vue"
         - "**/tsconfig*.json"
         - "package-lock.json"
