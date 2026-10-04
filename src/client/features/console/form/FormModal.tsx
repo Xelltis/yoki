@@ -129,7 +129,7 @@ export function FormModal() {
   const [promote, setPromote] = useState<PromoteAsk | null>(null);
   const [handled, setHandled] = useState(0);
   const keyRef = useRef(0), seriesAtFocus = useRef('');
-  const nameRef = useRef<HTMLInputElement>(null), boxRef = useRef<HTMLDivElement>(null);
+  const nameRef = useRef<HTMLInputElement>(null), dateRef = useRef<HTMLInputElement>(null), boxRef = useRef<HTMLDivElement>(null);
   const open = !!req;
   const s = byId(d, f.pick);
 
@@ -167,7 +167,10 @@ export function FormModal() {
     setHandled(req.seq);
     const r: FormReq = req.req;
     if (r.cont) continueFrom(r.cont);
-    else if (r.id) fill(r.id);
+    else if (r.id) {
+      fill(r.id);
+      if (r.status) update({ status: r.status });
+    }
     else {
       let base = fieldsOf(d, null);
       if (r.status) base = { ...base, status: r.status };
@@ -183,7 +186,7 @@ export function FormModal() {
   useLayoutEffect(() => {
     if (!req) return;
     if (boxRef.current) boxRef.current.scrollTop = 0;
-    nameRef.current?.focus();
+    (req.req.focus === 'date' ? dateRef : nameRef).current?.focus();
   }, [req]);
   const close = () => ui.set((st) => ({ ...st, form: null }));
   const reopen = () => ui.set((st) => ({ ...st, form: { seq: st.form?.seq ?? handled, req: {} } }));
@@ -333,7 +336,7 @@ export function FormModal() {
               )}
             </div>
             <div className="row" id="dateRow" hidden={rec || adj}>
-              <div><label htmlFor="date">開催日 <small>まだ決まっていなければ状態を「募集」に</small></label><input type="date" id="date" value={f.date} onChange={(ev) => update({ date: ev.target.value })} /></div>
+              <div><label htmlFor="date">開催日 <small>まだ決まっていなければ状態を「募集」に</small></label><input type="date" id="date" ref={dateRef} value={f.date} onChange={(ev) => update({ date: ev.target.value })} /></div>
               <div className="narrow"><label htmlFor="start">開始</label><input type="time" id="start" step="300" value={f.start} onChange={(ev) => update({ start: ev.target.value })} /></div>
               <div className="narrow"><label htmlFor="end">終了</label><input type="time" id="end" step="300" value={f.end} onChange={(ev) => update({ end: ev.target.value })} /></div>
             </div>

@@ -47,7 +47,7 @@ const calRoute = createRoute({
   },
   component: lazyRouteComponent(() => import('./features/console/calendar/CalendarTab'), 'CalendarTab'),
 });
-const recruitRoute = createRoute({ getParentRoute: () => groupRoute, path: 'recruit', component: lazyRouteComponent(() => import('./features/console/shell/Placeholder'), 'RecruitTab') });
+const recruitRoute = createRoute({ getParentRoute: () => groupRoute, path: 'recruit', component: lazyRouteComponent(() => import('./features/console/recruit/RecruitTab'), 'RecruitTab') });
 const availRoute = createRoute({ getParentRoute: () => groupRoute, path: 'avail', component: lazyRouteComponent(() => import('./features/console/shell/Placeholder'), 'AvailTab') });
 const settingsRoute = createRoute({ getParentRoute: () => groupRoute, path: 'settings', component: lazyRouteComponent(() => import('./features/console/shell/Placeholder'), 'SettingsTab') });
 

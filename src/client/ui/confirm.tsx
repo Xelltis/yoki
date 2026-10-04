@@ -29,7 +29,7 @@ export function ConfirmDialog() {
     if (go && yes) yes();
   };
   return (
-    <Modal id="confirmModal" open={open} onClose={() => close(false)} backdropClose>
+    <Modal id="confirmModal" open={open} onClose={() => close(false)} backdropClose top>
       <form className="box confirm" id="confirmForm" role="alertdialog" aria-modal="true" aria-labelledby="confirmTitle" aria-describedby="confirmText" tabIndex={-1}
         onSubmit={(ev) => { ev.preventDefault(); close(true); }}>
         <h3 id="confirmTitle">{o.title || '確認'}</h3>
