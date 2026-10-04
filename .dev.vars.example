@@ -4,5 +4,5 @@ DISCORD_CLIENT_ID=
 DISCORD_CLIENT_SECRET=
 # Discord の文に付けるアプリの URL
 APP_URL=http://localhost:5173
-# 運営者（/admin/）の Discord ユーザー ID。開発用ログインでは、空でもひよりが運営者になる
+# 運営者（/admin/）の Discord ユーザー ID。カンマで区切って何人でも書ける。開発用ログインでは、空でもひよりが運営者になる
 OPERATOR_IDS=

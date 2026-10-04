@@ -1,4 +1,6 @@
-// 卓予定（Yoki）の Worker の設定。npm run dev（Vite）と npm run deploy（wrangler）がこれを読む
+// 卓予定（Yoki）の Worker の設定。npm run dev と npm run build（Vite）がこれを読む。
+// 公開する Cloudflare ごとに違う値（D1 の ID・APP_URL・DISCORD_CLIENT_ID）は、ここには仮の値だけを置く。
+// 公開のときに GitHub Actions（.github/workflows/deploy.yml）が、environment「production」の値を組み立てた設定に入れる（vite.config.ts）
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "yoki",
@@ -14,7 +16,7 @@
     {
       "binding": "DB",
       "database_name": "yoki",
-      // 本番の D1 を作ったら（npx wrangler d1 create yoki）、出てきた ID に置き換える。ローカルではこのままでよい
+      // 仮の ID（手元の D1 はこのままでよい）。本番の ID は、公開のときに YOKI_D1_DATABASE_ID から入れる
       "database_id": "00000000-0000-0000-0000-000000000000",
       "migrations_dir": "./migrations"
     }
@@ -24,11 +26,10 @@
     "crons": ["*/5 * * * *"]
   },
   "vars": {
-    // Discord の文に付けるアプリの URL と、Discord アプリのクライアント ID。手元では .dev.vars で上書きする
+    // Discord の文に付けるアプリの URL と、Discord アプリのクライアント ID。手元では .dev.vars で、本番では公開のときに入れる。
+    // 秘密の値（DISCORD_CLIENT_SECRET）と運営者の ID（OPERATOR_IDS）は vars に置かず、Worker の secret にする（src/worker/env.ts）
     "APP_URL": "",
-    "DISCORD_CLIENT_ID": "",
-    // 運営者（/admin/ の管理画面に入れる人）の Discord ユーザー ID。カンマで区切って何人でも書ける
-    "OPERATOR_IDS": ""
+    "DISCORD_CLIENT_ID": ""
   },
   "observability": { "enabled": true }
 }
