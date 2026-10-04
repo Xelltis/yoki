@@ -1,17 +1,23 @@
 // サイトに載せるアプリのスクリーンショットを website/public/screenshots/ に撮る（吹き出し・スクロールバー・ログアウトは写さない。PC は 2 倍、スマホは 3 倍の解像度）
 //   npm run screenshots   （開発サーバーをこの場で立て、開発用ログインでサンプルのグループを写す）
+//   npm run screenshots -- --out <フォルダ>   見比べる用に、別のフォルダへ撮る（読み込んだ時刻は写さない。website/tools/compare-shots.js で比べる）
+//   YOKI_UI=next npm run screenshots -- --out <フォルダ>   React への書き直しのあいだだけ: 新しい画面で撮る
 // 撮った画像はリポジトリに入れる（サイトの組み立てでは撮らない）。アプリの見た目を変えたら撮り直す
 // 初めて使う前に、ブラウザを入れておく: npx playwright install chromium
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
-import { devLogin, withDevServer } from '../../test/e2e/dev-server.js';
+import { devLogin, newContext, withDevServer } from '../../test/e2e/dev-server.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const out = path.join(here, '../public/screenshots');
+const outArg = process.argv.indexOf('--out');
+/** 見比べる用（--out）なら、読み込んだ時刻のような、撮るたびに変わるものは写さない */
+const compare = outArg >= 0;
+const out = compare ? path.resolve(process.argv[outArg + 1]) : path.join(here, '../public/screenshots');
 fs.mkdirSync(out, { recursive: true });
-const HIDE = '#toast, #logoutBtn, #stLogout { display: none !important; } html { scrollbar-width: none; } ::-webkit-scrollbar { display: none; }';
+const HIDE = '#toast, #logoutBtn, #stLogout { display: none !important; } html { scrollbar-width: none; } ::-webkit-scrollbar { display: none; }' +
+  (compare ? ' #loadedAt { visibility: hidden !important; }' : '');
 /** 手元には Bot が無いので、知らせのチャンネルを撮るときは、Bot がサーバーにいることにして返事を差し替える（サンプルのチャンネルは ID が全部 0） */
 const CHANNELS = [
   { id: '000000000000000000', name: '卓の知らせ', category: 'TRPG' },
@@ -41,7 +47,7 @@ await withDevServer(async (base) => {
   await fetch(base + 'dev/reset', { method: 'POST', headers: { Origin: new URL(base).origin } });
   const browser = await chromium.launch();
   async function open(width, height, scale, theme) {
-    const ctx = await browser.newContext({ viewport: { width, height }, deviceScaleFactor: scale });
+    const ctx = await newContext(browser, base, { viewport: { width, height }, deviceScaleFactor: scale });
     // 見た目は画面が読む前に決める（最初はカレンダー）
     await ctx.addInitScript((t) => { try { localStorage.setItem('taku.theme', t); localStorage.removeItem('taku.tab'); } catch {} }, theme);
     const pg = await ctx.newPage();
