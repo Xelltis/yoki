@@ -17,7 +17,7 @@
     "test:coverage": "vitest run --coverage",
     "typecheck": "tsc -p tsconfig.json && tsc -p src/client/tsconfig.json && tsc -p tsconfig.node.json && tsc -p website/tsconfig.json",
     "e2e": "node test/e2e/smoke.js",
-    "types": "wrangler types",
+    "types": "wrangler types --strict-vars=false",
     "db:migrate:local": "wrangler d1 migrations apply DB --local",
     "site": "vitepress dev website",
     "site:build": "vitepress build website",
