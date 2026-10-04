@@ -1,8 +1,118 @@
 /* 画面の見た目の入口（Tailwind CSS v4）。main.tsx が最初に読む。
  * 層の順: theme（トークン）→ base（要素の既定）→ legacy（Tailwind に書き直している途中の CSS）→ components → utilities。
- * 古い CSS（ui/app.css・features/home/home.css・features/operator/operator.css）は legacy の層に入れ、Tailwind のクラスが勝つようにする。
+ * 古い CSS（ui/app.css・features/home/home.css・features/operator/operator.css）は legacy の層に入れ、Tailwind のクラスが古い CSS に勝つようにする。
  * Tailwind の preflight（要素の見た目を消す土台）は、古い CSS がなくなるまで使わない */
 @layer theme, base, legacy, components, utilities;
 @import 'tailwindcss/theme.css' layer(theme);
 @import 'tailwindcss/utilities.css' layer(utilities) source(none);
 @source './';
+
+/* ---- Tailwind のトークン。既定のもの（色の一覧・rem の寸法）は使わず、ここに置いたものだけを使う ---- */
+@theme {
+  --*: initial;
+  /* 寸法は px で数える（p-10 は 10px）。文字の大きさの設定（body の zoom）は、px のまま効く */
+  --spacing: 1px;
+  /* 幅の区切り（sm: は 601px 以上、max-sm: は 600px 以下） */
+  --breakpoint-xs: 401px; --breakpoint-sm: 601px; --breakpoint-md: 701px; --breakpoint-tab: 761px; --breakpoint-lg: 901px; --breakpoint-xl: 1061px;
+  --text-10: 10px; --text-11: 11px; --text-12: 12px; --text-13: 13px; --text-14: 14px; --text-15: 15px;
+  --text-16: 16px; --text-17: 17px; --text-18: 18px; --text-20: 20px; --text-22: 22px; --text-28: 28px;
+  --font-sans: "Segoe UI Variable Text", "Segoe UI", "Hiragino Sans", "BIZ UDPGothic", "Noto Sans JP", "Yu Gothic UI", Meiryo, system-ui, sans-serif;
+  --color-white: #fff; --color-black: #000;
+}
+/* 古い CSS も var(--radius-…) で読むので、使っていなくても出す */
+@theme static {
+  --radius-sm: 6px; --radius-md: 10px; --radius-lg: 14px; --radius-xl: 18px;
+}
+/* 色と影は、明るい・ダークで変わる（下の :root の変数）。クラスは変数をそのまま読む（bg-card は var(--card)） */
+@theme inline {
+  --color-primary: var(--primary); --color-primary-ink: var(--primary-ink); --color-accent: var(--accent);
+  --color-accent-strong: var(--accent-strong); --color-accent-ink: var(--accent-ink); --color-accent-soft: var(--accent-soft);
+  --color-accent-line: var(--accent-line); --color-accent-text: var(--accent-text); --color-chrome: var(--chrome);
+  --color-chrome-line: var(--chrome-line); --color-chrome-text: var(--chrome-text); --color-chrome-muted: var(--chrome-muted);
+  --color-chrome-hover: var(--chrome-hover); --color-chrome-active: var(--chrome-active); --color-chrome-field: var(--chrome-field);
+  --color-chrome-field-line: var(--chrome-field-line); --color-chrome-accent: var(--chrome-accent);
+  --color-chrome-accent-ink: var(--chrome-accent-ink); --color-chrome-accent-text: var(--chrome-accent-text); --color-live: var(--live);
+  --color-live-off: var(--live-off); --color-live-err: var(--live-err); --color-head: var(--head); --color-today: var(--today);
+  --color-session: var(--session); --color-ok: var(--ok); --color-soft: var(--soft); --color-out: var(--out); --color-weekend: var(--weekend);
+  --color-warn: var(--warn); --color-soon: var(--soon); --color-past: var(--past); --color-violet: var(--violet); --color-muted: var(--muted);
+  --color-line: var(--line); --color-line-strong: var(--line-strong); --color-card: var(--card); --color-hover: var(--hover);
+  --color-sun: var(--sun); --color-sat: var(--sat); --color-ok-text: var(--ok-text); --color-err-text: var(--err-text);
+  --color-booked-text: var(--booked-text); --color-toast: var(--toast); --color-toast-text: var(--toast-text); --color-week-line: var(--week-line);
+  --color-scrim: var(--scrim);
+  --color-fg: var(--text); --color-page: var(--bg);
+  --shadow-card: var(--elev-sm); --shadow-pop: var(--elev-lg);
+}
+/* ダーク（data-theme="dark" か、明るいを選んでいない OS のダーク）。色は変数で変わるので、たいていは要らない */
+@custom-variant dark {
+  &:where([data-theme="dark"], [data-theme="dark"] *) { @slot; }
+  @media (prefers-color-scheme: dark) {
+    &:where(:root:not([data-theme="light"]), :root:not([data-theme="light"]) *) { @slot; }
+  }
+}
+
+/* ---- 色。黒い帯（上のバーとスマホの下のタブ）に、水色（シアン）を差し色にする。暖色は使わず、状態の色はミント・ローズ・バイオレット。
+ * ライトが基本。ダークはヘッダーの月・太陽のボタンか設定タブで切り替え、未設定なら OS に従う ---- */
+@layer theme {
+  :root {
+    color-scheme: light;
+    --primary: #0b111b; --primary-ink: #ffffff;
+    --accent: #0891b2; --accent-strong: #0e7490; --accent-ink: #ffffff; --accent-soft: #e0f5f9; --accent-line: #a3dde9; --accent-text: #0e7490;
+    --chrome: #0b111b; --chrome-line: #1f2935; --chrome-text: #f1f5f9; --chrome-muted: #97a3b4; --chrome-hover: rgba(255, 255, 255, .07); --chrome-active: rgba(255, 255, 255, .12);
+    --chrome-field: rgba(255, 255, 255, .06); --chrome-field-line: rgba(255, 255, 255, .18); --chrome-accent: #22d3ee; --chrome-accent-ink: #042f37; --chrome-accent-text: #67e8f9;
+    --live: #34d399; --live-off: #52606f; --live-err: #fb7185;
+    --head: #f0f2f5; --today: #dff5fa; --session: #e3eaf8; --ok: #ccf0e0; --soft: #e9f7f1;
+    --out: #f6f8fa; --weekend: #f9fafb; --warn: #fde1e7; --soon: #eeeafd; --past: #eceff3; --violet: #6d28d9;
+    --text: #0b111b; --muted: #5a6474; --line: #e2e6ec; --line-strong: #c9d0da; --bg: #f2f4f7; --card: #ffffff; --hover: #edf1f6;
+    --sun: #d4163f; --sat: #0369a1; --ok-text: #046c4e; --err-text: #be123c;
+    --booked-text: #1e3a8a; --toast: #0b111b; --toast-text: #f1f5f9; --week-line: #9aa4b2; --scrim: rgba(5, 8, 12, .55);
+    --elev-sm: 0 1px 2px rgba(11, 17, 27, .06);
+    --elev-lg: 0 16px 40px rgba(11, 17, 27, .22), 0 2px 6px rgba(11, 17, 27, .08);
+    --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%235a6474' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    --select-arrow-chrome: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2397a3b4' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --primary: #e6ebf2; --primary-ink: #0b0e13;
+    --accent: #22d3ee; --accent-strong: #22d3ee; --accent-ink: #042f37; --accent-soft: #0b2930; --accent-line: #155e6b; --accent-text: #67e8f9;
+    --chrome: #06080c; --chrome-line: #1a2029; --chrome-text: #f1f5f9; --chrome-muted: #8d98a8; --chrome-hover: rgba(255, 255, 255, .06); --chrome-active: rgba(255, 255, 255, .1);
+    --chrome-field: rgba(255, 255, 255, .05); --chrome-field-line: rgba(255, 255, 255, .16); --chrome-accent: #22d3ee; --chrome-accent-ink: #042f37; --chrome-accent-text: #67e8f9;
+    --live: #34d399; --live-off: #475569; --live-err: #fb7185;
+    --head: #171c24; --today: #0b2930; --session: #16213a; --ok: #0c3a2d; --soft: #10271f;
+    --out: #0d1015; --weekend: #0f1318; --warn: #3b141f; --soon: #231b3f; --past: #1a1f27; --violet: #a78bfa;
+    --text: #e6ebf2; --muted: #8d98a8; --line: #232a34; --line-strong: #343d49; --bg: #0b0e13; --card: #12161d; --hover: #1a2029;
+    --sun: #fb7185; --sat: #38bdf8; --ok-text: #34d399; --err-text: #fb7185;
+    --booked-text: #93c5fd; --toast: #e6ebf2; --toast-text: #0b0e13; --week-line: #4b5563; --scrim: rgba(0, 0, 0, .65);
+    --elev-sm: 0 1px 2px rgba(0, 0, 0, .5);
+    --elev-lg: 0 16px 40px rgba(0, 0, 0, .7), 0 2px 6px rgba(0, 0, 0, .5);
+    --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%238d98a8' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    --select-arrow-chrome: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%238d98a8' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --primary: #e6ebf2; --primary-ink: #0b0e13;
+      --accent: #22d3ee; --accent-strong: #22d3ee; --accent-ink: #042f37; --accent-soft: #0b2930; --accent-line: #155e6b; --accent-text: #67e8f9;
+      --chrome: #06080c; --chrome-line: #1a2029; --chrome-text: #f1f5f9; --chrome-muted: #8d98a8; --chrome-hover: rgba(255, 255, 255, .06); --chrome-active: rgba(255, 255, 255, .1);
+      --chrome-field: rgba(255, 255, 255, .05); --chrome-field-line: rgba(255, 255, 255, .16); --chrome-accent: #22d3ee; --chrome-accent-ink: #042f37; --chrome-accent-text: #67e8f9;
+      --live: #34d399; --live-off: #475569; --live-err: #fb7185;
+      --head: #171c24; --today: #0b2930; --session: #16213a; --ok: #0c3a2d; --soft: #10271f;
+      --out: #0d1015; --weekend: #0f1318; --warn: #3b141f; --soon: #231b3f; --past: #1a1f27; --violet: #a78bfa;
+      --text: #e6ebf2; --muted: #8d98a8; --line: #232a34; --line-strong: #343d49; --bg: #0b0e13; --card: #12161d; --hover: #1a2029;
+      --sun: #fb7185; --sat: #38bdf8; --ok-text: #34d399; --err-text: #fb7185;
+      --booked-text: #93c5fd; --toast: #e6ebf2; --toast-text: #0b0e13; --week-line: #4b5563; --scrim: rgba(0, 0, 0, .65);
+      --elev-sm: 0 1px 2px rgba(0, 0, 0, .5);
+      --elev-lg: 0 16px 40px rgba(0, 0, 0, .7), 0 2px 6px rgba(0, 0, 0, .5);
+      --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%238d98a8' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+      --select-arrow-chrome: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%238d98a8' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    }
+  }
+  /* ---- 寸法・重なり・動き。値はここだけで決める ---- */
+  :root {
+    --radius-pill: 999px;
+    --h-control: 36px; --h-control-sm: 30px;
+    --appbar-h: 104px; --nav-h: 0px;
+    --z-cell: 1; --z-cell-head: 2; --z-cell-corner: 3; --z-sticky: 5; --z-fab: 15; --z-appbar: 20; --z-pop: 30; --z-modal: 40; --z-toast: 50;
+    --dur-fast: 120ms; --dur: 180ms;
+  }
+  @media (pointer: coarse) { :root { --h-control: 40px; --h-control-sm: 34px; } }
+}
