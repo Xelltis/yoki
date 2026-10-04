@@ -12,6 +12,12 @@ import { daysBetween, fmtJa, timeRange } from '../model/dates';
 import { hasPoll, isActive, isAdjusting, isDated, me, peopleOf, pollOk, pollVoters, seriesNames, sortSessions, targetPeople, windowByDay } from '../model/model';
 import { hookFor, kindOf, notifyState } from '../model/notify';
 import { useGoTab } from '../shell/nav';
+import { people as peopleRow, personChip, res, row2 } from '../styles';
+
+/** 内訳のカード（狭い画面では、日を選ぶまで隠す）。上の帯と下のタブに隠れないように送る */
+const detailCard = 'card mb-0 scroll-mt-[calc(var(--appbar-h)+12px)] scroll-mb-[calc(var(--nav-h)+12px)]';
+/** その日のみんなの予定の札 */
+const MARK_BG: Record<string, string> = { 'm-ok': 'bg-ok', 'm-soft': 'bg-soft', 'm-ng': 'bg-warn', 'm-bk': 'bg-session' };
 
 /** Discord に通知したときの進み具合（卓ごと）と、日付メモの書きかけ（日ごと）。タブを移っても、この画面を開いているあいだは残す */
 const notifyRes: Record<string, string> = {};
@@ -26,7 +32,7 @@ export function DayDetail({ d, target }: { d: ConsoleData; target: string }) {
   const [note, setNote] = useState({ saving: false, msg: '' });
   if (!selDay) {
     return (
-      <div className="card nosel" id="dayDetail">
+      <div className={detailCard + ' max-lg:hidden'} id="dayDetail">
         <h3 id="dayTitle">日を選んでください</h3>
         <div id="dayBody" className="hint">カレンダーの日をタップすると、その日の卓の内訳がここに出ます。</div>
       </div>
@@ -67,33 +73,33 @@ export function DayDetail({ d, target }: { d: ConsoleData; target: string }) {
   };
 
   return (
-    <div className="card" id="dayDetail">
+    <div className={detailCard} id="dayDetail">
       <h3 id="dayTitle">{fmtJa(selDay) + (n === 0 ? '　今日' : n === 1 ? '　明日' : n > 1 ? '　' + n + ' 日後' : '　' + (-n) + ' 日前')}</h3>
-      <div id="dayBody" className="">
+      <div id="dayBody">
         {!list.length && <div className="hint">この日の卓はありません。</div>}
         {list.map((s, i) => {
           const cand = isAdjusting(s) && s.date !== selDay, pollDay = cand && hasPoll(s);
-          const cls = s.status === '募集' || isAdjusting(s) ? ' adj' : s.status === '終了' ? ' done' : s.status === '中止' ? ' cancel' : '';
+          const done = s.status === '終了', cancel = s.status === '中止';
           const ppl = peopleOf(s);
           return (
-            <div className={'sess' + cls} data-id={s.id} key={s.id + ':' + i}>
-              <div className="sess-h">
-                <b>{s.name}</b>
+            <div className={'mt-10 rounded-md border border-line bg-card p-12 tabular-nums' + (done ? ' opacity-80' : '')} data-id={s.id} key={s.id + ':' + i}>
+              <div className="flex flex-wrap items-baseline gap-x-10 gap-y-4">
+                <b className={'text-15' + (done ? ' text-muted' : cancel ? ' text-muted line-through' : '')}>{s.name}</b>
                 <span>{pollDay ? '日程調整の候補日　◯ ' + pollOk(d, s, selDay).length + '/' + pollVoters(d, s).length : cand ? '候補の期間 ' + s.windowLabel + ' のどこか' : timeRange(s)}</span>
-                <span className="st">{s.status + (s.status === '募集' ? '（仮の日）' : cand ? '（候補日）' : '')}</span>
+                <span className="rounded-full bg-head px-8 py-1 text-11 font-semibold text-muted">{s.status + (s.status === '募集' ? '（仮の日）' : cand ? '（候補日）' : '')}</span>
               </div>
-              <div className="people">
+              <div className={peopleRow}>
                 {ppl.map((p) => {
                   const isGm = p === s.gm, known = d.members.some((m) => m.name === p);
-                  return <span className={(isGm ? 'gm' : '') + (known ? '' : ' no')} title={known ? '' : 'メンバーに未登録'} key={p}>{(isGm ? 'GM ' : '') + p}</span>;
+                  return <span className={personChip(isGm, !known)} title={known ? '' : 'メンバーに未登録'} key={p}>{(isGm ? 'GM ' : '') + p}</span>;
                 })}
-                {!ppl.length && <span className="no">参加者 未定</span>}
+                {!ppl.length && <span className={personChip(false, true)}>参加者 未定</span>}
               </div>
-              {s.place && <div className="row2">{'場所: ' + s.place}</div>}
-              {s.memo && <div className="row2 hint">{s.memo}</div>}
-              {s.notified ? <div className="row2 hint">{'開催前の知らせ 送信済み ' + s.notified}</div>
-                : isDated(s) && s.date && s.date >= d.today && d.notifySetter ? <div className="row2 hint">{notifyState(d, s)}</div> : null}
-              <div className="btns">
+              {s.place && <div className={row2}>{'場所: ' + s.place}</div>}
+              {s.memo && <div className={row2 + ' hint'}>{s.memo}</div>}
+              {s.notified ? <div className={row2 + ' hint'}>{'開催前の知らせ 送信済み ' + s.notified}</div>
+                : isDated(s) && s.date && s.date >= d.today && d.notifySetter ? <div className={row2 + ' hint'}>{notifyState(d, s)}</div> : null}
+              <div className="btns mt-10 gap-6">
                 {isActive(s) && (
                   <button type="button" className="btn small primary" data-notify={s.id} disabled={!hookFor(d, s.series, kindOf(s)) || !!notifying[s.id]} title={hookFor(d, s.series, kindOf(s)) ? undefined : 'チャンネル未設定'} onClick={() => notify(s.id)}>Discord に通知</button>
                 )}
@@ -102,33 +108,35 @@ export function DayDetail({ d, target }: { d: ConsoleData; target: string }) {
                   : <button type="button" className="btn small" data-poll={s.id} onClick={() => openPoll(ui, s.id)}><Icon name="how_to_vote" size="sm" />日程を調整する</button>)}
                 <button type="button" className="btn small" data-edit={s.id} onClick={() => openForm(ui, { id: s.id })}>編集</button>
                 <button type="button" className="btn small" data-cont={s.id} title="設定を引き継いで翌日の卓を登録" onClick={() => openForm(ui, { cont: s.id })}>続きを登録</button>
-                <span className="res" data-res={s.id}>{notifyRes[s.id] || ''}</span>
+                <span className={res} data-res={s.id}>{notifyRes[s.id] || ''}</span>
               </div>
             </div>
           );
         })}
         {people.length > 0 && (
           <>
-            <div className="hint" style={{ marginTop: 10 }}>{'メンバーの予定（' + target + '）'}</div>
-            <div className="marks">
+            <div className="hint mt-10">{'メンバーの予定（' + target + '）'}</div>
+            <div className="mt-6 flex flex-wrap gap-4 tabular-nums">
               {people.map((p) => {
                 const v = bk[p] || marks[p] || '可';
                 const cls = v === '可' ? 'm-ok' : v === '△' ? 'm-soft' : v === '×' ? 'm-ng' : v === '参' || v === 'GM' ? 'm-bk' : '';
+                const chip = 'relative rounded-full border border-transparent px-10 py-1 text-12 ' + (MARK_BG[cls] || 'bg-head');
                 const mm = ((d.availNotes || {})[selDay] || {})[p];
-                if (!mm) return <span className={cls} key={p}>{p + ' ' + v}</span>;
+                if (!mm) return <span className={chip} key={p}>{p + ' ' + v}</span>;
                 // メモのある人。押すと吹き出しで全文
                 const say = () => toast(fmtJa(selDay) + ' ' + p + ': ' + mm.text);
                 return (
-                  <span className={cls + ' has-memo'} key={p} data-memo={mm.text} data-memo-of={p} data-day={selDay} role="button" tabIndex={0}
+                  <span className={chip + ' cursor-pointer pl-16'} key={p} data-memo={mm.text} data-memo-of={p} data-day={selDay} role="button" tabIndex={0}
                     onClick={say} onKeyDown={(ev) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); say(); } }}>
-                    <span className="mdot" />{p + ' ' + v}
+                    {/* 札と同じ形の点（前の見た目のまま） */}
+                    <span className="pointer-events-none relative top-1/2 left-6 -mt-3 h-7 w-7 rounded-full border border-transparent bg-head px-10 py-1 text-12" />{p + ' ' + v}
                   </span>
                 );
               })}
             </div>
           </>
         )}
-        <div className="btns" style={{ marginTop: 10 }}>
+        <div className="btns mt-10">
           <button type="button" className="btn small" id="newOnDay" onClick={() => openForm(ui, { date: selDay })}>この日に卓を登録</button>
           {sn.length > 0 && (
             <select id="dayCont" className="small" title="シリーズを選ぶと、直前の回の GM・参加者を引き継いでこの日に登録する" value=""
@@ -138,11 +146,11 @@ export function DayDetail({ d, target }: { d: ConsoleData; target: string }) {
             </select>
           )}
         </div>
-        <div className="note-box">
+        <div className="mt-14 border-t border-line pt-12">
           <div className="hint">{'この日のメモ' + (dayNote && dayNote.by ? '　' + dayNote.by + ' が ' + dayNote.at : '')}</div>
-          <textarea id="dayNote" aria-label="この日のメモ" placeholder="卓と関係のない予定も書けます（合宿、イベント、忙しい週など）" value={noteText}
+          <textarea className="h-64 w-full resize-y" id="dayNote" aria-label="この日のメモ" placeholder="卓と関係のない予定も書けます（合宿、イベント、忙しい週など）" value={noteText}
             onChange={(ev) => { dayNoteDraft[selDay] = ev.target.value; redraw(); }} />
-          <div className="btns">
+          <div className="btns mt-8">
             <button type="button" className="btn small primary" id="dayNoteSave" disabled={note.saving} onClick={saveNote}>メモを保存</button>
             <span className="hint" id="dayNoteMsg">{note.msg}</span>
           </div>

@@ -13,6 +13,10 @@ import { MonthGrid } from './MonthGrid';
 import { Notices } from './Notices';
 import { SetupGuide } from './SetupGuide';
 
+/** 色の見本 */
+const sw = 'inline-flex items-center gap-6';
+const swatch = 'h-14 w-14 rounded-[4px] border border-line-strong max-sm:h-12 max-sm:w-12 ';
+
 /** カレンダーの下のアイコンの読み方。[アイコン, 名前, 付ける印] */
 const CAL_LEGEND: [IconName, string, string?][] = [['event', '開催'], ['play_circle', '今日'], ['campaign', '募集'], ['edit_calendar', '調整期間'], ['how_to_vote', '候補日', 'cand'], ['task_alt', '終了'], ['block', '中止'], ['sticky_note_2', 'メモ']];
 
@@ -47,34 +51,37 @@ export function CalendarTab() {
   return (
     <section id="tab-cal">
       <SetupGuide d={d} />
-      <div className="frame">
-        <div className="frame-l">
-          <div className="calbar">
-            <div className="calnav">
+      {/* 左にカレンダー、右に内訳と卓予定。狭い画面では縦に並べる */}
+      <div className="grid grid-cols-[minmax(0,7fr)_minmax(300px,3fr)] items-start gap-20 max-lg:grid-cols-[minmax(0,1fr)]">
+        <div>
+          <div className="mb-12 flex flex-wrap items-center gap-x-12 gap-y-10">
+            <div className="flex items-center gap-6 max-sm:w-full">
               <button type="button" id="prev" className="btn icon" aria-label="前の月" onClick={() => shift(-1)}><Icon name="chevron_left" /></button>
-              <h1 className="month" id="monthLabel">{view.y + '年' + (view.m + 1) + '月'}</h1>
+              <h1 className="m-0 min-w-[6.6em] text-center text-20 font-bold tabular-nums max-sm:min-w-0 max-sm:flex-1 max-sm:text-18" id="monthLabel">{view.y + '年' + (view.m + 1) + '月'}</h1>
               <button type="button" id="next" className="btn icon" aria-label="次の月" onClick={() => shift(1)}><Icon name="chevron_right" /></button>
               <button type="button" id="todayBtn" className="btn" onClick={() => ui.set((s) => ({ ...s, view: { y: t.getFullYear(), m: t.getMonth() } }))}><Icon name="today" size="sm" />今月</button>
             </div>
-            <div className="caltools">
-              <label>都合を見る卓 <select id="target" value={target} onChange={(ev) => setTarget(ev.target.value)}>{targets.map((n) => <option value={n} key={n}>{n}</option>)}</select></label>
+            <div className="ml-auto flex flex-wrap items-center gap-8 max-sm:ml-0 max-sm:w-full">
+              <label className="flex items-center gap-8 text-13 text-muted max-sm:min-w-0 max-sm:flex-1">都合を見る卓 <select className="max-sm:min-w-0 max-sm:flex-1" id="target" value={target} onChange={(ev) => setTarget(ev.target.value)}>{targets.map((n) => <option value={n} key={n}>{n}</option>)}</select></label>
             </div>
-            <div className="newgroup">
-              <button type="button" id="newSession" className="btn primary xl" title={sel ? fmtJa(u.selDay) + ' の卓を登録します' : 'カレンダーで日を選んでから押すと、その日の卓になります。日付の無い卓（募集・調整中）もここから登録できます'}
+            {/* 卓を登録・募集を始める・日程調整を始める。月と「都合を見る卓」の下に 1 段で並べる。スマホでは「卓を登録」を右下の丸いボタンにする */}
+            <div className="flex basis-full flex-wrap gap-8 max-sm:w-full">
+              <button type="button" id="newSession" className={'btn primary xl max-sm:fixed max-sm:right-[max(16px,env(safe-area-inset-right))] max-sm:bottom-[calc(var(--nav-h)+16px+env(safe-area-inset-bottom))] '
+                + 'max-sm:z-(--z-fab) max-sm:min-h-56 max-sm:rounded-xl max-sm:pr-20 max-sm:pl-16 max-sm:text-15 max-sm:shadow-pop'} title={sel ? fmtJa(u.selDay) + ' の卓を登録します' : 'カレンダーで日を選んでから押すと、その日の卓になります。日付の無い卓（募集・調整中）もここから登録できます'}
                 onClick={() => openForm(ui, { date: u.selDay || undefined })}>
                 <Icon name="add" /><span id="newSessionLbl">{sel ? (sel.getMonth() + 1) + '/' + sel.getDate() + ' に卓を登録' : '卓を登録'}</span>
               </button>
-              <button type="button" id="newRecruit" className="btn xl" title="状態を「募集」にした登録の窓を開きます" onClick={() => openForm(ui, { status: '募集' })}><Icon name="campaign" />募集を始める</button>
-              <button type="button" id="newAdjust" className="btn xl" title="状態を「調整中」にした登録の窓を開きます" onClick={() => openForm(ui, { status: '調整中' })}><Icon name="edit_calendar" />日程調整を始める</button>
+              <button type="button" id="newRecruit" className="btn xl max-sm:flex-auto max-sm:px-12" title="状態を「募集」にした登録の窓を開きます" onClick={() => openForm(ui, { status: '募集' })}><Icon name="campaign" />募集を始める</button>
+              <button type="button" id="newAdjust" className="btn xl max-sm:flex-auto max-sm:px-12" title="状態を「調整中」にした登録の窓を開きます" onClick={() => openForm(ui, { status: '調整中' })}><Icon name="edit_calendar" />日程調整を始める</button>
             </div>
           </div>
-          <div className="legend">
-            <span className="sw"><i style={{ background: 'var(--ok)' }} />全員空き</span><span className="sw"><i style={{ background: 'var(--soft)' }} />△あり</span>
-            <span className="sw"><i style={{ background: 'var(--session)' }} />卓あり</span><span className="sw"><i style={{ background: 'var(--past)' }} />終わった卓</span><span className="sw"><i style={{ background: 'var(--today)' }} />今日</span>
-            <span className="brk" aria-hidden="true" />
+          <div className="mb-12 flex flex-wrap items-center gap-x-14 gap-y-4 text-12 text-muted max-sm:mb-10 max-sm:gap-x-10 max-sm:gap-y-2 max-sm:text-11">
+            <span className={sw}><i className={swatch + 'bg-ok'} />全員空き</span><span className={sw}><i className={swatch + 'bg-soft'} />△あり</span>
+            <span className={sw}><i className={swatch + 'bg-session'} />卓あり</span><span className={sw}><i className={swatch + 'bg-past'} />終わった卓</span><span className={sw}><i className={swatch + 'bg-today'} />今日</span>
+            <span className="h-0 basis-full" aria-hidden="true" />
             <span className="hint">日をタップすると内訳が出ます</span>
-            <div className="legend-icons" id="iconLegend">
-              {CAL_LEGEND.map(([icon, name, cls]) => <span className={'li' + (cls ? ' ' + cls : '')} key={icon}><Icon name={icon} size="xs" />{name}</span>)}
+            <div className="flex flex-wrap items-center gap-x-10 gap-y-2 border-l border-line pl-14 max-sm:w-full max-sm:border-l-0 max-sm:pl-0" id="iconLegend">
+              {CAL_LEGEND.map(([icon, name, cls]) => <span className="inline-flex items-center gap-2 whitespace-nowrap" key={icon}><Icon name={icon} size="xs" className={cls ? 'text-accent-text' : undefined} />{name}</span>)}
             </div>
           </div>
           <MonthGrid d={d} view={view} target={target} selDay={u.selDay} onShift={shift}
@@ -84,9 +91,9 @@ export function CalendarTab() {
               if (next) requestAnimationFrame(revealDay);
             }} />
         </div>
-        <div className="frame-r">
+        <div className="sticky top-[calc(var(--appbar-h)+16px)] flex flex-col gap-16 max-lg:static">
           <DayDetail d={d} target={target} key={u.selDay} />
-          <div className="card">
+          <div className="card mb-0">
             <h3>卓予定</h3>
             <Notices d={d} onTab={goTab} onTarget={(n) => ui.set((s) => ({ ...s, target: n }))} onDay={(k) => { selectDay(k); requestAnimationFrame(revealDay); }} />
           </div>
