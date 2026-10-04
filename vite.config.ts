@@ -5,6 +5,7 @@
 // リポジトリの直下で動かす wrangler からは見えないので、deploy.yml は組み立てた dist/yoki/wrangler.json を直接渡す
 import path from 'node:path';
 import { cloudflare, type WorkerConfig } from '@cloudflare/vite-plugin';
+import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import { defineConfig, type Plugin } from 'vite';
 import { ICON_NAMES } from './src/client/ui/icons.ts';
@@ -57,6 +58,8 @@ export default defineConfig(({ command }) => ({
   plugins: [
     // 画面の React（JSX と、開発サーバーで直すとすぐ反映される Fast Refresh）
     react(),
+    // 見た目（Tailwind CSS。src/client/index.css が入口）
+    tailwindcss(),
     iconNames(),
     cloudflare({
       configPath: path.join(import.meta.dirname, 'wrangler.jsonc'),

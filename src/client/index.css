@@ -1,0 +1,8 @@
+/* 画面の見た目の入口（Tailwind CSS v4）。main.tsx が最初に読む。
+ * 層の順: theme（トークン）→ base（要素の既定）→ legacy（Tailwind に書き直している途中の CSS）→ components → utilities。
+ * 古い CSS（ui/app.css・features/home/home.css・features/operator/operator.css）は legacy の層に入れ、Tailwind のクラスが勝つようにする。
+ * Tailwind の preflight（要素の見た目を消す土台）は、古い CSS がなくなるまで使わない */
+@layer theme, base, legacy, components, utilities;
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/utilities.css' layer(utilities) source(none);
+@source './';

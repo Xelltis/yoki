@@ -1,6 +1,7 @@
 /* グループの画面（/g/:id/）と運営者の管理画面（/admin/）の見た目。入口は features/home/home.css
  * ---- 色。黒い帯（上のバーとスマホの下のタブ）に、水色（シアン）を差し色にする。暖色は使わず、状態の色はミント・ローズ・バイオレット。
  * ライトが基本。ダークはヘッダーの月・太陽のボタンか設定タブで切り替え、未設定なら OS に従う ---- */
+@layer legacy {
 :root {
   color-scheme: light;
   --primary: #0b111b; --primary-ink: #ffffff;
@@ -793,3 +794,4 @@ legend { font-weight: 600; font-size: 13px; padding: 0 4px; }
 }
 /* 幅の狭いスマホでは、読み込んだ時刻を隠して点だけ残す（シートの名前を残すため）。時刻は更新の吹き出しに出る */
 @media (max-width: 400px) { .sync-at { font-size: 0; gap: 0; } }
+}

@@ -1,4 +1,5 @@
 /* 入口の見た目。色はアプリ（ui/app.css）と同じ決め方 */
+@layer legacy {
 :root {
   color-scheme: light dark;
   --accent: #0891b2; --accent-strong: #0e7490; --accent-ink: #ffffff; --accent-soft: #e0f5f9;
@@ -56,3 +57,4 @@ input, select { height: 40px; padding: 0 10px; border-radius: 10px; border: 1px 
 .foot a { display: inline-flex; align-items: center; gap: 4px; color: var(--accent-strong); font-weight: 600; text-decoration: none; }
 /* 運営者だけに出す、運営の管理画面への入口 */
 .op-link { float: right; display: inline-flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 600; text-decoration: none; }
+}

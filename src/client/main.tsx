@@ -1,5 +1,5 @@
-// React の画面の入口。道（router.tsx）に合わせて、ページの部品を分けて読む。
-// いまは入口のページ（/）だけ（グループの画面と運営の管理画面は、まだ console/ と operator/ にある）
+// React の画面の入口。道（router.tsx）に合わせて、ページの部品を分けて読む
+import './index.css';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider } from '@tanstack/react-router';
 import { StrictMode } from 'react';
