@@ -178,3 +178,9 @@ TypeScript で書き、Vite が組み立てる。ページは 3 つ: 入口（`i
 - 秘密の値（`DISCORD_CLIENT_SECRET`）と運営者の ID（`OPERATOR_IDS`）は vars に置かず、Worker の secret にする。公開のたびに `wrangler deploy --secrets-file` で版と一緒に送る。vars は公開のログに出るため（公開のリポジトリでは、Actions のログはだれでも読める）
 - マイグレーションと公開は、どちらも組み立てた設定（`--config dist/yoki/wrangler.json`）で行う
 - wrangler には D1 の ID を省くと自動で作る機能もあるが、試験中で、マイグレーションとの順番も合わないので使わない
+
+**前に CDN を置くとき**（`auth/origin.ts`）。ドメインの DNS を Cloudflare に移さずに独自のドメインで公開するときは、AWS CloudFront などを前に置き、workers.dev のアドレスへ渡す。
+
+- CDN は Host を workers.dev にして渡すので、Worker に届く要求のアドレスは workers.dev のままになる。自分のアドレス（Discord ログインの戻り先・知らせのリンク・CSRF で受ける Origin）は、`APP_URL` を正とする（`appOrigin`）。CSRF は、届いた要求のアドレスと `APP_URL` の両方を「自分」として受ける
+- cookie は Domain を付けないので、ブラウザが開いたドメイン（CDN のドメイン）に付く。CDN は cookie をそのまま渡す
+- workers.dev へじかに来た要求も、そのまま受ける（CDN からの要求と見分けない）。ログインの戻り先と cookie は公開のアドレスに結びつくので、workers.dev のままでは使えない（ログインの途中の情報が workers.dev の cookie に残り、戻り先で見つからない）。使う人を絞るのは、新規登録の受付で行う
