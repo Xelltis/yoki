@@ -12,5 +12,5 @@
     "isolatedModules": true,
     "verbatimModuleSyntax": true
   },
-  "include": [".", "../shared"]
+  "include": [".", "../shared", "../../test/client"]
 }

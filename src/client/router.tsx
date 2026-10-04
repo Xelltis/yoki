@@ -2,8 +2,10 @@
 // ページごとの JS は分けて読む（lazyRouteComponent）。入口・グループの画面・運営の管理画面をまたぐ移りは、
 // 見た目（CSS）がぶつからないように、ページを読み直す（ふつうの <a href>）
 import type { QueryClient } from '@tanstack/react-query';
-import { createRootRouteWithContext, createRoute, createRouter, lazyRouteComponent, Outlet } from '@tanstack/react-router';
+import { createRootRouteWithContext, createRoute, createRouter, lazyRouteComponent, notFound, Outlet, redirect } from '@tanstack/react-router';
+import { ADMIN_PANES, type AdminPane } from '../shared/routes';
 import { queryClient } from './app/queryClient';
+import { load } from './app/storage';
 
 function NotFound() {
   return (
@@ -26,7 +28,58 @@ const homeRoute = createRoute({
   component: lazyRouteComponent(() => import('./features/home/Home'), 'Home'),
 });
 
-const routeTree = rootRoute.addChildren([homeRoute]);
+/* グループの画面（/g/:id/ とタブ）。外枠は ConsoleLayout */
+/** グループの画面を初めて開いたか。初めてだけ、前に見ていたタブへ移る（前の画面と同じ） */
+let firstVisit = true;
+const groupRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/g/$groupId',
+  beforeLoad: () => { const first = firstVisit; firstVisit = false; return { firstVisit: first }; },
+  component: lazyRouteComponent(() => import('./features/console/shell/ConsoleLayout'), 'ConsoleLayout'),
+});
+const calRoute = createRoute({
+  getParentRoute: () => groupRoute,
+  path: '/',
+  beforeLoad: ({ context, params }) => {
+    if (!context.firstVisit) return;
+    const t = load('tab');
+    if (t === 'recruit' || t === 'avail' || t === 'settings') throw redirect({ to: `/g/$groupId/${t}/`, params });
+  },
+  component: lazyRouteComponent(() => import('./features/console/shell/Placeholder'), 'CalendarTab'),
+});
+const recruitRoute = createRoute({ getParentRoute: () => groupRoute, path: 'recruit', component: lazyRouteComponent(() => import('./features/console/shell/Placeholder'), 'RecruitTab') });
+const availRoute = createRoute({ getParentRoute: () => groupRoute, path: 'avail', component: lazyRouteComponent(() => import('./features/console/shell/Placeholder'), 'AvailTab') });
+const settingsRoute = createRoute({ getParentRoute: () => groupRoute, path: 'settings', component: lazyRouteComponent(() => import('./features/console/shell/Placeholder'), 'SettingsTab') });
+
+/* グループの管理画面（/g/:id/admin/<区分>/） */
+const isPane = (p: string): p is AdminPane => (ADMIN_PANES as readonly string[]).includes(p);
+const adminRoute = createRoute({
+  getParentRoute: () => groupRoute,
+  path: 'admin',
+  component: lazyRouteComponent(() => import('./features/console/admin/AdminLayout'), 'AdminLayout'),
+});
+/** /g/:id/admin/ は区分へ移る。前の画面の #members などの # が付いていればそれ、無ければ前に見ていた区分、それも無ければメンバー */
+const adminIndexRoute = createRoute({
+  getParentRoute: () => adminRoute,
+  path: '/',
+  beforeLoad: ({ location, params }) => {
+    const old = (p: string) => (p === 'admin' ? 'admins' : p);   // 前の画面の管理者の区分は admin
+    const fromHash = old(location.hash.replace(/^#/, '')), saved = old(load('adminPane'));
+    const pane: AdminPane = isPane(fromHash) ? fromHash : isPane(saved) ? saved : 'members';
+    throw redirect({ to: '/g/$groupId/admin/$pane/', params: { groupId: params.groupId, pane }, hash: '' });
+  },
+});
+const adminPaneRoute = createRoute({
+  getParentRoute: () => adminRoute,
+  path: '$pane',
+  beforeLoad: ({ params }) => { if (!isPane(params.pane)) throw notFound(); },
+  component: lazyRouteComponent(() => import('./features/console/shell/Placeholder'), 'AdminPane'),
+});
+
+const routeTree = rootRoute.addChildren([
+  homeRoute,
+  groupRoute.addChildren([calRoute, recruitRoute, availRoute, settingsRoute, adminRoute.addChildren([adminIndexRoute, adminPaneRoute])]),
+]);
 
 /** 検索の文字（?login=… など）は、文字のまま読み書きする（TanStack Router の既定は JSON として読むので、数字や引用符が変わる） */
 function parseSearch(search: string): Record<string, string> {

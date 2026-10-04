@@ -54,7 +54,7 @@ export default defineConfig(async (): Promise<ViteUserConfig> => {
           test: { name: 'worker', include: ['test/worker/**/*.test.ts'], setupFiles: ['test/worker/setup.ts'] },
         },
         {
-          test: { name: 'client', include: ['test/client/**/*.test.js'], environment: 'node' },
+          test: { name: 'client', include: ['test/client/**/*.test.{js,ts}'], environment: 'node' },
         },
       ],
     },
