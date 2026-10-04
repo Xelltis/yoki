@@ -174,6 +174,7 @@ TypeScript で書き、Vite が組み立てる。ページは 3 つ: 入口（`i
 
 - 使い方の例（予定表・参加希望・日程調整・卓の登録）は Vue の部品で、押して試せる。例の日付は、見る人の手元の暦で「次の月曜」から数える。組み立てのときは決まった日で描き、ブラウザで数え直す（組み立てた HTML と食い違わないように）
 - スクリーンショットは、開発サーバーのサンプルのグループで撮って（`npm run screenshots`）、リポジトリに入れる。サイトの組み立て（GitHub Actions）では、アプリを動かさない
+- アイコンは、元の絵 `brand/yoki.png` 1 枚から `npm run icons`（`website/tools/icons.js`）で書き出し、アプリとサイトの `public/` に同じものを置く。ブラウザ（Playwright）の canvas で縮め、ICO は PNG を詰めて Node で作る。どのページの頭のタグも同じファイルを指す（Worker のページは `routes/html.ts` の `HEAD_ICONS`。テストが確かめる）。manifest の `display` は `browser`（ホーム画面から開いても、Discord のログインがふつうのブラウザで進むように）
 - 検索は VitePress の手元の検索。日本語は語の間に空白が無いので、`Intl.Segmenter` で語に分けて索引を作る
 
 ## 開発とテスト
