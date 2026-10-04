@@ -5,13 +5,13 @@ import { WD, fmtJa } from './dates';
 import { renderDayDetail } from './day';
 import { $, toast } from './dom';
 import { askConfirm } from './modal';
-import { me, needMe } from './model';
+import { me } from './model';
 import { D } from './state';
 
 /* 予定のメモ。押した瞬間に画面へ出し、返事で確定する */
 let memoDay = '';
 export function openMemo(key: string): void {
-  const name = me(); if (!name) { needMe(); return; }
+  const name = me(); if (!name) return;
   memoDay = key;
   const cur = ((D.availNotes || {})[key] || {})[name];
   $('memoTitle').textContent = fmtJa(key) + '　' + name + ' のメモ';
@@ -56,7 +56,7 @@ export function init(): void {
   $('abWeekend').onclick = () => { setWds((d) => d === 0 || d === 6); };
   $('abAll').onclick = () => { setWds(() => true); };
   $('abRun').onclick = () => {
-    const name = me(); if (!name) { needMe(); $('abMsg').textContent = '「あなた」を選んでください。'; return; }
+    const name = me(); if (!name) return;
     const wds: number[] = [];
     document.querySelectorAll<HTMLInputElement>('input.wd').forEach((cb) => { if (cb.checked) wds.push(+cb.value); });
     const form = { name, from: $('abFrom').value, to: $('abTo').value, weekdays: wds, mark: $('abMark').value, keep: $('abKeep').checked };

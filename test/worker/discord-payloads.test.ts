@@ -145,8 +145,8 @@ describe('日程調整の知らせ', () => {
     );
   });
 
-  test('GM に Discord ID が無ければ名前で、GM がいなければ呼ばない。回答が無ければ ◯ は 0', () => {
-    const s = session({ status: '調整中', gm: 'こまち', candidates: ['2026-10-12'] });
+  test('GM に Discord ID が無ければ名前で、GM がいなければ呼ばない。回答が無ければ ◯ は 0。Discord の無い人とゲストは数えない', () => {
+    const s = session({ status: '調整中', gm: 'こまち', members: ['ソラ', 'ゲスト'], candidates: ['2026-10-12'] });
     expect(pollReadyPayload(ctxOf({ appUrl: '' }), s).content).toBe(
       '📝 「港」の日程調整の回答がそろいました。こまち さん\n・10/12（月）　◯ 0/1\n卓予定の「募集・調整」タブで、開催日を選んでください。',
     );

@@ -22,7 +22,7 @@ export function renderSetup(): void {
   box.innerHTML = '<h3>' + mi('flag', 'sm') + 'はじめの 3 ステップ' + '<button type="button" class="btn icon close-guide" data-go="close" aria-label="はじめの 3 ステップを閉じる">' + mi('close') + '</button>' + '</h3><ol class="setup">' +
     step(1, hasMembers ? 'done' : 'now', 'メンバーを登録する', '卓に出る人の名前を入れます。ここで入れた名前が、予定表の列と参加者の候補になります。',
       hasMembers ? '<span class="hint">' + D.members.length + ' 人を登録しています</span>' + (D.isAdmin ? ' <button type="button" class="btn small" data-go="members">開く</button>' : '') : D.isAdmin ? '<button type="button" class="btn primary" data-go="members">' + mi('person_add', 'sm') + 'メンバーを登録</button>' : ask) +
-    step(2, hasDiscord ? 'done' : hasMembers ? 'now' : '', 'Discord を登録する', '管理画面の「知らせ」で卓予定の Bot を Discord サーバーに招き、知らせのチャンネルを選ぶと、卓の案内と開催前の知らせがそのチャンネルに届きます。Discord を使わないなら飛ばせます。',
+    step(2, hasDiscord ? 'done' : hasMembers ? 'now' : '', 'Discord を登録する', '管理画面の「知らせ」で卓予定の Bot を Discord サーバーに招き、知らせのチャンネルを選ぶと、卓の案内と開催前の知らせがそのチャンネルに届きます。知らせが要らないなら飛ばせます。',
       hasDiscord ? '<span class="hint">登録してあります</span>' + (D.isAdmin ? ' <button type="button" class="btn small" data-go="discord">開く</button>' : '') : D.isAdmin ? '<button type="button" class="btn" data-go="discord">' + mi('notifications', 'sm') + 'Discord を登録</button>' : ask) +
     step(3, !hasMembers ? '' : hasSession ? 'done' : 'now', '予定を登録する', 'カレンダーで日を選んで「卓を登録」を押します。日が決まっていなければ、状態を「募集」か「調整中」にします。',
       hasMembers ? (hasSession ? '<span class="hint">' + D.sessions.filter(isActive).length + ' 件の卓があります</span> ' : '') + '<button type="button" class="btn ' + (hasSession ? 'small' : 'primary') + '" data-go="new">' + mi('add', 'sm') + '卓を登録</button>' : '<span class="hint">先にメンバーを登録します</span>') +

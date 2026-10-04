@@ -1,5 +1,5 @@
 // 画面から来る form の読み方と、権限の確かめ方
-import { adminError } from '../lib/errors';
+import { AppError } from '../lib/errors';
 import type { Ctx } from './types';
 
 export type Form = Record<string, unknown>;
@@ -13,7 +13,8 @@ export async function readForm(req: { json: () => Promise<unknown> }): Promise<F
 export const str = (v: unknown) => String(v ?? '').trim();
 export const list = (v: unknown) => (Array.isArray(v) ? v.map((x) => String(x ?? '').trim()).filter(Boolean) : []);
 
-/** 自分のぶんなら誰でも。ほかの人の代わりに入れるのは管理者だけ（GAS 版 requireSelfOrAdmin_） */
-export function requireSelfOrAdmin(ctx: Ctx, name: unknown): void {
-  if (str(name) !== ctx.actor.name && !ctx.actor.isAdmin) throw adminError('ほかの人の代わりに入れること');
+/** 予定・参加希望・日程調整の回答は、本人のぶんだけ入れられる（管理者も、ほかの人の代わりには入れない）。本人の名前を返す */
+export function requireSelf(ctx: Ctx, name: unknown): string {
+  if (str(name) !== ctx.actor.name) throw new AppError(403, '入れられるのは自分のぶんだけです。');
+  return ctx.actor.name;
 }

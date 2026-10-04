@@ -14,15 +14,17 @@ beforeEach(async () => {
 afterEach(() => vi.restoreAllMocks());
 
 describe('予定', () => {
-  test('自分の予定に △ × を付けて外せる。ほかの人のぶんは管理者だけ', async () => {
+  test('自分の予定に △ × を付けて外せる。ほかの人のぶんは、管理者も入れられない', async () => {
     await ok(G.sora, G.id, 'setAvailability', { name: 'ソラ', ymd: T(2), mark: '×' });
     let d = await ok(G.sora, G.id, 'getConsoleData');
     expect(d.avail[T(2)]).toEqual({ ソラ: '×' });
     await ok(G.sora, G.id, 'setAvailability', { name: 'ソラ', ymd: T(2), mark: '' });
     d = await ok(G.sora, G.id, 'getConsoleData');
     expect(d.avail[T(2)]).toBeUndefined();
-    expect((await fail(G.sora, G.id, 'setAvailability', { name: 'こまち', ymd: T(2), mark: '△' })).error).toMatch(/^ADMIN:/);
-    await ok(G.admin, G.id, 'setAvailability', { name: 'こまち', ymd: T(2), mark: '△' });
+    expect(await fail(G.sora, G.id, 'setAvailability', { name: 'こまち', ymd: T(2), mark: '△' })).toEqual({ status: 403, error: '入れられるのは自分のぶんだけです。' });
+    expect((await fail(G.admin, G.id, 'setAvailability', { name: 'こまち', ymd: T(2), mark: '△' })).error).toBe('入れられるのは自分のぶんだけです。');
+    expect((await fail(G.admin, G.id, 'setAvailabilityBulk', { name: 'こまち', from: T(0), to: T(2), mark: '×' })).error).toBe('入れられるのは自分のぶんだけです。');
+    expect((await fail(G.admin, G.id, 'setAvailNote', { name: 'こまち', ymd: T(2), text: 'メモ' })).error).toBe('入れられるのは自分のぶんだけです。');
   });
 
   test('○ は付けられない。範囲の外の日と、卓に入っている日は変えられない', async () => {
@@ -152,19 +154,20 @@ describe('日程調整', () => {
     expect(r.data.log.some((l: any) => l.kind === '日程決定')).toBe(true);
   });
 
-  test('メンバーでない参加者（ゲスト）の回答は、管理者が代わりに入れ、直し、消せる', async () => {
-    await ok(G.admin, G.id, 'saveSession', { id: 'S001', name: '迷宮', gm: 'ひより', members: ['ソラ'], extra: 'ゲスト太郎', status: '調整中' });
-    await ok(G.admin, G.id, 'startPoll', { id: 'S001', dates: [T(5), T(6)] });
+  test('回答は本人だけ。ゲストと Discord の無いメンバーは、管理者も代わりに入れられず、「そろった」にも数えない', async () => {
+    await ok(G.admin, G.id, 'saveMember', { name: 'エマ' });
+    await ok(G.admin, G.id, 'saveSession', { id: 'S001', name: '迷宮', gm: 'ひより', members: ['ソラ', 'エマ'], extra: 'ゲスト太郎', status: '調整中' });
+    await ok(G.admin, G.id, 'startPoll', { id: 'S001', dates: [T(5)] });
     mockBot();
-    const guestRows = async () => (await env.DB.prepare('SELECT date, member_id, guest_name, vote FROM poll_votes WHERE guest_name IS NOT NULL').all()).results;
-    await ok(G.admin, G.id, 'setPollVote', { id: 'S001', ymd: T(5), name: 'ゲスト太郎', vote: '◯' });
-    let r = await ok(G.admin, G.id, 'setPollVote', { id: 'S001', ymd: T(5), name: 'ゲスト太郎', vote: '×' });
-    expect(r.data.sessions[0].votes[T(5)]).toEqual({ ひより: '◯', ゲスト太郎: '×' });
-    expect(await guestRows()).toEqual([{ date: T(5), member_id: null, guest_name: 'ゲスト太郎', vote: '×' }]);
-    r = await ok(G.admin, G.id, 'setPollVote', { id: 'S001', ymd: T(5), name: 'ゲスト太郎', vote: '' });
-    expect(r.message).toBe(fmtDateJa(T(5)) + ' ゲスト太郎: 回答を取り消しました');
-    expect(await guestRows()).toEqual([]);
-    expect(posts).toHaveLength(0);
+    for (const name of ['ゲスト太郎', 'エマ', 'ソラ']) {
+      expect((await fail(G.admin, G.id, 'setPollVote', { id: 'S001', ymd: T(5), name, vote: '◯' })).error).toBe('入れられるのは自分のぶんだけです。');
+      expect((await fail(G.admin, G.id, 'setPollVoteAll', { id: 'S001', name })).error).toBe('入れられるのは自分のぶんだけです。');
+    }
+    // 答えられるのはひよりとソラ。ソラが答えればそろう
+    const r = await ok(G.sora, G.id, 'setPollVote', { id: 'S001', ymd: T(5), name: 'ソラ', vote: '◯' });
+    expect(r).toMatchObject({ ready: true, notified: true });
+    expect(r.data.sessions[0].votes).toEqual({ [T(5)]: { ひより: '◯', ソラ: '◯' } });
+    expect(posts[0]).toContain('◯ 2/2（全員 ◯）');
   });
 
   test('おまかせを取り消すと、自分の回答が全部消える', async () => {

@@ -33,9 +33,9 @@ describe('卓', () => {
     expect(await count('sessions')).toBe(1);
   });
 
-  test('参加希望: 名前が空・知らない操作・GM 本人は断る', async () => {
+  test('参加希望: 自分でない名前・知らない操作・GM 本人は断る', async () => {
     await ok(G.admin, G.id, 'saveSession', { name: '募集の卓', gm: 'ひより', status: '募集' });
-    expect((await fail(G.admin, G.id, 'setInterest', { id: 'S001', name: '', level: 'want' })).error).toBe('上の「あなた」で自分を選んでください。');
+    expect((await fail(G.admin, G.id, 'setInterest', { id: 'S001', name: '', level: 'want' })).error).toBe('入れられるのは自分のぶんだけです。');
     expect((await fail(G.sora, G.id, 'setInterest', { id: 'S001', name: 'ソラ', level: 'maybe' })).error).toBe('操作が不正です: maybe');
     expect((await fail(G.admin, G.id, 'setInterest', { id: 'S001', name: 'ひより', level: 'interest' })).error).toBe('ひより はすでにこの卓のGMです。');
   });
@@ -73,10 +73,10 @@ describe('日程調整', () => {
     expect(await count('poll_votes')).toBe(0);
   });
 
-  test('回答するとき: 名前が空・◯ × でない・読めない日付・過ぎた候補日は断る', async () => {
+  test('回答するとき: 自分でない名前・◯ × でない・読めない日付・過ぎた候補日は断る', async () => {
     await ok(G.admin, G.id, 'startPoll', { id: 'S001', dates: [T(5)] });
     const vote = async (sid: string, form: Form) => (await fail(sid, G.id, 'setPollVote', { id: 'S001', ...form })).error;
-    expect(await vote(G.admin, { ymd: T(5), name: '', vote: '◯' })).toBe('上の「あなた」で自分を選んでください。');
+    expect(await vote(G.admin, { ymd: T(5), name: '', vote: '◯' })).toBe('入れられるのは自分のぶんだけです。');
     // 似た字の ○ は受け付けない
     expect(await vote(G.sora, { ymd: T(5), name: 'ソラ', vote: '○' })).toBe('回答は ◯ か × です。');
     expect(await vote(G.sora, { ymd: 'あした', name: 'ソラ', vote: '◯' })).toBe('日付が読めません: あした');
@@ -85,11 +85,11 @@ describe('日程調整', () => {
     expect(await count('poll_votes')).toBe(1);
   });
 
-  test('おまかせ: 名前が空・◯ のほか・GM でも参加者でもない人・これからの候補日が無いときは断る', async () => {
+  test('おまかせ: 自分でない名前・◯ のほか・GM でも参加者でもない人・これからの候補日が無いときは断る', async () => {
     const all = async (sid: string, form: Form) => (await fail(sid, G.id, 'setPollVoteAll', { id: 'S001', ...form })).error;
     expect(await all(G.sora, { name: 'ソラ' })).toBe('「迷宮」には、これからの候補日がありません。');
     await ok(G.admin, G.id, 'startPoll', { id: 'S001', dates: [T(5)] });
-    expect(await all(G.admin, { name: '' })).toBe('上の「あなた」で自分を選んでください。');
+    expect(await all(G.admin, { name: '' })).toBe('入れられるのは自分のぶんだけです。');
     expect(await all(G.sora, { name: 'ソラ', vote: '×' })).toBe('おまかせで付けられるのは ◯ だけです。');
     expect(await all(G.komachi, { name: 'こまち' })).toBe('こまち は「迷宮」の GM でも参加者でもないので、回答できません。');
     // 候補日が、過ぎた日だけになった
@@ -110,10 +110,10 @@ describe('日程調整', () => {
 });
 
 describe('予定', () => {
-  test('1 マス: 名前が空・メンバーでない人・読めない日付は断る', async () => {
+  test('1 マス: 自分でない名前（空・ゲスト）・読めない日付は断る', async () => {
     const set = async (form: Form) => (await fail(G.admin, G.id, 'setAvailability', form)).error;
-    expect(await set({ name: '', ymd: T(1), mark: '×' })).toBe('名前を選んでください。');
-    expect(await set({ name: 'ゲスト太郎', ymd: T(1), mark: '×' })).toBe('「ゲスト太郎」はメンバーにいません。');
+    expect(await set({ name: '', ymd: T(1), mark: '×' })).toBe('入れられるのは自分のぶんだけです。');
+    expect(await set({ name: 'ゲスト太郎', ymd: T(1), mark: '×' })).toBe('入れられるのは自分のぶんだけです。');
     expect(await set({ name: 'ひより', ymd: '来週', mark: '×' })).toBe('日付が読めません: 来週');
     expect(await count('availability')).toBe(0);
   });

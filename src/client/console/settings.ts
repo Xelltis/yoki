@@ -64,7 +64,7 @@ function renderAdminPane(): void {
   const st = $('admState'), list = D.admins || [];
   st.className = 'adm-state' + (D.isAdmin ? ' on' : '');
   st.textContent = D.isAdmin ? 'あなたは管理者です' : 'あなたは管理者ではありません';
-  $('admLead').textContent = D.isAdmin ? '管理者は、ほかの人のぶんを入れる・卓を消す・メンバーと設定を変える、ができます。' : '管理者の操作が要るときは、管理者に頼んでください。';
+  $('admLead').textContent = D.isAdmin ? '管理者は、卓を消す・メンバーと設定を変える・日程調整の開催日を決める、ができます。' : '管理者の操作が要るときは、管理者に頼んでください。';
   const box = $('admList');
   box.innerHTML = '';
   if (!list.length) box.innerHTML = '<span class="adm-none">名簿はまだ空です。</span>';

@@ -44,12 +44,19 @@ export function sortedActive(): ConsoleSession[] { return sortSessions(active())
 
 /* 日程調整 */
 export function hasPoll(s: ConsoleSession): boolean { return isAdjusting(s) && !!(s.candidates && s.candidates.length); }
+/**
+ * 日程調整に答えられる人。GM と参加者のうち、ログインしたことがあるか、Discord の ID が入っているメンバー（サーバーの pollVoters と同じ）。
+ * 回答は本人だけが入れるので、ゲストと、Discord の ID の無いメンバーは答えられず、数えない
+ */
+export function pollVoters(s: ConsoleSession): string[] {
+  return peopleOf(s).filter((n) => D.members.some((m) => m.name === n && (m.linked || m.hasDiscord)));
+}
 /** その候補日に ◯ を付けた人 */
-export function pollOk(s: ConsoleSession, k: string): string[] { const v = (s.votes || {})[k] || {}; return peopleOf(s).filter((n) => v[n] === '◯'); }
+export function pollOk(s: ConsoleSession, k: string): string[] { const v = (s.votes || {})[k] || {}; return pollVoters(s).filter((n) => v[n] === '◯'); }
 /** これからの候補日に、まだ答えていない日がある人 */
 export function pollPending(s: ConsoleSession): string[] {
   const vs = s.votes || {}, fut = (s.candidates || []).filter((k) => k >= D.today);
-  return peopleOf(s).filter((n) => fut.some((k) => !(vs[k] && vs[k][n])));
+  return pollVoters(s).filter((n) => fut.some((k) => !(vs[k] && vs[k][n])));
 }
 /** 調整中の卓を日ごとに。日程調整中なら候補日、そうでなければ候補の期間。カレンダーと都合表の印に使う */
 export function windowByDay(): Record<string, ConsoleSession[]> {
@@ -136,17 +143,6 @@ export function seriesNames(): string[] {
 }
 
 /* ---- あなた ---- */
-/** 「あなた」（ログインした本人。管理者は代わりに入れる人を選べる） */
-export function me(): string { return $('me').value; }
+/** 「あなた」（ログインした本人）。予定・参加希望・日程調整の回答は、本人のぶんだけ入れる。読み込む前は空 */
+export function me(): string { return D && D.me ? D.me.name : ''; }
 export function isAdmin(): boolean { return !D || D.isAdmin !== false; }
-
-let attnTimer = 0;
-/** 「あなた」が未選択のとき。吹き出しで知らせ、上の選ぶ欄にフォーカスして目立たせる */
-export function needMe(): void {
-  toast('上の「あなた」で自分を選んでください');
-  const sel = $('me');
-  sel.classList.add('attn');
-  sel.focus({ preventScroll: true });
-  clearTimeout(attnTimer);
-  attnTimer = window.setTimeout(() => { sel.classList.remove('attn'); }, 2400);
-}

@@ -3,7 +3,7 @@ import { badRequest, notFound } from '../lib/errors';
 import { normTime, parseYmd } from '../lib/jst';
 import { splitNames, uniq } from '../lib/text';
 import { DATED, PROMOTE, STATUS, STATUS_LIST, type Status } from './constants';
-import { type Form, list, requireSelfOrAdmin, str } from './form';
+import { type Form, list, requireSelf, str } from './form';
 import { sessionCode } from './load';
 import { findSession, peopleOf, readWindow, windowInfo } from './model';
 import { insertPeopleForSeq, type People, peopleOfSession, replacePeople } from './people';
@@ -145,9 +145,7 @@ async function saveSessionDates(ctx: Ctx, form: Form, name: string, raw: string[
 
 /** 募集タブの「参加希望」「興味あり」「取り消す」。片方だけ付く。Discord には送らない */
 export async function setInterest(ctx: Ctx, form: Form) {
-  requireSelfOrAdmin(ctx, form.name);
-  const name = str(form.name);
-  if (!name) throw badRequest('上の「あなた」で自分を選んでください。');
+  const name = requireSelf(ctx, form.name);
   const level = str(form.level) || 'none';
   if (!['want', 'interest', 'none'].includes(level)) throw badRequest('操作が不正です: ' + level);
   const s = findSession(ctx, form.id);

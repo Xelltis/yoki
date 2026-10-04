@@ -5,7 +5,7 @@ import { openMemo } from './avail-input';
 import { renderCal } from './calendar';
 import { WD, fmtJa, holidayName, parseYmd } from './dates';
 import { $, esc, hit, load, mi, store, toast } from './dom';
-import { active, candidatesOf, hasPoll, isRecruit, me, memberOrder, needMe, sortSessions, targetPeople, isAdjusting, windowByDay } from './model';
+import { active, candidatesOf, hasPoll, isRecruit, me, memberOrder, sortSessions, targetPeople, isAdjusting, windowByDay } from './model';
 import { D } from './state';
 
 /** 絞り込み。members・wds は「絞り込み」の中、hol・free・mineOnly は表の上のチップ */
@@ -203,7 +203,7 @@ function setFold(id: string, open: boolean): void {
 }
 /** 自分の印を変える。押した瞬間に画面へ出し、保存できなかったら戻す。focus は描き直したあとに戻すボタン */
 function setMyMark(key: string, next: Mark, focus: string): void {
-  const name = me(); if (!name) { needMe(); return; }
+  const name = me(); if (!name) return;
   const cur = (D.avail[key] || {})[name] || '';
   if (next === markIn(D.avail[key] || {}, name)) return;
   if (!D.avail[key]) D.avail[key] = {};
@@ -232,7 +232,7 @@ export function init(): void {
   setFold('availFilter', load('fold.availFilter') === '1');
   setFold('availBulk', load('fold.availBulk') === '1');
   $('afMe').onclick = () => {
-    const n = me(); if (!n) { needMe(); return; }
+    const n = me(); if (!n) return;
     document.querySelectorAll<HTMLInputElement>('input.afm').forEach((cb) => { cb.checked = cb.value === n; });
     readFilter();
   };

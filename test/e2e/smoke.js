@@ -230,11 +230,9 @@ await withDevServer(async (base) => {
       assert.equal(await page.isVisible('#adminLink'), true, '管理者には管理画面への入口が出る');
     });
 
-    await step('管理者はほかの人を選んで代わりに入れられる（代理の札が出る）', async () => {
-      await page.selectOption('#me', 'ソラ');
-      assert.equal(await page.isVisible('#proxyBadge'), true);
-      await page.selectOption('#me', 'ひより');
-      assert.equal(await page.isVisible('#proxyBadge'), false);
+    await step('「あなた」はログインした人で、ほかの人には切り替えられない', async () => {
+      assert.equal(await page.textContent('#me'), 'ひより');
+      assert.equal(await page.locator('select#me, #proxyBadge').count(), 0);
     });
 
     await step('「更新」で読み直せる', async () => {
