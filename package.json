@@ -24,6 +24,7 @@
     "site:build": "vitepress build website",
     "site:preview": "vitepress preview website",
     "screenshots": "node website/tools/screenshots.js",
+    "compare-shots": "node website/tools/compare-shots.js",
     "og-image": "node website/tools/og-image.js",
     "icons": "node website/tools/icons.js"
   },
@@ -40,7 +41,9 @@
     "@vitest/coverage-istanbul": "^4.1.11",
     "lefthook": "^2.1.16",
     "oxlint": "^1.86.0",
+    "pixelmatch": "^7.2.0",
     "playwright": "^1.63.0",
+    "pngjs": "^7.0.0",
     "typescript": "^7.0.2",
     "vite": "^8.3.2",
     "vitepress": "^2.0.0-alpha.20",

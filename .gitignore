@@ -4,6 +4,9 @@ dist/
 coverage/
 website/.vitepress/cache/
 
+# スクリーンショットを見比べる用（npm run screenshots -- --out .shots/…）
+.shots/
+
 # wrangler（ローカルの D1 など）
 .wrangler/
 
