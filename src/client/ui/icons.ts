@@ -3,7 +3,7 @@
 export const ICON_NAMES = [
   'add', 'arrow_back', 'arrow_forward', 'block', 'calendar_month', 'campaign', 'check', 'chevron_left', 'chevron_right', 'close',
   'dark_mode', 'date_range', 'edit', 'edit_calendar', 'event', 'event_available', 'expand_more', 'flag', 'group', 'help', 'history', 'how_to_vote',
-  'light_mode', 'login', 'logout', 'menu_book', 'notifications', 'open_in_new', 'person_add', 'play_circle', 'refresh', 'settings',
+  'light_mode', 'login', 'logout', 'menu_book', 'notifications', 'open_in_new', 'person', 'person_add', 'play_circle', 'refresh', 'settings',
   'shield', 'sticky_note_2', 'task_alt', 'today', 'warning',
 ] as const;
 

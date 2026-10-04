@@ -49,7 +49,7 @@ const calRoute = createRoute({
 });
 const recruitRoute = createRoute({ getParentRoute: () => groupRoute, path: 'recruit', component: lazyRouteComponent(() => import('./features/console/recruit/RecruitTab'), 'RecruitTab') });
 const availRoute = createRoute({ getParentRoute: () => groupRoute, path: 'avail', component: lazyRouteComponent(() => import('./features/console/avail/AvailTab'), 'AvailTab') });
-const settingsRoute = createRoute({ getParentRoute: () => groupRoute, path: 'settings', component: lazyRouteComponent(() => import('./features/console/shell/Placeholder'), 'SettingsTab') });
+const settingsRoute = createRoute({ getParentRoute: () => groupRoute, path: 'settings', component: lazyRouteComponent(() => import('./features/console/settings/SettingsTab'), 'SettingsTab') });
 
 /* グループの管理画面（/g/:id/admin/<区分>/） */
 const isPane = (p: string): p is AdminPane => (ADMIN_PANES as readonly string[]).includes(p);
