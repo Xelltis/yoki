@@ -353,7 +353,8 @@ await withDevServer(async (base) => {
       await page.click('#opLegal button[type=submit]');
       await page.waitForSelector('#lgTermsState >> text=既定の文', { timeout: 15000 });
       await page.goto(base);
-      assert.equal(await page.isVisible('.foot a[href="/terms"]'), true, '入口の下にリンクがある');
+      // 入口は React で描くので、描き終わるのを待つ
+      await page.waitForSelector('.foot a[href="/terms"]', { timeout: 15000 });
       await main();
       await tab('settings');
       assert.equal(await page.isVisible('#tab-settings a[href="/privacy"]'), true, '設定タブにリンクがある');
