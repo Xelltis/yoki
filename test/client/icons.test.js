@@ -53,3 +53,14 @@ test('manifest のアイコンがあり、大きさが合う。maskable も 1 �
   }
   expect(m.icons.filter((i) => i.purpose === 'maskable')).toHaveLength(1);
 });
+
+test('サイトも、同じ絵のファビコンとロゴを参照し、そのファイルがある', () => {
+  const config = read('website/.vitepress/config.ts');
+  const files = [...config.matchAll(/base \+ '([^']+\.(?:ico|png))'/g)].map((m) => m[1]).filter((f) => f !== 'og.png');
+  expect(files).toEqual(['favicon.ico', 'icon-192.png', 'apple-touch-icon.png']);
+  expect(config).toContain("logo: '/icon-192.png'");
+  for (const f of files) {
+    expect(fs.readFileSync(path.join(root, 'website/public', f)).equals(fs.readFileSync(path.join(root, PUBLIC, f))), f).toBe(true);
+  }
+  expect(fs.existsSync(path.join(root, 'website/public/icon.png')), '古いアイコンは消した').toBe(false);
+});

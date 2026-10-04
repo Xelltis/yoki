@@ -31,7 +31,10 @@ export default defineConfig({
   },
   sitemap: { hostname: SITE_URL },
   head: [
-    ['link', { rel: 'icon', type: 'image/png', href: base + 'icon.png' }],
+    // アイコンは npm run icons が brand/yoki.png から書き出す（アプリと同じ絵）
+    ['link', { rel: 'icon', href: base + 'favicon.ico', sizes: '32x32' }],
+    ['link', { rel: 'icon', type: 'image/png', href: base + 'icon-192.png', sizes: '192x192' }],
+    ['link', { rel: 'apple-touch-icon', href: base + 'apple-touch-icon.png' }],
     ['meta', { name: 'theme-color', content: '#0b111b' }],
     ['link', { rel: 'preconnect', href: 'https://fonts.googleapis.com' }],
     ['link', { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' }],
@@ -51,7 +54,7 @@ export default defineConfig({
     ];
   },
   themeConfig: {
-    logo: '/icon.png',
+    logo: '/icon-192.png',
     nav: [
       { text: '始め方', link: '/guide/start' },
       { text: '使い方', link: '/guide/availability', activeMatch: '^/guide/(?!start)' },
