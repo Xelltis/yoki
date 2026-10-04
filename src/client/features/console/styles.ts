@@ -41,5 +41,9 @@ export function personChip(gm: boolean, unknown: boolean): string {
 export const row2 = 'mt-4';
 /** 押したあとの結果の小さな字 */
 export const res = 'text-12 text-muted tabular-nums';
+/** チェックの札（曜日・メンバー。選ぶと水色）。並べる枠は checkPills */
+export const checkPill = 'm-0 inline-flex cursor-pointer items-center gap-6 rounded-full border border-line-strong bg-card py-3 pr-10 pl-8 text-13 font-normal '
+  + 'has-checked:border-accent-line has-checked:bg-accent-soft has-checked:text-accent-text ';
+export const checkPills = 'mb-10 flex flex-wrap gap-6';
 /** 予定のメモがあることを示す点 */
 export const mdot = 'pointer-events-none absolute top-3 left-3 h-7 w-7 rounded-[50%] bg-accent';

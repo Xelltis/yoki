@@ -6,6 +6,7 @@ import { askConfirm } from '../../../ui/confirm';
 import { Icon } from '../../../ui/Icon';
 import type { IconName } from '../../../ui/icons';
 import { Modal } from '../../../ui/Modal';
+import { formActions, wideBar, wideBarTitle } from '../../../ui/modalParts';
 import { useStore } from '../../../ui/store';
 import { toast } from '../../../ui/toast';
 import { openPoll } from '../actions';
@@ -16,6 +17,7 @@ import { byId, hasPoll, isActive, isRecruit, me, peopleOf, pickLabel, sortSessio
 import { hookFor, kindSet, seriesHook, snEntry } from '../model/notify';
 import { isTmp, TMP, withoutSession, withoutTmp, withSessions } from '../model/optimistic';
 import { type PromoteAsk, PromoteModal } from './PromoteModal';
+import { checkPill, checkPills } from '../styles';
 
 /** 窓の入力 */
 type Fields = {
@@ -289,9 +291,9 @@ export function FormModal() {
     <>
       <Modal id="formModal" open={open} onClose={close}>
         <div className="box wide" role="dialog" aria-modal="true" aria-labelledby="formTitle" tabIndex={-1} ref={boxRef}>
-          <div className="bar">
-            <h2 id="formTitle">{f.pick ? '卓を変更' : '卓を登録'}</h2>
-            <button type="button" className="btn small" id="formClose" style={{ marginLeft: 'auto' }} onClick={close}><Icon name="close" size="sm" />閉じる</button>
+          <div className={wideBar}>
+            <h2 className={wideBarTitle} id="formTitle">{f.pick ? '卓を変更' : '卓を登録'}</h2>
+            <button type="button" className="btn small ml-auto" id="formClose" onClick={close}><Icon name="close" size="sm" />閉じる</button>
           </div>
           <form id="f" onSubmit={(ev) => { ev.preventDefault(); submit(null); }}>
             <label htmlFor="pick">編集する卓 <small>新しく登録するなら「（新規登録）」のまま</small></label>
@@ -320,15 +322,24 @@ export function FormModal() {
                 </select>
               </div>
             </div>
-            <div id="flowGuide" className="flow" aria-live="polite" hidden={!flow}>
+            {/* 状態ごとの手順。いまの段を水色で示す */}
+            <div id="flowGuide" className="mt-14 mb-2 rounded-lg border border-accent-line bg-accent-soft px-14 py-12" aria-live="polite" hidden={!flow}>
               {flow && (
                 <>
-                  <div className="flow-head"><Icon name={flow.icon} size="sm" /><b>{'「' + st + '」は、' + flow.lead}</b>{flow.steps.length > 0 && <span className="hint">この順で進めます</span>}</div>
+                  <div className="flex flex-wrap items-center gap-x-8 gap-y-4 text-14 text-fg">
+                    <Icon name={flow.icon} size="sm" className="text-accent-text" /><b>{'「' + st + '」は、' + flow.lead}</b>{flow.steps.length > 0 && <span className="hint text-12">この順で進めます</span>}
+                  </div>
                   {flow.steps.length > 0 && (
-                    <ol>
+                    <ol className="mt-10 mb-0 grid list-none gap-6 p-0">
                       {flow.steps.map((t, i) => {
                         const cls = now < 0 ? '' : i < now ? 'done' : i === now ? 'now' : '';
-                        return <li className={cls} key={i}><span className="n">{cls === 'done' ? <Icon name="check" size="sm" /> : i + 1}</span><div>{t}{cls === 'now' && <span className="tag">いまここ</span>}</div></li>;
+                        const num = cls === 'now' ? 'border-transparent bg-accent-strong text-accent-ink' : cls === 'done' ? 'border-transparent bg-ok text-ok-text' : 'border-line-strong bg-card text-muted';
+                        return (
+                          <li className={'grid grid-cols-[22px_minmax(0,1fr)] items-start gap-8 text-13 leading-[1.6] text-pretty ' + (cls === 'now' ? 'font-semibold text-fg' : cls === 'done' ? 'text-muted' : 'text-fg')} key={i}>
+                            <span className={'mt-1 inline-flex h-22 w-22 items-center justify-center rounded-[50%] border text-12 font-bold ' + num}>{cls === 'done' ? <Icon name="check" size="sm" /> : i + 1}</span>
+                            <div>{t}{cls === 'now' && <span className="ml-6 inline-block rounded-full bg-accent-strong px-8 align-[1px] text-11 leading-[18px] font-bold text-accent-ink">いまここ</span>}</div>
+                          </li>
+                        );
                       })}
                     </ol>
                   )}
@@ -336,16 +347,19 @@ export function FormModal() {
               )}
             </div>
             <div className="row" id="dateRow" hidden={rec || adj}>
-              <div><label htmlFor="date">開催日 <small>まだ決まっていなければ状態を「募集」に</small></label><input type="date" id="date" ref={dateRef} value={f.date} onChange={(ev) => update({ date: ev.target.value })} /></div>
+              <div className="max-sm:basis-full"><label htmlFor="date">開催日 <small>まだ決まっていなければ状態を「募集」に</small></label><input type="date" id="date" ref={dateRef} value={f.date} onChange={(ev) => update({ date: ev.target.value })} /></div>
               <div className="narrow"><label htmlFor="start">開始</label><input type="time" id="start" step="300" value={f.start} onChange={(ev) => update({ start: ev.target.value })} /></div>
               <div className="narrow"><label htmlFor="end">終了</label><input type="time" id="end" step="300" value={f.end} onChange={(ev) => update({ end: ev.target.value })} /></div>
             </div>
-            <div id="conflictWarn" className="warn-box" hidden={!conflict}>{conflict && <><Icon name="warning" size="sm" /><span>{conflict}</span></>}</div>
-            <div id="moreDatesWrap" hidden={moreHidden}>
+            {/* 同じ日の重なりや × の注意。止めはせず、気づけるようにするだけ */}
+            <div id="conflictWarn" className="mt-12 flex items-start gap-8 rounded-md bg-soon px-12 py-10 text-13 leading-[1.6] text-fg" hidden={!conflict}>
+              {conflict && <><Icon name="warning" size="sm" className="mt-2 text-violet" /><span>{conflict}</span></>}
+            </div>
+            <div className="mt-8" id="moreDatesWrap" hidden={moreHidden}>
               <div id="moreDates">
                 {!moreHidden && f.more.map((x) => (
-                  <div className="dline" key={x.key}>
-                    <input type="date" className="xdate" aria-label="まとめて登録する日" value={x.v} onChange={(ev) => update({ more: f.more.map((y) => (y.key === x.key ? { ...y, v: ev.target.value } : y)) })} />
+                  <div className="mt-6 flex items-center gap-6" key={x.key}>
+                    <input type="date" className="xdate max-w-200" aria-label="まとめて登録する日" value={x.v} onChange={(ev) => update({ more: f.more.map((y) => (y.key === x.key ? { ...y, v: ev.target.value } : y)) })} />
                     <button type="button" className="btn small xdel" title="この日を外す" onClick={() => update({ more: f.more.filter((y) => y.key !== x.key) })}>×</button>
                   </div>
                 ))}
@@ -365,9 +379,9 @@ export function FormModal() {
             </div>
             <fieldset id="membersRow" hidden={rec}>
               <legend>参加者</legend>
-              <div className="members" id="membersBox">
+              <div className={checkPills} id="membersBox">
                 {d.members.length ? d.members.map((m) => (
-                  <label key={m.name}>
+                  <label className={checkPill} key={m.name}>
                     <input type="checkbox" value={m.name} className="m" checked={f.members.indexOf(m.name) >= 0}
                       onChange={(ev) => update({ members: ev.target.checked ? f.members.concat(m.name) : f.members.filter((x) => x !== m.name) })} />
                     {m.name}
@@ -376,20 +390,20 @@ export function FormModal() {
               </div>
               <input type="text" id="extra" placeholder="メンバーに無い人は、ここに「、」区切りで" aria-label="メンバーに無い参加者" value={f.extra} onChange={(ev) => update({ extra: ev.target.value })} />
             </fieldset>
-            <div id="wantInfo" hidden={!wantInfo}>{wantInfo && <>{wantInfo.text}{wantInfo.promote && <><br />{'状態を「' + st + '」にして保存すると、参加希望の人が参加者に加わります。'}</>}</>}</div>
+            <div className="mt-12 rounded-md bg-soon px-12 py-8 text-13" id="wantInfo" hidden={!wantInfo}>{wantInfo && <>{wantInfo.text}{wantInfo.promote && <><br />{'状態を「' + st + '」にして保存すると、参加希望の人が参加者に加わります。'}</>}</>}</div>
             <label htmlFor="place">場所 / URL</label><input type="text" id="place" value={f.place} onChange={(ev) => update({ place: ev.target.value })} />
             <label htmlFor="memo">メモ</label><textarea id="memo" value={f.memo} onChange={(ev) => update({ memo: ev.target.value })} />
             <div className="btns">
               <label><input type="checkbox" id="notify" disabled={!can} checked={f.notify} onChange={(ev) => update({ notify: ev.target.checked })} /> Discord に知らせる <span className="hint" id="notifyHint">{notifyHint}</span></label>
             </div>
-            <div className="form-actions">
-              <div className="btns">
+            <div className={formActions}>
+              <div className="btns mt-0">
                 <button type="submit" className="btn primary" id="save" disabled={busy}>{saveLabel}</button>
                 <button type="button" className="btn" id="cont" hidden={!s} disabled={busy} title="GM・参加者・時間・場所を引き継いで、翌日の卓を新しく登録する" onClick={() => { if (f.pick) continueFrom(f.pick); }}>続けて登録（翌日・設定を引き継ぐ）</button>
                 <button type="button" className="btn" id="clear" onClick={() => fill('')}>新規に戻す</button>
                 <button type="button" className="btn danger" id="del" hidden={!s} disabled={busy} onClick={remove}>この卓を削除</button>
               </div>
-              <div id="msg" role="status" className={msg ? msg.cls : ''}>{msg ? msg.text : ''}</div>
+              <div id="msg" role="status" className={'mt-6 empty:hidden' + (msg && msg.cls === 'ok' ? ' text-ok-text' : msg && msg.cls === 'err' ? ' text-err-text' : '')}>{msg ? msg.text : ''}</div>
             </div>
           </form>
         </div>

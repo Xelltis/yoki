@@ -3,7 +3,7 @@ import { useState } from 'react';
 import type { ConsoleData, ConsoleSession, RpcResult } from '../../../../shared/api';
 import { Icon } from '../../../ui/Icon';
 import { Modal } from '../../../ui/Modal';
-import { formActions, wideBar, wideBarTitle } from '../../../ui/modal';
+import { formActions, wideBar, wideBarTitle } from '../../../ui/modalParts';
 import { useStore } from '../../../ui/store';
 import { toast } from '../../../ui/toast';
 import { discordSend, failToast } from '../api/discord';

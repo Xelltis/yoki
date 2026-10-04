@@ -22,26 +22,16 @@ details.howto .howto-body p:last-child { margin-bottom: 0; }
 
 
 /* 同じ日の重なりや × の注意。止めはせず、気づけるようにするだけ */
-.warn-box { display: flex; align-items: flex-start; gap: 8px; margin-top: 12px; padding: 10px 12px; border-radius: var(--radius-md); background: var(--soon); color: var(--text); font-size: 13px; line-height: 1.6; }
-.warn-box .material-icons { color: var(--violet); margin-top: 2px; }
 
 
 
 
 /* ---- 募集・調整 ---- */
-.bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 24px 0 10px; }
-.bar:first-of-type { margin-top: 0; }
-.bar h2 { margin: 0; display: inline-flex; align-items: center; gap: 6px; }
-#wantInfo { margin-top: 12px; padding: 8px 12px; border-radius: var(--radius-md); background: var(--soon); font-size: 13px; }
 
 /* ---- 表（土台は styles/base.css・styles/components.css） ---- */
 #matrix th { white-space: nowrap; }
 .bulk { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .bulk .cnt { font-weight: 700; min-width: 5em; }
-.members { display: inline-flex; flex-wrap: wrap; gap: 6px; }
-.members label { display: inline-flex; align-items: center; gap: 6px; margin: 0; padding: 3px 10px 3px 8px; border: 1px solid var(--line-strong); border-radius: var(--radius-pill); font-size: 13px; font-weight: normal; cursor: pointer; background: var(--card); }
-.members label:has(input:checked) { background: var(--accent-soft); border-color: var(--accent-line); color: var(--accent-text); }
-.members { display: flex; margin-bottom: 10px; }
 
 #matrix td.nw, #matrix th { white-space: nowrap; }
 /* 参加者・送り先・結果は、狭い画面でも 1 文字ずつ折り返さない（表は横にずらせる） */
@@ -149,20 +139,6 @@ details.howto .howto-body p:last-child { margin-bottom: 0; }
   .ntx td.what { padding-right: 62px; }
   .ntx td.sw { position: absolute; top: 10px; right: 0; width: auto; }
 }
-/* 卓の登録の窓: 状態ごとの手順。いまの段を水色で示す */
-.flow { margin: 14px 0 2px; padding: 12px 14px 12px; border: 1px solid var(--accent-line); border-radius: var(--radius-lg); background: var(--accent-soft); }
-.flow[hidden] { display: none; }
-.flow-head { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; font-size: 14px; color: var(--text); }
-.flow-head .material-icons { color: var(--accent-text); }
-.flow-head .hint { font-size: 12px; }
-.flow ol { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 6px; }
-.flow li { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 8px; align-items: start; font-size: 13px; line-height: 1.6; color: var(--text); text-wrap: pretty; }
-.flow li .n { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; margin-top: 1px; border-radius: 50%; border: 1px solid var(--line-strong); background: var(--card); font-size: 12px; font-weight: 700; color: var(--muted); }
-.flow li.now { font-weight: 600; }
-.flow li.now .n { border-color: transparent; background: var(--accent-strong); color: var(--accent-ink); }
-.flow li.done { color: var(--muted); }
-.flow li.done .n { border-color: transparent; background: var(--ok); color: var(--ok-text); }
-.flow .tag { display: inline-block; margin-left: 6px; padding: 0 8px; border-radius: var(--radius-pill); background: var(--accent-strong); color: var(--accent-ink); font-size: 11px; font-weight: 700; line-height: 18px; vertical-align: 1px; }
 #kwCard .kw + .kw { margin-top: 18px; padding-top: 6px; border-top: 1px solid var(--line); }
 .settings .when { margin-top: 12px; }
 .settings .when span.f { display: block; font-weight: 600; font-size: 13px; margin-bottom: 6px; }
@@ -176,27 +152,15 @@ details.howto .howto-body p:last-child { margin-bottom: 0; }
 #snNow { margin: 10px 0 0; }
 
 /* ---- フォーム ---- */
-.dline { display: flex; gap: 6px; align-items: center; margin-top: 6px; } .dline input { max-width: 200px; }
-#moreDatesWrap { margin-top: 8px; }
-#msg, #mmsg { margin-top: 8px; min-height: 1.4em; } #msg.ok, #mmsg.ok { color: var(--ok-text); } #msg.err, #mmsg.err { color: var(--err-text); }
-#msg:empty, #mmsg:empty { display: none; }
-#loginMsg { margin-top: 8px; min-height: 1.4em; color: var(--err-text); }
 
-/* ---- 窓（土台は styles/components.css）。フォームの窓の見出しと下の帯 ---- */
-.modal .box.wide .bar { position: sticky; top: 0; z-index: var(--z-sticky); margin: 0 -22px 4px; padding: 14px 22px 12px; background: var(--card); border-bottom: 1px solid var(--line); }
-.modal .box.wide .bar h2 { margin: 0; font-size: 17px; }
-.form-actions { position: sticky; bottom: 0; z-index: var(--z-sticky); margin: 16px -22px 0; padding: 12px 22px 16px; background: var(--card); border-top: 1px solid var(--line); }
-.form-actions .btns { margin-top: 0; }
-.form-actions #msg { margin-top: 6px; min-height: 0; }
+#mmsg { margin-top: 8px; min-height: 1.4em; } #mmsg.ok { color: var(--ok-text); } #mmsg.err { color: var(--err-text); }
+#mmsg:empty { display: none; }
 
 
 
 /* ---- 幅ごとの組み替え ---- */
 @media (max-width: 600px) {
   .page-head h1 { font-size: 20px; }
-  #dateRow > div:first-child { flex-basis: 100%; }
-  .modal .box.wide .bar { margin: 0 -16px 4px; padding: 14px 16px 12px; }
-  .form-actions { margin: 16px -16px 0; padding: 12px 16px max(16px, env(safe-area-inset-bottom)); }
 }
 /* 幅の狭いスマホでは、読み込んだ時刻を隠して点だけ残す（シートの名前を残すため）。時刻は更新の吹き出しに出る */
 }
