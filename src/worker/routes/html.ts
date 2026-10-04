@@ -3,11 +3,14 @@ import { type AdminLegal, LEGAL_KINDS, LEGAL_TITLES, type LegalKind } from '../.
 import { fmtDateLong } from '../lib/jst';
 import { esc, inline, renderDoc } from '../lib/markup';
 
+/** どのページにも付ける頭のタグ（ファビコン・ホーム画面のアイコン・manifest。画面の index.html と同じ） */
+const HEAD_ICONS = '<link rel="icon" href="/favicon.ico" sizes="32x32"><link rel="icon" href="/icon-192.png" type="image/png" sizes="192x192"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><link rel="manifest" href="/manifest.webmanifest"><meta name="theme-color" content="#0b111b">';
+
 /** お知らせのページ。どのページにも、次に行く先のリンクを 1 つ付ける */
 export function noticePage(title: string, message: string, link: { href: string; label: string }): string {
   return `<!doctype html>
 <html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>${esc(title)} - 卓予定</title><link rel="icon" href="/icon.png">
+<title>${esc(title)} - 卓予定</title>${HEAD_ICONS}
 <style>
   :root { color-scheme: light dark; }
   body { margin: 0; min-height: 100vh; display: grid; place-items: center; font: 15px/1.7 system-ui, sans-serif; background: #f3f5f8; color: #1d2433; }
@@ -26,7 +29,7 @@ export function legalPage(kind: LegalKind, legal: AdminLegal): string {
   const links = LEGAL_KINDS.map((k) => (k === kind ? '<span>' + LEGAL_TITLES[k] + '</span>' : '<a href="/' + k + '">' + LEGAL_TITLES[k] + '</a>')).join('') + '<a href="/">卓予定の入口へ</a>';
   return `<!doctype html>
 <html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>${title} - 卓予定</title><link rel="icon" href="/icon.png">
+<title>${title} - 卓予定</title>${HEAD_ICONS}
 <style>
   :root { color-scheme: light dark; --bg: #f3f5f8; --card: #fff; --text: #1d2433; --muted: #5b6577; --line: #e2e6ed; --link: #0e7490; }
   @media (prefers-color-scheme: dark) { :root { --bg: #0b0f16; --card: #151b26; --text: #e6ebf2; --muted: #9aa4b5; --line: #273041; --link: #22d3ee; } }

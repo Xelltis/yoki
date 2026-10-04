@@ -1,0 +1,16 @@
+{
+  "name": "卓予定",
+  "short_name": "卓予定",
+  "description": "TRPG の卓の予定を、Discord サーバーの仲間と決める Web アプリ",
+  "lang": "ja",
+  "start_url": "/",
+  "scope": "/",
+  "display": "browser",
+  "background_color": "#f2f4f7",
+  "theme_color": "#0b111b",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
