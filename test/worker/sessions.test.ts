@@ -1,7 +1,7 @@
 // 卓の登録・変更・削除・参加希望（GAS 版 scheduler.test.js の §6・10・24・29・33・38・43・45）
 import { env } from 'cloudflare:test';
 import { beforeEach, describe, expect, test } from 'vitest';
-import { addDays } from '../../src/worker/lib/jst';
+import { addDays, stampText } from '../../src/worker/lib/jst';
 import { fail, ok, setupGroup, today } from './helpers';
 
 let G: Awaited<ReturnType<typeof setupGroup>>;
@@ -93,6 +93,36 @@ describe('登録と更新', () => {
     await ok(G.admin, G.id, 'saveSession', { id: 'S001', name: '迷宮', gm: 'ひより', members: ['ソラ'], status: '開催', date: T(5) });
     expect(await env.DB.prepare('SELECT count(*) AS n FROM poll_votes').first('n')).toBe(0);
   });
+
+  test('調整中のまま直すと、候補日・回答・回答そろいの印は残る。募集のまま直すと、参加確認の印は残る', async () => {
+    await ok(G.admin, G.id, 'saveSession', { name: '迷宮', gm: 'ひより', members: ['ソラ'], status: '調整中' });
+    await ok(G.admin, G.id, 'startPoll', { id: 'S001', dates: [T(5), T(6)] });
+    await ok(G.admin, G.id, 'saveSession', { name: '募集の卓', gm: 'こまち', status: '募集' });
+    const at = '2026-01-01T00:00:00.000Z';
+    await env.DB.prepare('UPDATE sessions SET poll_ready_at = ?1, asked_at = ?1').bind(at).run();
+    let r = await ok(G.admin, G.id, 'saveSession', { id: 'S001', name: '迷宮（改）', gm: 'ひより', members: ['ソラ'], status: '調整中' });
+    expect(sessionOf(r, 'S001')).toMatchObject({ name: '迷宮（改）', candidates: [T(5), T(6)], votes: { [T(5)]: { ひより: '◯' }, [T(6)]: { ひより: '◯' } } });
+    r = await ok(G.admin, G.id, 'saveSession', { id: 'S002', name: '募集の卓', gm: 'こまち', status: '募集', memo: '初心者歓迎' });
+    expect(sessionOf(r, 'S002')).toMatchObject({ memo: '初心者歓迎', asked: stampText(at) });
+    // 調整中の卓は参加確認の印を、募集の卓は回答そろいの印を持たない
+    const rows = (await env.DB.prepare('SELECT seq, poll_ready_at, asked_at FROM sessions ORDER BY seq').all()).results;
+    expect(rows).toEqual([{ seq: 1, poll_ready_at: at, asked_at: null }, { seq: 2, poll_ready_at: null, asked_at: at }]);
+  });
+
+  test('知らない状態は「開催」として読む（旧い版の「予定」も）', async () => {
+    const r = await ok(G.sora, G.id, 'saveSession', { name: '旧い卓', date: T(2), status: '予定' });
+    expect(sessionOf(r, 'S001')).toMatchObject({ status: '開催', date: T(2) });
+    expect((await fail(G.sora, G.id, 'saveSession', { name: 'x', status: '予定' })).error).toContain('開催日を入れてください');
+  });
+
+  test('まとめての登録は、GM がいなくてもよい。参加者は全部の回に入る（空の名前は飛ばす）', async () => {
+    const r = await ok(G.sora, G.id, 'saveSession', { name: '練習会', members: ['ソラ', null, ''], extra: 'こまち', dates: [T(10), T(3), T(3)], status: '開催' });
+    expect(r.count).toBe(2);
+    expect(r.data.sessions.map((s: any) => [s.name, s.date, s.gm, s.members])).toEqual([
+      ['練習会', T(3), '', ['ソラ', 'こまち']],
+      ['練習会 #2', T(10), '', ['ソラ', 'こまち']],
+    ]);
+  });
 });
 
 describe('参加希望・興味あり', () => {
@@ -109,6 +139,16 @@ describe('参加希望・興味あり', () => {
   test('募集中でない卓には付けられない', async () => {
     await ok(G.admin, G.id, 'saveSession', { name: '開催', gm: 'ひより', status: '開催', date: T(3) });
     expect((await fail(G.sora, G.id, 'setInterest', { id: 'S001', name: 'ソラ', level: 'want' })).error).toContain('募集中ではありません');
+  });
+
+  test('GM のいない卓にも付けられる。操作を省くと取り消し', async () => {
+    await ok(G.admin, G.id, 'saveSession', { name: '募集', status: '募集' });
+    let r = await ok(G.sora, G.id, 'setInterest', { id: 'S001', name: 'ソラ', level: 'interest' });
+    expect(r.message).toBe('「募集」に興味ありを付けました: ソラ');
+    expect(sessionOf(r, 'S001')).toMatchObject({ gm: '', interest: ['ソラ'] });
+    r = await ok(G.sora, G.id, 'setInterest', { id: 'S001', name: 'ソラ' });
+    expect(r).toMatchObject({ level: 'none', message: '「募集」への希望を取り消しました: ソラ' });
+    expect(sessionOf(r, 'S001').interest).toEqual([]);
   });
 });
 

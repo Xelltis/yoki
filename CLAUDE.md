@@ -28,6 +28,7 @@
 ## 変えたら確かめること
 
 - いつも: `npm test` と `npm run typecheck`
+- サーバー（`src/worker`）を変えたら: `npm run test:coverage`。カバレッジは 100% を保つ（下回ると失敗する）。外すのは、テストの環境で動かせない道だけ（README の「テスト」）
 - 画面（`src/client/`）を変えたら: `npm run e2e`。見た目が変わったら `npm run screenshots` で撮り直し、画像もコミットする
 - サイト（`website/`）を変えたら: `npm run site:build`
 - 表（D1）を変えたら: `migrations/` に番号の続くファイルを足す。すでにあるファイルは書き換えない

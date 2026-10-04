@@ -47,6 +47,34 @@ describe('まとめての変更', () => {
     expect(r.message).toContain('参加希望の人を参加者に加えました: ソラ（B）');
   });
 
+  test('「中止」にすると、期間と日程調整の回答が消える。参加希望は参加者に移らない', async () => {
+    await ok(G.admin, G.id, 'saveSession', { id: 'S002', name: 'B', gm: 'こまち', status: '募集', windowFrom: T(5), windowTo: T(9) });
+    await ok(G.admin, G.id, 'saveSession', { name: 'C', gm: 'ひより', members: ['ソラ'], status: '調整中' });
+    await ok(G.admin, G.id, 'startPoll', { id: 'S003', dates: [T(5)] });
+    const r = await ok(G.admin, G.id, 'bulkUpdateSessions', { ids: ['S002', 'S003'], action: 'status', value: '中止' });
+    expect(r.message).toBe('2 件を状態を「中止」にしました: B、C');
+    expect(byId(r).S002).toMatchObject({ status: '中止', window: '', want: ['ソラ'], members: [] });
+    expect(byId(r).S003).toMatchObject({ status: '中止', candidates: [], votes: {} });
+    expect(await env.DB.prepare('SELECT count(*) AS n FROM poll_votes').first('n')).toBe(0);
+  });
+
+  test('「調整中」にまとめて変えると、参加希望のある卓だけ参加者が増える', async () => {
+    const r = await ok(G.admin, G.id, 'bulkUpdateSessions', { ids: ['S001', 'S002'], action: 'status', value: '調整中' });
+    expect(byId(r).S001).toMatchObject({ status: '調整中', members: ['ソラ'], want: [] });
+    expect(byId(r).S002).toMatchObject({ status: '調整中', members: ['ソラ'], want: [] });
+    expect(r.message).toBe('2 件を状態を「調整中」にしました: A、B　参加希望の人を参加者に加えました: ソラ（B）');
+  });
+
+  test('開催日を前にずらす。シリーズを外す', async () => {
+    let r = await ok(G.admin, G.id, 'bulkUpdateSessions', { ids: ['S001'], action: 'shiftDays', value: '-1' });
+    expect(r.label).toBe('開催日を -1 日');
+    expect(byId(r).S001.date).toBe(T(2));
+    await ok(G.admin, G.id, 'bulkUpdateSessions', { ids: ['S001', 'S002'], action: 'setSeries', value: '港' });
+    r = await ok(G.admin, G.id, 'bulkUpdateSessions', { ids: ['S001', 'S002'], action: 'setSeries', value: '' });
+    expect(r.label).toBe('シリーズを外す');
+    expect([byId(r).S001.series, byId(r).S002.series]).toEqual(['', '']);
+  });
+
   test('削除と、管理者だけ', async () => {
     expect((await fail(G.sora, G.id, 'bulkUpdateSessions', { ids: ['S001'], action: 'delete' })).error).toMatch(/^ADMIN:/);
     const r = await ok(G.admin, G.id, 'bulkUpdateSessions', { ids: ['S001', 'S002'], action: 'delete' });

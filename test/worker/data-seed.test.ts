@@ -45,6 +45,28 @@ describe('画面データ', () => {
   });
 });
 
+describe('画面データの細かいところ', () => {
+  test('開催前の知らせが ON で、ON にした人の控えが無ければ「有効」と出す', async () => {
+    const G = await setupGroup();
+    // DB を手で直したときなど
+    await env.DB.prepare("UPDATE groups SET remind_enabled = 1, remind_set_by = ''").run();
+    const d = await ok(G.sora, G.id, 'getConsoleData');
+    expect(d.notifySetter).toBe('有効');
+    expect(d.settings).toMatchObject({ remind: true, setter: '有効' });
+  });
+
+  test('予定の日数を減らすと、範囲の外の印は画面に出ない（消えはしない）', async () => {
+    const G = await setupGroup();
+    const t0 = await today();
+    await ok(G.sora, G.id, 'setAvailability', { name: 'ソラ', ymd: addDays(t0, 6), mark: '×' });
+    await ok(G.sora, G.id, 'setAvailability', { name: 'ソラ', ymd: addDays(t0, 30), mark: '△' });
+    const r = await ok(G.admin, G.id, 'saveConsoleSettings', { availDays: '7' });
+    expect(r.data.availDays).toHaveLength(7);
+    expect(r.data.avail).toEqual({ [addDays(t0, 6)]: { ソラ: '×' } });
+    expect(await env.DB.prepare('SELECT count(*) AS n FROM availability').first('n')).toBe(2);
+  });
+});
+
 describe('サンプルデータ', () => {
   test('メンバー 6 人と卓 11 件ができ、画面データが組める', async () => {
     await makeGroup('sample', 'dev-guild');

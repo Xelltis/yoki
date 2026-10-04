@@ -17,6 +17,8 @@ export default defineConfig(async (): Promise<ViteUserConfig> => {
         // text は 100% のファイルも並べる。html は coverage/index.html に出る
         reporter: [['text', { skipFull: false }], 'html', 'json-summary'],
         reportsDirectory: 'coverage',
+        // どれか 1 つでも 100% を下回ったら失敗にする。通らない道を足したら、テストも足す
+        thresholds: { 100: true },
       },
       projects: [
         {

@@ -1,7 +1,8 @@
 // 知らせの見回り（§23・40・46・47）。時刻は scheduledTime で渡す（日本時間 = UTC + 9）
 import { env } from 'cloudflare:test';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
-import { type PatrolRecord, patrol, runPatrol } from '../../src/worker/domain/patrol';
+import { loadGroup } from '../../src/worker/domain/load';
+import { type PatrolRecord, patrol, runPatrol, sendStartingSoon, sendUrges } from '../../src/worker/domain/patrol';
 import { addDays } from '../../src/worker/lib/jst';
 import { makeGroup } from './helpers';
 
@@ -149,5 +150,74 @@ describe('見回りの様子の記録（運営者の管理画面が読む）', (
     const rec = JSON.parse((await meta('patrol'))!) as PatrolRecord;
     expect(rec).toMatchObject({ at: new Date(at('20:05')).toISOString(), ok: false, error: 'D1 が応えない' });
     expect(await meta('patrol_ok_at')).toBe(new Date(at('20:00')).toISOString());
+  });
+});
+
+describe('見回りの端の場合', () => {
+  const SYSTEM = { memberId: 0, name: '', isAdmin: true, userId: '' };
+  const load = (hhmm: string) => loadGroup(env.DB, 'g', SYSTEM, '', new Date(at(hhmm)));
+  const lastLog = () => env.DB.prepare('SELECT result FROM notify_log ORDER BY id DESC').first('result');
+  /** Discord の ID の無いメンバー（知らせにメンションが付かない） */
+  const addGuest = () => env.DB.prepare("INSERT INTO members (group_id, name, created_at) VALUES ('g', 'ゲスト', 'x')").run();
+
+  test('Error でないものが投げられても、文にして残してから投げ直す', async () => {
+    await expect(runPatrol(env, at('20:00'), noWait, async () => { throw '止まった'; })).rejects.toBe('止まった');
+    const rec = JSON.parse((await env.DB.prepare("SELECT value FROM meta WHERE key = 'patrol'").first<string>('value'))!) as PatrolRecord;
+    expect(rec).toMatchObject({ ok: false, error: '止まった' });
+  });
+
+  test('メンションする人がいなければ、文だけを送る。アプリの URL が無ければリンクを付けない', async () => {
+    await addGuest();
+    await addSession({ name: '明日の卓', date: addDays(DAY, 1), gm: 'ゲスト' });
+    await addSession({ name: '古城', status: '調整中', windowFrom: addDays(DAY, 1), gm: 'ゲスト' });
+    await patrol({ ...env, APP_URL: '' }, at('20:00'), noWait);
+    expect(posts.map((p) => p.content).sort()).toEqual(['⏳ 明日から「古城」の候補の期間です。まだ開催日が決まっていません。', '📢 明日は卓の日です！']);
+  });
+
+  test('期間前の催促: Webhook が無ければ送らずに記録する。送れなければ印を戻して次の回に送り直す', async () => {
+    await addSession({ name: '古城', status: '募集', windowFrom: addDays(DAY, 1), gm: 'ひより' });
+    await env.DB.prepare("UPDATE groups SET webhook_url = '' WHERE id = 'g'").run();
+    await patrol(env, at('20:00'), noWait);
+    expect(posts).toHaveLength(0);
+    expect(await lastLog()).toBe('送らず: Discord Webhook URL が空');
+    await env.DB.prepare("UPDATE groups SET webhook_url = ? WHERE id = 'g'").bind(HOOK).run();
+    mockWebhook([500, 500, 500]);
+    await sendUrges(await load('20:00'), 20, noWait);
+    expect(posts).toHaveLength(3);
+    expect(await mark('古城', 'urged_at')).toBeNull();
+  });
+
+  test('期間前の催促と開始直前の知らせ: ほかの見回りが先に印を取っていたら送らない', async () => {
+    await env.DB.prepare("UPDATE groups SET soon = 1, soon_minutes = 30 WHERE id = 'g'").run();
+    await addSession({ name: '古城', status: '募集', windowFrom: addDays(DAY, 1), gm: 'ひより' });
+    await addSession({ name: '今夜の卓', date: DAY, start: '21:00', gm: 'ひより' });
+    const ctx = await load('20:40');
+    await env.DB.prepare("UPDATE sessions SET urged_at = 'x', soon_at = 'x'").run();
+    await sendUrges(ctx, 20, noWait);
+    await sendStartingSoon(ctx, noWait);
+    expect(posts).toHaveLength(0);
+  });
+
+  test('開始直前の知らせ: 開始を過ぎたら「まもなく」。時刻の無い卓とほかの日の卓は見ない', async () => {
+    await addGuest();
+    // 明日の卓の開催前の知らせは、ここでは見ない
+    await env.DB.prepare("UPDATE groups SET soon = 1, soon_minutes = 30, remind_enabled = 0 WHERE id = 'g'").run();
+    await addSession({ name: '今夜の卓', date: DAY, start: '21:00', gm: 'ゲスト' });
+    await addSession({ name: '時刻なし', date: DAY, gm: 'ひより' });
+    await addSession({ name: '明日の卓', date: addDays(DAY, 1), start: '21:00', gm: 'ひより' });
+    await patrol(env, at('21:02'), noWait);
+    expect(posts.map((p) => p.content)).toEqual(['⏰ まもなく「今夜の卓」が始まります。']);
+  });
+
+  test('開始直前の知らせ: Webhook が無ければ送らずに記録する。送れなければ印を戻す', async () => {
+    await env.DB.prepare("UPDATE groups SET soon = 1, soon_minutes = 30, webhook_url = '' WHERE id = 'g'").run();
+    await addSession({ name: '今夜の卓', date: DAY, start: '21:00', gm: 'ひより' });
+    await patrol(env, at('20:40'), noWait);
+    expect(await lastLog()).toBe('送らず: Discord Webhook URL が空');
+    await env.DB.prepare("UPDATE groups SET webhook_url = ? WHERE id = 'g'").bind(HOOK).run();
+    mockWebhook([500, 500, 500]);
+    await patrol(env, at('20:45'), noWait);
+    expect(posts).toHaveLength(3);
+    expect(await mark('今夜の卓', 'soon_at')).toBeNull();
   });
 });
