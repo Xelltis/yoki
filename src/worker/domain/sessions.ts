@@ -187,25 +187,31 @@ export async function bulkUpdateSessions(ctx: Ctx, form: Form) {
   const targets = ctx.sessions.filter((s) => ids.includes(s.id));
   if (!targets.length) throw notFound('選んだ卓が見つかりません。');
 
-  // 先に検査して、途中で止まらないようにする
+  // 先に検査して、途中で止まらないようにする。label は Discord の「一括で〜」に、done は返事の「N 件の卓〜」に使う
   let label = '';
+  let done = '';
   let days = 0;
   if (action === 'status') {
     if (!(STATUS_LIST as string[]).includes(value)) throw badRequest('状態が不正です: ' + value);
     const noDate = targets.filter((s) => !s.date);
     if (DATED.includes(value as Status) && noDate.length) throw badRequest('開催日が無いので「' + value + '」にできません: ' + noDate.map((s) => s.name).join('、'));
     label = '状態を「' + value + '」に';
+    done = 'の状態を「' + value + '」にしました';
   } else if (action === 'addMember' || action === 'removeMember' || action === 'setGm') {
     if (!value) throw badRequest('名前を選んでください。');
     label = action === 'addMember' ? '参加者に ' + value + ' を追加' : action === 'removeMember' ? '参加者から ' + value + ' を外す' : 'GM を ' + value + ' に';
+    done = action === 'addMember' ? 'の参加者に ' + value + ' を足しました' : action === 'removeMember' ? 'の参加者から ' + value + ' を外しました' : 'の GM を ' + value + ' にしました';
   } else if (action === 'shiftDays') {
     days = parseInt(value, 10);
     if (Number.isNaN(days) || days === 0) throw badRequest('ずらす日数を入れてください（例: 7 や -1）。');
     label = '開催日を ' + (days > 0 ? '+' : '') + days + ' 日';
+    done = 'の開催日を ' + Math.abs(days) + (days > 0 ? ' 日後ろ' : ' 日前') + 'にずらしました';
   } else if (action === 'setSeries') {
     label = value ? 'シリーズを「' + value + '」に' : 'シリーズを外す';
+    done = value ? 'のシリーズを「' + value + '」にしました' : 'のシリーズを外しました';
   } else if (action === 'delete') {
     label = '削除';
+    done = 'を削除しました';
   } else {
     throw badRequest('操作が不正です: ' + action);
   }
@@ -265,7 +271,7 @@ export async function bulkUpdateSessions(ctx: Ctx, form: Form) {
   }
   stmts.push(...replacePeople(ctx, peopleChanges));
   await db.batch(stmts);
-  let message = targets.length + ' 件を' + label + 'しました: ' + targets.map((s) => s.name).join('、');
+  let message = targets.length + ' 件の卓' + done + ': ' + targets.map((s) => s.name).join('、');
   if (promoted.length) message += '　参加希望の人を参加者に加えました: ' + promoted.join('、');
   return { ok: true, count: targets.length, message, names: targets.map((s) => s.name), ids: targets.map((s) => s.id), label };
 }
