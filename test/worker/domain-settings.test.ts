@@ -1,4 +1,4 @@
-// 設定タブの細かいところ（送られた項目だけを変える・断る値・シリーズごとの知らせの残し方）
+// グループの設定の細かいところ（送られた項目だけを変える・断る値・シリーズごとの知らせの残し方）
 import { env } from 'cloudflare:test';
 import { beforeEach, describe, expect, test } from 'vitest';
 import { WEBHOOK_FORMAT_ERROR } from '../../src/worker/discord/webhook';

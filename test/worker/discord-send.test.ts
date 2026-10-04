@@ -42,7 +42,10 @@ describe('失敗の種類分け', () => {
     );
     expect(kind(0, 'TypeError: Network connection lost')).toBe('network');
     expect(kind(0, 'Error: DNS lookup failed')).toBe('network');
+    expect(kind(0, 'Error: could not resolve host')).toBe('network');
     expect(kind(0, 'Error: 何かおかしい')).toBe('unknown');
+    // Discord の形でない URL は、URL の問題として出す（ツールの不具合ではない）
+    expect(classifyFailure(0, 'Discord の Webhook URL ではありません')).toMatchObject({ kind: 'bad_url', toolFault: false, text: 'Webhook URL が Discord のものではありません。' });
   });
 
   test('ツールの不具合かもしれないのは、本文を断られたときと原因不明のときだけ', () => {
@@ -82,7 +85,8 @@ describe('1 回だけ送る', () => {
     const r = await discordAttempt(LOG, P, '案内', '港', 1, 'https://example.com/hook');
     expect(posts).toHaveLength(0);
     expect(r).toMatchObject({ ok: false, code: 0, retryable: false, raw: 'ERROR Discord の Webhook URL ではありません' });
-    expect(r.result).toBe('送信失敗（原因不明）: ERROR Discord の Webhook URL ではありません（1 回目）　→ 原因を判別できませんでした。 送信記録の詳細を添えて知らせてください。');
+    expect(r.reason!.kind).toBe('bad_url');
+    expect(r.result).toBe('送信失敗（Webhook URL）: ERROR Discord の Webhook URL ではありません（1 回目）　→ Webhook URL が Discord のものではありません。 管理画面の「知らせ」で貼り直して「接続テスト」を。　このツールの不具合ではありません。');
   });
 
   test('本文を断られたら（400）送り直さない。ツールの不具合かもしれないので、ツールのせいではないとは書かない', async () => {
@@ -95,8 +99,11 @@ describe('1 回だけ送る', () => {
     );
   });
 
-  test('通信が切れたら送り直す。原因の分からないエラーは送り直さない', async () => {
-    mockFetch([new TypeError('Network connection lost'), new Error('何かおかしい')]);
+  test('通信が切れたら（名前を引けないときも）送り直す。原因の分からないエラーは送り直さない', async () => {
+    mockFetch([new Error('could not resolve host'), new TypeError('Network connection lost'), new Error('何かおかしい')]);
+    const r0 = await discordAttempt(LOG, P, '案内', '港', 1, HOOK);
+    expect(r0).toMatchObject({ ok: false, retryable: true, waitMs: 3000 });
+    expect(r0.reason!.kind).toBe('network');
     const r1 = await discordAttempt(LOG, P, '案内', '港', 1, HOOK);
     expect(r1).toMatchObject({ ok: false, code: 0, retryable: true, waitMs: 3000, raw: 'ERROR TypeError: Network connection lost' });
     expect(r1.reason!.kind).toBe('network');
@@ -128,7 +135,7 @@ describe('1 回だけ送る', () => {
     const r = await discordAttempt(LOG, P, '案内', '港', 9, HOOK);
     expect(r).toMatchObject({ attempt: 3, retryable: false });
     expect(r.result).toBe(
-      '送信失敗（Webhook URL）: HTTP 404 （3 回目、打ち止め）　→ Webhook URL が違うか、Discord 側でウェブフックが消されています。 設定タブで貼り直して「接続テスト」を。　このツールの不具合ではありません。',
+      '送信失敗（Webhook URL）: HTTP 404 （3 回目、打ち止め）　→ Webhook URL が違うか、Discord 側でウェブフックが消されています。 管理画面の「知らせ」で貼り直して「接続テスト」を。　このツールの不具合ではありません。',
     );
   });
 });
