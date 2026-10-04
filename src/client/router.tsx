@@ -73,7 +73,7 @@ const adminPaneRoute = createRoute({
   getParentRoute: () => adminRoute,
   path: '$pane',
   beforeLoad: ({ params }) => { if (!isPane(params.pane)) throw notFound(); },
-  component: lazyRouteComponent(() => import('./features/console/shell/Placeholder'), 'AdminPane'),
+  component: lazyRouteComponent(() => import('./features/console/admin/AdminPaneView'), 'AdminPaneView'),
 });
 
 const routeTree = rootRoute.addChildren([
