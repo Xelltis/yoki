@@ -4,6 +4,7 @@
 import { Hono } from 'hono';
 import type { AppEnv } from '../app';
 import { groupAccess } from '../auth/guard';
+import { appOrigin } from '../auth/origin';
 import { currentViewer } from '../auth/session';
 import { sendDiscordStep } from '../discord/step';
 import { realSleep } from '../discord/send';
@@ -75,7 +76,7 @@ rpcRoutes.post('/api/g/:groupId/:fn', async (c) => {
     throw authError('ログインし直してください。');
   }
   await touchGroup(c.env.DB, groupId);
-  const appUrl = new URL(c.req.url).origin + '/g/' + groupId + '/';
+  const appUrl = appOrigin(c.env, c.req.url) + '/g/' + groupId + '/';
   const load = () => loadGroup(c.env.DB, groupId, access.actor, appUrl);
   const ctx = await load();
   if (!entry) return c.json(consoleData(ctx));
