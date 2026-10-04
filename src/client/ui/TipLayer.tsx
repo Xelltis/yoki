@@ -65,8 +65,10 @@ export function TipLayer() {
   }, []);
   return (
     <>
-      <div id="tipBubble" role="tooltip" hidden ref={bubbleRef} />
-      <div id="memoPop" className="memo-pop" hidden ref={popRef} />
+      <div id="tipBubble" role="tooltip" hidden ref={bubbleRef}
+        className="fixed z-[var(--z-toast,90)] max-w-[min(320px,calc(100vw-24px))] rounded-md bg-toast px-12 py-10 text-13 leading-[1.6] text-pretty text-toast-text shadow-pop" />
+      <div id="memoPop" hidden ref={popRef}
+        className="pointer-events-none fixed z-(--z-pop) max-w-280 whitespace-pre-wrap rounded-sm bg-toast px-10 py-6 text-12 leading-[1.5] text-toast-text shadow-pop" />
     </>
   );
 }
