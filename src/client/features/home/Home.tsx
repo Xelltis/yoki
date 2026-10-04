@@ -1,6 +1,7 @@
 // 入口（/）: ログインしているかを /api/me で聞き、グループの一覧・グループを作る・ログインを出す
 import { useQuery } from '@tanstack/react-query';
 import type { MeResponse } from '../../../shared/api';
+import { isReturnPath } from '../../../shared/routes';
 import { HELP_URL } from '../../app/links';
 import { Icon } from '../../ui/Icon';
 import { CreateGroup } from './CreateGroup';
@@ -16,8 +17,6 @@ const NOTICE: Record<string, string> = {
   deleted: 'グループを消しました。',
   closed: '今は新しい登録を受け付けていません。すでに使っている人は、そのままログインできます。',
 };
-/** ログインのあとに戻れる道（サーバーの RETURN_TO と同じ形のものだけ） */
-const RETURN_TO = /^\/(g\/[a-z0-9-]+\/(admin\/)?|admin\/)$/;
 
 async function fetchMe(): Promise<MeResponse> {
   const res = await fetch('/api/me');
@@ -81,7 +80,8 @@ function Who({ me }: { me: LoggedIn }) {
 
 /** ログインしていない: Discord でログイン（と、開発サーバーだけの開発用ログイン） */
 function Guest({ me, back }: { me: MeResponse; back: string | null }) {
-  const login = back && RETURN_TO.test(back) ? '/auth/login?return_to=' + encodeURIComponent(back) : '/auth/login';
+  // ログインのあとに戻れる道（src/shared/routes.ts の一覧にある画面だけ）。入口（/）へは、付けなくても戻る
+  const login = back && back !== '/' && isReturnPath(back) ? '/auth/login?return_to=' + encodeURIComponent(back) : '/auth/login';
   return (
     <section className="card" id="guest">
       <h1>卓予定</h1>

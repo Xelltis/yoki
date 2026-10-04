@@ -2,7 +2,7 @@
 import { env, SELF } from 'cloudflare:test';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import { isOperator, parseOperatorIds } from '../../src/worker/auth/operator';
-import { RETURN_TO } from '../../src/worker/routes/auth';
+import { isReturnPath } from '../../src/shared/routes';
 import { call, loginAs, mockDiscord, setCookies } from './helpers';
 
 afterEach(() => vi.restoreAllMocks());
@@ -71,9 +71,17 @@ describe('締め出し', () => {
 });
 
 describe('ログインのあとの戻り先', () => {
-  test('入口・グループのページ・グループの管理画面・運営者の管理画面だけ', () => {
-    for (const ok of ['/', '/g/abc/', '/g/abc/admin/', '/admin/']) expect(RETURN_TO.test(ok), ok).toBe(true);
-    for (const ng of ['/admin', '/g/abc/x/', '/g/abc/admin/x/', '//evil.example/', 'https://evil.example/', '/admin/x/']) expect(RETURN_TO.test(ng), ng).toBe(false);
+  test('入口・グループのページとタブ・グループの管理画面と区分・運営者の管理画面と区分だけ', () => {
+    for (const ok of ['/', '/g/abc/', '/g/abc/recruit/', '/g/abc/settings/', '/g/abc/admin/', '/g/abc/admin/danger/', '/g/abc/admin/admins/', '/admin/', '/admin/legal/']) {
+      expect(isReturnPath(ok), ok).toBe(true);
+    }
+    for (const ng of ['/admin', '/g/abc/x/', '/g/abc/recruit', '/g/abc/admin/x/', '/g/abc/admin/admin/', '/g/ABC/', '/g/' + 'a'.repeat(41) + '/', '//evil.example/', 'https://evil.example/', '/admin/x/', '/admin/legal']) {
+      expect(isReturnPath(ng), ng).toBe(false);
+    }
+  });
+
+  test('タブの道からログインし直したら、そのタブへ戻る', async () => {
+    expect((await startLogin('/g/abc/recruit/')).saved.endsWith('|n|/g/abc/recruit/')).toBe(true);
   });
 
   test('管理画面からログインし直したら、管理画面へ戻る', async () => {

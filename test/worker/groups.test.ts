@@ -1,7 +1,7 @@
 // グループを作る・グループのページに入る・メンバーを決める・CSRF・開発用ログイン・管理画面のページ・グループを消す
 import { env } from 'cloudflare:test';
 import { describe, expect, test } from 'vitest';
-import { call, loginAs, makeGroup, ORIGIN, postJson, rpc, setupGroup } from './helpers';
+import { call, loginAs, makeGroup, ORIGIN, postJson, rpc, setupGroup, SID } from './helpers';
 
 const member = (groupId: string, userId: string) =>
   env.DB.prepare('SELECT name, is_admin, discord_id FROM members WHERE group_id = ? AND user_id = ?').bind(groupId, userId).first<{ name: string; is_admin: number; discord_id: string }>();
@@ -148,6 +148,55 @@ describe('運営者の管理画面（/admin/）', () => {
     expect(res.headers.get('Cache-Control')).toBe('no-store');
     expect(await res.text()).toContain('運営の管理画面');
     expect((await call('/admin')).headers.get('Location')).toBe('/admin/');
+  });
+});
+
+describe('タブ・区分の道と、新しい画面（cookie yoki_ui=next。React への書き直しのあいだだけ）', () => {
+  /** 新しい画面を選んだ人として開く */
+  const next = (path: string, sid?: string) => call(path, { headers: { Cookie: (sid ? SID + '=' + sid + '; ' : '') + 'yoki_ui=next' } });
+  const isSpa = async (res: Response) => (await res.text()).includes('<div id="root">');
+
+  test('グループの画面: 新しい画面は 1 つの骨組み（SPA）をタブの道でも返す。古い画面ではタブの道は区域の初めへ', async () => {
+    const { sora } = await setupGroup();
+    expect(await isSpa(await next('/g/grp/', sora))).toBe(true);
+    const tab = await next('/g/grp/recruit/', sora);
+    expect(tab.status).toBe(200);
+    expect(await isSpa(tab)).toBe(true);
+    expect(await isSpa(await call('/g/grp/', { sid: sora }))).toBe(false);
+    const old = await call('/g/grp/avail/', { sid: sora });
+    expect(old.status).toBe(302);
+    expect(old.headers.get('Location')).toBe('/g/grp/');
+    const r = await call('/g/grp/settings');
+    expect(r.status).toBe(301);
+    expect(r.headers.get('Location')).toBe('/g/grp/settings/');
+    expect((await next('/g/grp/calendar/', sora)).status).toBe(404);
+  });
+
+  test('グループの管理の区分: 管理者だけ。管理者でない人には 403。ログインしていなければ、その区分へ戻るログインへ', async () => {
+    const { admin, sora } = await setupGroup();
+    const ok = await next('/g/grp/admin/danger/', admin);
+    expect(ok.status).toBe(200);
+    expect(await isSpa(ok)).toBe(true);
+    expect((await next('/g/grp/admin/admins/', sora)).status).toBe(403);
+    expect((await next('/g/grp/admin/members/')).headers.get('Location')).toBe('/auth/login?return_to=%2Fg%2Fgrp%2Fadmin%2Fmembers%2F');
+    expect((await call('/g/grp/admin/log/', { sid: admin })).headers.get('Location')).toBe('/g/grp/admin/');
+    expect((await call('/g/grp/admin/danger')).headers.get('Location')).toBe('/g/grp/admin/danger/');
+    expect((await next('/g/grp/admin/admin/', admin)).status).toBe(404);
+  });
+
+  test('運営者の管理画面の区分: 運営者だけ。返事は控えさせない。古い画面では区分の道は /admin/ へ', async () => {
+    const op = await loginAs({ id: '400000000000000098', name: '運営' }, []);
+    const user = await loginAs({ id: '300', name: 'ふつうの人' }, []);
+    const ok = await next('/admin/legal/', op);
+    expect(ok.status).toBe(200);
+    expect(ok.headers.get('Cache-Control')).toBe('no-store');
+    expect(await isSpa(ok)).toBe(true);
+    expect(await isSpa(await next('/admin/', op))).toBe(true);
+    expect((await next('/admin/users/', user)).status).toBe(403);
+    expect((await next('/admin/groups/')).headers.get('Location')).toBe('/auth/login?return_to=%2Fadmin%2Fgroups%2F');
+    expect((await call('/admin/overview/', { sid: op })).headers.get('Location')).toBe('/admin/');
+    expect((await call('/admin/legal')).headers.get('Location')).toBe('/admin/legal/');
+    expect((await next('/admin/x/', op)).status).toBe(404);
   });
 });
 
