@@ -206,3 +206,37 @@ describe('利用者', () => {
   });
 });
 
+
+describe('端の場合', () => {
+  test('見回りの記録が読めなければ、記録が無いのと同じに扱う', async () => {
+    await env.DB.prepare("INSERT INTO meta (key, value) VALUES ('patrol', '{壊れた')").run();
+    const { body } = await get<AdminOverview>('/api/admin/overview');
+    expect(body.patrol.last).toBeNull();
+    expect(body.patrol.stale).toBe(true);
+  });
+
+  test('まだ一度も使われていないグループは、作った日を最後に使われた日とする', async () => {
+    await makeGroup('fresh', GUILD, '新しい卓');
+    const { body } = await get<AdminGroupRow[]>('/api/admin/groups');
+    const g = body.find((x) => x.id === 'fresh')!;
+    expect(g.lastUsedAt).toBe(g.createdAt);
+  });
+
+  test('グループやメンバーが無ければ 404。Discord ID では外せない。使えない名前・同じ名前では足せない', async () => {
+    await setupGroup();
+    expect((await post('/api/admin/groups/none/admins', { memberId: 1, admin: true })).status).toBe(404);
+    expect((await post('/api/admin/groups/none/guild', { guildId: '700000000000000001', guildName: 'S' })).status).toBe(404);
+    expect((await post('/api/admin/groups/grp/admins', { memberId: 99999, admin: true })).status).toBe(404);
+    expect((await post('/api/admin/groups/grp/admins', { discordId: '500000000000000001', admin: false })).body.error).toBe('外すときは、メンバーを選んでください。');
+    expect((await post('/api/admin/groups/grp/admins', { discordId: '500000000000000001', name: '全員', admin: true })).body.error).toBe('その名前は使えません: 全員');
+    expect((await post('/api/admin/groups/grp/admins', { discordId: '500000000000000001', name: 'ダン、エマ', admin: true })).body.error).toBe('その名前は使えません: ダン、エマ');
+    expect((await post('/api/admin/groups/grp/admins', { discordId: '500000000000000001', name: 'ソラ', admin: true })).body.error).toBe('同じ名前のメンバーがいます: ソラ');
+  });
+
+  test('表示名の無い利用者は、ユーザー名で出す', async () => {
+    await loginAs({ id: '300', name: 'ふつうの人' }, []);
+    await env.DB.prepare("UPDATE users SET global_name = NULL WHERE id = '300'").run();
+    const { body } = await get<AdminUserRow[]>('/api/admin/users');
+    expect(body.find((u) => u.id === '300')!.name).toBe('u300');
+  });
+});

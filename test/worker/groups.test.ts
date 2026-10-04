@@ -185,3 +185,15 @@ describe('最後に使われた日時', () => {
     expect(await used()).toBe(recent);
   });
 });
+
+describe('参加しているサーバーの控え', () => {
+  test('控えにグループのサーバーが無く、控えが 5 分より古ければ、Discord に聞き直しに行く。新しければ 403', async () => {
+    await makeGroup('p1', 'gp');
+    const old = await loginAs({ id: '700', name: 'ゆき' }, [], { checkedAt: new Date(Date.now() - 10 * 60_000) });
+    const r = await call('/g/p1/', { sid: old });
+    expect(r.status).toBe(302);
+    expect(r.headers.get('Location')).toBe('/auth/login?return_to=%2Fg%2Fp1%2F');
+    const fresh = await loginAs({ id: '701', name: 'みぞれ' }, []);
+    expect((await call('/g/p1/', { sid: fresh })).status).toBe(403);
+  });
+});

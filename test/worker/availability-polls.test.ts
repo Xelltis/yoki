@@ -1,7 +1,7 @@
 // 予定（§14・17・22・31・36）と日程調整（§37・48）
 import { env } from 'cloudflare:test';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
-import { addDays, dowOf } from '../../src/worker/lib/jst';
+import { addDays, dowOf, fmtDateJa } from '../../src/worker/lib/jst';
 import { fail, ok, setupGroup, today } from './helpers';
 
 let G: Awaited<ReturnType<typeof setupGroup>>;
@@ -43,6 +43,26 @@ describe('予定', () => {
     expect(r).toMatchObject({ count: 1, skippedBooked: 1, skippedKeep: 1 });
     expect(r.message).toBe('ソラ の 1 日に「×」を入れました。（卓の日 1 日、入力済み 1 日は飛ばしました）');
     expect(r.data.avail[T(0)]).toEqual({ ソラ: '×' });
+  });
+
+  test('まとめて: 曜日を省くと毎日。同じ印のマスは数えない。空欄にすると消える', async () => {
+    await ok(G.sora, G.id, 'setAvailability', { name: 'ソラ', ymd: T(1), mark: '△' });
+    let r = await ok(G.sora, G.id, 'setAvailabilityBulk', { name: 'ソラ', from: T(0), to: T(2), mark: '△' });
+    expect(r).toMatchObject({ count: 2, skippedBooked: 0, skippedKeep: 0, message: 'ソラ の 2 日に「△」を入れました。' });
+    expect([T(0), T(1), T(2), T(3)].map((d) => r.data.avail[d])).toEqual([{ ソラ: '△' }, { ソラ: '△' }, { ソラ: '△' }, undefined]);
+    // もう一度入れても、書くマスが無い
+    r = await ok(G.sora, G.id, 'setAvailabilityBulk', { name: 'ソラ', from: T(0), to: T(2), mark: '△' });
+    expect(r).toMatchObject({ count: 0, message: 'ソラ の 0 日に「△」を入れました。' });
+    r = await ok(G.sora, G.id, 'setAvailabilityBulk', { name: 'ソラ', from: T(1), to: T(2), mark: '' });
+    expect(r.message).toBe('ソラ の 2 日に「空欄」を入れました。');
+    expect([T(0), T(1), T(2)].map((d) => r.data.avail[d])).toEqual([{ ソラ: '△' }, undefined, undefined]);
+  });
+
+  test('予定のメモは、空にすると消える', async () => {
+    await ok(G.sora, G.id, 'setAvailNote', { name: 'ソラ', ymd: T(8), text: '21 時から' });
+    const r = await ok(G.sora, G.id, 'setAvailNote', { name: 'ソラ', ymd: T(8), text: '' });
+    expect(r.message).toBe(fmtDateJa(T(8)) + ' ソラ のメモを消しました。');
+    expect(r.data.availNotes[T(8)]).toBeUndefined();
   });
 
   test('予定のメモ（200 文字まで）と日付メモ（500 文字まで）', async () => {
@@ -125,6 +145,62 @@ describe('日程調整', () => {
     expect(r.notified).toBe(true);
     expect(posts[0]).toContain('「迷宮」の日程が決まりました');
     expect(r.data.log.some((l: any) => l.kind === '日程決定')).toBe(true);
+  });
+
+  test('メンバーでない参加者（ゲスト）の回答は、管理者が代わりに入れ、直し、消せる', async () => {
+    await ok(G.admin, G.id, 'saveSession', { id: 'S001', name: '迷宮', gm: 'ひより', members: ['ソラ'], extra: 'ゲスト太郎', status: '調整中' });
+    await ok(G.admin, G.id, 'startPoll', { id: 'S001', dates: [T(5), T(6)] });
+    mockWebhook();
+    const guestRows = async () => (await env.DB.prepare('SELECT date, member_id, guest_name, vote FROM poll_votes WHERE guest_name IS NOT NULL').all()).results;
+    await ok(G.admin, G.id, 'setPollVote', { id: 'S001', ymd: T(5), name: 'ゲスト太郎', vote: '◯' });
+    let r = await ok(G.admin, G.id, 'setPollVote', { id: 'S001', ymd: T(5), name: 'ゲスト太郎', vote: '×' });
+    expect(r.data.sessions[0].votes[T(5)]).toEqual({ ひより: '◯', ゲスト太郎: '×' });
+    expect(await guestRows()).toEqual([{ date: T(5), member_id: null, guest_name: 'ゲスト太郎', vote: '×' }]);
+    r = await ok(G.admin, G.id, 'setPollVote', { id: 'S001', ymd: T(5), name: 'ゲスト太郎', vote: '' });
+    expect(r.message).toBe(fmtDateJa(T(5)) + ' ゲスト太郎: 回答を取り消しました');
+    expect(await guestRows()).toEqual([]);
+    expect(posts).toHaveLength(0);
+  });
+
+  test('おまかせを取り消すと、自分の回答が全部消える', async () => {
+    await ok(G.admin, G.id, 'startPoll', { id: 'S001', dates: [T(5), T(6)] });
+    mockWebhook();
+    await ok(G.sora, G.id, 'setPollVote', { id: 'S001', ymd: T(5), name: 'ソラ', vote: '×' });
+    const r = await ok(G.sora, G.id, 'setPollVoteAll', { id: 'S001', name: 'ソラ', vote: '' });
+    expect(r.message).toBe('ソラ: 「迷宮」の回答を取り消しました');
+    expect(r.data.sessions[0].votes).toEqual({ [T(5)]: { ひより: '◯' }, [T(6)]: { ひより: '◯' } });
+  });
+
+  test('Webhook が無ければ、回答がそろっても送らない（そろいの印は付ける）', async () => {
+    await env.DB.prepare("UPDATE groups SET webhook_url = ''").run();
+    await ok(G.admin, G.id, 'startPoll', { id: 'S001', dates: [T(5)] });
+    mockWebhook();
+    const r = await ok(G.sora, G.id, 'setPollVoteAll', { id: 'S001', name: 'ソラ', vote: '◯' });
+    expect(r).toMatchObject({ ready: true, notified: null, message: 'ソラ: 候補日 1 日すべてに ◯ を付けました（どの日でもいい）　全員の回答がそろいました。' });
+    expect(posts).toHaveLength(0);
+    expect(await env.DB.prepare('SELECT poll_ready_at FROM sessions').first('poll_ready_at')).not.toBeNull();
+  });
+
+  test('GM への知らせが届かなければ、そろいの印を外す（画面から送り直せるように）', async () => {
+    await ok(G.admin, G.id, 'startPoll', { id: 'S001', dates: [T(5)] });
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async () => new Response('Unknown Webhook', { status: 404 }));
+    const r = await ok(G.sora, G.id, 'setPollVote', { id: 'S001', ymd: T(5), name: 'ソラ', vote: '◯' });
+    expect(r).toMatchObject({ ready: true, notified: false });
+    expect(r.message).toBe(fmtDateJa(T(5)) + ' ソラ: ◯　全員の回答がそろいました。　GM への知らせを Discord に送れませんでした。');
+    expect(await env.DB.prepare('SELECT poll_ready_at FROM sessions').first('poll_ready_at')).toBeNull();
+    expect(r.data.log[0]).toMatchObject({ kind: '回答そろい', target: '迷宮' });
+    expect(r.data.log[0].result).toContain('送信失敗（Webhook URL）');
+  });
+
+  test('同じときの別の回答が先にそろいの印を取っていたら、二重には送らない', async () => {
+    await ok(G.admin, G.id, 'startPoll', { id: 'S001', dates: [T(5)] });
+    // 別の呼び出しが、先に印を取ったことにする
+    await env.DB.prepare("UPDATE sessions SET poll_ready_at = '2026-01-01T00:00:00.000Z'").run();
+    mockWebhook();
+    const r = await ok(G.sora, G.id, 'setPollVote', { id: 'S001', ymd: T(5), name: 'ソラ', vote: '◯' });
+    expect(r).toMatchObject({ ready: true, message: fmtDateJa(T(5)) + ' ソラ: ◯　全員の回答がそろいました。' });
+    expect(r.notified).toBeUndefined();
+    expect(posts).toHaveLength(0);
   });
 
   test('やめると、候補日と回答が消える（調整中のまま）', async () => {
