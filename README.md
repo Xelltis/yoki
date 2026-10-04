@@ -1,6 +1,6 @@
 # Yoki（卓予定）
 
-TRPG の卓の予定を、Discord サーバーの仲間と管理する Web アプリ。卓の登録、メンバーの予定（△×）、募集、日程調整を画面で行い、知らせを Discord の Webhook に送る。
+TRPG の卓の予定を、Discord サーバーの仲間と管理する Web アプリ。卓の登録、メンバーの予定（△×）、募集、日程調整を画面で行い、知らせは卓予定の Bot が Discord のチャンネルに送る。
 
 - サーバーは Cloudflare Workers、データは D1（SQLite）、ログインは Discord
 - 1 つの Cloudflare に、Discord サーバーごとのグループを何個でも作れる。グループに入れるのは、そのサーバーにいる人だけ
@@ -30,7 +30,7 @@ src/worker/        サーバー（TypeScript、Hono）
   routes/          道。auth（ログイン）・me（入口の API）・pages（グループと管理画面のページ）・rpc（画面からの呼び出し）・admin（運営者の API）
   auth/            Discord の OAuth・ログインの続き・グループに入れるかの確認・運営者の確認・CSRF・開発用ログイン
   domain/          卓・メンバー・予定・日程調整・設定・知らせの見回り・グループを消す・運営者の操作（GAS 版の Sessions.js などを移したもの）
-  discord/         送り先の選び方・文面・送信と送り直し
+  discord/         Bot の API（チャンネル）・送り先の選び方・文面・送信と送り直し
   lib/             日本時間の日付・文字・エラー・ID
   seed/            サンプルデータ
 src/client/        画面（TypeScript。Vite の root）
@@ -87,7 +87,10 @@ Workers のテスト用の道具（`@cloudflare/vitest-pool-workers`）は、古
 公開する Cloudflare ごとに違う値（D1 の ID・アプリのアドレス・Discord アプリの値・運営者の ID）は、リポジトリに置かない。GitHub の environment「production」に置き、公開のときに組み立てた設定（`dist/yoki/wrangler.json`）に入れる（`vite.config.ts`）。リポジトリの `wrangler.jsonc` には仮の値だけがある。フォークして自分の Cloudflare に公開するときも、同じ手順で進める。
 
 1. **公開するアドレスを決める**。Cloudflare だけなら `https://yoki.<アカウントのサブドメイン>.workers.dev` になる（サブドメインは、Cloudflare の画面の Workers で分かる）。Route 53 などのドメインで公開するなら、下の「独自のドメインで公開する」の CloudFront のアドレス（`https://yoki.example.com` など）
-2. **Discord アプリを作る**。[Discord Developer Portal](https://discord.com/developers/applications) で New Application → OAuth2 で、Redirects に `https://<公開するアドレス>/auth/callback` と `http://localhost:5173/auth/callback` を足す。Client ID と Client Secret を控える（Bot は要らない）
+2. **Discord アプリを作る**。[Discord Developer Portal](https://discord.com/developers/applications) で New Application。ログインと知らせ（Bot）の両方に、この 1 つのアプリを使う
+   - OAuth2: Redirects に `https://<公開するアドレス>/auth/callback` と `http://localhost:5173/auth/callback` を足す。Client ID と Client Secret を控える
+   - Bot: 「Reset Token」でトークンを作って控える。「Public Bot」は ON（グループの管理者が、卓予定の画面から自分のサーバーに招く）。Privileged Gateway Intents は全部 OFF のまま（Gateway には繋がない）
+   - Installation: Install Link は「None」（Bot を招く URL は卓予定が作る。求める権限は「チャンネルを見る」「メッセージを送信」「埋め込みリンク」）
 3. **Cloudflare で D1 と API トークンを作る**
    - D1: `npx wrangler login` のあと `npx wrangler d1 create yoki`（Cloudflare の画面の D1 で作ってもよい）。出てきた database ID を控える
    - API トークン: アカウントの API トークンを作る（Cloudflare の画面の「アカウントの管理」→「アカウント API トークン」）。権限は 2 つ。「Workers」（新しいほう。「Workers Scripts」は古い形）の「Admin」と、「D1」の「Edit」。初めての公開で Worker を作るには Workers の Admin が要る（まだ無い Worker だけに絞った権限は付けられない）。公開できたら、Workers は `yoki` の Worker だけの「Editor」に下げてよい（公開と秘密の値はそれで足りる）。Workers の権限は D1 を含まないので、本番の D1 への表の変更のために D1 の Edit が別に要る。テンプレートの「Edit Cloudflare Workers」は D1 を含まず、要らない権限も多いので使わない。ユーザーの API トークンと違い、作った人に結びつかないので、その人がいなくなっても公開が止まらない（wrangler にはアカウント ID が要るが、deploy.yml が `CLOUDFLARE_ACCOUNT_ID` を渡す）
@@ -102,6 +105,7 @@ Workers のテスト用の道具（`@cloudflare/vitest-pool-workers`）は、古
    | 変数 | `YOKI_DISCORD_CLIENT_ID` | Discord アプリの Client ID |
    | 秘密（Secrets） | `CLOUDFLARE_API_TOKEN` | 3 で作ったアカウントの API トークン |
    | 秘密 | `DISCORD_CLIENT_SECRET` | Discord アプリの Client Secret |
+   | 秘密 | `DISCORD_BOT_TOKEN` | Discord アプリの Bot のトークン（知らせを送る） |
    | 秘密 | `OPERATOR_IDS` | 運営者（下の「管理画面」）の Discord ユーザー ID。何人いても、カンマか空白で区切って並べる |
 
    - Discord のユーザー ID は、Discord の設定の「詳細設定」で開発者モードを ON にし、自分のアイコンを右クリックして「ユーザー ID をコピー」で取れる
@@ -141,7 +145,7 @@ Cloudflare は無料のプランで動く。グループが増えて、知らせ
   - **新規登録の受付**（様子の中）: 止めると、新しいグループの作成と、初めての人のログインを断る。もう使っている人と今あるグループは、そのまま使える。運営者は、止めていてもログインでき、グループも作れる。初めは受け付けている
   - **グループ**: 一覧と中身（Discord サーバー・メンバー・卓の数・最後に使われた日）。管理者の付け替え、Discord サーバーの付け替え、グループを消す（名前を打ち込んで確かめる。中身も消え、戻せない）
   - **利用者**: ログインを切る、締め出す・戻す。締め出した人は Discord でログインできなくなり、残っていたログインも効かなくなる。Discord のアカウントで止めるので、別のアカウントを作られると止められない。運営者は締め出せない
-  - 運営者は、グループの中身（卓・予定・Webhook の URL）は見ない。運営者がした操作は、Cloudflare の Workers のログ（Observability）に 1 行ずつ残る（`"audit"` で探せる）
+  - 運営者は、グループの中身（卓・予定）は見ない。運営者がした操作は、Cloudflare の Workers のログ（Observability）に 1 行ずつ残る（`"audit"` で探せる）
 
 ## サイト（GitHub Pages）
 

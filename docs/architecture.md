@@ -36,7 +36,7 @@ Worker 1 つで、次の 3 つを受け持つ。
 
 - 控えが 24 時間より古ければ、`/auth/login` に送って Discord に聞き直す（`prompt=none` なので、画面はほとんど出ない）。サーバーを抜けた人は、最長 24 時間で入れなくなる
 - 控えにサーバーが無いとき、控えが 5 分より古ければ一度だけ聞き直す（そのあとサーバーに入った人のため）。新しければ 403
-- Discord のトークンを持たないので、裏で Discord に問い合わせることはない。そのかわり、抜けた人を締め出すまでに時間差がある
+- ログインした人の Discord のトークンは持たないので、その人のサーバーの出入りを裏で問い合わせることはない。そのかわり、抜けた人を締め出すまでに時間差がある（知らせに使う Bot のトークンは別で、Worker の secret に置く）
 
 **「あなた」はサーバーが決める**。ログインした人に結びついたメンバーが「あなた」（`Actor`）になる。初めて入ったときは、管理者が Discord ID 付きで先に登録していた行に結びつけ、無ければ Discord の表示名で新しく作る。画面から送られる名前は、誰のぶんを入れるかの指定にだけ使い、本人かどうかの判断には使わない。
 
@@ -57,7 +57,7 @@ Worker 1 つで、次の 3 つを受け持つ。
 表の定義は `migrations/`（`0001_init.sql` が最初の形、`0002_admin.sql` が締め出し・最後に使われた日と索引）。日付（開催日・予定・メモ）は日本時間の `YYYY-MM-DD`、日時（〜した時刻）は UTC の ISO 文字列。
 
 - `users`・`user_guilds`・`auth_sessions`: ログイン。`users.banned_at`・`banned_reason` は締め出し
-- `groups`: グループと設定（Webhook・知らせの日時・各種の ON/OFF・卓の番号の続き）。`last_used_at` は最後に使われた日時（画面から呼ばれるたびに、10 分に 1 回まで書き換える）
+- `groups`: グループと設定（知らせのチャンネル・知らせの日時・各種の ON/OFF・卓の番号の続き）。`last_used_at` は最後に使われた日時（画面から呼ばれるたびに、10 分に 1 回まで書き換える）
 - `members`: メンバー。名前はグループの中で一意
 - `sessions`・`session_people`: 卓と、関わる人（GM・参加者・参加希望・興味あり）
 - `availability`・`avail_notes`・`day_notes`・`poll_votes`・`series_notify`・`notify_log`
@@ -87,12 +87,21 @@ Worker 1 つで、次の 3 つを受け持つ。
 
 ## Discord への送信
 
-- 送り先（`discord/targets.ts`）: シリーズの専用チャンネル → 知らせの種類のチャンネル（開催前の知らせ・募集） → 基本のチャンネル、の順に選ぶ
-- 送信（`discord/send.ts`）: 429・5xx・通信の切れは、3 秒・8 秒と待って 3 回まで送り直す（`Retry-After` を見て、最長 15 秒）。1 回ごとに `notify_log` に 1 行残す
+知らせは、卓予定の Bot（ログインと同じ Discord アプリの Bot）が、チャンネルにメッセージを書いて送る。Webhook は使わない。
+
+- **Bot**: トークンは Worker の secret（`DISCORD_BOT_TOKEN`）。Gateway には繋がず、REST だけを使う（送る: `POST /channels/{id}/messages`、読む: `GET /guilds/{id}/channels`・`GET /channels/{id}`）。小道具は `discord/channel.ts`
+- **Bot を招く**: グループの管理者が、管理画面の「知らせ」から自分のサーバーに招く。招く URL は、Client ID とグループのサーバーから作る（`botInviteUrl`。求める権限は、チャンネルを見る・メッセージを送る・埋め込みリンク）。Bot は公開（Public Bot）
+- **送り先はチャンネルの ID**: `groups.channel_id`（基本）・`remind_channel_id`・`recruit_channel_id`（種類ごと。空なら基本）・`series_notify.channel_id`（シリーズ専用）
+  - 選ぶ: 管理画面が `getDiscordChannels` で、送り先にできるチャンネル（テキストとアナウンス）の一覧を読む
+  - 保存する: サーバーで Bot に `GET /channels/{id}` を聞き、グループのサーバーのチャンネルであることを確かめる。Bot はほかのサーバーにもいるので、そのチャンネルには送らせない
+- 送り先（`discord/targets.ts`）: シリーズの専用チャンネル → 知らせの種類のチャンネル（開催前の知らせ・募集） → 基本のチャンネル、の順に選ぶ。同じチャンネルは 1 つにまとめる
+- 送信（`discord/send.ts`）
+  - 429・5xx・通信の切れは、3 秒・8 秒と待って 3 回まで送り直す（`Retry-After` を見て、最長 15 秒）。1 回ごとに `notify_log` に 1 行残す
+  - 本文に `allowed_mentions: { parse: ['users'] }` を付ける。メモに書かれた @everyone などで、全員に通知が飛ばないようにする
+  - 失敗の種類: 401（Bot のトークン）・403（チャンネルの権限）・404（チャンネルが無いか、Bot が外された）・429・5xx・400・通信
 - 画面からの送信は `sendDiscordStep`（`discord/step.ts`）で 1 回ずつ。待ちと送り直しは画面が回す（GAS 版と同じ）
 - 回答そろい・日程決定は、回答や決定を受けたサーバーがその場で送る（画面を閉じられても届くように）
-- Webhook の URL は Discord の形だけを受け付け、それ以外には送らない。画面には伏せた形だけを渡す
-- サンプルのグループの Webhook（ID が全部 0）には送らず、送ったことにする
+- サンプルのグループのチャンネル（ID が全部 0）には送らず、送ったことにする（開発用ログインとスクリーンショットのため）
 
 ## 知らせの見回り（cron）
 
@@ -115,7 +124,7 @@ Worker 1 つで、次の 3 つを受け持つ。
 | `GET /api/admin/overview` | 数（グループ・利用者・有効なログイン・動いている卓）、見回りの様子、24 時間と 7 日の送信の失敗の数、最近の失敗（全グループで 50 件） |
 | `GET /api/admin/groups` `GET /api/admin/groups/:id` | グループの一覧と、メンバー（名前・ログインした人・管理者か・最後のログイン）を加えた中身 |
 | `POST /api/admin/groups/:id/admins` | 管理者の印を付け外しする。まだ開いていない人も、Discord ID で管理者として足せる。印が 0 人になる外し方は断る |
-| `POST /api/admin/groups/:id/guild` | Discord サーバーを付け替える。メンバーの行・管理者の印は残し、Webhook は選べば消す |
+| `POST /api/admin/groups/:id/guild` | Discord サーバーを付け替える。メンバーの行・管理者の印は残す。知らせのチャンネルは古いサーバーのものなので、いつも外す |
 | `POST /api/admin/groups/:id/delete` | グループを消す。名前を打ち込んで、一致したときだけ |
 | `GET /api/admin/users` `POST /api/admin/users/:id/logout` `POST /api/admin/users/:id/ban` | 利用者の一覧、ログインを切る、締め出す・戻す |
 | `POST /api/admin/registration` | 新規登録を受け付ける・止める（`{open}`） |
@@ -123,7 +132,7 @@ Worker 1 つで、次の 3 つを受け持つ。
 - どの道も、ログインしていなければ `AUTH:` の 401、運営者でなければ 403。返事は `Cache-Control: no-store`
 - 読むものは GET、変えるものは POST（JSON）。CSRF の確かめは `/api` のほかの道と同じ
 - 変えた操作は、`{"audit":"operator",…}` の JSON 1 行を log に出す（Workers の Observability に残る監査の控え）。グループの管理者がグループを消したときも `{"audit":"group-admin",…}` を出す
-- 運営者は、グループの中身（卓・予定・Webhook の URL）は見ない。見るのは数と名前だけ
+- 運営者は、グループの中身（卓・予定）は見ない。見るのは数と名前だけ
 - 送信の失敗に数えるのは、`送信失敗` と `送らず` で始まる記録だけ（`HTTP…`・`ERROR…` は送り直しの途中）
 - 見回りは、最後の回が 15 分より前なら止まっているかもしれない、として出す
 - 新規登録の受付（`domain/registration.ts`）。止めると、グループを作る道（`POST /api/groups`）と、初めての人のログイン（`/auth/callback`・開発用ログイン。users に行が無い人）を断る。もう使っている人と運営者は通す。運営者が自分を締め出さないように、運営者はいつでも入れて、グループも作れる。画面には `/api/me` の `registration` で知らせる
@@ -175,7 +184,7 @@ TypeScript で書き、Vite が組み立てる。ページは 3 つ: 入口（`i
 
 - OSS として、公開する Cloudflare ごとに違う値はリポジトリに置かない。`wrangler.jsonc` には仮の値（D1 の ID は 0 が並んだもの、APP_URL と DISCORD_CLIENT_ID は空）だけを置き、手元の開発とテストはそのまま動く
 - 本番の値は GitHub の environment「production」に置く。組み立てのとき、`vite.config.ts` が環境変数（`YOKI_D1_DATABASE_ID`・`YOKI_APP_URL`・`YOKI_DISCORD_CLIENT_ID`）を、組み立てた設定（`dist/yoki/wrangler.json`）に入れる。`YOKI_DEPLOY=1` のときに欠けていたら、組み立てを止める（仮の値のまま公開しないように）
-- 秘密の値（`DISCORD_CLIENT_SECRET`）と運営者の ID（`OPERATOR_IDS`）は vars に置かず、Worker の secret にする。公開のたびに `wrangler deploy --secrets-file` で版と一緒に送る。vars は公開のログに出るため（公開のリポジトリでは、Actions のログはだれでも読める）
+- 秘密の値（`DISCORD_CLIENT_SECRET`・`DISCORD_BOT_TOKEN`）と運営者の ID（`OPERATOR_IDS`）は vars に置かず、Worker の secret にする。公開のたびに `wrangler deploy --secrets-file` で版と一緒に送る。vars は公開のログに出るため（公開のリポジトリでは、Actions のログはだれでも読める）
 - マイグレーションと公開は、どちらも組み立てた設定（`--config dist/yoki/wrangler.json`）で行う
 - wrangler には D1 の ID を省くと自動で作る機能もあるが、試験中で、マイグレーションとの順番も合わないので使わない
 
