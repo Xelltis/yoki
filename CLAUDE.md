@@ -43,8 +43,8 @@ README の「書くときの決まり」に加えて、次を守る。
 - 開発用ログイン（`src/worker/auth/dev.ts`）は `import.meta.env.DEV` のときだけ登録する
 - 運営者の API（`src/worker/routes/admin.ts`）は、どの道も最初に `requireOperator` を呼ぶ。変える操作は監査の控え（`audit`）を log に出す。運営者にも、グループの中身（卓・予定・Webhook の URL）は返さない
 - グループの画面の管理者向けのものは、管理の区域（`/g/:id/admin/`。`src/client/console/area.ts`）に置く。ふだんの区域には、だれでも使うものだけを置く
-- Discord のトークンは保存しない。秘密の値（`.dev.vars`）はコミットしない
-- 公開する Cloudflare ごとの値（D1 の ID・アプリのアドレス・Discord アプリの値・運営者の ID・API トークン）は、リポジトリに書かない。GitHub の environment「production」に置き、`wrangler.jsonc` には仮の値だけを置く（README の「公開」）
+- ログインした人の Discord のトークン（OAuth）は保存しない。知らせに使う Bot のトークンは Worker の secret（`DISCORD_BOT_TOKEN`）に置き、画面にもログにも出さない。秘密の値（`.dev.vars`）はコミットしない
+- 公開する Cloudflare ごとの値（D1 の ID・アプリのアドレス・Discord アプリの値と Bot のトークン・運営者の ID・API トークン）は、リポジトリに書かない。GitHub の environment「production」に置き、`wrangler.jsonc` には仮の値だけを置く（README の「公開」）
 - アイコンを足したら、読み込む一覧にも足す（画面は各ページの `icon_names`、サイトは `website/.vitepress/config.ts` の `ICONS`。テストが確かめる）
 
 ## コミット
