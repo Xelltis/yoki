@@ -16,6 +16,16 @@ export async function withDevServer(fn) {
   }
 }
 
+/**
+ * ブラウザの文脈（cookie などの入れ物）を作る。React への書き直しのあいだだけ、YOKI_UI=next なら新しい画面を選ぶ cookie（yoki_ui=next）を付ける
+ * （Worker がグループの画面と運営の管理画面を、新しい画面で返す。src/worker/routes/pages.ts）
+ */
+export async function newContext(browser, base, opts = {}) {
+  const ctx = await browser.newContext(opts);
+  if (process.env.YOKI_UI === 'next') await ctx.addCookies([{ name: 'yoki_ui', value: 'next', url: base }]);
+  return ctx;
+}
+
 /** 開発用ログインで、サンプルのグループに入る（page は Playwright のページ） */
 export async function devLogin(page, base, as = 'ひより') {
   await page.goto(base);

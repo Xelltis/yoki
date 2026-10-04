@@ -3,12 +3,12 @@
 // データに入ったことと、画面にエラーが出ないことを見る。npm test には入れない（ブラウザが要るため）
 import assert from 'node:assert/strict';
 import { chromium } from 'playwright';
-import { devLogin, withDevServer } from './dev-server.js';
+import { devLogin, newContext, withDevServer } from './dev-server.js';
 
 await withDevServer(async (base) => {
   await fetch(base + 'dev/reset', { method: 'POST', headers: { Origin: new URL(base).origin } });
   const browser = await chromium.launch();
-  const context = await browser.newContext({ viewport: { width: 1280, height: 860 } });
+  const context = await newContext(browser, base, { viewport: { width: 1280, height: 860 } });
   const page = await context.newPage();
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));
@@ -267,7 +267,7 @@ await withDevServer(async (base) => {
     });
 
     await step('管理者でない人（ソラ）: 管理画面は 403、入口も出ない。自分の名前と備考は直せる', async () => {
-      const ctx = await browser.newContext({ viewport: { width: 1280, height: 860 } });
+      const ctx = await newContext(browser, base, { viewport: { width: 1280, height: 860 } });
       const sora = await ctx.newPage();
       sora.on('pageerror', (e) => errors.push(e.message));
       await devLogin(sora, base, 'ソラ');
@@ -304,7 +304,7 @@ await withDevServer(async (base) => {
       await page.click('#banForm button[type=submit]');
       await page.waitForSelector(`#opUsers button[data-unban="${SORA}"]`, { timeout: 15000 });
       // 締め出されたソラは、開発用ログインでも入れない
-      const ctx = await browser.newContext();
+      const ctx = await newContext(browser, base);
       const sora = await ctx.newPage();
       await sora.goto(base);
       await sora.selectOption('#devAs', 'ソラ');
