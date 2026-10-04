@@ -59,7 +59,7 @@ export function botStateText(d: ConsoleData, s: ChannelState): { text: string; b
  * 一覧に無いいまの設定は「（いまの設定）」として残す。一覧が無い（Bot がいない・まだ読んでいない）ときは選べない。
  * value は選んでいる値（選びかけか、いまの設定）
  */
-export function ChannelSelect({ id, value, empty, onChange }: { id: string; value: string; empty: string; onChange: (v: string) => void }) {
+export function ChannelSelect({ id, value, empty, onChange, className }: { id: string; value: string; empty: string; onChange: (v: string) => void; className?: string }) {
   const st = useChannels();
   const chans = st.list ? st.list.channels : [];
   const groups: { category: string; items: typeof chans }[] = [];
@@ -68,7 +68,7 @@ export function ChannelSelect({ id, value, empty, onChange }: { id: string; valu
     if (last && last.category === c.category) last.items.push(c); else groups.push({ category: c.category, items: [c] });
   });
   return (
-    <select id={id} value={value} disabled={!canPick(st)} onChange={(ev) => onChange(ev.target.value)}>
+    <select className={className} id={id} value={value} disabled={!canPick(st)} onChange={(ev) => onChange(ev.target.value)}>
       <option value="">{empty}</option>
       {groups.map((g, i) => (
         <optgroup label={g.category || 'カテゴリーなし'} key={i}>

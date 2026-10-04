@@ -2,12 +2,14 @@
 import { useState } from 'react';
 import type { ConsoleData, RpcResult, SeriesNotifyView } from '../../../../shared/api';
 import { askConfirm } from '../../../ui/confirm';
+import { checkRow, field, fieldLabel, fieldNote, numField } from '../../../ui/fields';
 import { toast } from '../../../ui/toast';
 import { discordSend, failToast } from '../api/discord';
 import { useConsole, useData } from '../context';
 import { me, seriesNames } from '../model/model';
 import { baseDays, baseHour, hasVal, readWhen, snEntry, whenText } from '../model/notify';
 import { ChannelSelect, channelLabel, useChannels } from './channels';
+import { foldInner } from './fold';
 import { useCall } from './useCall';
 
 type Fields = { channel: string; alsoBase: boolean; same: boolean; days: string; hour: string };
@@ -71,15 +73,15 @@ export function SeriesNotify() {
       () => { setDraft(null); void call('snRemove', 'snMsg', 'saveSeriesNotify', { series: name, remove: true }); });
   };
   return (
-    <div className="card" id="snCard">
+    <div className={foldInner(true)} id="snCard">
       <p className="hint">シリーズごとに、送るチャンネルと開催前の知らせの日時を変えられます。決めなければ上の表のとおりです。</p>
-      <div className="wrap" id="snListWrap" hidden={!list.length}>
+      <div className="wrap mt-4 mb-8" id="snListWrap" hidden={!list.length}>
         <table id="snList">
           {list.length > 0 && (
             <tbody>
               <tr><th>シリーズ</th><th>送り先</th><th>開催前の知らせ</th></tr>
               {list.map((x) => (
-                <tr data-sn={x.series} tabIndex={0} key={x.series} onClick={() => pick(x.series)}
+                <tr className="cursor-pointer [&:focus-visible_td]:bg-hover [&:hover_td]:bg-hover" data-sn={x.series} tabIndex={0} key={x.series} onClick={() => pick(x.series)}
                   onKeyDown={(ev) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); pick(x.series); } }}>
                   <td>{x.series}</td><td>{where(x)}</td><td className="nw">{whenOf(x)}</td>
                 </tr>
@@ -88,27 +90,27 @@ export function SeriesNotify() {
           )}
         </table>
       </div>
-      <label className="f" htmlFor="snSeries">シリーズ</label>
-      <select id="snSeries" value={name} disabled={!names.length} onChange={(ev) => pick(ev.target.value)}>
+      <label className={fieldLabel} htmlFor="snSeries">シリーズ</label>
+      <select className={field} id="snSeries" value={name} disabled={!names.length} onChange={(ev) => pick(ev.target.value)}>
         <option value="">{names.length ? '（シリーズを選ぶ）' : '（シリーズの卓がまだありません）'}</option>
         {names.map((n) => <option value={n} key={n}>{n + (snEntry(d, n) ? '（設定あり）' : '')}</option>)}
       </select>
       <div id="snFields" hidden={!name}>
         {name && (
           <>
-            <p className="hint" id="snNow">{'いま: ' + where(e, true) + '、開催前の知らせは' + whenOf(e)}</p>
-            <label className="f" htmlFor="snChannel">このシリーズのチャンネル <small>選ぶと専用のチャンネルに送る</small></label>
-            <ChannelSelect id="snChannel" value={f.channel} empty="専用にしない（基本のチャンネルへ）" onChange={(v) => edit({ channel: v })} />
+            <p className="hint mt-10 mb-0" id="snNow">{'いま: ' + where(e, true) + '、開催前の知らせは' + whenOf(e)}</p>
+            <label className={fieldLabel} htmlFor="snChannel">このシリーズのチャンネル <small className={fieldNote}>選ぶと専用のチャンネルに送る</small></label>
+            <ChannelSelect className={field} id="snChannel" value={f.channel} empty="専用にしない（基本のチャンネルへ）" onChange={(v) => edit({ channel: v })} />
             {/* 専用のチャンネルが無ければ、もともと基本のチャンネルへ送る */}
-            <label className="c"><input type="checkbox" id="snAlsoBase" disabled={!f.channel} checked={f.alsoBase} onChange={(ev) => edit({ alsoBase: ev.target.checked })} /> 基本のチャンネルにも送る</label>
-            <label className="c"><input type="checkbox" id="snSame" checked={f.same} onChange={(ev) => edit({ same: ev.target.checked })} /> <span id="snSameLbl">{'開催前の知らせは基本と同じ日時（' + whenText(baseDays(d), baseHour(d)) + '）'}</span></label>
+            <label className={checkRow}><input type="checkbox" id="snAlsoBase" disabled={!f.channel} checked={f.alsoBase} onChange={(ev) => edit({ alsoBase: ev.target.checked })} /> 基本のチャンネルにも送る</label>
+            <label className={checkRow}><input type="checkbox" id="snSame" checked={f.same} onChange={(ev) => edit({ same: ev.target.checked })} /> <span id="snSameLbl">{'開催前の知らせは基本と同じ日時（' + whenText(baseDays(d), baseHour(d)) + '）'}</span></label>
             {/* 基本と同じなら、日時の欄は出さない */}
-            <div className="when-row" id="snWhen" hidden={f.same}>開催日の <input type="text" className={'num' + (bad.d ? ' bad' : '')} id="snDays" inputMode="numeric" maxLength={2} aria-label="何日前（0〜30）" value={f.days} onChange={(ev) => edit({ days: ev.target.value })} /> 日前、<input type="text" className={'num' + (bad.h ? ' bad' : '')} id="snHour" inputMode="numeric" maxLength={2} aria-label="何時台（0〜23）" value={f.hour} onChange={(ev) => edit({ hour: ev.target.value })} /> 時台に送る</div>
+            <div className="mt-8 flex flex-wrap items-center gap-6" id="snWhen" hidden={f.same}>開催日の <input type="text" className={'w-[3.6em] ' + numField + (bad.d ? ' border-err-text' : '')} id="snDays" inputMode="numeric" maxLength={2} aria-label="何日前（0〜30）" value={f.days} onChange={(ev) => edit({ days: ev.target.value })} /> 日前、<input type="text" className={'w-[3.6em] ' + numField + (bad.h ? ' border-err-text' : '')} id="snHour" inputMode="numeric" maxLength={2} aria-label="何時台（0〜23）" value={f.hour} onChange={(ev) => edit({ hour: ev.target.value })} /> 時台に送る</div>
             <div className="btns">
               <button type="button" className="btn primary" id="snSave" disabled={saving} onClick={save}>保存</button>
               <button type="button" className="btn" id="snTest" disabled={!(e && e.channelId) || testing} onClick={test}>接続テスト</button>
               <button type="button" className="btn danger" id="snRemove" disabled={!e || !!busy.snRemove} onClick={remove}>設定を消す</button>
-              <span className={'hint' + (bad.msg ? ' bad' : '')} id="snMsg">{msg.snMsg || ''}</span>
+              <span className={'hint' + (bad.msg ? ' text-err-text' : '')} id="snMsg">{msg.snMsg || ''}</span>
             </div>
           </>
         )}

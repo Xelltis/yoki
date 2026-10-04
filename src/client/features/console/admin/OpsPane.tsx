@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import type { RpcResult } from '../../../../shared/api';
 import { askConfirm } from '../../../ui/confirm';
+import { field } from '../../../ui/fields';
 import { toast } from '../../../ui/toast';
 import { openForm } from '../actions';
 import { discordSend, failToast } from '../api/discord';
@@ -60,11 +61,11 @@ export function OpsPane() {
     });
   };
   return (
-    <div className="set-pane" data-pane="ops">
-      <p className="hint pane-lead">卓の一覧から選び、参加者の出入り・開催日のずらし・状態の変更・削除をまとめてできます。</p>
+    <div data-pane="ops">
+      <p className="hint">卓の一覧から選び、参加者の出入り・開催日のずらし・状態の変更・削除をまとめてできます。</p>
       <div className="card" id="availOps">
-        <div className="bulk" style={{ marginBottom: 10 }}>
-          <span className="cnt" id="bulkCount">{'選択 ' + ids.length + ' 件'}</span>
+        <div className="mb-10 flex flex-wrap items-center gap-8">
+          <span className="min-w-[5em] font-bold" id="bulkCount">{'選択 ' + ids.length + ' 件'}</span>
           <button type="button" className="btn small" id="bulkPast" onClick={() => pick(rows.filter((s) => s.date && daysBetween(d.today, s.date) < 0 && isActive(s)).map((s) => s.id), true)}>過ぎた卓を選ぶ</button>
           <button type="button" className="btn small" id="bulkNone" onClick={() => setSelected({})}>選択解除</button>
           <label className="chk"><input type="checkbox" id="showAll" checked={showAll} onChange={(ev) => {
@@ -90,7 +91,7 @@ export function OpsPane() {
                     onClick={(ev) => { if (!(ev.target instanceof Element && ev.target.closest('input,button'))) pick([s.id], !on); }}>
                     <td className="sel"><input type="checkbox" className="rowsel" data-id={s.id} aria-label={s.name + ' を選ぶ'} checked={on} onChange={(ev) => pick([s.id], ev.target.checked)} /></td>
                     <td className="nw"><b>{s.name}</b></td><td className="c nw">{s.series}</td><td className="c nw">{s.status}</td><td className="c nw">{when}</td><td className="c nw">{s.gm}</td>
-                    <td className="ppl">{s.members.join('、')}</td>
+                    <td className="min-w-[14em]">{s.members.join('、')}</td>
                     <td className="nw"><button type="button" className="btn small" data-edit={s.id} onClick={() => openForm(ui, { id: s.id })}>編集</button></td>
                   </tr>
                 );
@@ -99,18 +100,18 @@ export function OpsPane() {
             </tbody>
           </table>
         </div>
-        <div className="bulk" id="bulkBar" style={{ marginTop: 10 }}>
-          <select id="bulkAction" value={action} onChange={(ev) => setAction(ev.target.value as Action)}>
+        <div className="mt-10 flex flex-wrap items-center gap-8" id="bulkBar">
+          <select className={field} id="bulkAction" value={action} onChange={(ev) => setAction(ev.target.value as Action)}>
             {ACTIONS.map((x) => <option value={x[0]} key={x[0]}>{x[1]}</option>)}
           </select>
-          <select id="bulkStatus" hidden={action !== 'status'} value={statusV} onChange={(ev) => setStatus(ev.target.value)}>
+          <select className={field} id="bulkStatus" hidden={action !== 'status'} value={statusV} onChange={(ev) => setStatus(ev.target.value)}>
             {d.statuses.map((s) => <option value={s} key={s}>{s}</option>)}
           </select>
-          <select id="bulkMember" hidden={!(action === 'addMember' || action === 'removeMember' || action === 'setGm')} value={memberV} onChange={(ev) => setMember(ev.target.value)}>
+          <select className={field} id="bulkMember" hidden={!(action === 'addMember' || action === 'removeMember' || action === 'setGm')} value={memberV} onChange={(ev) => setMember(ev.target.value)}>
             {names.map((n) => <option value={n} key={n}>{n}</option>)}
           </select>
-          <input type="text" id="bulkDays" inputMode="numeric" placeholder="日数（7 や -1）" style={{ width: '9em' }} hidden={action !== 'shiftDays'} value={days} onChange={(ev) => setDays(ev.target.value)} />
-          <input type="text" id="bulkSeries" list="seriesList" placeholder="シリーズ名（空で外す）" style={{ width: '14em' }} hidden={action !== 'setSeries'} value={series} onChange={(ev) => setSeries(ev.target.value)} />
+          <input type="text" className="w-[9em] max-w-640" id="bulkDays" inputMode="numeric" placeholder="日数（7 や -1）" hidden={action !== 'shiftDays'} value={days} onChange={(ev) => setDays(ev.target.value)} />
+          <input type="text" className="w-[14em] max-w-640" id="bulkSeries" list="seriesList" placeholder="シリーズ名（空で外す）" hidden={action !== 'setSeries'} value={series} onChange={(ev) => setSeries(ev.target.value)} />
           <label className="chk"><input type="checkbox" id="bulkNotify" disabled={!d.channelSet} checked={notify} onChange={(ev) => setNotify(ev.target.checked)} /> Discord に知らせる</label>
           <button type="button" className={'btn ' + (action === 'delete' ? 'danger' : 'primary')} id="bulkRun" disabled={busy || !ids.length} onClick={run}>実行</button>
           <span id="bulkMsg" className="hint">{msg}</span>
