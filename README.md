@@ -90,7 +90,7 @@ Workers のテスト用の道具（`@cloudflare/vitest-pool-workers`）は、古
 2. **Discord アプリを作る**。[Discord Developer Portal](https://discord.com/developers/applications) で New Application → OAuth2 で、Redirects に `https://<公開するアドレス>/auth/callback` と `http://localhost:5173/auth/callback` を足す。Client ID と Client Secret を控える（Bot は要らない）
 3. **Cloudflare で D1 と API トークンを作る**
    - D1: `npx wrangler login` のあと `npx wrangler d1 create yoki`（Cloudflare の画面の D1 で作ってもよい）。出てきた database ID を控える
-   - API トークン: Cloudflare の画面の「API トークン」で、「Cloudflare Workers を編集する」のテンプレートに「D1: 編集」の権限を足して作る
+   - API トークン: アカウントの API トークンを作る（Cloudflare の画面の「アカウントの管理」→「アカウント API トークン」）。権限は 2 つ。「Workers」（新しいほう。「Workers Scripts」は古い形）の「Admin」と、「D1」の「Edit」。初めての公開で Worker を作るには Workers の Admin が要る（まだ無い Worker だけに絞った権限は付けられない）。公開できたら、Workers は `yoki` の Worker だけの「Editor」に下げてよい（公開と秘密の値はそれで足りる）。Workers の権限は D1 を含まないので、本番の D1 への表の変更のために D1 の Edit が別に要る。テンプレートの「Edit Cloudflare Workers」は D1 を含まず、要らない権限も多いので使わない。ユーザーの API トークンと違い、作った人に結びつかないので、その人がいなくなっても公開が止まらない（wrangler にはアカウント ID が要るが、deploy.yml が `CLOUDFLARE_ACCOUNT_ID` を渡す）
    - アカウント ID: Cloudflare の画面の Workers の右側に出る
 4. **GitHub に値を入れる**。リポジトリの Settings → Environments で「production」を作り、次を入れる
 
@@ -100,7 +100,7 @@ Workers のテスト用の道具（`@cloudflare/vitest-pool-workers`）は、古
    | 変数 | `YOKI_D1_DATABASE_ID` | 3 で作った D1 の database ID |
    | 変数 | `YOKI_APP_URL` | 公開するアドレス（`https://…`）。Discord の知らせに付くリンクになる |
    | 変数 | `YOKI_DISCORD_CLIENT_ID` | Discord アプリの Client ID |
-   | 秘密（Secrets） | `CLOUDFLARE_API_TOKEN` | 3 で作った API トークン |
+   | 秘密（Secrets） | `CLOUDFLARE_API_TOKEN` | 3 で作ったアカウントの API トークン |
    | 秘密 | `DISCORD_CLIENT_SECRET` | Discord アプリの Client Secret |
    | 秘密 | `OPERATOR_IDS` | 運営者（下の「管理画面」）の Discord ユーザー ID。何人いても、カンマか空白で区切って並べる |
 
