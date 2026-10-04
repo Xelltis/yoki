@@ -332,7 +332,8 @@ await withDevServer(async (base) => {
 
     await step('運営の管理画面: 規約の運営者・問い合わせ先・本文を直すと、/terms に出る。入口と設定タブから開ける', async () => {
       await page.goto(base + 'admin/#legal');
-      await page.waitForFunction(() => document.getElementById('lgTerms').value.includes('本サービス'), null, { timeout: 15000 });
+      // 欄は画面を描いてから出るので、出るのも待つ
+      await page.waitForFunction(() => document.getElementById('lgTerms')?.value.includes('本サービス'), null, { timeout: 15000 });
       assert.match(await page.textContent('#lgTermsState'), /既定の文/);
       await page.fill('#lgOperator', 'e2e の運営');
       await page.fill('#lgContact', 'https://example.com/contact');
