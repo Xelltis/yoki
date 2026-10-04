@@ -7,6 +7,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { ConsoleData } from '../../../../shared/api';
 import { load, store } from '../../../app/storage';
 import { watchSystemTheme } from '../../../app/theme';
+import { mainArea } from '../../../ui/chrome';
 import { ConfirmDialog } from '../../../ui/confirm';
 import { ModalManager } from '../../../ui/Modal';
 import { createStore, useStore } from '../../../ui/store';
@@ -63,7 +64,7 @@ export function ConsoleLayout() {
   return (
     <ConsoleContext.Provider value={ctx}>
       <Header tab={tab} />
-      <main>{view.phase === 'ready' && d ? <Outlet /> : <Loading view={view} sync={sync} />}</main>
+      <main className={mainArea(tab === 'cal' ? 'cal' : 'tabs')}>{view.phase === 'ready' && d ? <Outlet /> : <Loading view={view} sync={sync} />}</main>
       {d && (
         <>
           {/* 入力の候補（GM の名前・シリーズの名前）。候補は値だけで、名前は持たない */}

@@ -7,6 +7,7 @@ import { Outlet, useNavigate, useRouterState } from '@tanstack/react-router';
 import { useEffect } from 'react';
 import { OPERATOR_PANES, type OperatorPane } from '../../../shared/routes';
 import { store } from '../../app/storage';
+import { actions, appbar, areaBadge, brand, btxt, hbtn, hbtnIcon, logo, mainArea } from '../../ui/chrome';
 import { ConfirmDialog } from '../../ui/confirm';
 import { Icon } from '../../ui/Icon';
 import { ModalManager } from '../../ui/Modal';
@@ -33,14 +34,14 @@ export function OperatorLayout() {
   const reload = () => { void qc.invalidateQueries({ queryKey: ['admin'] }).then(() => toast('読み直しました')); };
   return (
     <>
-      <header className="appbar op-bar">
-        <a className="brand" href="/" title="入口へ"><img className="logo" src="/icon-192.png" alt="" width="32" height="32" /><span>卓予定</span><span className="area-badge op">運営</span></a>
-        <div className="hdr-actions">
-          <a className="hbtn" href="/" title="入口（グループの一覧）へ"><Icon name="arrow_back" size="sm" /><span className="btxt">入口へ</span></a>
-          <button type="button" id="reload" className="hbtn" title="読み直す" onClick={reload}><Icon name="refresh" size="sm" /><span className="btxt">更新</span></button>
+      <header className={appbar}>
+        <a className={brand} href="/" title="入口へ"><img className={logo} src="/icon-192.png" alt="" width="32" height="32" /><span>卓予定</span><span className={areaBadge + ' inline-block'}>運営</span></a>
+        <div className={actions}>
+          <a className={hbtn()} href="/" title="入口（グループの一覧）へ"><Icon name="arrow_back" size="sm" className={hbtnIcon} /><span className={btxt}>入口へ</span></a>
+          <button type="button" id="reload" className={hbtn() + ' max-sm:w-(--h-control) max-sm:p-0'} title="読み直す" onClick={reload}><Icon name="refresh" size="sm" className={hbtnIcon} /><span className={btxt}>更新</span></button>
         </div>
       </header>
-      <main>
+      <main className={mainArea()}>
         <section className="settings op">
           <div className="page-head">
             <h1>運営の管理画面</h1>

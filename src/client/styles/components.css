@@ -67,3 +67,28 @@ td.sel, th.sel { width: 36px; text-align: center; }
 td.c, th.c { text-align: center; }
 td.nw { white-space: nowrap; }
 tr.r-past td { background: var(--warn); }
+
+/* ボタンや欄の文字を、まわりと同じにする（ボタンと欄はブラウザの既定の文字を持つため）。大きさ・太さは、Tailwind のクラスで上書きする */
+.font-inherit { font: inherit; }
+
+/* 窓の箱（<Modal> の中の .box）。PC は中央、スマホは下から出るシート。wide は卓の登録など広い窓、confirm は確かめる窓。
+ * 窓の中の名前・欄・ボタンの並びの決まりも、ここに置く（.modal は <Modal> が付ける） */
+.modal .box { background: var(--card); color: var(--text); border-radius: var(--radius-xl); padding: 20px 22px; width: 100%; max-width: 440px; max-height: 92dvh; overflow: auto; overscroll-behavior: contain; box-shadow: var(--elev-lg); animation: rise var(--dur) ease-out; }
+.modal .box:focus { outline: none; }
+.modal h3 { margin: 0 0 8px; font-size: 17px; }
+.modal label { display: block; font-weight: 600; font-size: 13px; margin: 12px 0 6px; }
+.modal input:not([type=checkbox]):not([type=radio]) { width: 100%; }
+.modal .members label { display: inline-flex; margin: 0; font-weight: normal; }
+.modal .btns > label, .modal label.chk { display: inline-flex; align-items: center; gap: 8px; margin: 0; font-weight: normal; }
+.modal form .row > div { min-width: 120px; }
+.modal .btns { margin-top: 16px; }
+.modal textarea { width: 100%; height: 80px; resize: vertical; }
+.modal .box.wide { max-width: 760px; padding-top: 0; padding-bottom: 0; }
+.box.confirm #confirmText { white-space: pre-line; margin: 0; color: var(--muted); }
+.box.confirm .btns { justify-content: flex-end; }
+.box.confirm .btns .danger-fill { margin-left: 0; }
+@media (width < 601px) {
+  .modal .box { max-width: none; border-radius: var(--radius-xl) var(--radius-xl) 0 0; max-height: calc(100dvh / var(--zoom, 1) - 24px); padding: 18px 16px max(16px, env(safe-area-inset-bottom)); animation-name: sheet-up; }
+  .modal .box.wide { max-width: none; padding-top: 0; padding-bottom: 0; }
+  .modal form .row > div.narrow { flex: 1 1 0; min-width: 0; }
+}

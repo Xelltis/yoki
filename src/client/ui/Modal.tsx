@@ -38,7 +38,9 @@ export function Modal({ id, open, onClose, backdropClose, top, children }: {
   return createPortal(
     // 窓の外を押したら閉じる（キーボードでは Esc。ModalManager）
     // oxlint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
-    <div className="modal" id={id} hidden={!open} ref={ref} onClick={backdropClose ? (ev) => { if (ev.target === ref.current) onClose(); } : undefined}>
+    <div className={'modal fixed inset-0 z-(--z-modal) flex animate-fade-in items-center justify-center bg-scrim '
+      + 'pt-[max(16px,env(safe-area-inset-top))] pr-[max(16px,env(safe-area-inset-right))] pb-[max(16px,env(safe-area-inset-bottom))] pl-[max(16px,env(safe-area-inset-left))] '
+      + 'max-sm:items-end max-sm:px-0 max-sm:pt-[max(24px,env(safe-area-inset-top))] max-sm:pb-0'} id={id} hidden={!open} ref={ref} onClick={backdropClose ? (ev) => { if (ev.target === ref.current) onClose(); } : undefined}>
       {children}
     </div>,
     layer(!!top),
