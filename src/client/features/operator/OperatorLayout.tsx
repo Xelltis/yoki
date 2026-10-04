@@ -1,7 +1,7 @@
 // 運営者の管理画面（/admin/<区分>/）の外枠。上の帯・左の区分（e2e は #opNav の data-set を押す）・区分の中身・窓・吹き出し。
 // すべてのグループと利用者を見渡し、困ったときに手を入れる。グループの中身（卓・予定）は見ない
 import { useQueryClient } from '@tanstack/react-query';
-import { Outlet, useNavigate, useRouterState } from '@tanstack/react-router';
+import { Link, Outlet, useNavigate, useRouterState } from '@tanstack/react-router';
 import { useEffect } from 'react';
 import { OPERATOR_PANES, type OperatorPane } from '../../../shared/routes';
 import { store } from '../../app/storage';
@@ -35,9 +35,9 @@ export function OperatorLayout() {
   return (
     <>
       <header className={appbar}>
-        <a className={brand} href="/" title="入口へ"><img className={logo} src="/icon-192.png" alt="" width="32" height="32" /><span>卓予定</span><span className={areaBadge + ' inline-block'}>運営</span></a>
+        <Link className={brand} to="/" title="入口へ"><img className={logo} src="/icon-192.png" alt="" width="32" height="32" /><span>卓予定</span><span className={areaBadge + ' inline-block'}>運営</span></Link>
         <div className={actions}>
-          <a className={hbtn()} href="/" title="入口（グループの一覧）へ"><Icon name="arrow_back" size="sm" className={hbtnIcon} /><span className={btxt}>入口へ</span></a>
+          <Link className={hbtn()} to="/" title="入口（グループの一覧）へ"><Icon name="arrow_back" size="sm" className={hbtnIcon} /><span className={btxt}>入口へ</span></Link>
           <button type="button" id="reload" className={hbtn() + ' max-sm:w-(--h-control) max-sm:p-0'} title="読み直す" onClick={reload}><Icon name="refresh" size="sm" className={hbtnIcon} /><span className={btxt}>更新</span></button>
         </div>
       </header>

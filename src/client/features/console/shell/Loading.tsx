@@ -1,4 +1,5 @@
 // 読み込み中の骨組みと、読めなかったとき・グループが消えたときの案内（#loading。e2e が「見つかりません」の文を見る）
+import { Link } from '@tanstack/react-router';
 import { Icon } from '../../../ui/Icon';
 import type { ConsoleSync, SyncView } from '../api/sync';
 
@@ -29,7 +30,7 @@ export function Loading({ view, sync }: { view: SyncView; sync: ConsoleSync }) {
             <Icon name="refresh" size="sm" />もう一度読み込む
           </button>
         )}
-        {view.phase === 'gone' && <a className="btn primary" href="/">入口へ</a>}
+        {view.phase === 'gone' && <Link className="btn primary" to="/">入口へ</Link>}
       </div>
     </div>
   );

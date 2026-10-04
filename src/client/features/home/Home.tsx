@@ -1,5 +1,7 @@
 // 入口（/）: ログインしているかを /api/me で聞き、グループの一覧・グループを作る・ログインを出す
 import { useQuery } from '@tanstack/react-query';
+import { Link } from '@tanstack/react-router';
+import { useLayoutEffect } from 'react';
 import type { MeResponse } from '../../../shared/api';
 import { isReturnPath } from '../../../shared/routes';
 import { HELP_URL } from '../../app/links';
@@ -28,6 +30,13 @@ async function fetchMe(): Promise<MeResponse> {
 
 export function Home() {
   const me = useQuery({ queryKey: ['me'], queryFn: fetchMe });
+  // 入口の印（グループの画面の文字や欄の決まりを当てない。src/client/styles/base.css）。ほかの画面から移ってきたときも、描く前に付ける
+  useLayoutEffect(() => {
+    const el = document.documentElement;
+    el.setAttribute('data-page', 'home');
+    document.title = '卓予定';
+    return () => el.removeAttribute('data-page');
+  }, []);
   const q = new URLSearchParams(location.search);
   const say = NOTICE[q.get('login') || ''] || (q.get('deleted') === '1' ? NOTICE.deleted : '');
   return (
@@ -114,10 +123,10 @@ function Groups({ me }: { me: LoggedIn }) {
       <section className={card} id="home">
         {me.operator && (
           // 色はブラウザのリンクの色のまま（入口を作り直すときに決める）
-          <a className="float-right inline-flex items-center gap-4 text-13 font-semibold text-[color:LinkText] no-underline visited:text-[color:VisitedText]" id="opLink" href="/admin/">
+          <Link className="float-right inline-flex items-center gap-4 text-13 font-semibold text-[color:LinkText] no-underline visited:text-[color:VisitedText]" id="opLink" to="/admin/">
             <Icon name="shield" size="sm" className={iconSm} />
             運営の管理画面
-          </a>
+          </Link>
         )}
         <h2 className={h2}>
           <Icon name="group" className={icon} />
@@ -127,11 +136,11 @@ function Groups({ me }: { me: LoggedIn }) {
         <ul className="groups m-0 grid list-none gap-8 p-0" id="groups">
           {me.groups.map((g) => (
             <li key={g.id}>
-              <a className="grid grid-cols-[1fr_auto] grid-rows-[auto_auto] items-center gap-x-12 rounded-[12px] border border-line px-14 py-12 text-inherit no-underline hover:bg-hover" href={'/g/' + encodeURIComponent(g.id) + '/'}>
+              <Link className="grid grid-cols-[1fr_auto] grid-rows-[auto_auto] items-center gap-x-12 rounded-[12px] border border-line px-14 py-12 text-inherit no-underline hover:bg-hover" to="/g/$groupId/" params={{ groupId: g.id }}>
                 <b className="col-[1]">{g.title}</b>
                 <small className="col-[1] text-12 text-muted">{g.guildName}</small>
                 <Icon name="arrow_forward" className={icon + ' col-[2] row-[1/span_2] text-accent-strong'} />
-              </a>
+              </Link>
             </li>
           ))}
         </ul>

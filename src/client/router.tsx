@@ -1,8 +1,7 @@
 // 画面の道（TanStack Router。道はコードで書き、生成ファイルは使わない）。末尾はいつも /（Worker の道と同じ形）。
-// ページごとの JS は分けて読む（lazyRouteComponent）。入口・グループの画面・運営の管理画面をまたぐ移りは、
-// 見た目（CSS）がぶつからないように、ページを読み直す（ふつうの <a href>）
+// ページごとの JS は分けて読む（lazyRouteComponent）。入口・グループの画面・運営の管理画面のあいだも、読み直さずに移る
 import type { QueryClient } from '@tanstack/react-query';
-import { createRootRouteWithContext, createRoute, createRouter, lazyRouteComponent, notFound, Outlet, redirect } from '@tanstack/react-router';
+import { createRootRouteWithContext, createRoute, createRouter, lazyRouteComponent, Link, notFound, Outlet, redirect } from '@tanstack/react-router';
 import { ADMIN_PANES, type AdminPane, OPERATOR_PANES, type OperatorPane } from '../shared/routes';
 import { queryClient } from './app/queryClient';
 import { load } from './app/storage';
@@ -12,7 +11,7 @@ function NotFound() {
     <main style={{ padding: 24 }}>
       <h1>見つかりません</h1>
       <p>URL を確かめてください。</p>
-      <p><a href="/">入口へ</a></p>
+      <p><Link to="/">入口へ</Link></p>
     </main>
   );
 }
