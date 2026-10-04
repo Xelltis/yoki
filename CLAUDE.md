@@ -23,7 +23,7 @@
 | `npm run site` / `npm run site:build` | サイトを手元で開く・組み立てる |
 | `npm run screenshots` | サイトに載せるアプリのスクリーンショットを撮り直す |
 
-`npm run deploy`（本番の D1 と Worker に公開する）は、人が実行する。頼まれない限り動かさない。
+アプリの公開は GitHub Actions（`.github/workflows/deploy.yml`）が、main にアプリの変更が push されたときに行う。手元から `wrangler deploy` や本番の D1 へのマイグレーションはしない。main への push は本番への公開になるので、頼まれたときだけ、確かめてから push する。
 
 ## 変えたら確かめること
 
@@ -44,6 +44,7 @@ README の「書くときの決まり」に加えて、次を守る。
 - 運営者の API（`src/worker/routes/admin.ts`）は、どの道も最初に `requireOperator` を呼ぶ。変える操作は監査の控え（`audit`）を log に出す。運営者にも、グループの中身（卓・予定・Webhook の URL）は返さない
 - グループの画面の管理者向けのものは、管理の区域（`/g/:id/admin/`。`src/client/console/area.ts`）に置く。ふだんの区域には、だれでも使うものだけを置く
 - Discord のトークンは保存しない。秘密の値（`.dev.vars`）はコミットしない
+- 公開する Cloudflare ごとの値（D1 の ID・アプリのアドレス・Discord アプリの値・運営者の ID・API トークン）は、リポジトリに書かない。GitHub の environment「production」に置き、`wrangler.jsonc` には仮の値だけを置く（README の「公開」）
 - アイコンを足したら、読み込む一覧にも足す（画面は各ページの `icon_names`、サイトは `website/.vitepress/config.ts` の `ICONS`。テストが確かめる）
 
 ## コミット

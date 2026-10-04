@@ -20,7 +20,7 @@ npm run dev
 - ひよりは管理者、ほかの人はただのメンバーとして入れる（権限の違いを確かめられる）
 - ひよりは、手元（localhost）から開いたときだけ運営者にもなる。入口の「運営の管理画面」から `/admin/` を開ける
 - サンプルのグループは、初めて入ったときに作られる。作り直すときは `curl -X POST http://localhost:5173/dev/reset -H 'Origin: http://localhost:5173'`
-- 本物の Discord でログインを試すときは、`.dev.vars.example` を `.dev.vars` に写して、Discord アプリの値を入れる（下の「公開」の 1）
+- 本物の Discord でログインを試すときは、`.dev.vars.example` を `.dev.vars` に写して、Discord アプリの値を入れる（Discord アプリの作り方は、下の「公開」の 2）
 - サーバー側（`src/worker`）と画面（`src/client`）のどちらを直しても、開いている画面に反映される
 
 ## フォルダ構成
@@ -47,14 +47,15 @@ website/           サイト（VitePress。GitHub Pages に公開する）。紹
   .vitepress/      サイトの設定と見た目・試せる例の部品
   public/          アイコン・SNS 用の画像（og.png）・アプリのスクリーンショット
   tools/           スクリーンショットと SNS 用の画像を作る道具
-.github/workflows/ サイトを GitHub Pages に公開する
+.github/workflows/ アプリを Cloudflare に（deploy.yml）、サイトを GitHub Pages に（pages.yml）公開する
 docs/              作りの説明（architecture.md）
-wrangler.jsonc     Worker の設定（D1・cron・公開する値）
-vite.config.ts     開発サーバーと組み立て
+wrangler.jsonc     Worker の設定（D1・cron）。公開する Cloudflare ごとの値は仮の値だけ
+vite.config.ts     開発サーバーと組み立て。公開のときに、Cloudflare ごとの値を組み立てた設定に入れる
 vitest.config.ts   テスト
 lefthook.yml       Git のフック（コミットの前の確認）
 commitlint.config.js コミットの説明の決まり（Conventional Commits）
 CLAUDE.md          Claude Code で作業するときの決まり（コミットの書き方など）
+LICENSE            ライセンス（MIT）
 ```
 
 ## テスト
@@ -81,27 +82,34 @@ Workers のテスト用の道具（`@cloudflare/vitest-pool-workers`）は、古
 
 ## 公開（Cloudflare）
 
-1. **Discord アプリを作る**。[Discord Developer Portal](https://discord.com/developers/applications) で New Application → OAuth2 で、Redirects に `https://<公開するアドレス>/auth/callback` と `http://localhost:5173/auth/callback` を足す。Client ID と Client Secret を控える（Bot は要らない）
-2. **Cloudflare にログインし、D1 を作る**
-   ```
-   npx wrangler login
-   npx wrangler d1 create yoki
-   ```
-   出てきた `database_id` を `wrangler.jsonc` の `d1_databases` に書く
-3. **値を入れる**。`wrangler.jsonc` の `vars` に `APP_URL`（公開するアドレス）と `DISCORD_CLIENT_ID` を書き、シークレットを入れる
-   ```
-   npx wrangler secret put DISCORD_CLIENT_SECRET
-   ```
-   運営者（下の「運営の管理画面」）にする人の Discord ユーザー ID も、`vars` の `OPERATOR_IDS` に書く。何人いても、カンマか空白で区切って並べる（`"OPERATOR_IDS": "123456789012345678, 234567890123456789"`）。ID は、Discord の設定の「詳細設定」で開発者モードを ON にし、自分のアイコンを右クリックして「ユーザー ID をコピー」で取れる
-   - Cloudflare の画面で vars を直しても、次の `npm run deploy` で `wrangler.jsonc` の値に戻る。値は `wrangler.jsonc` に書く
-   - リポジトリに ID を残したくなければ、`vars` の `OPERATOR_IDS` を消して `npx wrangler secret put OPERATOR_IDS` で入れてもよい（同じ名前を vars と secret の両方には置けない）
-4. **公開する**
-   ```
-   npm run deploy
-   ```
-   テスト → 組み立て（開発用ログインが残っていたら止まる）→ 本番の D1 にマイグレーション → 公開、の順に進む。公開には、組み立てた設定（`dist/yoki/wrangler.json`）を使う
+アプリの公開は GitHub Actions（`.github/workflows/deploy.yml`）が行う。手元から `wrangler deploy` はしない。
 
-最初は `https://yoki.<アカウント>.workers.dev` で公開される。独自のドメインはあとから Cloudflare の画面で足せる（そのときは APP_URL と Discord の Redirects も直す）。
+公開する Cloudflare ごとに違う値（D1 の ID・アプリのアドレス・Discord アプリの値・運営者の ID）は、リポジトリに置かない。GitHub の environment「production」に置き、公開のときに組み立てた設定（`dist/yoki/wrangler.json`）に入れる（`vite.config.ts`）。リポジトリの `wrangler.jsonc` には仮の値だけがある。フォークして自分の Cloudflare に公開するときも、同じ手順で進める。
+
+1. **公開するアドレスを決める**。最初は `https://yoki.<アカウントのサブドメイン>.workers.dev` になる（サブドメインは、Cloudflare の画面の Workers で分かる）。独自のドメインは、あとから足せる
+2. **Discord アプリを作る**。[Discord Developer Portal](https://discord.com/developers/applications) で New Application → OAuth2 で、Redirects に `https://<公開するアドレス>/auth/callback` と `http://localhost:5173/auth/callback` を足す。Client ID と Client Secret を控える（Bot は要らない）
+3. **Cloudflare で D1 と API トークンを作る**
+   - D1: `npx wrangler login` のあと `npx wrangler d1 create yoki`（Cloudflare の画面の D1 で作ってもよい）。出てきた database ID を控える
+   - API トークン: Cloudflare の画面の「API トークン」で、「Cloudflare Workers を編集する」のテンプレートに「D1: 編集」の権限を足して作る
+   - アカウント ID: Cloudflare の画面の Workers の右側に出る
+4. **GitHub に値を入れる**。リポジトリの Settings → Environments で「production」を作り、次を入れる
+
+   | 種類 | 名前 | 中身 |
+   |---|---|---|
+   | 変数（Variables） | `CLOUDFLARE_ACCOUNT_ID` | Cloudflare のアカウント ID |
+   | 変数 | `YOKI_D1_DATABASE_ID` | 3 で作った D1 の database ID |
+   | 変数 | `YOKI_APP_URL` | 公開するアドレス（`https://…`）。Discord の知らせに付くリンクになる |
+   | 変数 | `YOKI_DISCORD_CLIENT_ID` | Discord アプリの Client ID |
+   | 秘密（Secrets） | `CLOUDFLARE_API_TOKEN` | 3 で作った API トークン |
+   | 秘密 | `DISCORD_CLIENT_SECRET` | Discord アプリの Client Secret |
+   | 秘密 | `OPERATOR_IDS` | 運営者（下の「管理画面」）の Discord ユーザー ID。何人いても、カンマか空白で区切って並べる |
+
+   - Discord のユーザー ID は、Discord の設定の「詳細設定」で開発者モードを ON にし、自分のアイコンを右クリックして「ユーザー ID をコピー」で取れる
+   - 運営者の ID は、公開のログに出さないように秘密に置く（公開のリポジトリでは、Actions のログはだれでも読める）
+   - 公開のたびに確かめたいなら、environment の「Required reviewers」に自分を入れる。承認するまで公開が止まる
+5. **公開する**。main にアプリの変更（`src/`・`migrations/`・設定）を push すると動く。Actions の画面の「アプリを公開する」から、手で動かすこともできる。型の確認 → テスト（カバレッジ 100%）→ 組み立て（値が欠けていたら止まる。開発用ログインが残っていても止まる）→ 本番の D1 にマイグレーション → 公開、の順に進む。秘密の値は、公開する版と一緒に送る
+
+独自のドメインは、あとから Cloudflare の画面で足せる。そのときは、`YOKI_APP_URL` と Discord の Redirects も直す。
 
 Cloudflare は無料のプランで動く。グループが増えて、知らせの見回りで送る数が多くなったら、有料のプラン（Workers Paid）にする。
 
@@ -110,7 +118,7 @@ Cloudflare は無料のプランで動く。グループが増えて、知らせ
 管理画面は 2 つある。
 
 - **グループの管理画面**（`/g/:id/admin/`）: そのグループの管理者が使う。メンバーの登録・卓をまとめて変える・Discord の知らせ・管理者・送信の記録・グループを消す、をまとめてある。ふだんの画面のタブの並びの「管理」（PC だけ）か、「設定」のタブから開く。管理者でなければ開けない
-- **運営の管理画面**（`/admin/`）: 公開した人（運営者。`OPERATOR_IDS` に書いた人）が使う。入口の画面に「運営の管理画面」のリンクが出る
+- **運営の管理画面**（`/admin/`）: 公開した人（運営者。秘密の `OPERATOR_IDS` に書いた人）が使う。入口の画面に「運営の管理画面」のリンクが出る
   - **様子**: グループ・利用者・有効なログイン・動いている卓の数、知らせの見回り（cron）が動いているか、Discord への送信の失敗
   - **グループ**: 一覧と中身（Discord サーバー・メンバー・卓の数・最後に使われた日）。管理者の付け替え、Discord サーバーの付け替え、グループを消す（名前を打ち込んで確かめる。中身も消え、戻せない）
   - **利用者**: ログインを切る、締め出す・戻す。締め出した人は Discord でログインできなくなり、残っていたログインも効かなくなる。Discord のアカウントで止めるので、別のアカウントを作られると止められない。運営者は締め出せない
@@ -136,9 +144,9 @@ npm run site:build   組み立てる（website/.vitepress/dist/）
 
 | コマンド | すること |
 |---|---|
-| `npm run build` | 公開する形に組み立てる（`dist/`） |
+| `npm run build` | 公開する形に組み立てる（`dist/`）。公開は GitHub Actions が行う（上の「公開」） |
 | `npm run preview` | 組み立てたものを手元で動かす |
-| `npm run db:migrate:local` / `db:migrate:remote` | 手元・本番の D1 にマイグレーションを当てる |
+| `npm run db:migrate:local` | 手元の D1 にマイグレーションを当てる（本番は公開のときに当たる） |
 | `npm run types` | `wrangler.jsonc` から型（`worker-configuration.d.ts`）を作り直す |
 | `npm run site` / `site:build` / `site:preview` | サイトを手元で開く・組み立てる・組み立てたものを開く（下の「サイト」） |
 | `npm run screenshots` | サイトに載せるアプリのスクリーンショットを `website/public/screenshots/` に撮る（開発サーバーをその場で立てる） |
@@ -154,3 +162,7 @@ npm run site:build   組み立てる（website/.vitepress/dist/）
 - **表を変えるときは、マイグレーションを足す。** `migrations/` に番号の続くファイルを足し、すでにあるファイルは書き換えない
 - **画面にアイコンを足したら**、そのページの先頭の読み込みの `icon_names` にも名前をアルファベット順で足す（テストが確かめる）
 - メンバーは中では ID で持ち、画面とのやり取りでは名前を使う（`src/worker/domain/people.ts`）
+
+## ライセンス
+
+[MIT](LICENSE)
