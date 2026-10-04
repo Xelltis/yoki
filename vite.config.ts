@@ -71,18 +71,4 @@ export default defineConfig(({ command }) => ({
     outDir: path.join(import.meta.dirname, 'dist'),
     emptyOutDir: true,
   },
-  environments: {
-    // 画面のページ（Worker 側の組み立てには関係しない）
-    client: {
-      build: {
-        rollupOptions: {
-          input: {
-            index: path.join(root, 'index.html'),
-            console: path.join(root, 'console/index.html'),
-            operator: path.join(root, 'operator/index.html'),
-          },
-        },
-      },
-    },
-  },
 }));

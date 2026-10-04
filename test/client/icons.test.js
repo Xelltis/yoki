@@ -16,7 +16,7 @@ const pngSize = (buf) => {
 /** 頭のタグの中で、アイコンと manifest が参照するファイル（href と sizes） */
 const refs = (html) => [...html.matchAll(/<link rel="(?:icon|apple-touch-icon|manifest)" href="\/([^"]+)"(?:[^>]*sizes="(\d+)x\d+")?/g)].map((m) => ({ file: m[1], size: m[2] ? Number(m[2]) : null }));
 
-const PAGES = ['src/client/index.html', 'src/client/console/index.html', 'src/client/operator/index.html', 'src/worker/routes/html.ts'];
+const PAGES = ['src/client/index.html', 'src/worker/routes/html.ts'];
 
 test('どのページも、同じアイコンと manifest を参照し、そのファイルがある', () => {
   const want = refs(read(PAGES[0]));

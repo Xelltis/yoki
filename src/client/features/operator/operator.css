@@ -1,4 +1,4 @@
-/* 運営者の管理画面（/admin/ で開く）。グループの画面の CSS（/console/app.css）に、運営者の画面の部品だけを足す */
+/* 運営者の管理画面（/admin/ で開く）。アプリの見た目（ui/app.css）に、運営者の画面の部品だけを足す */
 body[data-area="operator"] { --appbar-h: 56px; --nav-h: 0px; }
 .area-badge.op { display: inline-block; }
 section.op { max-width: 1280px; }
