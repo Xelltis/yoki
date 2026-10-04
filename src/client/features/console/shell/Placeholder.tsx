@@ -9,7 +9,6 @@ function Placeholder({ id }: { id: string }) {
   );
 }
 
-export const AvailTab = () => <Placeholder id="tab-avail" />;
 export const SettingsTab = () => <Placeholder id="tab-settings" />;
 
 const paneRoute = getRouteApi('/g/$groupId/admin/$pane');

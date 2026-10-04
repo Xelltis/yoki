@@ -29,3 +29,17 @@ export function withoutSession(d: ConsoleData, id: string): ConsoleData {
 export function withSession(d: ConsoleData, id: string, change: (s: ConsoleSession) => ConsoleSession): ConsoleData {
   return { ...d, sessions: d.sessions.map((s) => (s.id === id ? change(s) : s)) };
 }
+
+/** その日の、その人の予定の印を変える（空なら消す） */
+export function withAvail(d: ConsoleData, day: string, name: string, mark: string): ConsoleData {
+  const marks = { ...d.avail[day] };
+  if (mark) marks[name] = mark; else delete marks[name];
+  return { ...d, avail: { ...d.avail, [day]: marks } };
+}
+
+/** その日の、その人の予定のメモを変える（空なら消す） */
+export function withAvailNote(d: ConsoleData, day: string, name: string, text: string): ConsoleData {
+  const notes = { ...(d.availNotes || {})[day] };
+  if (text.trim()) notes[name] = { text: text.trim(), at: 'いま' }; else delete notes[name];
+  return { ...d, availNotes: { ...d.availNotes, [day]: notes } };
+}
