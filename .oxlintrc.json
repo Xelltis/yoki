@@ -1,0 +1,11 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  // lint（npm run lint）。正しさの決まりと、React の hooks の決まり・アクセシビリティ（jsx-a11y）を、どれも error で見る
+  "plugins": ["typescript", "unicorn", "oxc", "react", "jsx-a11y"],
+  "categories": { "correctness": "error" },
+  "rules": {
+    "react-hooks/rules-of-hooks": "error",
+    "react-hooks/exhaustive-deps": "error"
+  },
+  "ignorePatterns": ["dist/**", "coverage/**", "website/.vitepress/dist/**", "website/.vitepress/cache/**", "worker-configuration.d.ts"]
+}
