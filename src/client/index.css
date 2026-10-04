@@ -1,8 +1,8 @@
 /* 画面の見た目の入口（Tailwind CSS v4）。main.tsx が最初に読む。
- * 層の順: theme（トークン）→ base（要素の既定）→ legacy（Tailwind に書き直している途中の CSS）→ components → utilities。
- * 古い CSS（ui/app.css・features/home/home.css・features/operator/operator.css）は legacy の層に入れ、Tailwind のクラスが古い CSS に勝つようにする。
- * Tailwind の preflight（要素の見た目を消す土台）は、古い CSS がなくなるまで使わない */
-@layer theme, base, legacy, components, utilities;
+ * 層の順: theme（トークン）→ base（要素の既定）→ components（部品）→ legacy（Tailwind に書き直している途中の CSS）→ utilities。
+ * 古い CSS（ui/app.css・features/operator/operator.css）は legacy の層に入れる。書き直した部品より古い CSS が勝ち（場面ごとの上書きが残る）、
+ * Tailwind のクラスはどれにも勝つ。Tailwind の preflight（要素の見た目を消す土台）は、古い CSS がなくなるまで使わない */
+@layer theme, base, components, legacy, utilities;
 @import 'tailwindcss/theme.css' layer(theme);
 @import 'tailwindcss/utilities.css' layer(utilities) source(none);
 @source './';
@@ -17,6 +17,8 @@
   --text-10: 10px; --text-11: 11px; --text-12: 12px; --text-13: 13px; --text-14: 14px; --text-15: 15px;
   --text-16: 16px; --text-17: 17px; --text-18: 18px; --text-20: 20px; --text-22: 22px; --text-28: 28px;
   --font-sans: "Segoe UI Variable Text", "Segoe UI", "Hiragino Sans", "BIZ UDPGothic", "Noto Sans JP", "Yu Gothic UI", Meiryo, system-ui, sans-serif;
+  /* 入口の文字（グループの画面とは別。入口を作り直すときにそろえる） */
+  --font-home: system-ui, -apple-system, 'Hiragino Sans', 'Noto Sans JP', sans-serif;
   --color-white: #fff; --color-black: #000;
 }
 /* 古い CSS も var(--radius-…) で読むので、使っていなくても出す */
@@ -39,7 +41,7 @@
   --color-sun: var(--sun); --color-sat: var(--sat); --color-ok-text: var(--ok-text); --color-err-text: var(--err-text);
   --color-booked-text: var(--booked-text); --color-toast: var(--toast); --color-toast-text: var(--toast-text); --color-week-line: var(--week-line);
   --color-scrim: var(--scrim);
-  --color-fg: var(--text); --color-page: var(--bg);
+  --color-fg: var(--text); --color-page: var(--bg); --color-home-bar: var(--home-bar);
   --shadow-card: var(--elev-sm); --shadow-pop: var(--elev-lg);
 }
 /* ダーク（data-theme="dark" か、明るいを選んでいない OS のダーク）。色は変数で変わるので、たいていは要らない */
@@ -64,7 +66,7 @@
     --out: #f6f8fa; --weekend: #f9fafb; --warn: #fde1e7; --soon: #eeeafd; --past: #eceff3; --violet: #6d28d9;
     --text: #0b111b; --muted: #5a6474; --line: #e2e6ec; --line-strong: #c9d0da; --bg: #f2f4f7; --card: #ffffff; --hover: #edf1f6;
     --sun: #d4163f; --sat: #0369a1; --ok-text: #046c4e; --err-text: #be123c;
-    --booked-text: #1e3a8a; --toast: #0b111b; --toast-text: #f1f5f9; --week-line: #9aa4b2; --scrim: rgba(5, 8, 12, .55);
+    --booked-text: #1e3a8a; --toast: #0b111b; --toast-text: #f1f5f9; --week-line: #9aa4b2; --scrim: rgba(5, 8, 12, .55); --home-bar: #0b111b;
     --elev-sm: 0 1px 2px rgba(11, 17, 27, .06);
     --elev-lg: 0 16px 40px rgba(11, 17, 27, .22), 0 2px 6px rgba(11, 17, 27, .08);
     --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%235a6474' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
@@ -81,7 +83,7 @@
     --out: #0d1015; --weekend: #0f1318; --warn: #3b141f; --soon: #231b3f; --past: #1a1f27; --violet: #a78bfa;
     --text: #e6ebf2; --muted: #8d98a8; --line: #232a34; --line-strong: #343d49; --bg: #0b0e13; --card: #12161d; --hover: #1a2029;
     --sun: #fb7185; --sat: #38bdf8; --ok-text: #34d399; --err-text: #fb7185;
-    --booked-text: #93c5fd; --toast: #e6ebf2; --toast-text: #0b0e13; --week-line: #4b5563; --scrim: rgba(0, 0, 0, .65);
+    --booked-text: #93c5fd; --toast: #e6ebf2; --toast-text: #0b0e13; --week-line: #4b5563; --scrim: rgba(0, 0, 0, .65); --home-bar: #05070a;
     --elev-sm: 0 1px 2px rgba(0, 0, 0, .5);
     --elev-lg: 0 16px 40px rgba(0, 0, 0, .7), 0 2px 6px rgba(0, 0, 0, .5);
     --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%238d98a8' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
@@ -99,7 +101,7 @@
       --out: #0d1015; --weekend: #0f1318; --warn: #3b141f; --soon: #231b3f; --past: #1a1f27; --violet: #a78bfa;
       --text: #e6ebf2; --muted: #8d98a8; --line: #232a34; --line-strong: #343d49; --bg: #0b0e13; --card: #12161d; --hover: #1a2029;
       --sun: #fb7185; --sat: #38bdf8; --ok-text: #34d399; --err-text: #fb7185;
-      --booked-text: #93c5fd; --toast: #e6ebf2; --toast-text: #0b0e13; --week-line: #4b5563; --scrim: rgba(0, 0, 0, .65);
+      --booked-text: #93c5fd; --toast: #e6ebf2; --toast-text: #0b0e13; --week-line: #4b5563; --scrim: rgba(0, 0, 0, .65); --home-bar: #05070a;
       --elev-sm: 0 1px 2px rgba(0, 0, 0, .5);
       --elev-lg: 0 16px 40px rgba(0, 0, 0, .7), 0 2px 6px rgba(0, 0, 0, .5);
       --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%238d98a8' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
@@ -115,4 +117,23 @@
     --dur-fast: 120ms; --dur: 180ms;
   }
   @media (pointer: coarse) { :root { --h-control: 40px; --h-control-sm: 34px; } }
+}
+
+/* ---- 要素の既定 ---- */
+@layer base {
+  *, ::before, ::after { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--text); }
+}
+
+/* ---- 部品 ---- */
+@layer components {
+  /* アイコン（Material Symbols Rounded。<Icon name>）。飾りなので読み上げない（aria-hidden） */
+  .material-icons {
+    font-family: 'Material Symbols Rounded'; font-weight: normal; font-style: normal; font-size: 20px; line-height: 1;
+    letter-spacing: normal; text-transform: none; display: inline-block; white-space: nowrap; word-wrap: normal; direction: ltr;
+    font-feature-settings: 'liga'; -webkit-font-smoothing: antialiased; font-variation-settings: 'FILL' 0;
+    width: 1em; overflow: hidden; flex-shrink: 0; vertical-align: -5px; user-select: none;
+  }
+  .material-icons.sm { font-size: 18px; vertical-align: -4px; }
+  .material-icons.xs { font-size: 14px; vertical-align: -2px; }
 }
