@@ -6,6 +6,7 @@ import { Icon } from '../../ui/Icon';
 import { Modal } from '../../ui/Modal';
 import { ADMIN_READS, useAct, useAdmin } from './api';
 import { fmt } from './format';
+import { chip, id as idCls } from './styles';
 
 export function UsersPane() {
   const users = useAdmin<AdminUserRow[]>(ADMIN_READS.users.queryKey, ADMIN_READS.users.path).data;
@@ -25,28 +26,28 @@ export function UsersPane() {
     ok: '消す', danger: true,
   }, () => { void act(userPath(u.id, 'delete'), {}); });
   return (
-    <div className="set-pane" data-pane="users">
+    <div data-pane="users">
       <div className="card">
         <h3><Icon name="person" size="sm" />利用者 <small className="hint">一度でもログインした人。最後にログインしたのが新しい順</small></h3>
-        <input type="search" id="opUserFilter" placeholder="名前か Discord ID で絞る" aria-label="利用者を絞る" value={filter} onChange={(ev) => setFilter(ev.target.value)} />
+        <input type="search" className="mt-6 mb-10 w-full max-w-360" id="opUserFilter" placeholder="名前か Discord ID で絞る" aria-label="利用者を絞る" value={filter} onChange={(ev) => setFilter(ev.target.value)} />
         <div className="wrap">
-          <table id="opUsers" className="op-table">
+          <table id="opUsers">
             {users && (
               <tbody>
                 <tr><th>名前</th><th>入っているグループ</th><th>最後のログイン</th><th className="c">ログイン</th><th aria-label="操作"></th></tr>
                 {list.map((u) => (
-                  <tr className={u.bannedAt ? 'op-banned' : ''} key={u.id}>
+                  <tr className={u.bannedAt ? '[&_td]:bg-[color-mix(in_srgb,var(--warn)_45%,transparent)]' : ''} key={u.id}>
                     <td>
                       <b>{u.name}</b>
-                      {u.operator && <>{' '}<span className="op-chip">運営者</span></>}
-                      {u.bannedAt && <>{' '}<span className="op-chip bad">締め出し中</span></>}
-                      <small className="op-id">{u.id + '（' + u.username + '）'}</small>
-                      {u.bannedAt && <small className="op-id">{fmt(u.bannedAt) + (u.bannedReason ? '：' + u.bannedReason : '')}</small>}
+                      {u.operator && <>{' '}<span className={chip()}>運営者</span></>}
+                      {u.bannedAt && <>{' '}<span className={chip(true)}>締め出し中</span></>}
+                      <small className={idCls}>{u.id + '（' + u.username + '）'}</small>
+                      {u.bannedAt && <small className={idCls}>{fmt(u.bannedAt) + (u.bannedReason ? '：' + u.bannedReason : '')}</small>}
                     </td>
                     <td>{u.groups.map((g) => g.title).join('、') || <span className="hint">なし</span>}</td>
-                    <td className="nw">{fmt(u.lastLoginAt)}<small className="op-id">{'はじめて ' + fmt(u.createdAt)}</small></td>
+                    <td className="nw">{fmt(u.lastLoginAt)}<small className={idCls}>{'はじめて ' + fmt(u.createdAt)}</small></td>
                     <td className="c">{u.logins}</td>
-                    <td className="nw op-acts">
+                    <td className="nw flex flex-wrap justify-end gap-6 max-sm:justify-start">
                       {u.logins > 0 && <button type="button" className="btn small" data-logout={u.id} onClick={() => logout(u)}><Icon name="logout" size="sm" />ログインを切る</button>}
                       {!u.operator && (u.bannedAt
                         ? <button type="button" className="btn small" data-unban={u.id} onClick={() => { void act(userPath(u.id, 'ban'), { banned: false }); }}><Icon name="undo" size="sm" />戻す</button>

@@ -5,9 +5,18 @@ import { askConfirm } from '../../ui/confirm';
 import { Icon } from '../../ui/Icon';
 import { ADMIN_READS, useAct, useAdmin } from './api';
 import { ago, fmt } from './format';
+import { dd, dl, dt, state as stateCls } from './styles';
+
+/** 数の箱を並べる */
+const counts = 'mb-14 grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-12';
 
 function Count({ n, label, sub }: { n: number; label: string; sub?: string }) {
-  return <div className="op-count"><b>{n}</b><span>{label}</span>{sub && <small>{sub}</small>}</div>;
+  // op-count は e2e が探す印
+  return (
+    <div className="op-count flex flex-col gap-2 rounded-lg border border-line bg-card px-16 py-14">
+      <b className="text-28 leading-[1.2] tabular-nums">{n}</b><span className="text-13 font-semibold">{label}</span>{sub && <small className="text-12 text-muted">{sub}</small>}
+    </div>
+  );
 }
 
 export function OverviewPane() {
@@ -15,8 +24,8 @@ export function OverviewPane() {
   const act = useAct();
   if (!o) {
     return (
-      <div className="set-pane" data-pane="overview">
-        <div className="op-counts" id="opCounts"></div>
+      <div data-pane="overview">
+        <div className={counts} id="opCounts"></div>
         <div className="card" id="opReg"></div>
         <div className="card" id="opPatrol"></div>
         <Fails o={o} />
@@ -36,8 +45,8 @@ export function OverviewPane() {
     else askConfirm({ title: '新規登録の受付を止めますか？', message: '新しいグループの作成と、初めての人のログインを断ります。もう使っている人と今あるグループは、そのまま使えます。', ok: '受付を止める' }, go);
   };
   return (
-    <div className="set-pane" data-pane="overview">
-      <div className="op-counts" id="opCounts">
+    <div data-pane="overview">
+      <div className={counts} id="opCounts">
         <Count n={c.groups} label="グループ" />
         <Count n={c.users} label="利用者" sub={c.bannedUsers ? '締め出し ' + c.bannedUsers + ' 人' : ''} />
         <Count n={c.logins} label="有効なログイン" />
@@ -45,18 +54,18 @@ export function OverviewPane() {
       </div>
       <div className="card" id="opReg">
         <h3><Icon name="person_add" size="sm" />新規登録の受付</h3>
-        <p className={'op-state ' + (o.registrationOpen ? 'ok' : 'warn')}>{o.registrationOpen ? '受け付けています' : '止めています'}</p>
+        <p className={stateCls(o.registrationOpen ? 'ok' : 'warn')}>{o.registrationOpen ? '受け付けています' : '止めています'}</p>
         <p className="hint">止めると、新しいグループの作成と、初めての人のログインを断ります。もう使っている人と今あるグループは、そのまま使えます。運営者は、止めていてもログインでき、グループも作れます。</p>
         <button type="button" className="btn small" id="opRegToggle" data-open={o.registrationOpen ? '0' : '1'} onClick={toggleReg}>{o.registrationOpen ? '受付を止める' : '受け付ける'}</button>
       </div>
       <div className="card" id="opPatrol">
         <h3><Icon name="monitor_heart" size="sm" />知らせの見回り（cron、5 分おき）</h3>
-        <p className={'op-state ' + state[0]}>{state[1]}</p>
-        <dl className="op-dl">
-          <dt>最後の見回り</dt><dd>{last ? fmt(last.at) : '—'}</dd>
-          <dt>最後にうまくいった見回り</dt><dd>{fmt(p.okAt)}</dd>
-          <dt>毎時の仕事（開催前の知らせ・期間前の催促・自動終了）</dt><dd>{p.hourly ? p.hourly.replace('T', ' ') + ' 時台' : '—'}</dd>
-          <dt>毎日の片付け</dt><dd>{p.daily || '—'}</dd>
+        <p className={stateCls(state[0]!)}>{state[1]}</p>
+        <dl className={dl}>
+          <dt className={dt}>最後の見回り</dt><dd className={dd}>{last ? fmt(last.at) : '—'}</dd>
+          <dt className={dt}>最後にうまくいった見回り</dt><dd className={dd}>{fmt(p.okAt)}</dd>
+          <dt className={dt}>毎時の仕事（開催前の知らせ・期間前の催促・自動終了）</dt><dd className={dd}>{p.hourly ? p.hourly.replace('T', ' ') + ' 時台' : '—'}</dd>
+          <dt className={dt}>毎日の片付け</dt><dd className={dd}>{p.daily || '—'}</dd>
         </dl>
       </div>
       <Fails o={o} />

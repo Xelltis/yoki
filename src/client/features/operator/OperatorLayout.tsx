@@ -1,7 +1,6 @@
 // 運営者の管理画面（/admin/<区分>/）の外枠。上の帯・左の区分（e2e は #opNav の data-set を押す）・区分の中身・窓・吹き出し。
 // すべてのグループと利用者を見渡し、困ったときに手を入れる。グループの中身（卓・予定）は見ない
 import '../../ui/app.css';
-import './operator.css';
 import { useQueryClient } from '@tanstack/react-query';
 import { Outlet, useNavigate, useRouterState } from '@tanstack/react-router';
 import { useEffect } from 'react';
@@ -10,6 +9,8 @@ import { store } from '../../app/storage';
 import { actions, appbar, areaBadge, brand, btxt, hbtn, hbtnIcon, logo, mainArea } from '../../ui/chrome';
 import { ConfirmDialog } from '../../ui/confirm';
 import { Icon } from '../../ui/Icon';
+import { PageHead } from '../../ui/PageHead';
+import { SetLayout, setNavBtn } from '../../ui/SetNav';
 import { ModalManager } from '../../ui/Modal';
 import { Toast, toast } from '../../ui/toast';
 import { ADMIN_READS, adminQuery } from './api';
@@ -42,19 +43,13 @@ export function OperatorLayout() {
         </div>
       </header>
       <main className={mainArea()}>
-        <section className="settings op">
-          <div className="page-head">
-            <h1>運営の管理画面</h1>
-            <p className="lead">すべてのグループと利用者を見渡し、困ったときに手を入れます。グループの中身（卓・予定）は見ません。</p>
-          </div>
-          <div className="set2">
-            <nav className="set-nav" id="opNav" aria-label="管理の区分">
-              {PANES.map(([p, label]) => (
-                <button type="button" key={p} data-set={p} aria-current={pane === p ? 'true' : undefined} onClick={() => { void navigate({ to: '/admin/$pane/', params: { pane: p } }); }}>{label}</button>
-              ))}
-            </nav>
-            <div><Outlet /></div>
-          </div>
+        <section className="max-w-1280">
+          <PageHead title="運営の管理画面" lead="すべてのグループと利用者を見渡し、困ったときに手を入れます。グループの中身（卓・予定）は見ません。" />
+          <SetLayout id="opNav" label="管理の区分" nav={PANES.map(([p, label]) => (
+            <button type="button" className={setNavBtn} key={p} data-set={p} aria-current={pane === p ? 'true' : undefined} onClick={() => { void navigate({ to: '/admin/$pane/', params: { pane: p } }); }}>{label}</button>
+          ))}>
+            <Outlet />
+          </SetLayout>
         </section>
       </main>
       <ConfirmDialog />
