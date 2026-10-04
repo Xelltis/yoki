@@ -28,3 +28,10 @@ export function notifyState(d: ConsoleData, s: ConsoleSession): string {
   const k = s.date ? addDaysYmd(s.date, -notifyDaysFor(d, s)) : '';
   return k && k >= d.today ? '開催前の知らせ ' + fmtJa(k) + ' ' + notifyHourFor(d, s) + ' 時台に送る' : '開催前の知らせ 未送信';
 }
+/** 「何日前」と「何時台」の欄を読む。dOk・hOk はそれぞれの欄が正しいか、err は正しくないときの理由 */
+export function readWhen(dv: string, hv: string): { days: number; hour: number; dOk: boolean; hOk: boolean; err: string } {
+  const ds = dv.trim(), hs = hv.trim(), days = +ds, hour = +hs;
+  const dOk = /^\d{1,2}$/.test(ds) && days <= 30, hOk = /^\d{1,2}$/.test(hs) && hour <= 23;
+  const err = !dOk ? '何日前かは 0〜30 の数で入れてください（0 は当日、1 は前日）。' : !hOk ? '時刻は 0〜23 の数で入れてください。' : '';
+  return { days, hour, dOk, hOk, err };
+}
