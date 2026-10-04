@@ -12,9 +12,10 @@ export type Tab = 'cal' | 'recruit' | 'avail' | 'settings' | 'admin';
 
 /**
  * 卓の登録の窓を開く頼み。id は変える卓、cont はその卓の設定を引き継いで翌日の卓を登録する、
- * date・status・series は新しく登録するときの初めの値（series を選ぶと直前の回から引き継ぐ）
+ * date・status・series は新しく登録するときの初めの値（series を選ぶと直前の回から引き継ぐ。status は変える卓にも当てる）。
+ * focus は、開いたときに入る欄（無ければ卓の名前）
  */
-export type FormReq = { id?: string; cont?: string; date?: string; status?: string; series?: string };
+export type FormReq = { id?: string; cont?: string; date?: string; status?: string; series?: string; focus?: 'date' };
 
 /** 画面の状態（サーバーには送らない） */
 export type ConsoleUi = {
