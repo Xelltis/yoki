@@ -1,6 +1,5 @@
 // グループの画面（/g/:id/ とタブ、管理の区域 /g/:id/admin/）の外枠。上の帯・タブ・本文（道の中身）・窓・吹き出しを置く。
 // データの読み書きは ConsoleSync（api/sync.ts）。データが届くまでは読み込み中の骨組みを出す
-import '../../../ui/app.css';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Outlet, useNavigate, useParams, useRouterState } from '@tanstack/react-router';
 import { useEffect, useMemo, useState } from 'react';
