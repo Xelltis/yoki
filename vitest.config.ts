@@ -1,14 +1,23 @@
 // Vitest の設定。
 //   worker … src/worker を Workers の実行環境（ローカルの D1 つき）で確かめる
 //   client … 画面の JS（src/client）を Node で確かめる
+// カバレッジ（npm run test:coverage）は Istanbul で測る（Workers の実行環境では V8 のカバレッジが使えない）。
+// 測るのはサーバーと共有の型だけ。画面のテストはファイルを文字として読むだけで動かさないので、画面は e2e が受け持つ
 import path from 'node:path';
 import { cloudflareTest, readD1Migrations } from '@cloudflare/vitest-pool-workers';
-import { defineConfig } from 'vitest/config';
+import { defineConfig, type ViteUserConfig } from 'vitest/config';
 
-export default defineConfig(async () => {
+export default defineConfig(async (): Promise<ViteUserConfig> => {
   const migrations = await readD1Migrations(path.join(import.meta.dirname, 'migrations'));
   return {
     test: {
+      coverage: {
+        provider: 'istanbul',
+        include: ['src/worker/**/*.ts', 'src/shared/**/*.ts'],
+        // text は 100% のファイルも並べる。html は coverage/index.html に出る
+        reporter: [['text', { skipFull: false }], 'html', 'json-summary'],
+        reportsDirectory: 'coverage',
+      },
       projects: [
         {
           plugins: [

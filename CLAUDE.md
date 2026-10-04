@@ -16,6 +16,7 @@
 |---|---|
 | `npm run dev` | アプリを開発サーバーで動かす（http://localhost:5173/ 、「開発用ログイン」でサンプルのグループに入る） |
 | `npm test` | サーバーと画面のテスト |
+| `npm run test:coverage` | テストのカバレッジ（サーバーと共有の型。`coverage/index.html` にも出る） |
 | `npm run typecheck` | 型の確認（アプリ・設定ファイル・サイト） |
 | `npm run e2e` | ブラウザで通しで確かめる（開発サーバーをその場で立てる） |
 | `npm run build` | 組み立てる。開発用ログインが残っていたら止まる |
