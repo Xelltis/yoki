@@ -162,7 +162,7 @@ TypeScript と React 19 で書き、Vite が組み立てる。1 つの SPA で�
 - タブと区分の一覧は `src/shared/routes.ts` に置き、Worker（`routes/pages.ts`。知らない区分は 404）と画面の道の両方から読む。ログインのあとに戻る先も、この一覧で確かめる（`isReturnPath`）
 - 検索の文字（`?login=…` など）は `URLSearchParams` のまま読む（TanStack Router の既定は JSON として読むため）
 - JS は、入口・グループの画面の外枠・タブ・管理の区域・運営の管理画面ごとに分けて読む。公開で古い JS が消えていたら、1 度だけページを読み直す（`main.tsx`）
-- 入口・グループの画面・運営の管理画面をまたぐ移りは、ふつうのリンクでページを読み直す（それぞれの見た目の CSS がぶつからないように）
+- 入口・グループの画面・運営の管理画面のあいだも、読み直さずに移る。入口を出しているあいだだけ、html に `data-page="home"` を付ける（入口には、グループの画面の文字・欄・表の決まりを当てない。入口を作り直すときにそろえる）
 
 **データ**（TanStack Query。既定では自動で読み直さない。`app/queryClient.ts`）。
 
@@ -194,7 +194,15 @@ TypeScript と React 19 で書き、Vite が組み立てる。1 つの SPA で�
 | `admin/` | 管理の区域の区分 |
 
 - 画面は見る人の手元の暦で日付を扱う（今日は、サーバーが日本時間で決めた `today`）
-- 見た目は `ui/app.css`（グループの画面と運営の管理画面）・`features/home/home.css`（入口）・`features/operator/operator.css`
+
+**見た目**（Tailwind CSS v4。`index.css` が入口で、`@tailwindcss/vite` が組み立てる）。
+
+- 層の順は theme（トークン）→ base（要素の既定）→ components（部品）→ utilities（Tailwind のクラス）。ほとんどの見た目は、部品の JSX に Tailwind のクラスで書く
+- トークン（`styles/theme.css`）: Tailwind の既定のトークン（色の一覧・rem の寸法）は使わず、置いたものだけを使う。寸法は px で数える（`--spacing: 1px`。`p-10` は 10px）。文字の大きさは `text-13` など、幅の区切りは 401・601・701・761・901・1061px（`sm:` は 601px 以上、`max-sm:` は 600px 以下）
+- 色は、明るい・ダーク・OS のダークで値の変わる変数（`--card` など）に置き、`@theme inline` で Tailwind の色にする（`bg-card` は `var(--card)` を読む）。ダークの色は変数が変わるので、`dark:` はほとんど要らない。`dark:` は `data-theme="dark"` と、明るいを選んでいない OS のダークの両方に効く
+- 要素の既定（`styles/base.css`）: 文字・リンク・見出し・欄・表・フォームの中の名前・文字の大きさの設定（body の zoom）。Tailwind の preflight（要素の見た目を消す土台）は、まだ使わない（見た目を作り直すときに入れる）
+- 部品（`styles/components.css`）: いくつもの画面で使う形だけを置く（アイコン・説明・カード・ボタン・ボタンの並び・欄の行・表の枠と行・窓の箱）。場面ごとの調整は、Tailwind のクラスで上書きする（クラスは部品に勝つ）
+- くり返すクラスの組み合わせは、TypeScript の定数にする（`ui/chrome.ts` の上の帯、`ui/fields.ts` の設定の欄、`features/console/styles.ts` の知らせの行や札など）。クラスの名前は文字列のつなぎで組み立てない（Tailwind はファイルの文字から名前を探すので、組み立てた名前の CSS は出ない）
 
 ## サイト（website/）
 
