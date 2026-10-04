@@ -1,5 +1,5 @@
 // 右下: 選んだ日の内訳（その日の卓・メンバーの予定・日付のメモ）
-import { api, discordSend, failToast, refetch, useData } from './api';
+import { api, discordSend, failToast, refetch, takeData } from './api';
 import { renderCal } from './calendar';
 import { daysBetween, fmtJa, timeRange } from './dates';
 import { $, esc, hit, mi, toast } from './dom';
@@ -84,7 +84,7 @@ export function renderDayDetail(): void {
       // 押した瞬間に仮反映
       if (text.trim()) D.notes[day] = { text: text.trim(), by: me(), at: 'いま' }; else delete D.notes[day];
       renderCal();
-      api().withSuccessHandler((res) => { toast(res.message); useData(res); })
+      api().withSuccessHandler((res) => { toast(res.message); takeData(res); })
         .withFailureHandler((e) => { dayNoteDraft[day] = text; $('dayNoteSave').disabled = false; $('dayNoteMsg').textContent = e.message; toast(e.message); refetch(); })
         .setDayNote({ ymd: day, text, me: me() });
     };
@@ -114,7 +114,7 @@ export function init(): void {
           nb.disabled = false;
           if (r.notified) notifyRes[s.id] += '（今日が開催前の知らせの日なので、開催前の知らせ済みにしました）';
           toast(ok ? 'Discord に送りました: ' + s.name : failToast(r));
-          if (r.data) useData(r); else renderDayDetail();
+          if (r.data) takeData(r); else renderDayDetail();
         });
     });
   });

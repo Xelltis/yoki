@@ -1,6 +1,6 @@
 // 募集・調整のタブ。募集中の卓（参加希望・興味あり）と、調整中の卓（日程調整の回答・開催日を決める）
 import type { ConsoleSession } from '../../shared/api';
-import { api, discordSend, failToast, refetch, useData } from './api';
+import { api, discordSend, failToast, refetch, takeData } from './api';
 import { renderCal, revealDay, selectDay } from './calendar';
 import { fmtJa, holidayName, parseYmd, timeRange } from './dates';
 import { $, esc, hit, mi, store, toast } from './dom';
@@ -117,7 +117,7 @@ function castAny(id: string, off: boolean): void {
     });
     renderRecruit(); renderNotices(); renderCal();
     api().withSuccessHandler((res) => {
-      useData(res); toast(res.message);
+      takeData(res); toast(res.message);
       if (res.ready && res.notified === false && res.id) notifyReady(res.id, res.message);
     }).withFailureHandler((e) => { toast(e.message); refetch(); })
       .setPollVoteAll({ id, name, vote: off ? '' : '◯' });
@@ -136,7 +136,7 @@ function castVote(id: string, k: string, mark: string): void {
   if (next) s.votes[k][name] = next; else delete s.votes[k][name];
   renderRecruit(); renderNotices(); renderCal();
   api().withSuccessHandler((res) => {
-    useData(res);
+    takeData(res);
     toast(res.message);
     if (res.ready && res.notified === false && res.id) notifyReady(res.id, res.message);
   }).withFailureHandler((e) => { toast(e.message); refetch(); })
@@ -164,7 +164,7 @@ export function init(): void {
       const dng = dvs.filter((n) => dv[n] !== '◯');
       askConfirm({ title: fmtJa(dk) + ' に決めますか？', message: '「' + sdc.name + '」の開催日を ' + fmtJa(dk) + ' にして、状態を「開催」にします。候補日とみんなの回答は消えます。' + (dng.length ? '　◯ でない人: ' + dng.join('、') : ''), ok: 'この日に決める' }, () => {
         db.disabled = true;
-        api().withSuccessHandler((res) => { toast(res.message); useData(res); if (res.notified === false && res.id) notifyDecided(res.id, res.message); })
+        api().withSuccessHandler((res) => { toast(res.message); takeData(res); if (res.notified === false && res.id) notifyDecided(res.id, res.message); })
           .withFailureHandler((e) => { db.disabled = false; toast(e.message); })
           .decidePoll({ id: sdc.id, ymd: dk, me: me() });
       });
@@ -183,7 +183,7 @@ export function init(): void {
       const sc = byId(pc.dataset.pollCancel); if (!sc) return;
       askConfirm({ title: '日程調整をやめますか？', message: '「' + sc.name + '」の候補日とみんなの回答は消えます。卓は調整中のまま残ります。', ok: '調整をやめる', danger: true }, () => {
         pc.disabled = true;
-        api().withSuccessHandler((res) => { toast(res.message); useData(res); })
+        api().withSuccessHandler((res) => { toast(res.message); takeData(res); })
           .withFailureHandler((e) => { pc.disabled = false; toast(e.message); })
           .cancelPoll({ id: sc.id });
       });
@@ -214,7 +214,7 @@ export function init(): void {
     if (level === 'want') s.want.push(name); else if (level === 'interest') s.interest.push(name);
     renderRecruit(); renderOps(); renderNotices();
     const el = document.querySelector('.res[data-rres="' + s.id + '"]'); if (el) el.textContent = '保存しています…';
-    api().withSuccessHandler((res) => { toast(res.message); useData(res); })
+    api().withSuccessHandler((res) => { toast(res.message); takeData(res); })
       .withFailureHandler((e) => { toast(e.message); refetch(); })
       .setInterest({ id: s.id, name, level });
   });
@@ -230,7 +230,7 @@ export function init(): void {
     discordSend({ kind: 'ask', id: sa.id, me: me(), message: text }, setA, (ok, r) => {
       if (btn) btn.disabled = false;
       toast(ok ? 'Discord に送りました: ' + sa.name : failToast(r));
-      if (r.data) useData(r);
+      if (r.data) takeData(r);
     });
   });
 }

@@ -1,6 +1,6 @@
 // 管理画面の「知らせ」の「シリーズごとの上書き」。シリーズ専用のチャンネルと、開催前の知らせの日時
 import type { SeriesNotifyView } from '../../shared/api';
-import { api, discordSend, failToast, refetch, useData } from './api';
+import { api, discordSend, failToast, refetch, takeData } from './api';
 import { channelLabel, fillChannelSelect, markDirty } from './channels';
 import { $, esc, hit, toast } from './dom';
 import { askConfirm } from './modal';
@@ -107,7 +107,7 @@ export function init(): void {
     const btn = $('snSave'); btn.disabled = true; $('snMsg').textContent = '保存しています…';
     api().withSuccessHandler((res) => {
       btn.disabled = false; snDraft = false; toast(res.message);
-      useData(res, () => { $('snMsg').textContent = res.message; });
+      takeData(res, () => { $('snMsg').textContent = res.message; });
       $('snMsg').textContent = res.message;
     }).withFailureHandler((e) => { btn.disabled = false; $('snMsg').textContent = e.message; $('snMsg').classList.add('bad'); toast(e.message); }).saveSeriesNotify(form);
   };

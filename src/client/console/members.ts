@@ -1,6 +1,6 @@
 // メンバー。管理画面の「メンバー」（一覧と、足す・名前を変える・外す）と、ふだんの画面の設定の「あなたの名前と備考」
 import type { RpcResult } from '../../shared/api';
-import { api, useData } from './api';
+import { api, takeData } from './api';
 import { $, esc, fillSelect, hit, mi, toast } from './dom';
 import { askConfirm } from './modal';
 import { active, isActive, peopleOf } from './model';
@@ -45,7 +45,7 @@ function mbusy(on: boolean): void { $('msave').disabled = on; $('mdel').disabled
 function afterMemberChange(res: RpcResult, keepName: string): void {
   mbusy(false); drafts.member = false;
   toast(res.message + (D && D.members.length && !D.sessions.some(isActive) ? '　次は「カレンダー」タブで卓を登録します。' : ''));
-  useData(res, () => { fillMemberForm(keepName); mmsg(res.message, false); });
+  takeData(res, () => { fillMemberForm(keepName); mmsg(res.message, false); });
 }
 
 export function init(): void {
@@ -71,7 +71,7 @@ export function init(): void {
     api().withSuccessHandler((res) => {
       $('meSave').disabled = false; drafts.me = false;
       toast(res.message);
-      useData(res, () => { $('meMsg').textContent = res.message; });
+      takeData(res, () => { $('meMsg').textContent = res.message; });
     }).withFailureHandler((e) => { $('meSave').disabled = false; $('meMsg').textContent = e.message; }).saveMember(form);
   });
   $('mdel').onclick = () => {

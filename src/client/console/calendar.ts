@@ -3,7 +3,7 @@ import type { ConsoleSession } from '../../shared/api';
 import { WD, holidayName, parseYmd, ymdOf } from './dates';
 import { renderDayDetail } from './day';
 import { $, esc, hit, mi, reducedMotion, store } from './dom';
-import { STATUS_ICON, active, availMap, hasPoll, isActive, isAdjusting, peopleOf, pollOk, pollVoters, sortSessions, windowByDay } from './model';
+import { STATUS_ICON, active, availMap, hasPoll, isActive, isAdjusting, pollOk, pollVoters, sortSessions, windowByDay } from './model';
 import { D, selDay, setSelDay, view } from './state';
 
 /** カレンダーの下のアイコンの読み方。[アイコン, 名前, 付ける印] */

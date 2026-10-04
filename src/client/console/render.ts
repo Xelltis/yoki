@@ -7,7 +7,7 @@ import { $, fillSelect, load } from './dom';
 import { fillForm, syncNotifyUi } from './form';
 import { showLoadedAt } from './load';
 import { fillMemberForm, renderMeCard, renderMembers } from './members';
-import { active, byId, isAdmin, pickLabel, seriesNames, sortedActive, sortSessions } from './model';
+import { active, byId, pickLabel, seriesNames, sortedActive, sortSessions } from './model';
 import { renderNotices } from './notices';
 import { renderOps } from './ops';
 import { renderRecruit } from './recruit';

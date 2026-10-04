@@ -59,8 +59,8 @@ export function api<R = RpcResult>(): Call<R> {
           return;
         }
         let msg = String((r.body && r.body.error) || 'うまくいきませんでした。');
-        if (/^AUTH:/.test(msg)) { loginAgain(); return; }
-        if (/^GONE:/.test(msg)) { showGone(msg.replace(/^GONE:\s*/, '')); return; }
+        if (msg.startsWith('AUTH:')) { loginAgain(); return; }
+        if (msg.startsWith('GONE:')) { showGone(msg.replace(/^GONE:\s*/, '')); return; }
         msg = msg.replace(/^ADMIN:\s*/, '');
         if (ngF) ngF({ message: msg }); else toast(msg);
         afterWrites();
@@ -91,7 +91,7 @@ export function refetch(after?: () => void): void {
   }).withFailureHandler((e) => { toast('読み込めませんでした: ' + e.message); }).getConsoleData();
 }
 /** 書き込みの返事には最新のデータが同梱されている。あればそれを使い、2 往復目をしない */
-export function useData(res: { data?: ConsoleData } | null | undefined, after?: () => void): void {
+export function takeData(res: { data?: ConsoleData } | null | undefined, after?: () => void): void {
   if (res && res.data) {
     // ほかにも返事待ちの書き込みがあるなら、まだ描かない（押した瞬間の表示が一度戻るのを防ぐ）。最後の返事か読み直しで描く
     if (sync.pending > 0) { sync.stale = true; return; }

@@ -1,6 +1,6 @@
 // 卓の登録・変更の窓。シリーズの引き継ぎ・何日分かのまとめ登録・重なりの注意・保存と削除
 import type { ConsoleSession } from '../../shared/api';
-import { api, discordSend, failToast, refetch, useData } from './api';
+import { api, discordSend, failToast, refetch, takeData } from './api';
 import { renderCal } from './calendar';
 import { addDaysYmd, fmtJa, parseYmd, winLabel } from './dates';
 import { $, esc, hit, mi, toast } from './dom';
@@ -314,7 +314,7 @@ function submit(ev: Event): void {
   api().withSuccessHandler((res) => {
     busy(false);
     toast(res.message);
-    useData(res, () => { if ($('formModal').hidden && res.id) { $('pick').value = res.id; fillForm(res.id); } });
+    takeData(res, () => { if ($('formModal').hidden && res.id) { $('pick').value = res.id; fillForm(res.id); } });
     if (wantPoll && res.id) openPollWhenReady(res.id);
     if (!wantNotify) return;
     const req = res.ids && res.ids.length > 1 ? { kind: 'bulk', names: res.names, ids: res.ids, label: '登録', series: form.series, me: me() } : { kind: 'change', id: res.id, verb: wasEdit ? '変更' : '登録', me: me() };
@@ -342,7 +342,7 @@ function remove(): void {
     api().withSuccessHandler((res) => {
       busy(false);
       toast(res.message);
-      useData(res, () => { if ($('formModal').hidden) fillForm(''); });
+      takeData(res, () => { if ($('formModal').hidden) fillForm(''); });
       if (!wantDelNotify) return;
       discordSend({ kind: 'delete', name: delName, series: delSeries, status: delStatus, me: me() },
         (t) => { toast(t); },

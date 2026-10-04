@@ -1,5 +1,5 @@
 // メンバーの予定の入力: 予定のメモ（自分のマスの鉛筆から）と、まとめて入れる
-import { api, refetch, useData } from './api';
+import { api, refetch, takeData } from './api';
 import { renderAvail } from './avail';
 import { WD, fmtJa } from './dates';
 import { renderDayDetail } from './day';
@@ -27,7 +27,7 @@ function saveMemo(text: string): void {
   if (!D.availNotes[key]) D.availNotes[key] = {};
   if (text.trim()) D.availNotes[key][name] = { text: text.trim(), at: 'いま' }; else delete D.availNotes[key][name];
   renderAvail(); renderDayDetail();
-  api().withSuccessHandler((res) => { toast(res.message); useData(res); })
+  api().withSuccessHandler((res) => { toast(res.message); takeData(res); })
     .withFailureHandler((e) => { toast(e.message); refetch(); })
     .setAvailNote({ name, ymd: key, text });
 }
@@ -65,7 +65,7 @@ export function init(): void {
     const markText = $('abMark').options[$('abMark').selectedIndex]!.textContent;
     askConfirm({ title: '自分の列にまとめて入れますか？', message: name + ' の ' + fmtJa(form.from) + '〜' + fmtJa(form.to) + '（' + wds.map((d) => WD[d]).join('') + '）に「' + markText + '」を入れます。' + (form.keep ? '\n入力済みのマスは残します。' : '\n入力済みのマスも上書きします。'), ok: '入れる' }, () => {
       $('abRun').disabled = true; $('abMsg').textContent = '保存しています…';
-      api().withSuccessHandler((res) => { $('abRun').disabled = false; $('abMsg').textContent = res.message; toast(res.message); useData(res); })
+      api().withSuccessHandler((res) => { $('abRun').disabled = false; $('abMsg').textContent = res.message; toast(res.message); takeData(res); })
         .withFailureHandler((e) => { $('abRun').disabled = false; $('abMsg').textContent = e.message; toast(e.message); })
         .setAvailabilityBulk(form);
     });
