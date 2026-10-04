@@ -2,7 +2,9 @@
 // app.ts が import.meta.env.DEV のときだけ登録するので、本番のビルド（vite build）には入らない
 import type { Hono } from 'hono';
 import type { AppEnv } from '../app';
+import { mayLogIn } from '../domain/registration';
 import { seedSample } from '../seed/sample';
+import { isOperator } from './operator';
 import { saveProfile } from './oauth';
 import { isBanned, isLocalHttp, startSession } from './session';
 import { DEV_GUILD, DEV_USERS, SAMPLE_GROUP_ID } from './dev-users';
@@ -26,6 +28,7 @@ export function registerDevRoutes(app: Hono<AppEnv>): void {
     const who = DEV_USERS.find((u) => u.name === form.as) ?? DEV_USERS[0]!;
     if (await isBanned(c.env.DB, who.id)) return c.redirect('/?login=banned', 303);
     const url = new URL(c.req.url);
+    if (!(await mayLogIn(c.env.DB, who.id, isOperator(c.env, who.id, url)))) return c.redirect('/?login=closed', 303);
     await ensureSampleGroup(c.env.DB, url.origin + '/g/' + SAMPLE_GROUP_ID + '/');
     await saveProfile(c.env.DB, { id: who.id, username: 'dev-' + who.id.slice(-2), global_name: who.name }, [
       { id: DEV_GUILD.id, name: DEV_GUILD.name, owner: who.manager, permissions: '0' },

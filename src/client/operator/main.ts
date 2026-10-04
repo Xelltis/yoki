@@ -70,6 +70,10 @@ async function loadOverview(): Promise<void> {
   const o = await call<AdminOverview>('/api/admin/overview');
   const c = o.counts;
   const box = (n: number, label: string, sub = '') => '<div class="op-count"><b>' + n + '</b><span>' + label + '</span>' + (sub ? '<small>' + sub + '</small>' : '') + '</div>';
+  $('opReg').innerHTML = '<h3>' + mi('person_add') + '新規登録の受付</h3>' +
+    '<p class="op-state ' + (o.registrationOpen ? 'ok">受け付けています' : 'warn">止めています') + '</p>' +
+    '<p class="hint">止めると、新しいグループの作成と、初めての人のログインを断ります。もう使っている人と今あるグループは、そのまま使えます。運営者は、止めていてもログインでき、グループも作れます。</p>' +
+    '<button type="button" class="btn small" id="opRegToggle" data-open="' + (o.registrationOpen ? '0' : '1') + '">' + (o.registrationOpen ? '受付を止める' : '受け付ける') + '</button>';
   $('opCounts').innerHTML = box(c.groups, 'グループ') + box(c.users, '利用者', c.bannedUsers ? '締め出し ' + c.bannedUsers + ' 人' : '') + box(c.logins, '有効なログイン') + box(c.activeSessions, '動いている卓', '募集・調整中・開催');
   const p = o.patrol, last = p.last;
   const state = !last ? ['bad', '記録がありません（cron がまだ一度も動いていないか、止まっています）']
@@ -180,6 +184,14 @@ function init(): void {
   document.querySelectorAll<HTMLElement>('#opNav button').forEach((b) => { b.onclick = () => { showPane(b.dataset.set!); }; });
   window.addEventListener('hashchange', () => { showPane(location.hash.slice(1)); });
   $('reload').onclick = () => { loadAll().then(() => toast('読み直しました')); };
+  // 新規登録の受付。止めるときだけ確かめる
+  $('opReg').addEventListener('click', (ev) => {
+    const b = hit(ev, '#opRegToggle'); if (!b) return;
+    const open = b.dataset.open === '1';
+    const go = () => { act('/api/admin/registration', { open }, loadOverview); };
+    if (open) go();
+    else askConfirm({ title: '新規登録の受付を止めますか？', message: '新しいグループの作成と、初めての人のログインを断ります。もう使っている人と今あるグループは、そのまま使えます。', ok: '受付を止める' }, go);
+  });
   // 失敗の一覧からグループを開く
   $('opFails').addEventListener('click', (ev) => {
     const a = hit(ev, 'a[data-open]'); if (!a) return;

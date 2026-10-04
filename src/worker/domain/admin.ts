@@ -23,7 +23,7 @@ export async function overview(db: D1Database, now = new Date()): Promise<AdminO
               (SELECT count(*) FROM auth_sessions WHERE expires_at > ?1) AS logins,
               (SELECT count(*) FROM sessions WHERE status IN ${ACTIVE}) AS active`,
     ).bind(now.toISOString()),
-    db.prepare("SELECT key, value FROM meta WHERE key IN ('patrol', 'patrol_ok_at', 'hourly', 'daily')"),
+    db.prepare("SELECT key, value FROM meta WHERE key IN ('patrol', 'patrol_ok_at', 'hourly', 'daily', 'registration')"),
     db.prepare(`SELECT (SELECT count(*) FROM notify_log l WHERE l.at > ?1 AND ${FAILED}) AS day, (SELECT count(*) FROM notify_log l WHERE l.at > ?2 AND ${FAILED}) AS week`)
       .bind(ago(now, DAY_MS), ago(now, 7 * DAY_MS)),
     db.prepare(
@@ -54,6 +54,7 @@ export async function overview(db: D1Database, now = new Date()): Promise<AdminO
         (r): AdminFailure => ({ at: r.at, groupId: r.group_id, groupTitle: r.title, kind: r.kind, target: r.target, result: r.result }),
       ),
     },
+    registrationOpen: m.registration !== 'closed',
   };
 }
 
