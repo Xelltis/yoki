@@ -56,7 +56,7 @@ export function Header({ tab }: { tab: Tab }) {
   /* 「はじめの 3 ステップ」ボタン。カレンダーで出ていれば閉じ、それ以外は出す（押すたびに切り替わる）。出したら、ページの頭まで戻す */
   const toggleGuide = () => {
     if (tab === 'cal' && shown) { ui.set((s) => ({ ...s, guide: 'closed' })); return; }
-    ui.set((s) => ({ ...s, guide: 'open' }));
+    ui.set((s) => ({ ...s, guide: 'open', guideFocus: s.guideFocus + 1 }));
     goTab('cal');
     window.scrollTo(0, 0);
   };

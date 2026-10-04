@@ -43,7 +43,7 @@ const reactFiles = (dir) => fs.readdirSync(path.join(root, dir), { withFileTypes
   .filter((f) => !/^src[/\\]client[/\\](console|operator|\.wrangler)[/\\]/.test(path.relative(root, f)) && !f.endsWith(path.join('ui', 'icons.ts')));
 
 test('React の画面のアイコン: 一覧（ui/icons.ts）は並んでいて重ならず、どれも使っている。index.html はその一覧を読み込む', () => {
-  const list = /ICON_NAMES = \[([^\]]*)\]/.exec(read('src/client/ui/icons.ts'))[1].match(/[a-z_]+/g);
+  const list = /ICON_NAMES = \[([^\]]*)\]/.exec(read('src/client/ui/icons.ts'))[1].match(/[a-z0-9_]+/g);
   expect(list).toEqual([...new Set(list)].sort());
   // 使う名前は型で確かめる（<Icon name="…"> や、名前の一覧）。ここでは、どこにも書いていない名前が一覧に残っていないかを見る
   const src = reactFiles('src/client').map((f) => fs.readFileSync(f, 'utf8')).join('\n');

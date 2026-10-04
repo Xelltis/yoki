@@ -160,9 +160,10 @@ export class ConsoleSync {
 
   /**
    * 書き込む（読み込みのほかの呼び出し）。optimistic を渡すと、返事を待たずにデータをその形にする（押した瞬間に見えるように）。
-   * 失敗したら rollback を当て、失敗を投げる（ログインし直す・グループが消えたときは、それぞれの画面にする）
+   * 失敗したら rollback を当て、失敗を投げる（ログインし直す・グループが消えたときは、それぞれの画面にする）。
+   * 返事にデータが付いていなければ読み直す。quiet なら読み直さない（Discord への送信の途中など、データが変わらないとき）
    */
-  async write<R extends { data?: ConsoleData }>(name: RpcName, form: object = {}, opts: { optimistic?: (d: ConsoleData) => ConsoleData; rollback?: (d: ConsoleData) => ConsoleData } = {}): Promise<R> {
+  async write<R extends { data?: ConsoleData }>(name: RpcName, form: object = {}, opts: { optimistic?: (d: ConsoleData) => ConsoleData; rollback?: (d: ConsoleData) => ConsoleData; quiet?: boolean } = {}): Promise<R> {
     this.pending++;
     this.reading?.ctl.abort('write');
     const cur = this.data();
@@ -170,7 +171,7 @@ export class ConsoleSync {
     try {
       const r = await this.deps.rpc<R>(this.groupId, name, form);
       this.pending--;
-      this.take(r);
+      if (r.data || !opts.quiet) this.take(r);
       return r;
     } catch (e) {
       this.pending--;

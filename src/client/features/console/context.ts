@@ -10,6 +10,12 @@ export type Area = 'main' | 'admin';
 /** タブ。ふだんの画面はカレンダー・募集・調整・メンバーの予定・設定、管理画面は管理の 1 枚 */
 export type Tab = 'cal' | 'recruit' | 'avail' | 'settings' | 'admin';
 
+/**
+ * 卓の登録の窓を開く頼み。id は変える卓、cont はその卓の設定を引き継いで翌日の卓を登録する、
+ * date・status・series は新しく登録するときの初めの値（series を選ぶと直前の回から引き継ぐ）
+ */
+export type FormReq = { id?: string; cont?: string; date?: string; status?: string; series?: string };
+
 /** 画面の状態（サーバーには送らない） */
 export type ConsoleUi = {
   /** カレンダーで選んでいる日（YYYY-MM-DD）。選んでいなければ空 */
@@ -18,6 +24,14 @@ export type ConsoleUi = {
   view: { y: number; m: number };
   /** はじめの 3 ステップ。'' はメンバーと卓がそろうまで出す、'open' は出し直した、'closed' は閉じた（この画面を開いているあいだは出さない） */
   guide: '' | 'open' | 'closed';
+  /** はじめの 3 ステップを出し直した回数（出し直したら、そこへフォーカスを移す） */
+  guideFocus: number;
+  /** 都合を見る卓（カレンダーの色と日の内訳）。「全員」「（なし）」か卓の名前。この端末に控える */
+  target: string;
+  /** 卓の登録の窓（開く頼みと、頼んだ回数。同じ頼みでも開き直す） */
+  form: { seq: number; req: FormReq } | null;
+  /** 候補日を選ぶ窓（日程調整を始める・選び直す卓） */
+  poll: { seq: number; id: string } | null;
 };
 
 export type ConsoleCtx = { groupId: string; area: Area; sync: ConsoleSync; ui: Store<ConsoleUi> };

@@ -5,7 +5,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Outlet, useNavigate, useParams, useRouterState } from '@tanstack/react-router';
 import { useEffect, useMemo, useState } from 'react';
 import type { ConsoleData } from '../../../../shared/api';
-import { store } from '../../../app/storage';
+import { load, store } from '../../../app/storage';
 import { watchSystemTheme } from '../../../app/theme';
 import { ConfirmDialog } from '../../../ui/confirm';
 import { ModalManager } from '../../../ui/Modal';
@@ -32,7 +32,7 @@ export function ConsoleLayout() {
     rpc, toast, blocked: domBlocked,
     goLogin: () => { location.href = '/auth/login?return_to=' + encodeURIComponent(location.pathname); },
   }));
-  const [ui] = useState(() => createStore<ConsoleUi>({ selDay: '', view: { y: 0, m: 0 }, guide: '' }));
+  const [ui] = useState(() => createStore<ConsoleUi>({ selDay: '', view: { y: 0, m: 0 }, guide: '', guideFocus: 0, target: load('target') || '全員', form: null, poll: null }));
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const tab = tabOf(pathname), area = tab === 'admin' ? 'admin' : 'main';
   const ctx = useMemo<ConsoleCtx>(() => ({ groupId, area, sync, ui }), [groupId, area, sync, ui]);
