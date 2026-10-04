@@ -4,6 +4,12 @@ import type { Ctx } from './types';
 
 export type Form = Record<string, unknown>;
 
+/** 送られた JSON を form として読む。壊れているか、オブジェクトでなければ（null・数・配列）空の form にする */
+export async function readForm(req: { json: () => Promise<unknown> }): Promise<Form> {
+  const v = await req.json().catch(() => null);
+  return v && typeof v === 'object' && !Array.isArray(v) ? (v as Form) : {};
+}
+
 export const str = (v: unknown) => String(v ?? '').trim();
 export const list = (v: unknown) => (Array.isArray(v) ? v.map((x) => String(x ?? '').trim()).filter(Boolean) : []);
 

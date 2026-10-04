@@ -8,6 +8,7 @@ import { randomId } from '../lib/ids';
 import { memberNameFrom } from '../lib/text';
 import { DEV_USERS } from '../auth/dev-users';
 import { devAvailable, isOperator } from '../auth/operator';
+import { readForm, str } from '../domain/form';
 import type { CreateGroupResult, MeResponse } from '../../shared/api';
 
 export const meRoutes = new Hono<AppEnv>();
@@ -45,14 +46,14 @@ meRoutes.post('/api/groups', async (c) => {
   if (!viewer) throw authError();
   const now = new Date();
   if (snapshotAgeMs(viewer, now) > SNAPSHOT_HOURS * 3600_000) throw authError('サーバーの一覧が古くなりました。ログインし直してください。');
-  const body = await c.req.json<{ guildId?: unknown; title?: unknown }>();
-  const guildId = String(body.guildId ?? '');
+  const body = await readForm(c.req);
+  const guildId = str(body.guildId);
   if (!guildId) throw badRequest('Discord サーバーを選んでください。');
   const g = await c.env.DB.prepare('SELECT name, icon FROM user_guilds WHERE user_id = ? AND guild_id = ? AND can_manage = 1')
     .bind(viewer.id, guildId)
     .first<{ name: string; icon: string | null }>();
   if (!g) throw new AppError(403, 'そのサーバーでグループを作れるのは、オーナーか、サーバー管理の権限がある人だけです。');
-  const title = String(body.title ?? '').trim().slice(0, 80) || g.name;
+  const title = str(body.title).slice(0, 80) || g.name;
   const id = randomId(10);
   const at = now.toISOString();
   await c.env.DB.batch([

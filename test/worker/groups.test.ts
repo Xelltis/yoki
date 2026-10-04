@@ -197,3 +197,14 @@ describe('参加しているサーバーの控え', () => {
     expect((await call('/g/p1/', { sid: fresh })).status).toBe(403);
   });
 });
+
+describe('送られた JSON が壊れているとき', () => {
+  test('グループを作る道は、500 にせず「サーバーを選んでください」と断る（null・配列・壊れた JSON）', async () => {
+    const sid = await loginAs({ id: '12', name: 'こまち' }, [{ id: 'g3', name: 'K', canManage: true }]);
+    for (const body of ['{', 'null', '[]', '42']) {
+      const res = await call('/api/groups', { method: 'POST', sid, headers: { Origin: ORIGIN, 'Content-Type': 'application/json' }, body });
+      expect(res.status).toBe(400);
+      expect((await res.json<{ error: string }>()).error).toBe('Discord サーバーを選んでください。');
+    }
+  });
+});

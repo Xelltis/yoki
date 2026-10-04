@@ -6,8 +6,7 @@ import type { AppEnv } from '../app';
 import { isOperator, requireOperator } from '../auth/operator';
 import type { Viewer } from '../auth/session';
 import { changeGuild, groupDetail, listGroups, listUsers, logoutUser, overview, setBan, setGroupAdmin } from '../domain/admin';
-import type { Form } from '../domain/form';
-import { str } from '../domain/form';
+import { readForm, str } from '../domain/form';
 import { deleteGroupById } from '../domain/groups';
 
 export const adminRoutes = new Hono<AppEnv>();
@@ -16,7 +15,6 @@ export const adminRoutes = new Hono<AppEnv>();
 function audit(op: Viewer, action: string, target: string, detail: Record<string, unknown> = {}): void {
   console.log(JSON.stringify({ audit: 'operator', by: op.id, action, target, ...detail }));
 }
-const body = async (c: { req: { json: () => Promise<unknown> } }) => ((await c.req.json().catch(() => ({}))) ?? {}) as Form;
 const done = (message: string): AdminResult => ({ ok: true, message });
 
 adminRoutes.use('/api/admin/*', async (c, next) => {
@@ -41,7 +39,7 @@ adminRoutes.get('/api/admin/groups/:id', async (c) => {
 
 adminRoutes.post('/api/admin/groups/:id/admins', async (c) => {
   const op = await requireOperator(c);
-  const form = await body(c);
+  const form = await readForm(c.req);
   const r = await setGroupAdmin(c.env.DB, c.req.param('id'), form);
   audit(op, 'setGroupAdmin', c.req.param('id'), { memberId: form.memberId ?? null, discordId: form.discordId ?? null, admin: form.admin === true });
   return c.json(done(r.message));
@@ -49,7 +47,7 @@ adminRoutes.post('/api/admin/groups/:id/admins', async (c) => {
 
 adminRoutes.post('/api/admin/groups/:id/guild', async (c) => {
   const op = await requireOperator(c);
-  const form = await body(c);
+  const form = await readForm(c.req);
   const r = await changeGuild(c.env.DB, c.req.param('id'), form);
   audit(op, 'changeGuild', c.req.param('id'), { guildId: str(form.guildId), clearWebhooks: form.clearWebhooks === true });
   return c.json(done(r.message));
@@ -57,7 +55,7 @@ adminRoutes.post('/api/admin/groups/:id/guild', async (c) => {
 
 adminRoutes.post('/api/admin/groups/:id/delete', async (c) => {
   const op = await requireOperator(c);
-  const { title } = await deleteGroupById(c.env.DB, c.req.param('id'), str((await body(c)).confirm));
+  const { title } = await deleteGroupById(c.env.DB, c.req.param('id'), str((await readForm(c.req)).confirm));
   audit(op, 'deleteGroup', c.req.param('id'), { title });
   return c.json(done('グループ「' + title + '」を消しました。'));
 });
@@ -77,7 +75,7 @@ adminRoutes.post('/api/admin/users/:id/logout', async (c) => {
 
 adminRoutes.post('/api/admin/users/:id/ban', async (c) => {
   const op = await requireOperator(c);
-  const form = await body(c);
+  const form = await readForm(c.req);
   const url = new URL(c.req.url);
   const r = await setBan(c.env.DB, c.req.param('id'), form, (id) => isOperator(c.env, id, url));
   audit(op, form.banned === true ? 'ban' : 'unban', c.req.param('id'), { reason: str(form.reason) });
