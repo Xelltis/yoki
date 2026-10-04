@@ -15,7 +15,7 @@ import { loadGroup } from '../domain/load';
 import { deleteMember, saveMember, setAdmin } from '../domain/members';
 import { cancelPoll, decidePoll, type Io, setPollVote, setPollVoteAll, startPoll } from '../domain/polls';
 import { bulkUpdateSessions, deleteSession, saveSession, setInterest } from '../domain/sessions';
-import { renameGroup, saveConsoleSettings, saveSeriesNotify } from '../domain/settings';
+import { getDiscordChannels, renameGroup, saveConsoleSettings, saveSeriesNotify } from '../domain/settings';
 import type { Ctx } from '../domain/types';
 import { deleteGroup } from '../domain/groups';
 import { AppError, adminError, authError, goneError, notFound } from '../lib/errors';
@@ -50,6 +50,7 @@ export const RPC: Record<Exclude<RpcName, 'getConsoleData'>, Entry> = {
   saveSeriesNotify: { run: saveSeriesNotify, admin: 'シリーズごとの設定を変えること', data: true },
   renameGroup: { run: renameGroup, admin: 'グループの名前を変えること', data: true },
   sendDiscordStep: { run: sendDiscordStep },
+  getDiscordChannels: { run: getDiscordChannels, admin: '知らせのチャンネルの一覧を読むこと' },
   // 消したあとは画面のデータを読めないので data を付けない
   deleteGroup: { run: deleteGroup, admin: 'グループを消すこと' },
 };
@@ -77,7 +78,7 @@ rpcRoutes.post('/api/g/:groupId/:fn', async (c) => {
   }
   await touchGroup(c.env.DB, groupId);
   const appUrl = appOrigin(c.env, c.req.url) + '/g/' + groupId + '/';
-  const load = () => loadGroup(c.env.DB, groupId, access.actor, appUrl);
+  const load = () => loadGroup(c.env.DB, groupId, access.actor, appUrl, new Date(), { token: c.env.DISCORD_BOT_TOKEN ?? '', clientId: c.env.DISCORD_CLIENT_ID });
   const ctx = await load();
   if (!entry) return c.json(consoleData(ctx));
   if (entry.admin && !access.actor.isAdmin) throw adminError(entry.admin);

@@ -1,18 +1,21 @@
-// Discord へ送る（GAS 版 discordAttempt_・postDiscord_・classifyDiscordFailure_）。
+// Discord へ送る（GAS 版 discordAttempt_・postDiscord_・classifyDiscordFailure_）。卓予定の Bot で、チャンネルにメッセージを書く。
 // 429 と 5xx・通信の切れは、少し待って最大 3 回まで送り直す。1 回ごとに送信記録（notify_log）に 1 行残す
+import { DISCORD_API } from '../auth/oauth';
+import { isChannelId } from './channel';
 import type { Payload } from './payloads';
 import { targetNote, type Target } from './targets';
-import { isDiscordWebhook } from './webhook';
 
 export const RETRY_WAITS_MS = [3000, 8000];
-/** サンプルのグループの Webhook（実在しない）。ここへは送らずに、送ったことにする（開発用ログインとスクリーンショット用） */
-export const SAMPLE_WEBHOOK = 'https://discord.com/api/webhooks/000000000000000000/sample';
+/** サンプルのグループのチャンネル（実在しない）。ここへは送らずに、送ったことにする（開発用ログインとスクリーンショット用） */
+export const SAMPLE_CHANNEL = '000000000000000000';
 export const MAX_TRIES = RETRY_WAITS_MS.length + 1;
 const MAX_WAIT_MS = 15000;
 /** 通信が切れたときのエラーの文。種類分け（通信）と、送り直してよいかの両方で使う */
 const NETWORK_ERROR = /DNS|address|resolve|timed out|timeout|network/i;
-/** 送り先が Discord の Webhook URL の形でないとき（送らずに記録する） */
-const NOT_DISCORD = 'Discord の Webhook URL ではありません';
+/** Bot のトークンが無いとき（運営者の設定。送らずに記録する） */
+const NO_BOT = 'Discord の Bot が設定されていません';
+/** 送り先がチャンネルの ID の形でないとき（送らずに記録する） */
+const BAD_CHANNEL = 'チャンネルの ID が正しくありません';
 
 export type Reason = { kind: string; label: string; toolFault: boolean; text: string; advice: string };
 
@@ -28,10 +31,11 @@ export type Attempt = {
   maxTries: number;
 };
 
-/** 送った記録を残す相手（グループ） */
-export type LogTo = { db: D1Database; groupId: string; now?: () => Date };
+/** 送った記録を残す相手（グループ）と、送るのに使う Bot のトークン */
+export type LogTo = { db: D1Database; groupId: string; token: string; now?: () => Date };
 
-export async function appendLog(log: LogTo, kind: string, target: string, result: string): Promise<void> {
+/** 送信記録に 1 行書く（送らなかったときや、送ったこと以外の記録にも使う） */
+export async function appendLog(log: Omit<LogTo, 'token'>, kind: string, target: string, result: string): Promise<void> {
   await log.db
     .prepare('INSERT INTO notify_log (group_id, at, kind, target, result) VALUES (?, ?, ?, ?, ?)')
     .bind(log.groupId, (log.now?.() ?? new Date()).toISOString(), kind, target, result)
@@ -45,9 +49,17 @@ export function classifyFailure(code: number, errText: string): Reason {
       text: 'Discord が、送る回数が多いことを理由に受け取りを断りました（Discord の手前の Cloudflare が断ることもあります）。', advice: '数分おいて、もう一度送ってください。' };
   }
   if (code >= 500) return { kind: 'discord_down', label: 'Discord 側の不調', toolFault: false, text: 'Discord が一時的に応答できていません。', advice: '時間をおいて送り直してください。' };
-  if (code === 401 || code === 403 || code === 404 || (!code && errText === NOT_DISCORD)) {
-    return { kind: 'bad_url', label: 'Webhook URL', toolFault: false,
-      text: code ? 'Webhook URL が違うか、Discord 側でウェブフックが消されています。' : 'Webhook URL が Discord のものではありません。', advice: '管理画面の「知らせ」で貼り直して「接続テスト」を。' };
+  if (code === 401 || (!code && errText === NO_BOT)) {
+    return { kind: 'bad_bot', label: 'Bot の設定', toolFault: false,
+      text: code ? '卓予定の Bot のトークンが正しくありません。' : '卓予定の Bot が設定されていません。', advice: '卓予定を公開している運営者に知らせてください。' };
+  }
+  if (code === 403) {
+    return { kind: 'no_permission', label: 'チャンネルの権限', toolFault: false, text: 'Bot がそのチャンネルを見られないか、書き込めません。',
+      advice: '管理画面の「知らせ」から Bot をサーバーに招き、チャンネルの権限で「チャンネルを見る」「メッセージを送信」「埋め込みリンク」を許可してください。' };
+  }
+  if (code === 404 || (!code && errText === BAD_CHANNEL)) {
+    return { kind: 'no_channel', label: 'チャンネル', toolFault: false,
+      text: code ? 'チャンネルが見つかりません（消されたか、Bot がサーバーから外されています）。' : 'チャンネルの ID が正しくありません。', advice: '管理画面の「知らせ」でチャンネルを選び直して「接続テスト」を。' };
   }
   if (code === 400) {
     return { kind: 'bad_payload', label: '本文', toolFault: true, text: 'Discord が本文を受け付けませんでした。',
@@ -70,18 +82,26 @@ function retryAfterMs(res: Response, body: string): number {
   return 0;
 }
 
-/** 1 回だけ送り、結果を送信記録に 1 行残す */
-export async function discordAttempt(log: LogTo, payload: Payload, kind: string, target: string, attemptIn: number, url: string): Promise<Attempt> {
+/**
+ * 1 回だけ送り、結果を送信記録に 1 行残す。本文の @everyone や @here、ロールでは呼ばない（メンションするのは人だけ）
+ */
+export async function discordAttempt(log: LogTo, payload: Payload, kind: string, target: string, attemptIn: number, channelId: string): Promise<Attempt> {
   const attempt = Math.min(Math.max(Math.trunc(attemptIn) || 1, 1), MAX_TRIES);
-  if (!url) return { ok: false, code: 0, retryable: false, waitMs: 0, result: '送らず: Discord Webhook URL が空', raw: '', reason: null, attempt, maxTries: MAX_TRIES };
+  if (!channelId) return { ok: false, code: 0, retryable: false, waitMs: 0, result: '送らず: 送り先のチャンネルが未設定', raw: '', reason: null, attempt, maxTries: MAX_TRIES };
   let code = 0, body = '', retryAfter = 0, errText = '';
-  if (url === SAMPLE_WEBHOOK) {
-    code = 204;
-  } else if (!isDiscordWebhook(url)) {
-    errText = NOT_DISCORD;
+  if (channelId === SAMPLE_CHANNEL) {
+    code = 200;
+  } else if (!log.token) {
+    errText = NO_BOT;
+  } else if (!isChannelId(channelId)) {
+    errText = BAD_CHANNEL;
   } else {
     try {
-      const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      const res = await fetch(DISCORD_API + '/channels/' + channelId + '/messages', {
+        method: 'POST',
+        headers: { Authorization: 'Bot ' + log.token, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...payload, allowed_mentions: { parse: ['users'] } }),
+      });
       code = res.status;
       body = await res.text();
       retryAfter = retryAfterMs(res, body);
@@ -111,13 +131,13 @@ export type Sleep = (ms: number) => Promise<void>;
 export const realSleep: Sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 /** 送り直しも含めて送る（サーバーから送るとき。画面からは 1 回ずつ sendDiscordStep を呼ぶ） */
-export async function postDiscord(log: LogTo, payload: Payload, kind: string, target: string, url: string, sleep: Sleep = realSleep): Promise<boolean> {
+export async function postDiscord(log: LogTo, payload: Payload, kind: string, target: string, channelId: string, sleep: Sleep = realSleep): Promise<boolean> {
   // 送り直してよいのは MAX_TRIES 回目の手前まで（discordAttempt が retryable で決める）。届いたときも retryable は false
   let attempt = 1;
-  let r = await discordAttempt(log, payload, kind, target, attempt, url);
+  let r = await discordAttempt(log, payload, kind, target, attempt, channelId);
   while (r.retryable) {
     await sleep(r.waitMs);
-    r = await discordAttempt(log, payload, kind, target, ++attempt, url);
+    r = await discordAttempt(log, payload, kind, target, ++attempt, channelId);
   }
   return r.ok;
 }
@@ -125,6 +145,6 @@ export async function postDiscord(log: LogTo, payload: Payload, kind: string, ta
 /** いくつかの送り先へ同じ文を送る。すべて届けば true（GAS 版 postToTargets_） */
 export async function postToTargets(log: LogTo, payload: Payload, kind: string, target: string, targets: Target[], sleep: Sleep = realSleep): Promise<boolean> {
   let all = targets.length > 0;
-  for (const t of targets) if (!(await postDiscord(log, payload, kind, target + targetNote(t), t.url, sleep))) all = false;
+  for (const t of targets) if (!(await postDiscord(log, payload, kind, target + targetNote(t), t.channelId, sleep))) all = false;
   return all;
 }

@@ -58,7 +58,7 @@ adminRoutes.post('/api/admin/groups/:id/guild', async (c) => {
   const op = await requireOperator(c);
   const form = await readForm(c.req);
   const r = await changeGuild(c.env.DB, c.req.param('id'), form);
-  audit(op, 'changeGuild', c.req.param('id'), { guildId: str(form.guildId), clearWebhooks: form.clearWebhooks === true });
+  audit(op, 'changeGuild', c.req.param('id'), { guildId: str(form.guildId) });
   return c.json(done(r.message));
 });
 

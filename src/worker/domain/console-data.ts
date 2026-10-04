@@ -1,7 +1,7 @@
 // 画面に渡す一式（GAS 版 consoleData_）。形は src/shared/api.ts の ConsoleData（画面と共有する）。日時の書き方は GAS 版のまま。
 // 外したもの: url（シート）・hasPassword・adminSet。足したもの: me・group・members[].linked / admin・settings.remind
 import type { ConsoleData } from '../../shared/api';
-import { maskUrl } from '../discord/webhook';
+import { botInviteUrl } from '../discord/channel';
 import { addDays, fmtDateTime, stampText } from '../lib/jst';
 import { STATUS_LIST } from './constants';
 import { bookedMap, windowInfo } from './model';
@@ -56,15 +56,16 @@ export function consoleData(ctx: Ctx): ConsoleData {
     log: ctx.log.map((l) => ({ at: stampText(l.at), kind: l.kind, target: l.target, result: l.result })),
     booked: bookedMap(ctx.sessions),
     availDays,
-    webhookSet: !!g.webhook_url,
-    remindWebhookSet: !!g.remind_webhook_url,
-    recruitWebhookSet: !!g.recruit_webhook_url,
+    channelSet: !!g.channel_id,
+    remindChannelSet: !!g.remind_channel_id,
+    recruitChannelSet: !!g.recruit_channel_id,
+    bot: { ready: !!ctx.bot.token, inviteUrl: botInviteUrl(ctx.bot.clientId, g.guild_id) },
     notifyDefault: g.notify_on_save === 1,
     notifySetter: setter,
     settings: {
-      webhookMasked: maskUrl(g.webhook_url),
-      remindWebhookMasked: maskUrl(g.remind_webhook_url),
-      recruitWebhookMasked: maskUrl(g.recruit_webhook_url),
+      channelId: g.channel_id,
+      remindChannelId: g.remind_channel_id,
+      recruitChannelId: g.recruit_channel_id,
       notifyHour: g.notify_hour,
       notifyDays: g.notify_days,
       remind: g.remind_enabled === 1,
@@ -81,7 +82,7 @@ export function consoleData(ctx: Ctx): ConsoleData {
       .sort()
       .map((k) => {
         const sn = ctx.seriesNotify[k]!;
-        return { series: k, hasWebhook: !!sn.webhook, webhookMasked: maskUrl(sn.webhook), alsoBase: sn.alsoBase, days: sn.days, hour: sn.hour };
+        return { series: k, channelId: sn.channelId, alsoBase: sn.alsoBase, days: sn.days, hour: sn.hour };
       }),
   };
 }

@@ -1,6 +1,7 @@
 // グループの管理画面（/g/:id/admin/）の区分（知らせ・この卓予定・管理者・送信の記録・グループを消す）と、ふだんの画面の「この端末」
 import type { RpcName } from '../../shared/api';
 import { api, discordSend, failToast, refetch, useData } from './api';
+import { ensureChannels, markDirty, renderChannels } from './channels';
 import { addDaysYmd, fmtJa } from './dates';
 import { $, esc, fillSelect, load, mi, store, toast } from './dom';
 import { autoMinutes, clearCache, showLoadedAt } from './load';
@@ -21,7 +22,6 @@ export function renderSettings(): void {
   if (!lg.length) lh += '<tr><td colspan="4" class="hint">まだ送っていません。「接続テスト」を押すとここに記録が出ます。</td></tr>';
   $('stLog').innerHTML = lh;
   if (document.activeElement !== $('stName')) $('stName').value = D.title || '';
-  $('stWebhook').textContent = st.webhookMasked || '（未設定）';
   setSw('stNotifyOnSave', !!st.notifyOnSave);
   $('stAutoFinish').checked = !!st.autoFinish;
   setSw('stUrge', !!st.urge);
@@ -36,20 +36,23 @@ export function renderSettings(): void {
   $('stAutoRefresh').value = String(autoMinutes());
   $('stFont').value = load('font') === 'm' || load('font') === 'l' ? load('font') : '';
   // 送り先の札。種類ごとのチャンネルを決めていれば、そちらを出す
-  const destR = D.remindWebhookSet ? '開催前のチャンネル' : '基本のチャンネル';
-  const destC = D.recruitWebhookSet ? '募集のチャンネル' : '基本のチャンネル';
-  ([['ntDestRemind', destR, D.remindWebhookSet], ['ntDestSoon', destR, D.remindWebhookSet],
-    ['ntDestUrge', destC, D.recruitWebhookSet], ['ntDestRecruit', destC, D.recruitWebhookSet]] as [string, string, boolean][]).forEach((x) => {
+  const destR = D.remindChannelSet ? '開催前のチャンネル' : '基本のチャンネル';
+  const destC = D.recruitChannelSet ? '募集のチャンネル' : '基本のチャンネル';
+  ([['ntDestRemind', destR, D.remindChannelSet], ['ntDestSoon', destR, D.remindChannelSet],
+    ['ntDestUrge', destC, D.recruitChannelSet], ['ntDestRecruit', destC, D.recruitChannelSet]] as [string, string, boolean][]).forEach((x) => {
     const el = document.getElementById(x[0]); if (!el) return;
     el.textContent = x[1]; el.className = 'dest-chip' + (x[2] ? ' set' : '');
   });
-  $('chSum').textContent = D.webhookSet ? '基本' + (D.remindWebhookSet ? '・開催前' : '') + (D.recruitWebhookSet ? '・募集' : '') : 'まだ決めていません';
+  $('chSum').textContent = D.channelSet ? '基本' + (D.remindChannelSet ? '・開催前' : '') + (D.recruitChannelSet ? '・募集' : '') : 'まだ決めていません';
   $('snSum').textContent = (D.seriesNotify || []).length ? (D.seriesNotify || []).length + ' 件' : 'なし';
   sayWhen();
-  $('stTest').disabled = !D.webhookSet;
-  $('stClear').disabled = !D.webhookSet;
+  $('stTest').disabled = !D.channelSet;
   renderSeriesNotify();
-  renderKindWebhooks();
+  renderChannels();
+  (Object.keys(KW) as (keyof typeof KW)[]).forEach((k) => { $(KW[k].id + 'Test').disabled = !kindSet(k); });
+  // 「知らせ」の区分を開いているときは、Bot とチャンネルの一覧を読む（まだなら）
+  const pane = document.querySelector<HTMLElement>('#tab-admin .set-pane[data-pane="notify"]');
+  if (pane && !pane.hidden) ensureChannels();
   renderAdminPane();
   $('delTitle').textContent = D.title;
   syncDelete();
@@ -99,6 +102,7 @@ export function showSetPane(k: string): void {
   });
   store('adminPane', k);
   if (location.hash !== '#' + k) history.replaceState(null, '', '#' + k);
+  if (k === 'notify' && D) ensureChannels();
 }
 /** 設定を保存する呼び出し。ボタンを押せなくして、結果を msgId の欄と吹き出しに出す */
 export function stCall(btnId: string, msgId: string, fnName: RpcName, form?: object): void {
@@ -111,14 +115,6 @@ export function stCall(btnId: string, msgId: string, fnName: RpcName, form?: obj
 
 /* ---- 種類ごとのチャンネル（開催前の知らせ・募集） ---- */
 const KW: Record<'remind' | 'recruit', { id: string; label: string }> = { remind: { id: 'kwRemind', label: '開催前の知らせのチャンネル' }, recruit: { id: 'kwRecruit', label: '募集のチャンネル' } };
-function renderKindWebhooks(): void {
-  const st = D.settings;
-  (Object.keys(KW) as (keyof typeof KW)[]).forEach((k) => {
-    const id = KW[k].id, on = kindSet(k);
-    $(id + 'Now').textContent = on ? (k === 'remind' ? st.remindWebhookMasked : st.recruitWebhookMasked) : '（基本のチャンネルと同じ）';
-    $(id + 'Test').disabled = !on; $(id + 'Clear').disabled = !on;
-  });
-}
 
 /* ---- 知らせのつまみと日時 ---- */
 /** 開始の何分前か。5〜720 の整数だけ通す */
@@ -148,25 +144,29 @@ export function init(): void {
     askConfirm({ title: '名前を変えますか？', message: '画面の左上と、Discord の知らせに出る名前が「' + n + '」になります。', ok: '変える' },
       () => { stCall('stNameSave', 'stNameMsg', 'renameGroup', { name: n }); });
   };
-  $('stWebhookSave').onclick = () => {
-    const w = $('stWebhookNew').value.trim();
-    if (!w) { $('stWebhookMsg').textContent = '新しい URL を貼ってください。'; return; }
-    stCall('stWebhookSave', 'stWebhookMsg', 'saveConsoleSettings', { webhook: w });
-    $('stWebhookNew').value = '';
+  /* 基本のチャンネル。外すと、決めていない知らせは送られなくなるので確かめる */
+  $('stChannel').addEventListener('change', () => { markDirty('stChannel', true); });
+  $('stChannelSave').onclick = () => {
+    const id = $('stChannel').value;
+    if (id === D.settings.channelId) { $('stChannelMsg').textContent = 'いまと同じです。'; return; }
+    const save = () => { markDirty('stChannel', false); stCall('stChannelSave', 'stChannelMsg', 'saveConsoleSettings', { channelId: id }); };
+    if (id) save();
+    else askConfirm({ title: '基本のチャンネルを外しますか？', message: '種類ごとやシリーズ専用のチャンネルを決めていない知らせは、Discord に送られなくなります。', ok: '外す', danger: true }, save);
   };
   $('stTest').onclick = () => {
     $('stTest').disabled = true;
     discordSend({ kind: 'test' },
-      (t) => { $('stWebhookMsg').textContent = t; },
+      (t) => { $('stChannelMsg').textContent = t; },
       (ok, r) => { $('stTest').disabled = false; toast(ok ? 'Discord に届きました' : failToast(r)); refetch(() => {}); });
   };
   (Object.keys(KW) as (keyof typeof KW)[]).forEach((k) => {
     const id = KW[k].id;
+    $(id).addEventListener('change', () => { markDirty(id, true); });
     $(id + 'Save').onclick = () => {
-      const w = $(id).value.trim();
-      if (!w) { $(id + 'Msg').textContent = '新しい URL を貼ってください。'; return; }
-      stCall(id + 'Save', id + 'Msg', 'saveConsoleSettings', { kindWebhook: { kind: k, url: w } });
-      $(id).value = '';
+      const v = $(id).value;
+      if (v === (k === 'remind' ? D.settings.remindChannelId : D.settings.recruitChannelId)) { $(id + 'Msg').textContent = 'いまと同じです。'; return; }
+      markDirty(id, false);
+      stCall(id + 'Save', id + 'Msg', 'saveConsoleSettings', { kindChannel: { kind: k, channelId: v } });
     };
     $(id + 'Test').onclick = () => {
       $(id + 'Test').disabled = true;
@@ -174,15 +174,7 @@ export function init(): void {
         (t) => { $(id + 'Msg').textContent = t; },
         (ok, r) => { $(id + 'Test').disabled = false; toast(ok ? KW[k].label + 'に届きました' : failToast(r)); refetch(() => {}); });
     };
-    $(id + 'Clear').onclick = () => {
-      askConfirm({ title: KW[k].label + 'を外しますか？', message: 'この種類の知らせは、基本のチャンネルへ送るようになります。', ok: '外す', danger: true },
-        () => { stCall(id + 'Clear', id + 'Msg', 'saveConsoleSettings', { kindWebhook: { kind: k, url: '', clear: true } }); });
-    };
   });
-  $('stClear').onclick = () => {
-    askConfirm({ title: 'Webhook URL を空にしますか？', message: 'Discord への通知はすべて止まります。', ok: '空にする', danger: true },
-      () => { stCall('stClear', 'stWebhookMsg', 'saveConsoleSettings', { webhook: '', clearWebhook: true }); });
-  };
   const autoFinish = $('stAutoFinish');
   autoFinish.addEventListener('change', () => { stCall('stSave', 'stMsg', 'saveConsoleSettings', { autoFinish: autoFinish.checked }); });
   $('stNotifyOnSave').onclick = () => { stCall('stNotifyOnSave', 'ntMsg', 'saveConsoleSettings', { notifyOnSave: !swOn('stNotifyOnSave') }); };

@@ -77,17 +77,21 @@ describe('予定', () => {
 });
 
 describe('日程調整', () => {
-  const WEBHOOK = 'https://discord.com/api/webhooks/123456789012345678/abc';
+  const CH = '123456789012345678';
   beforeEach(async () => {
-    await env.DB.prepare('UPDATE groups SET webhook_url = ?').bind(WEBHOOK).run();
+    await env.DB.prepare('UPDATE groups SET channel_id = ?').bind(CH).run();
     await ok(G.admin, G.id, 'saveSession', { name: '迷宮', gm: 'ひより', members: ['ソラ'], status: '調整中' });
   });
   const posts: string[] = [];
-  const mockWebhook = () => {
+  const urls: string[] = [];
+  /** Bot の送信を差し替える。送った文と送り先を残す */
+  const mockBot = () => {
     posts.length = 0;
+    urls.length = 0;
     vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
+      urls.push(String(input));
       posts.push(JSON.parse(String(init?.body)).content);
-      return new Response(null, { status: 204 });
+      return new Response('{}', { status: 200 });
     });
   };
 
@@ -110,13 +114,14 @@ describe('日程調整', () => {
 
   test('全員の回答がそろったら、サーバーが GM に 1 回だけ知らせる。取り消してそろい直せば、また知らせる', async () => {
     await ok(G.admin, G.id, 'startPoll', { id: 'S001', dates: [T(5), T(6)] });
-    mockWebhook();
+    mockBot();
     let r = await ok(G.sora, G.id, 'setPollVote', { id: 'S001', ymd: T(5), name: 'ソラ', vote: '◯' });
     expect(r.ready).toBe(false);
     r = await ok(G.sora, G.id, 'setPollVote', { id: 'S001', ymd: T(6), name: 'ソラ', vote: '×' });
     expect(r).toMatchObject({ ready: true, notified: true });
     expect(r.message).toContain('全員の回答がそろいました。　GM への知らせを Discord に送りました。');
     expect(posts).toHaveLength(1);
+    expect(urls).toEqual(['https://discord.com/api/v10/channels/' + CH + '/messages']);
     expect(posts[0]).toContain('「迷宮」の日程調整の回答がそろいました。');
     expect(posts[0]).toContain('◯ 2/2（全員 ◯）');
     // 同じ回答をもう一度書いても、二重には送らない
@@ -139,7 +144,7 @@ describe('日程調整', () => {
     await ok(G.admin, G.id, 'saveMember', { oldName: 'ひより', name: 'ひより' });
     await env.DB.prepare("UPDATE members SET is_admin = 0").run();
     expect((await fail(G.sora, G.id, 'decidePoll', { id: 'S001', ymd: T(5) })).error).toBe('ADMIN: GM のほかが開催日を決めることができるのは管理者だけです。');
-    mockWebhook();
+    mockBot();
     const r = await ok(G.admin, G.id, 'decidePoll', { id: 'S001', ymd: T(6) });
     expect(r.data.sessions[0]).toMatchObject({ status: '開催', date: T(6), candidates: [], votes: {}, window: '' });
     expect(r.notified).toBe(true);
@@ -150,7 +155,7 @@ describe('日程調整', () => {
   test('メンバーでない参加者（ゲスト）の回答は、管理者が代わりに入れ、直し、消せる', async () => {
     await ok(G.admin, G.id, 'saveSession', { id: 'S001', name: '迷宮', gm: 'ひより', members: ['ソラ'], extra: 'ゲスト太郎', status: '調整中' });
     await ok(G.admin, G.id, 'startPoll', { id: 'S001', dates: [T(5), T(6)] });
-    mockWebhook();
+    mockBot();
     const guestRows = async () => (await env.DB.prepare('SELECT date, member_id, guest_name, vote FROM poll_votes WHERE guest_name IS NOT NULL').all()).results;
     await ok(G.admin, G.id, 'setPollVote', { id: 'S001', ymd: T(5), name: 'ゲスト太郎', vote: '◯' });
     let r = await ok(G.admin, G.id, 'setPollVote', { id: 'S001', ymd: T(5), name: 'ゲスト太郎', vote: '×' });
@@ -164,17 +169,17 @@ describe('日程調整', () => {
 
   test('おまかせを取り消すと、自分の回答が全部消える', async () => {
     await ok(G.admin, G.id, 'startPoll', { id: 'S001', dates: [T(5), T(6)] });
-    mockWebhook();
+    mockBot();
     await ok(G.sora, G.id, 'setPollVote', { id: 'S001', ymd: T(5), name: 'ソラ', vote: '×' });
     const r = await ok(G.sora, G.id, 'setPollVoteAll', { id: 'S001', name: 'ソラ', vote: '' });
     expect(r.message).toBe('ソラ: 「迷宮」の回答を取り消しました');
     expect(r.data.sessions[0].votes).toEqual({ [T(5)]: { ひより: '◯' }, [T(6)]: { ひより: '◯' } });
   });
 
-  test('Webhook が無ければ、回答がそろっても送らない（そろいの印は付ける）', async () => {
-    await env.DB.prepare("UPDATE groups SET webhook_url = ''").run();
+  test('チャンネルが無ければ、回答がそろっても送らない（そろいの印は付ける）', async () => {
+    await env.DB.prepare("UPDATE groups SET channel_id = ''").run();
     await ok(G.admin, G.id, 'startPoll', { id: 'S001', dates: [T(5)] });
-    mockWebhook();
+    mockBot();
     const r = await ok(G.sora, G.id, 'setPollVoteAll', { id: 'S001', name: 'ソラ', vote: '◯' });
     expect(r).toMatchObject({ ready: true, notified: null, message: 'ソラ: 候補日 1 日すべてに ◯ を付けました（どの日でもいい）　全員の回答がそろいました。' });
     expect(posts).toHaveLength(0);
@@ -183,20 +188,20 @@ describe('日程調整', () => {
 
   test('GM への知らせが届かなければ、そろいの印を外す（画面から送り直せるように）', async () => {
     await ok(G.admin, G.id, 'startPoll', { id: 'S001', dates: [T(5)] });
-    vi.spyOn(globalThis, 'fetch').mockImplementation(async () => new Response('Unknown Webhook', { status: 404 }));
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async () => Response.json({ message: 'Unknown Channel', code: 10003 }, { status: 404 }));
     const r = await ok(G.sora, G.id, 'setPollVote', { id: 'S001', ymd: T(5), name: 'ソラ', vote: '◯' });
     expect(r).toMatchObject({ ready: true, notified: false });
     expect(r.message).toBe(fmtDateJa(T(5)) + ' ソラ: ◯　全員の回答がそろいました。　GM への知らせを Discord に送れませんでした。');
     expect(await env.DB.prepare('SELECT poll_ready_at FROM sessions').first('poll_ready_at')).toBeNull();
     expect(r.data.log[0]).toMatchObject({ kind: '回答そろい', target: '迷宮' });
-    expect(r.data.log[0].result).toContain('送信失敗（Webhook URL）');
+    expect(r.data.log[0].result).toContain('送信失敗（チャンネル）');
   });
 
   test('同じときの別の回答が先にそろいの印を取っていたら、二重には送らない', async () => {
     await ok(G.admin, G.id, 'startPoll', { id: 'S001', dates: [T(5)] });
     // 別の呼び出しが、先に印を取ったことにする
     await env.DB.prepare("UPDATE sessions SET poll_ready_at = '2026-01-01T00:00:00.000Z'").run();
-    mockWebhook();
+    mockBot();
     const r = await ok(G.sora, G.id, 'setPollVote', { id: 'S001', ymd: T(5), name: 'ソラ', vote: '◯' });
     expect(r).toMatchObject({ ready: true, message: fmtDateJa(T(5)) + ' ソラ: ◯　全員の回答がそろいました。' });
     expect(r.notified).toBeUndefined();

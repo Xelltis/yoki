@@ -194,8 +194,11 @@ await withDevServer(async (base) => {
       await until((d) => !d.members.some((m) => m.name.startsWith('e2e メンバー')));
     });
 
-    await step('管理画面: 知らせのつまみ・接続テスト・グループの名前の変更ができる', async () => {
+    await step('管理画面: 知らせのつまみ・接続テスト・グループの名前の変更ができる。Bot が無ければそう出る', async () => {
       await admin('notify');
+      // 手元には Bot のトークンが無いので、チャンネルは選べず、そのことを知らせる（サンプルのチャンネルへの接続テストはできる）
+      assert.match(await page.textContent('#botState'), /Bot をまだ設定していません/);
+      assert.equal(await page.isDisabled('#stChannel'), true);
       const urge = (await D()).settings.urge;
       await page.locator('#stUrge').dispatchEvent('click');
       await until((d, v) => d.settings.urge === !v, urge);

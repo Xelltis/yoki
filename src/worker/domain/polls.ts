@@ -37,12 +37,12 @@ export function noticeNote(sent: boolean | null, what: string): string {
 
 /**
  * 日程調整の知らせ（'decided' 日程決定 / 'pollReady' 回答そろい）をサーバーからその場で送る。
- * 画面から送ると、送り終わる前に閉じられたときに届かない。true（届いた）/ false（失敗。画面が送り直す）/ null（Webhook が無い）
+ * 画面から送ると、送り終わる前に閉じられたときに届かない。true（届いた）/ false（失敗。画面が送り直す）/ null（送り先のチャンネルが無い）
  */
 export async function sendPollNotice(ctx: Ctx, s: Session, kind: 'decided' | 'pollReady', sleep: Sleep): Promise<boolean | null> {
   const targets = sessionTargets(ctx, s);
   if (!targets.length) return null;
-  const log = { db: ctx.db, groupId: ctx.group.id };
+  const log = { db: ctx.db, groupId: ctx.group.id, token: ctx.bot.token };
   return kind === 'decided'
     ? postToTargets(log, decidedPayload(ctx, s), '日程決定', s.name, targets, sleep)
     : postToTargets(log, pollReadyPayload(ctx, s), '回答そろい', s.name, targets, sleep);

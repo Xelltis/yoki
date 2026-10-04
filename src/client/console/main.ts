@@ -4,6 +4,7 @@ import { initArea } from './area';
 import { init as initAvail } from './avail';
 import { init as initAvailInput } from './avail-input';
 import { init as initCalendar, renderIconLegend, selectDay } from './calendar';
+import { init as initChannels } from './channels';
 import { init as initDay } from './day';
 import { init as initForm } from './form';
 import { init as initHeader } from './header';
@@ -32,7 +33,7 @@ declare global {
 
 initArea();
 initTips(); initModal(); initHeader(); initTabs(); initTheme(); initSetup(); initNotices(); initCalendar(); initDay();
-initRecruit(); initPoll(); initOps(); initAvail(); initAvailInput(); initForm(); initPromote(); initMembers(); initSettings(); initSeriesNotify(); initLoad();
+initRecruit(); initPoll(); initOps(); initAvail(); initAvailInput(); initForm(); initPromote(); initMembers(); initSettings(); initSeriesNotify(); initChannels(); initLoad();
 
 window.yoki = { get D() { return D; }, selectDay, showTab };
 paintFromCache();

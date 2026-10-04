@@ -1,0 +1,60 @@
+// Discord のチャンネルと Bot（卓予定の Discord アプリ）。送り先はチャンネルの ID で持ち、Bot のトークンで読む・送る。
+// Gateway には繋がず、REST だけを使う。トークンは Worker の secret（DISCORD_BOT_TOKEN）
+import { DISCORD_API } from '../auth/oauth';
+
+/** チャンネルの ID（17〜20 桁の数字） */
+export function isChannelId(id: string): boolean {
+  return /^\d{17,20}$/.test(id);
+}
+
+/** Bot を招くときに求める権限: チャンネルを見る（1024）・メッセージを送る（2048）・埋め込みリンク（16384） */
+export const BOT_PERMISSIONS = 1024 + 2048 + 16384;
+
+/** グループのサーバーに Bot を招く URL。Discord アプリの Client ID が無ければ空 */
+export function botInviteUrl(clientId: string, guildId: string): string {
+  if (!clientId) return '';
+  const q = new URLSearchParams({ client_id: clientId, scope: 'bot', permissions: String(BOT_PERMISSIONS), guild_id: guildId, disable_guild_select: 'true' });
+  return 'https://discord.com/oauth2/authorize?' + q.toString();
+}
+
+/** Bot の権限で Discord の API を読む。status と、JSON の本文（読めなければ null）を返す */
+export async function botGet(token: string, path: string): Promise<{ status: number; body: unknown }> {
+  const res = await fetch(DISCORD_API + path, { headers: { Authorization: 'Bot ' + token } });
+  return { status: res.status, body: await res.json().catch(() => null) };
+}
+
+export type Channel = { id: string; name: string; category: string };
+type ApiChannel = { id: string; name: string; type: number; position: number; parent_id: string | null; guild_id?: string };
+/** 送り先にできるチャンネルの種類: テキスト（0）とアナウンス（5） */
+const SENDABLE = [0, 5];
+
+/**
+ * サーバーの、送り先にできるチャンネルの一覧（カテゴリーごと、Discord の並び順）。
+ * Bot がサーバーにいない・見られないときは null。そのほかの失敗は投げる
+ */
+export async function listChannels(token: string, guildId: string): Promise<Channel[] | null> {
+  const r = await botGet(token, '/guilds/' + guildId + '/channels');
+  if (r.status === 403 || r.status === 404) return null;
+  if (r.status !== 200 || !Array.isArray(r.body)) throw new Error('Discord のチャンネルの一覧を読めませんでした（HTTP ' + r.status + '）');
+  const all = r.body as ApiChannel[];
+  const cat = new Map(all.filter((c) => c.type === 4).map((c) => [c.id, c]));
+  const key = (c: ApiChannel) => {
+    const p = c.parent_id ? cat.get(c.parent_id) : undefined;
+    return [p ? p.position : -1, c.parent_id ?? '', c.position] as const;
+  };
+  return all
+    .filter((c) => SENDABLE.includes(c.type))
+    .sort((a, b) => {
+      const ka = key(a), kb = key(b);
+      return ka[0] - kb[0] || ka[1].localeCompare(kb[1]) || ka[2] - kb[2];
+    })
+    .map((c) => ({ id: c.id, name: c.name, category: c.parent_id ? cat.get(c.parent_id)?.name ?? '' : '' }));
+}
+
+/** 1 つのチャンネル（送り先にできる種類だけ）。Bot が見られない・無いときは null */
+export async function getChannel(token: string, channelId: string): Promise<{ id: string; name: string; guildId: string } | null> {
+  const r = await botGet(token, '/channels/' + channelId);
+  const c = r.body as ApiChannel | null;
+  if (r.status !== 200 || !c || !SENDABLE.includes(c.type)) return null;
+  return { id: c.id, name: c.name, guildId: c.guild_id ?? '' };
+}

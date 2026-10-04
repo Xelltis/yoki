@@ -30,6 +30,7 @@ export default defineConfig(async (): Promise<ViteUserConfig> => {
                   TEST_MIGRATIONS: migrations,
                   DISCORD_CLIENT_ID: 'test-client',
                   DISCORD_CLIENT_SECRET: 'test-secret',
+                  DISCORD_BOT_TOKEN: 'test-bot-token',
                   APP_URL: 'https://yoki.test',
                   // 区切りの読み方（カンマと空白）も確かめる
                   OPERATOR_IDS: '400000000000000098, 400000000000000099',

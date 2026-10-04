@@ -5,22 +5,23 @@ import { STATUS } from '../domain/constants';
 import type { Ctx, Session } from '../domain/types';
 
 export type Kind = 'remind' | 'recruit' | '';
-export type Target = { url: string; label: string; series: string; kind?: Kind };
+/** 送り先。channelId は Discord のチャンネルの ID。label は送信記録と画面に出す名前 */
+export type Target = { channelId: string; label: string; series: string; kind?: Kind };
 
 const KIND_LABEL: Record<'remind' | 'recruit', string> = { remind: '開催前の知らせのチャンネル', recruit: '募集のチャンネル' };
 
 export function kindBase(ctx: Pick<Ctx, 'group'>, kind: Kind): Target | null {
-  const own = kind === 'remind' ? ctx.group.remind_webhook_url : kind === 'recruit' ? ctx.group.recruit_webhook_url : '';
-  if (own && kind) return { url: own, label: KIND_LABEL[kind], series: '', kind };
-  return ctx.group.webhook_url ? { url: ctx.group.webhook_url, label: '基本のチャンネル', series: '' } : null;
+  const own = kind === 'remind' ? ctx.group.remind_channel_id : kind === 'recruit' ? ctx.group.recruit_channel_id : '';
+  if (own && kind) return { channelId: own, label: KIND_LABEL[kind], series: '', kind };
+  return ctx.group.channel_id ? { channelId: ctx.group.channel_id, label: '基本のチャンネル', series: '' } : null;
 }
 
 export function discordTargets(ctx: Pick<Ctx, 'group' | 'seriesNotify'>, series: string, kind: Kind): Target[] {
   const base = kindBase(ctx, kind);
   const sn = series ? ctx.seriesNotify[series] : undefined;
-  if (sn && sn.webhook) {
-    const out: Target[] = [{ url: sn.webhook, label: 'シリーズ「' + series + '」のチャンネル', series }];
-    if (sn.alsoBase && base && base.url !== sn.webhook) out.push(base);
+  if (sn && sn.channelId) {
+    const out: Target[] = [{ channelId: sn.channelId, label: 'シリーズ「' + series + '」のチャンネル', series }];
+    if (sn.alsoBase && base && base.channelId !== sn.channelId) out.push(base);
     return out;
   }
   return base ? [base] : [];
@@ -35,11 +36,11 @@ export function sessionTargets(ctx: Pick<Ctx, 'group' | 'seriesNotify'>, s: Sess
   return discordTargets(ctx, s.series, kind === undefined ? sessionKind(s) : kind);
 }
 
-/** いくつかの卓の送り先を合わせる（同じ URL は 1 つに） */
+/** いくつかの卓の送り先を合わせる（同じチャンネルは 1 つに） */
 export function unionTargets(lists: Target[][]): Target[] {
   const seen = new Set<string>();
   const out: Target[] = [];
-  for (const t of lists.flat()) if (!seen.has(t.url)) { seen.add(t.url); out.push(t); }
+  for (const t of lists.flat()) if (!seen.has(t.channelId)) { seen.add(t.channelId); out.push(t); }
   return out;
 }
 

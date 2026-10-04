@@ -38,7 +38,8 @@ export function clearCache(): void { try { localStorage.removeItem(cacheKey()); 
 export function paintFromCache(): boolean {
   let d: ConsoleData | null = null;
   try { d = JSON.parse(localStorage.getItem(cacheKey()) || 'null'); } catch { d = null; }
-  if (!d || !d.sessions || !d.members) return false;
+  // 古い形の控え（知らせを Bot に替える前のもの。bot が無い）は使わない。すぐ後ろで最新を読む
+  if (!d || !d.sessions || !d.members || !d.bot) return false;
   $('loading').hidden = true; $('logoutBtn').hidden = false;
   applyData(d);
   showTab(load('tab') || 'cal');

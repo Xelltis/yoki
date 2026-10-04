@@ -124,7 +124,7 @@ function groupDetailHtml(d: AdminGroupDetail): string {
     '<dt>作った人</dt><dd>' + esc(d.createdByName || d.createdBy) + ' ／ ' + fmt(d.createdAt) + '</dd>' +
     '<dt>最後に使われた</dt><dd>' + fmt(d.lastUsedAt) + '</dd>' +
     '<dt>卓</dt><dd>' + d.activeCount + ' 件が動いている（全部で ' + d.sessionCount + ' 件）</dd>' +
-    '<dt>Discord の基本のチャンネル</dt><dd>' + (d.webhookSet ? 'あり' : 'なし') + '</dd>' +
+    '<dt>知らせの基本のチャンネル</dt><dd>' + (d.channelSet ? 'あり' : 'なし') + '</dd>' +
     '<dt>サーバーの管理者</dt><dd>' + (d.guildManagers.length ? d.guildManagers.map((x) => esc(x.name)).join('、') + ' <span class="hint">（印が無くても管理者）</span>' : '<span class="hint">ログインした人の中にはいません</span>') + '</dd></dl>' +
     '<h4>' + mi('shield') + 'メンバーと管理者</h4>' +
     '<div class="wrap"><table class="op-table"><tr><th>名前</th><th>Discord</th><th>最後のログイン</th><th></th></tr>' + (members || '<tr><td colspan="4" class="hint">メンバーがいません。</td></tr>') + '</table></div>' +
@@ -133,8 +133,7 @@ function groupDetailHtml(d: AdminGroupDetail): string {
     '<button type="submit" class="btn">管理者として足す</button><p class="hint">初めてグループを開いたときに、その人に結びつきます。管理者の印は 0 人にできないので、付け替えるときは足してから外します。</p></form>' +
     '<form class="op-form" id="opGuild"><b>' + mi('swap_horiz') + 'Discord サーバーを付け替える</b>' +
     '<div class="row"><label>新しいサーバーの ID<input type="text" name="guildId" inputmode="numeric" placeholder="123456789012345678" required></label><label>サーバーの名前 <small>分からないときだけ要る</small><input type="text" name="guildName"></label></div>' +
-    '<label class="c"><input type="checkbox" name="clearWebhooks"> Webhook（知らせの送り先）も外す</label>' +
-    '<button type="submit" class="btn">付け替える</button><p class="hint">新しいサーバーの人が入れるようになり、いまのサーバーの人は入れなくなります。メンバーの行と管理者の印は残ります。</p></form>' +
+    '<button type="submit" class="btn">付け替える</button><p class="hint">新しいサーバーの人が入れるようになり、いまのサーバーの人は入れなくなります。メンバーの行と管理者の印は残ります。知らせのチャンネルは外れるので、新しいサーバーに Bot を招いて選び直してもらいます。</p></form>' +
     '<form class="op-form danger-card" id="opDelete"><b>' + mi('delete') + 'グループを消す</b>' +
     '<p>卓・メンバーの予定・メモ・日程調整の回答・送信の記録が、すべて消えます。元に戻せません。</p>' +
     '<label>確かめのために、グループの名前「' + esc(d.title) + '」を入れてください<input type="text" name="confirm" autocomplete="off" data-title="' + esc(d.title) + '"></label>' +
@@ -216,8 +215,8 @@ function init(): void {
     const path = '/api/admin/groups/' + encodeURIComponent(id);
     if (f.id === 'opAddAdmin') act(path + '/admins', { discordId: String(data.get('discordId') || ''), name: String(data.get('name') || ''), admin: true }, loadGroups);
     else if (f.id === 'opGuild') {
-      const body = { guildId: String(data.get('guildId') || '').trim(), guildName: String(data.get('guildName') || '').trim(), clearWebhooks: data.get('clearWebhooks') === 'on' };
-      askConfirm({ title: 'Discord サーバーを付け替えますか？', message: '「' + (g ? g.title : id) + '」を、サーバー ' + body.guildId + ' に結び直します。いまのサーバーの人は入れなくなります。', ok: '付け替える', danger: true },
+      const body = { guildId: String(data.get('guildId') || '').trim(), guildName: String(data.get('guildName') || '').trim() };
+      askConfirm({ title: 'Discord サーバーを付け替えますか？', message: '「' + (g ? g.title : id) + '」を、サーバー ' + body.guildId + ' に結び直します。いまのサーバーの人は入れなくなります。知らせのチャンネルも外れます。', ok: '付け替える', danger: true },
         () => { act(path + '/guild', body, loadAll); });
     } else if (f.id === 'opDelete') {
       const confirm = String(data.get('confirm') || '');

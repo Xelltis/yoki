@@ -70,10 +70,10 @@ describe('様子', () => {
     await setupGroup();
     const now = Date.now(), iso = (msAgo: number) => new Date(now - msAgo).toISOString();
     const log = (at: string, result: string) => env.DB.prepare("INSERT INTO notify_log (group_id, at, kind, target, result) VALUES ('grp', ?, '開催前の知らせ', '卓', ?)").bind(at, result).run();
-    await log(iso(60_000), '送信失敗（Webhook URL が違う）: HTTP 404');
-    await log(iso(2 * 86400_000), '送らず: Discord Webhook URL が空');
+    await log(iso(60_000), '送信失敗（チャンネル）: HTTP 404');
+    await log(iso(2 * 86400_000), '送らず: 送り先のチャンネルが未設定');
     await log(iso(30_000), 'HTTP 429 …（1 回目、3 秒後に送り直し）');
-    await log(iso(10_000), 'OK (204)');
+    await log(iso(10_000), 'OK (200)');
     await log(iso(10 * 86400_000), '送信失敗（古い）');
     await env.DB.prepare("INSERT INTO meta (key, value) VALUES ('patrol', ?), ('hourly', '2026-10-10T20')").bind(JSON.stringify({ at: iso(60_000), ms: 12, ok: true, error: '' })).run();
     const { body: o } = await get<AdminOverview>('/api/admin/overview');
@@ -81,7 +81,7 @@ describe('様子', () => {
     expect(o.counts.logins).toBe(4);
     expect(o.failures.day).toBe(1);
     expect(o.failures.week).toBe(2);
-    expect(o.failures.recent.map((f) => f.result)).toEqual(['送信失敗（Webhook URL が違う）: HTTP 404', '送らず: Discord Webhook URL が空', '送信失敗（古い）']);
+    expect(o.failures.recent.map((f) => f.result)).toEqual(['送信失敗（チャンネル）: HTTP 404', '送らず: 送り先のチャンネルが未設定', '送信失敗（古い）']);
     expect(o.failures.recent[0]).toMatchObject({ groupId: 'grp', groupTitle: 'テストの卓' });
     expect(o.patrol).toMatchObject({ hourly: '2026-10-10T20', stale: false });
     expect(o.patrol.last?.ok).toBe(true);
@@ -95,15 +95,19 @@ describe('様子', () => {
 });
 
 describe('グループ', () => {
-  test('一覧と中身。メンバー・ログインした人・サーバーの管理者が分かり、Webhook の URL は出さない', async () => {
+  test('一覧と中身。メンバー・ログインした人・サーバーの管理者が分かる。知らせのチャンネルは、決まっているかだけを出す', async () => {
     await setupGroup();
-    await env.DB.prepare("UPDATE groups SET webhook_url = 'https://discord.com/api/webhooks/1/secret' WHERE id = 'grp'").run();
+    await env.DB.prepare("UPDATE groups SET channel_id = '123456789012345678' WHERE id = 'grp'").run();
     const { body: list } = await get<AdminGroupRow[]>('/api/admin/groups');
     expect(list).toHaveLength(1);
     expect(list[0]).toMatchObject({ id: 'grp', title: 'テストの卓', guildId: GUILD, memberCount: 3, linkedCount: 3, adminCount: 0 });
     const { body: d, res } = await get<AdminGroupDetail>('/api/admin/groups/grp');
-    expect(d.webhookSet).toBe(true);
-    expect(JSON.stringify(d)).not.toContain('secret');
+    expect(d.channelSet).toBe(true);
+    // チャンネルの ID も Bot のトークンも出さない
+    for (const json of [JSON.stringify(list), JSON.stringify(d)]) {
+      expect(json).not.toContain('123456789012345678');
+      expect(json).not.toContain('test-bot-token');
+    }
     expect(d.members.map((m) => m.name).sort()).toEqual(['こまち', 'ひより', 'ソラ']);
     expect(d.members.every((m) => m.userId && m.lastLoginAt)).toBe(true);
     expect(d.guildManagers).toEqual([{ id: '400000000000000010', name: 'ひより' }]);
@@ -138,21 +142,44 @@ describe('グループ', () => {
     expect((await post('/api/admin/groups/grp/admins', { discordId: '400000000000000011', admin: true })).body.message).toMatch(/ソラ/);
   });
 
-  test('Discord サーバーを付け替える。ID の形・同じサーバー・名前の分からないサーバーを確かめる', async () => {
+  test('Discord サーバーを付け替える。ID の形・同じサーバー・名前の分からないサーバーを確かめる。知らせのチャンネルはいつも外す', async () => {
     await setupGroup();
-    await env.DB.prepare("UPDATE groups SET webhook_url = 'https://discord.com/api/webhooks/1/x' WHERE id = 'grp'").run();
+    /** 基本・種類ごと・シリーズのチャンネルを決めておく */
+    const setChannels = () => env.DB.batch([
+      env.DB.prepare("UPDATE groups SET channel_id = '123456789012345678', remind_channel_id = '123456789012345679', recruit_channel_id = '123456789012345680' WHERE id = 'grp'"),
+      env.DB.prepare(
+        `INSERT INTO series_notify (group_id, series, channel_id, updated_at) VALUES ('grp', '港', '123456789012345681', 'x')
+         ON CONFLICT (group_id, series) DO UPDATE SET channel_id = excluded.channel_id`,
+      ),
+    ]);
+    const channels = () =>
+      env.DB.prepare(
+        `SELECT g.channel_id AS base, g.remind_channel_id AS remind, g.recruit_channel_id AS recruit, s.channel_id AS series
+           FROM groups g JOIN series_notify s ON s.group_id = g.id WHERE g.id = 'grp'`,
+      ).first();
+    const cleared = { base: '', remind: '', recruit: '', series: '' };
+    await setChannels();
     expect((await post('/api/admin/groups/grp/guild', { guildId: 'abc' })).status).toBe(400);
     expect((await post('/api/admin/groups/grp/guild', { guildId: '700000000000000001' })).body.error).toMatch(/名前/);
-    expect((await post('/api/admin/groups/grp/guild', { guildId: '700000000000000001', guildName: '新しいサーバー' })).status).toBe(200);
+    // 断ったときは、チャンネルを残す
+    expect(await channels()).toEqual({ base: '123456789012345678', remind: '123456789012345679', recruit: '123456789012345680', series: '123456789012345681' });
+    let r = await post('/api/admin/groups/grp/guild', { guildId: '700000000000000001', guildName: '新しいサーバー' });
+    expect(r.status).toBe(200);
+    expect(r.body.message).toBe('「テストの卓」を Discord サーバー「新しいサーバー」に結び直しました。知らせのチャンネルは外したので、新しいサーバーに Bot を招いて選び直してください。');
     expect(await env.DB.prepare("SELECT guild_id || ' ' || guild_name AS v FROM groups WHERE id = 'grp'").first('v')).toBe('700000000000000001 新しいサーバー');
+    expect(await channels()).toEqual(cleared);
+    expect((await get<AdminGroupDetail>('/api/admin/groups/grp')).body.channelSet).toBe(false);
+    expect(logs.some((l) => l.includes('"action":"changeGuild"') && l.includes('"guildId":"700000000000000001"'))).toBe(true);
     expect((await post('/api/admin/groups/grp/guild', { guildId: '700000000000000001' })).body.error).toMatch(/同じ/);
     // 古いサーバーの人は入れなくなる（控えが新しいので、聞き直しもしない）
     const sora = await loginAs({ id: '400000000000000011', name: 'ソラ' }, [{ id: GUILD, name: 'T' }]);
     expect((await rpc(sora, 'grp', 'getConsoleData')).status).toBe(403);
-    // ログインした人の控えにあるサーバーなら、名前はそこから。Webhook も外せる
+    // ログインした人の控えにあるサーバーなら、名前はそこから。このときもチャンネルを外す
+    await setChannels();
     await loginAs({ id: '600', name: 'イブ' }, [{ id: '700000000000000002', name: '控えのサーバー', canManage: true }]);
-    expect((await post('/api/admin/groups/grp/guild', { guildId: '700000000000000002', clearWebhooks: true })).body.message).toMatch(/控えのサーバー.*Webhook も外しました/);
-    expect(await env.DB.prepare("SELECT webhook_url FROM groups WHERE id = 'grp'").first('webhook_url')).toBe('');
+    r = await post('/api/admin/groups/grp/guild', { guildId: '700000000000000002' });
+    expect(r.body.message).toMatch(/^「テストの卓」を Discord サーバー「控えのサーバー」に結び直しました。知らせのチャンネルは外した/);
+    expect(await channels()).toEqual(cleared);
   });
 
   test('消す。名前が違えば消さず、合えば中身ごと消える。ほかのグループは残る', async () => {

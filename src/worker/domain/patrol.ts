@@ -56,7 +56,8 @@ export async function patrol(env: Bindings, scheduledTime: number, deps: Deps): 
   const db = env.DB;
   const p = jst(now);
   const appBase = (env.APP_URL || '').replace(/\/$/, '');
-  const load = (groupId: string) => loadGroup(db, groupId, SYSTEM, appBase ? appBase + '/g/' + groupId + '/' : '', now);
+  const bot = { token: env.DISCORD_BOT_TOKEN ?? '', clientId: env.DISCORD_CLIENT_ID };
+  const load = (groupId: string) => loadGroup(db, groupId, SYSTEM, appBase ? appBase + '/g/' + groupId + '/' : '', now, bot);
   const groupsOf = async (sql: string, ...args: unknown[]) => (await db.prepare(sql).bind(...args).all<{ group_id: string }>()).results.map((r) => r.group_id);
 
   if (await claim(db, 'hourly', p.ymd + 'T' + String(p.hour).padStart(2, '0'))) {
@@ -117,7 +118,7 @@ async function releaseMark(ctx: Ctx, column: 'notified_at' | 'urged_at' | 'soon_
     .run();
 }
 
-const logTo = (ctx: Ctx) => ({ db: ctx.db, groupId: ctx.group.id });
+const logTo = (ctx: Ctx) => ({ db: ctx.db, groupId: ctx.group.id, token: ctx.bot.token });
 
 /**
  * 開催前の知らせ。今日が知らせの日（開催日の N 日前）で、送る時刻（シリーズか基本の時刻）を過ぎた卓を送る。
@@ -129,7 +130,7 @@ export async function sendReminders(ctx: Ctx, hour: number, deps: Deps): Promise
   if (!due.length) return;
   const withTargets = due.filter((s) => sessionTargets(ctx, s, 'remind').length);
   const noTarget = due.filter((s) => !withTargets.includes(s));
-  if (noTarget.length) await appendLog(logTo(ctx), kind, noTarget.map((s) => s.name).join('、'), '送らず: Discord Webhook URL が空');
+  if (noTarget.length) await appendLog(logTo(ctx), kind, noTarget.map((s) => s.name).join('、'), '送らず: 送り先のチャンネルが未設定');
   const claimed = await claimMark(ctx, 'notified_at', withTargets);
   const mine = withTargets.filter((s) => claimed.has(s.rowId));
   if (!mine.length) return;
@@ -138,7 +139,7 @@ export async function sendReminders(ctx: Ctx, hour: number, deps: Deps): Promise
   for (const s of mine) {
     const ahead = daysBetween(ctx.today, s.date!);
     for (const t of sessionTargets(ctx, s, 'remind')) {
-      const key = t.url + '|' + ahead;
+      const key = t.channelId + '|' + ahead;
       const g = groups.get(key) ?? { t, ahead, list: [] };
       g.list.push(s);
       groups.set(key, g);
@@ -150,7 +151,7 @@ export async function sendReminders(ctx: Ctx, hour: number, deps: Deps): Promise
       const chunk = g.list.slice(i, i + EMBEDS_PER_MESSAGE);
       const mentions = mentionsOf(ctx, chunk);
       const payload = { content: '📢 ' + aheadText(g.ahead) + 'は卓の日です！' + (mentions ? ' ' + mentions : ''), embeds: chunk.map((s) => sessionEmbed(ctx, s)) };
-      if (await postDiscord(logTo(ctx), payload, kind, chunk.map((s) => s.name).join('、') + targetNote(g.t), g.t.url, deps.sleep)) {
+      if (await postDiscord(logTo(ctx), payload, kind, chunk.map((s) => s.name).join('、') + targetNote(g.t), g.t.channelId, deps.sleep)) {
         chunk.forEach((s) => delivered.add(s.rowId));
       }
     }
@@ -165,7 +166,7 @@ export async function sendUrges(ctx: Ctx, hour: number, deps: Deps): Promise<voi
   const due = ctx.sessions.filter((s) => (s.status === STATUS.RECRUIT || s.status === STATUS.ADJUSTING) && !s.urgedAt && s.windowFrom === tomorrow && notifyHourOf(ctx, s) <= hour);
   for (const s of due) {
     const targets = sessionTargets(ctx, s);
-    if (!targets.length) { await appendLog(logTo(ctx), kind, s.name, '送らず: Discord Webhook URL が空'); continue; }
+    if (!targets.length) { await appendLog(logTo(ctx), kind, s.name, '送らず: 送り先のチャンネルが未設定'); continue; }
     if (!(await claimMark(ctx, 'urged_at', [s])).size) continue;
     const gmId = ctx.memberByName.get(s.gm)?.discordId;
     const head = s.status === STATUS.RECRUIT
@@ -191,7 +192,7 @@ export async function sendStartingSoon(ctx: Ctx, deps: Deps): Promise<void> {
     const left = t - nowMin;
     if (left > ctx.group.soon_minutes || left <= -SOON_LATE_MIN) continue;
     const targets = sessionTargets(ctx, s, 'remind');
-    if (!targets.length) { await appendLog(logTo(ctx), kind, s.name, '送らず: Discord Webhook URL が空'); continue; }
+    if (!targets.length) { await appendLog(logTo(ctx), kind, s.name, '送らず: 送り先のチャンネルが未設定'); continue; }
     if (!(await claimMark(ctx, 'soon_at', [s])).size) continue;
     const mentions = mentionsOf(ctx, [s]);
     const head = left <= 0 ? '⏰ まもなく「' + s.name + '」が始まります。' : '⏰ あと ' + left + ' 分で「' + s.name + '」が始まります。';

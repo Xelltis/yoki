@@ -66,9 +66,10 @@ export type AdminMember = {
   lastLoginAt: string;
 };
 
-/** グループの詳しい中身（GET /api/admin/groups/:id）。卓・予定・Webhook の URL は出さない */
+/** グループの詳しい中身（GET /api/admin/groups/:id）。卓・予定は出さない */
 export type AdminGroupDetail = AdminGroupRow & {
-  webhookSet: boolean;
+  /** 知らせの基本のチャンネルが決まっているか */
+  channelSet: boolean;
   members: AdminMember[];
   /** その Discord サーバーを管理できる人（ログインしたことがある人だけ分かる）。印が無くても管理者 */
   guildManagers: { id: string; name: string }[];

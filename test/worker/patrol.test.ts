@@ -6,20 +6,23 @@ import { type PatrolRecord, patrol, runPatrol, sendStartingSoon, sendUrges } fro
 import { addDays } from '../../src/worker/lib/jst';
 import { makeGroup } from './helpers';
 
-const HOOK = 'https://discord.com/api/webhooks/123456789012345678/base';
-const SERIES_HOOK = 'https://discord.com/api/webhooks/123456789012345679/series';
+const CH = '123456789012345678';          // 基本のチャンネル
+const SERIES_CH = '123456789012345679';   // シリーズのチャンネル
+/** Bot がメッセージを書く Discord の API */
+const msgUrl = (ch: string) => 'https://discord.com/api/v10/channels/' + ch + '/messages';
 const DAY = '2026-10-10';   // 「今日」（日本時間）
 const at = (hhmm: string) => Date.parse(DAY + 'T' + hhmm + ':00+09:00');
 const noWait = { sleep: async () => {} };
-let posts: { url: string; content: string; embeds: number }[] = [];
+let posts: { url: string; content: string; embeds: number; auth: string | null; allowed: unknown }[] = [];
 
-function mockWebhook(codes: number[] = []) {
+/** Bot の送信を差し替える。codes の順に返し、尽きたら 200 */
+function mockBot(codes: number[] = []) {
   posts = [];
   vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
     const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
     const body = JSON.parse(String(init?.body));
-    posts.push({ url, content: body.content, embeds: (body.embeds ?? []).length });
-    return new Response(null, { status: codes.shift() ?? 204 });
+    posts.push({ url, content: body.content, embeds: (body.embeds ?? []).length, auth: new Headers(init?.headers).get('Authorization'), allowed: body.allowed_mentions });
+    return new Response('{}', { status: codes.shift() ?? 200 });
   });
 }
 
@@ -42,10 +45,10 @@ beforeEach(async () => {
   seq = 1;
   await makeGroup('g', 'guild');
   await env.DB.batch([
-    env.DB.prepare("UPDATE groups SET webhook_url = ?, remind_enabled = 1, notify_days = 1, notify_hour = 20 WHERE id = 'g'").bind(HOOK),
+    env.DB.prepare("UPDATE groups SET channel_id = ?, remind_enabled = 1, notify_days = 1, notify_hour = 20 WHERE id = 'g'").bind(CH),
     env.DB.prepare("INSERT INTO members (group_id, name, discord_id, created_at) VALUES ('g', 'ひより', '400000000000000010', 'x'), ('g', 'ソラ', '400000000000000011', 'x')"),
   ]);
-  mockWebhook();
+  mockBot();
 });
 afterEach(() => vi.restoreAllMocks());
 
@@ -57,7 +60,11 @@ describe('開催前の知らせ', () => {
     expect(posts).toHaveLength(0);
     await patrol(env, at('20:00'), noWait);
     expect(posts).toHaveLength(1);
-    expect(posts[0]).toEqual({ url: HOOK, content: '📢 明日は卓の日です！ <@400000000000000010> <@400000000000000011>', embeds: 1 });
+    // Bot のトークンでチャンネルに書く。メンションで呼ぶのは人だけ
+    expect(posts[0]).toEqual({
+      url: msgUrl(CH), content: '📢 明日は卓の日です！ <@400000000000000010> <@400000000000000011>', embeds: 1,
+      auth: 'Bot test-bot-token', allowed: { parse: ['users'] },
+    });
     expect(await mark('明日の卓', 'notified_at')).not.toBeNull();
     await patrol(env, at('20:05'), noWait);
     await patrol(env, at('21:00'), noWait);
@@ -65,36 +72,45 @@ describe('開催前の知らせ', () => {
   });
 
   test('シリーズごとの日時とチャンネル（基本にも送るなら両方）', async () => {
-    await env.DB.prepare("INSERT INTO series_notify (group_id, series, webhook_url, also_base, days, hour, updated_at) VALUES ('g', '港', ?, 1, 3, 9, 'x')").bind(SERIES_HOOK).run();
+    await env.DB.prepare("INSERT INTO series_notify (group_id, series, channel_id, also_base, days, hour, updated_at) VALUES ('g', '港', ?, 1, 3, 9, 'x')").bind(SERIES_CH).run();
     await addSession({ name: '港 #1', series: '港', date: addDays(DAY, 3), gm: 'ひより' });
     await patrol(env, at('09:00'), noWait);
-    expect(posts.map((p) => p.url).sort()).toEqual([HOOK, SERIES_HOOK].sort());
+    expect(posts.map((p) => p.url).sort()).toEqual([msgUrl(CH), msgUrl(SERIES_CH)].sort());
     expect(posts[0]!.content).toContain('3 日後は卓の日です！');
   });
 
   test('11 卓を超えたら 10 卓ごとに分けて送り、届いた卓だけを送った扱いにする', async () => {
     for (let i = 1; i <= 12; i++) await addSession({ name: '卓' + i, date: addDays(DAY, 1), gm: 'ひより' });
-    mockWebhook([204, 500, 500, 500]);
+    mockBot([200, 500, 500, 500]);
     await patrol(env, at('20:00'), noWait);
     expect(posts.map((p) => p.embeds)).toEqual([10, 2, 2, 2]);
     expect(await mark('卓1', 'notified_at')).not.toBeNull();
     // 2 通目は 3 回とも失敗したので、印を戻して次の時刻台で送り直す
     expect(await mark('卓12', 'notified_at')).toBeNull();
-    mockWebhook();
+    mockBot();
     await patrol(env, at('21:00'), noWait);
     expect(posts).toHaveLength(1);
     expect(posts[0]!.embeds).toBe(2);
   });
 
-  test('有効にしていないグループには送らない。Webhook が無ければ送らずに記録する', async () => {
+  test('有効にしていないグループには送らない。チャンネルが無ければ送らずに記録する', async () => {
     await addSession({ name: '明日の卓', date: addDays(DAY, 1), gm: 'ひより' });
     await env.DB.prepare("UPDATE groups SET remind_enabled = 0 WHERE id = 'g'").run();
     await patrol(env, at('20:00'), noWait);
     expect(posts).toHaveLength(0);
-    await env.DB.prepare("UPDATE groups SET remind_enabled = 1, webhook_url = '' WHERE id = 'g'").run();
+    await env.DB.prepare("UPDATE groups SET remind_enabled = 1, channel_id = '' WHERE id = 'g'").run();
     await patrol(env, at('21:00'), noWait);
     expect(posts).toHaveLength(0);
-    expect(await env.DB.prepare('SELECT result FROM notify_log ORDER BY id DESC').first('result')).toBe('送らず: Discord Webhook URL が空');
+    expect(await env.DB.prepare('SELECT result FROM notify_log ORDER BY id DESC').first('result')).toBe('送らず: 送り先のチャンネルが未設定');
+  });
+
+  test('Bot のトークンが無ければ（運営者の設定）送らずに失敗を記録し、印を戻す', async () => {
+    await addSession({ name: '明日の卓', date: addDays(DAY, 1), gm: 'ひより' });
+    // 本番では secret の DISCORD_BOT_TOKEN を入れ忘れることがある
+    await patrol({ ...env, DISCORD_BOT_TOKEN: undefined as unknown as string }, at('20:00'), noWait);
+    expect(posts).toHaveLength(0);
+    expect(await env.DB.prepare('SELECT result FROM notify_log ORDER BY id DESC').first('result')).toMatch(/^送信失敗（Bot の設定）/);
+    expect(await mark('明日の卓', 'notified_at')).toBeNull();
   });
 });
 
@@ -155,7 +171,7 @@ describe('見回りの様子の記録（運営者の管理画面が読む）', (
 
 describe('見回りの端の場合', () => {
   const SYSTEM = { memberId: 0, name: '', isAdmin: true, userId: '' };
-  const load = (hhmm: string) => loadGroup(env.DB, 'g', SYSTEM, '', new Date(at(hhmm)));
+  const load = (hhmm: string) => loadGroup(env.DB, 'g', SYSTEM, '', new Date(at(hhmm)), { token: env.DISCORD_BOT_TOKEN, clientId: env.DISCORD_CLIENT_ID });
   const lastLog = () => env.DB.prepare('SELECT result FROM notify_log ORDER BY id DESC').first('result');
   /** Discord の ID の無いメンバー（知らせにメンションが付かない） */
   const addGuest = () => env.DB.prepare("INSERT INTO members (group_id, name, created_at) VALUES ('g', 'ゲスト', 'x')").run();
@@ -174,14 +190,14 @@ describe('見回りの端の場合', () => {
     expect(posts.map((p) => p.content).sort()).toEqual(['⏳ 明日から「古城」の候補の期間です。まだ開催日が決まっていません。', '📢 明日は卓の日です！']);
   });
 
-  test('期間前の催促: Webhook が無ければ送らずに記録する。送れなければ印を戻して次の回に送り直す', async () => {
+  test('期間前の催促: チャンネルが無ければ送らずに記録する。送れなければ印を戻して次の回に送り直す', async () => {
     await addSession({ name: '古城', status: '募集', windowFrom: addDays(DAY, 1), gm: 'ひより' });
-    await env.DB.prepare("UPDATE groups SET webhook_url = '' WHERE id = 'g'").run();
+    await env.DB.prepare("UPDATE groups SET channel_id = '' WHERE id = 'g'").run();
     await patrol(env, at('20:00'), noWait);
     expect(posts).toHaveLength(0);
-    expect(await lastLog()).toBe('送らず: Discord Webhook URL が空');
-    await env.DB.prepare("UPDATE groups SET webhook_url = ? WHERE id = 'g'").bind(HOOK).run();
-    mockWebhook([500, 500, 500]);
+    expect(await lastLog()).toBe('送らず: 送り先のチャンネルが未設定');
+    await env.DB.prepare("UPDATE groups SET channel_id = ? WHERE id = 'g'").bind(CH).run();
+    mockBot([500, 500, 500]);
     await sendUrges(await load('20:00'), 20, noWait);
     expect(posts).toHaveLength(3);
     expect(await mark('古城', 'urged_at')).toBeNull();
@@ -209,13 +225,13 @@ describe('見回りの端の場合', () => {
     expect(posts.map((p) => p.content)).toEqual(['⏰ まもなく「今夜の卓」が始まります。']);
   });
 
-  test('開始直前の知らせ: Webhook が無ければ送らずに記録する。送れなければ印を戻す', async () => {
-    await env.DB.prepare("UPDATE groups SET soon = 1, soon_minutes = 30, webhook_url = '' WHERE id = 'g'").run();
+  test('開始直前の知らせ: チャンネルが無ければ送らずに記録する。送れなければ印を戻す', async () => {
+    await env.DB.prepare("UPDATE groups SET soon = 1, soon_minutes = 30, channel_id = '' WHERE id = 'g'").run();
     await addSession({ name: '今夜の卓', date: DAY, start: '21:00', gm: 'ひより' });
     await patrol(env, at('20:40'), noWait);
-    expect(await lastLog()).toBe('送らず: Discord Webhook URL が空');
-    await env.DB.prepare("UPDATE groups SET webhook_url = ? WHERE id = 'g'").bind(HOOK).run();
-    mockWebhook([500, 500, 500]);
+    expect(await lastLog()).toBe('送らず: 送り先のチャンネルが未設定');
+    await env.DB.prepare("UPDATE groups SET channel_id = ? WHERE id = 'g'").bind(CH).run();
+    mockBot([500, 500, 500]);
     await patrol(env, at('20:45'), noWait);
     expect(posts).toHaveLength(3);
     expect(await mark('今夜の卓', 'soon_at')).toBeNull();

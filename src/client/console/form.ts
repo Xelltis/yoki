@@ -134,11 +134,11 @@ export function syncStatusUi(): void {
 /** 卓の登録画面の「Discord に知らせる」。シリーズの欄に合わせて、押せるかと送り先を変える */
 export function syncNotifyUi(reset: boolean): void {
   const series = $('series').value.trim(), kind = $('status').value === '募集' ? 'recruit' : '', can = hookFor(series, kind), wasOff = $('notify').disabled, e = seriesHook(series) ? snEntry(series) : null;
-  const baseName = kindSet(kind) ? '募集のチャンネル' : '基本のチャンネル', baseOk = kindSet(kind) || !!D.webhookSet;
+  const baseName = kindSet(kind) ? '募集のチャンネル' : '基本のチャンネル', baseOk = kindSet(kind) || !!D.channelSet;
   $('notify').disabled = !can;
   if (!can) $('notify').checked = false;
   else if (reset || wasOff) $('notify').checked = !!D.notifyDefault;
-  $('notifyHint').textContent = !can ? '（Webhook 未設定）' : e ? (e.alsoBase && baseOk ? '（シリーズのチャンネルと' + baseName + 'へ）' : '（シリーズのチャンネルへ）') : kindSet(kind) ? '（募集のチャンネルへ）' : '';
+  $('notifyHint').textContent = !can ? '（チャンネル未設定）' : e ? (e.alsoBase && baseOk ? '（シリーズのチャンネルと' + baseName + 'へ）' : '（シリーズのチャンネルへ）') : kindSet(kind) ? '（募集のチャンネルへ）' : '';
 }
 
 /** 状態ごとの手順。状態を選んだ時点で、何をすればよいかを窓の中に出す */

@@ -6,7 +6,7 @@ import { app, handleError } from '../../src/worker/app';
 import worker from '../../src/worker/index';
 import { badRequest } from '../../src/worker/lib/errors';
 import { noticePage } from '../../src/worker/routes/html';
-import { call, loginAs, makeGroup, ORIGIN, setupGroup } from './helpers';
+import { call, loginAs, makeGroup, ORIGIN, SID, setupGroup } from './helpers';
 
 afterEach(() => vi.restoreAllMocks());
 
@@ -114,4 +114,11 @@ describe('Discord の設定が無いとき（手元で開発用ログインだ�
     expect(res.status).toBe(302);
     expect(res.headers.get('Location')).toBe('/?return_to=%2Fg%2Fp1%2F');
   });
+});
+
+test('Bot のトークンが無い Cloudflare では、画面に Bot が無いことを知らせる', async () => {
+  const { admin } = await setupGroup();
+  const { DISCORD_BOT_TOKEN: _, ...noBot } = env;
+  const res = await app.request(ORIGIN + '/api/g/grp/getConsoleData', { method: 'POST', headers: { Origin: ORIGIN, 'Content-Type': 'application/json', Cookie: SID + '=' + admin }, body: '{}' }, noBot);
+  expect((await res.json<{ bot: { ready: boolean } }>()).bot.ready).toBe(false);
 });
