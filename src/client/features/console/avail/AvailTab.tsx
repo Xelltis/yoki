@@ -13,7 +13,7 @@ import { useConsole, useData } from '../context';
 import { WD, fmtJa } from '../model/dates';
 import { active, isAdjusting, isRecruit, me, peopleOf, sortSessions, sortedActive } from '../model/model';
 import { withAvail, withAvailNote } from '../model/optimistic';
-import { notice } from '../styles';
+import { checkPill, notice } from '../styles';
 import { AvailList, AvailTable } from './AvailTable';
 import { type AvailFilter, type Mark, activeNames, availRows, markIn, targetNames, visibleNames } from './rows';
 
@@ -31,8 +31,6 @@ const pgrid = 'grid grid-cols-[max-content_minmax(0,1fr)] items-center gap-x-16 
 const plabel = 'm-0 text-12 font-semibold text-muted max-sm:mt-6';
 const pctl = 'flex min-w-0 flex-wrap items-center gap-6';
 const panelBtns = 'btns mt-14 border-t border-line pt-12';
-/** 曜日やメンバーのチェック（選ぶと水色） */
-const chkPill = 'm-0 inline-flex cursor-pointer items-center gap-6 rounded-full border border-line-strong bg-card py-3 pr-10 pl-8 text-13 font-normal has-checked:border-accent-line has-checked:bg-accent-soft has-checked:text-accent-text ';
 /** 表の上の絞り込みのボタン（押すたびに入り切り） */
 const avChip = 'h-32 cursor-pointer rounded-full border border-line bg-card px-12 py-0 font-inherit text-13 font-semibold text-muted hover:bg-hover aria-pressed:border-accent-line aria-pressed:bg-accent-soft aria-pressed:text-accent-text max-tab:flex-none';
 
@@ -146,7 +144,7 @@ export function AvailTab() {
   const wdsBox = (sel: number[], set: (wds: number[]) => void, cls: string) => (
     <span className="inline-flex flex-wrap gap-6" id={cls === 'afwd' ? 'afWds' : 'abWds'}>
       {WD.map((w, i) => (
-        <label className={chkPill + (i === 0 ? 'text-sun' : i === 6 ? 'text-sat' : '')} key={i}>
+        <label className={checkPill + (i === 0 ? 'text-sun' : i === 6 ? 'text-sat' : '')} key={i}>
           <input type="checkbox" className={cls} value={i} checked={sel.indexOf(i) >= 0} onChange={(ev) => set(ev.target.checked ? sel.concat(i) : sel.filter((x) => x !== i))} />
           {w}
         </label>
@@ -195,7 +193,7 @@ export function AvailTab() {
           <div className={pctl}>
             <span className="inline-flex flex-wrap gap-6" id="afMembers">
               {d.members.map((m) => (
-                <label className={chkPill} key={m.name}>
+                <label className={checkPill} key={m.name}>
                   <input type="checkbox" className="afm" value={m.name} checked={memberChecked(m.name)}
                     onChange={(ev) => { const cur = d.members.map((x) => x.name).filter(memberChecked); setMembers(ev.target.checked ? cur.concat(m.name) : cur.filter((x) => x !== m.name)); }} />
                   {m.name}
