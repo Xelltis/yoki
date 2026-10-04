@@ -2,7 +2,7 @@
 import { badRequest, notFound } from '../lib/errors';
 import { fmtDateJa, fmtYmdSlash, parseYmd } from '../lib/jst';
 import { uniq } from '../lib/text';
-import { ACTIVE, DATED, STATUS } from './constants';
+import { DATED, STATUS } from './constants';
 import type { Ctx, Session } from './types';
 
 /** GM と参加者（GAS 版 peopleOf_） */
@@ -14,22 +14,6 @@ export function findSession(ctx: Ctx, id: unknown): Session {
   const s = ctx.sessions.find((x) => x.id === String(id ?? ''));
   if (!s) throw notFound('その卓が見つかりません: ' + String(id ?? ''));
   return s;
-}
-
-export const isActive = (s: Session) => ACTIVE.includes(s.status);
-
-/** 開催日の近い順。日付の無い卓は期間の始まりが早い順で後ろ、期間未定はその後（GAS 版 sortSessions_） */
-export function sortSessions(list: Session[]): Session[] {
-  return list.slice().sort((a, b) => {
-    if (!!a.date !== !!b.date) return a.date ? -1 : 1;
-    if (a.date && b.date && a.date !== b.date) return a.date < b.date ? -1 : 1;
-    if (!a.date && !b.date) {
-      const ka = a.windowFrom || '9999', kb = b.windowFrom || '9999';
-      if (ka !== kb) return ka < kb ? -1 : 1;
-    }
-    if (a.start !== b.start) return (a.start || '99') < (b.start || '99') ? -1 : 1;
-    return a.name < b.name ? -1 : a.name > b.name ? 1 : 0;
-  });
 }
 
 export type WindowInfo = { from: string; to: string; text: string; label: string };

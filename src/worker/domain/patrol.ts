@@ -51,7 +51,7 @@ export async function runPatrol(env: Bindings, scheduledTime: number, deps: Deps
   }
 }
 
-export async function patrol(env: Bindings, scheduledTime: number, deps: Deps = { sleep: realSleep }): Promise<void> {
+export async function patrol(env: Bindings, scheduledTime: number, deps: Deps): Promise<void> {
   const now = new Date(scheduledTime);
   const db = env.DB;
   const p = jst(now);

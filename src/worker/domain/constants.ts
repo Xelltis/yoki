@@ -4,8 +4,6 @@ import { STATUS, type Status } from '../../shared/api';
 // 卓の状態（の名前と順番）は、画面と共有する（src/shared/api.ts）
 export { STATUS, type Status };
 export const STATUS_LIST: Status[] = [STATUS.RECRUIT, STATUS.ADJUSTING, STATUS.HELD, STATUS.DONE, STATUS.CANCELED];
-/** 稼働中。一覧と「卓予定」に出る */
-export const ACTIVE: Status[] = [STATUS.RECRUIT, STATUS.ADJUSTING, STATUS.HELD];
 /** 開催日が要る。予定表に「参」「GM」が付く */
 export const DATED: Status[] = [STATUS.HELD];
 /** この状態になったら、参加希望の人を参加者に移す */

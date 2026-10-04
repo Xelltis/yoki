@@ -87,7 +87,8 @@ export async function discordAttempt(log: LogTo, payload: Payload, kind: string,
   const ok = code >= 200 && code < 300;
   const canRetry = !ok && (code === 429 || code >= 500 || (!code && /timed out|timeout|DNS|address|network/i.test(errText)));
   const last = attempt >= MAX_TRIES || !canRetry;
-  const waitMs = canRetry && !last ? Math.min(Math.max(RETRY_WAITS_MS[attempt - 1] ?? 8000, retryAfter), MAX_WAIT_MS) : 0;
+  // 送り直すのは 1・2 回目だけなので、RETRY_WAITS_MS にいつも値がある
+  const waitMs = canRetry && !last ? Math.min(Math.max(RETRY_WAITS_MS[attempt - 1]!, retryAfter), MAX_WAIT_MS) : 0;
   const raw = code ? 'HTTP ' + code + ' ' + body.slice(0, 200) : 'ERROR ' + errText;
   const reason = ok ? null : classifyFailure(code, errText);
   let result: string;
@@ -106,13 +107,14 @@ export const realSleep: Sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 /** 送り直しも含めて送る（サーバーから送るとき。画面からは 1 回ずつ sendDiscordStep を呼ぶ） */
 export async function postDiscord(log: LogTo, payload: Payload, kind: string, target: string, url: string, sleep: Sleep = realSleep): Promise<boolean> {
-  for (let attempt = 1; attempt <= MAX_TRIES; attempt++) {
-    const r = await discordAttempt(log, payload, kind, target, attempt, url);
-    if (r.ok) return true;
-    if (!r.retryable) return false;
+  // 送り直してよいのは MAX_TRIES 回目の手前まで（discordAttempt が retryable で決める）。届いたときも retryable は false
+  let attempt = 1;
+  let r = await discordAttempt(log, payload, kind, target, attempt, url);
+  while (r.retryable) {
     await sleep(r.waitMs);
+    r = await discordAttempt(log, payload, kind, target, ++attempt, url);
   }
-  return false;
+  return r.ok;
 }
 
 /** いくつかの送り先へ同じ文を送る。すべて届けば true（GAS 版 postToTargets_） */

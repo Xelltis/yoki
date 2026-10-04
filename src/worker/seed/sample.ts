@@ -11,6 +11,12 @@ import { addDays, fmtDateTime, jst } from '../lib/jst';
 
 const NOTES: Record<string, string> = { ひより: 'GM が多め', こまち: '平日は 21 時から', ミナト: 'TRPG は始めたばかり' };
 
+// 回答の呼び出しに渡す io の data と sleep は、型を満たすためだけ。サンプルの Webhook には送ったことにするので、待つことも画面のデータを返すことも無い
+/* istanbul ignore next -- @preserve サンプルづくりでは呼ばれない */
+async function noData(): Promise<unknown> { return {}; }
+/* istanbul ignore next -- @preserve サンプルづくりでは呼ばれない */
+async function noSleep(): Promise<void> {}
+
 export async function seedSample(db: D1Database, groupId: string, appUrl: string, now = new Date()): Promise<void> {
   const at = now.toISOString();
   await db.batch([
@@ -29,7 +35,7 @@ export async function seedSample(db: D1Database, groupId: string, appUrl: string
     const actor: Actor = { memberId: ids.get(name)!, name, isAdmin: true, userId: '' };
     return loadGroup(db, groupId, actor, appUrl, now);
   };
-  const io = { reload: () => as('ひより'), data: async () => ({}), sleep: async () => {} };
+  const io = { reload: () => as('ひより'), data: noData, sleep: noSleep };
   const today = jst(now).ymd;
   const T = (n: number) => addDays(today, n);
   const p = jst(now);
