@@ -1,4 +1,4 @@
-// 運営者の管理画面（/admin/ で開く。ファイルは src/client/operator/）。様子（数・見回り・送信の失敗）・グループ（管理者と Discord サーバーの付け替え・消す）・利用者（ログインを切る・締め出す）・
+// 運営者の管理画面（/admin/ で開く。ファイルは src/client/operator/）。様子（数・見回り・送信の失敗）・グループ（管理者と Discord サーバーの付け替え・消す）・利用者（ログインを切る・締め出す・消す）・
 // 規約（利用規約とプライバシーポリシーの運営者の名前・問い合わせ先・本文）。
 // 読み書きは /api/admin/*（サーバーが運営者かを確かめる）。形は src/shared/admin.ts
 import type { AdminGroupDetail, AdminGroupRow, AdminLegal, AdminOverview, AdminResult, AdminUserRow, LegalKind } from '../../shared/admin';
@@ -122,7 +122,7 @@ function groupDetailHtml(d: AdminGroupDetail): string {
       : '<button type="button" class="btn small" data-admin="1" data-mid="' + m.id + '">' + mi('shield') + '管理者にする</button>') + '</td></tr>').join('');
   return '<div class="op-detail-h"><h3>' + esc(d.title) + '</h3><button type="button" class="btn small" data-close>' + mi('close') + '閉じる</button></div>' +
     '<dl class="op-dl"><dt>Discord サーバー</dt><dd>' + esc(d.guildName) + ' <small class="op-id">' + esc(d.guildId) + '</small></dd>' +
-    '<dt>作った人</dt><dd>' + esc(d.createdByName || d.createdBy) + ' ／ ' + fmt(d.createdAt) + '</dd>' +
+    '<dt>作った人</dt><dd>' + (esc(d.createdByName || d.createdBy) || '<span class="hint">消した利用者</span>') + ' ／ ' + fmt(d.createdAt) + '</dd>' +
     '<dt>最後に使われた</dt><dd>' + fmt(d.lastUsedAt) + '</dd>' +
     '<dt>卓</dt><dd>' + d.activeCount + ' 件が動いている（全部で ' + d.sessionCount + ' 件）</dd>' +
     '<dt>知らせの基本のチャンネル</dt><dd>' + (d.channelSet ? 'あり' : 'なし') + '</dd>' +
@@ -156,7 +156,8 @@ function renderUsers(): void {
       '<td>' + (u.groups.map((g) => esc(g.title)).join('、') || '<span class="hint">なし</span>') + '</td>' +
       '<td class="nw">' + fmt(u.lastLoginAt) + '<small class="op-id">はじめて ' + fmt(u.createdAt) + '</small></td><td class="c">' + u.logins + '</td>' +
       '<td class="nw op-acts">' + (u.logins ? '<button type="button" class="btn small" data-logout="' + esc(u.id) + '">' + mi('logout') + 'ログインを切る</button>' : '') +
-      (u.operator ? '' : u.bannedAt ? '<button type="button" class="btn small" data-unban="' + esc(u.id) + '">' + mi('undo') + '戻す</button>' : '<button type="button" class="btn small danger" data-ban="' + esc(u.id) + '">' + mi('block') + '締め出す</button>') + '</td></tr>').join('')
+      (u.operator ? '' : u.bannedAt ? '<button type="button" class="btn small" data-unban="' + esc(u.id) + '">' + mi('undo') + '戻す</button>'
+        : '<button type="button" class="btn small danger" data-ban="' + esc(u.id) + '">' + mi('block') + '締め出す</button><button type="button" class="btn small danger" data-del="' + esc(u.id) + '">' + mi('delete') + '消す</button>') + '</td></tr>').join('')
       : '<tr><td colspan="5" class="hint">' + (q ? '合う人がいません。' : 'まだ誰もログインしていません。') + '</td></tr>');
 }
 let banId = '';
@@ -256,6 +257,16 @@ function init(): void {
     }
     const ban = hit(ev, 'button[data-ban]');
     if (ban) { openBan(ban.dataset.ban!); return; }
+    const del = hit(ev, 'button[data-del]');
+    if (del) {
+      const u = users.filter((x) => x.id === del.dataset.del)[0];
+      askConfirm({
+        title: (u ? u.name : '') + ' を消しますか？',
+        message: 'ログイン・Discord の名前・入っているサーバーの控えと、どのグループのメンバーの行も消します。予定とメモは消え、卓と回答には名前だけが残ります。元に戻せません。Discord サーバーにいれば、次に開いたときにまた入れます。',
+        ok: '消す', danger: true,
+      }, () => { act('/api/admin/users/' + encodeURIComponent(del.dataset.del!) + '/delete', {}, loadAll); });
+      return;
+    }
     const un = hit(ev, 'button[data-unban]');
     if (un) act('/api/admin/users/' + encodeURIComponent(un.dataset.unban!) + '/ban', { banned: false }, async () => { await Promise.all([loadUsers(), loadOverview()]); });
   });
