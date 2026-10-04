@@ -12,6 +12,22 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const out = path.join(here, '../public/screenshots');
 fs.mkdirSync(out, { recursive: true });
 const HIDE = '#toast, #logoutBtn, #stLogout { display: none !important; } html { scrollbar-width: none; } ::-webkit-scrollbar { display: none; }';
+/** 手元には Bot が無いので、知らせのチャンネルを撮るときは、Bot がサーバーにいることにして返事を差し替える（サンプルのチャンネルは ID が全部 0） */
+const CHANNELS = [
+  { id: '000000000000000000', name: '卓の知らせ', category: 'TRPG' },
+  { id: '100000000000000001', name: '募集', category: 'TRPG' },
+  { id: '100000000000000002', name: 'セッションの記録', category: 'TRPG' },
+  { id: '100000000000000003', name: '雑談', category: '' },
+];
+async function fakeBot(ctx) {
+  await ctx.route('**/api/g/*/*', async (route) => {
+    if (route.request().url().endsWith('/getDiscordChannels')) return route.fulfill({ json: { ok: true, botReady: true, inGuild: true, channels: CHANNELS } });
+    const res = await route.fetch();
+    const body = await res.json();
+    for (const d of [body, body.data]) if (d && d.bot) d.bot = { ready: true, inviteUrl: 'https://discord.com/oauth2/authorize' };
+    return route.fulfill({ response: res, json: body });
+  });
+}
 
 const shots = [];
 async function shot(pg, name) {
@@ -51,6 +67,7 @@ await withDevServer(async (base) => {
         await shot(pg, `pc-${name}.png`);
       }
       // グループの管理画面（メンバーと知らせの区分）
+      await fakeBot(ctx);
       await pg.goto(base + 'g/sample/admin/#members');
       await pg.waitForFunction('window.yoki && yoki.D && yoki.D.sessions && yoki.D.sessions.length > 0', null, { timeout: 30000 });
       await pg.addStyleTag({ content: HIDE });
@@ -58,6 +75,12 @@ await withDevServer(async (base) => {
       await shot(pg, 'pc-admin.png');
       await pg.click('#setNav button[data-set=notify]'); await pg.waitForTimeout(400);
       await shot(pg, 'pc-admin-notify.png');
+      // 知らせのチャンネル（Bot を招く・チャンネルを選ぶ）
+      await pg.evaluate(() => { document.getElementById('chFold').open = true; });
+      await pg.waitForSelector('#botState >> text=Bot はサーバーにいます');
+      await pg.evaluate(() => { document.getElementById('chFold').scrollIntoView(); window.scrollBy(0, -88); });
+      await pg.waitForTimeout(300);
+      await shot(pg, 'pc-admin-channels.png');
     }
     await ctx.close();
     // スマホ
