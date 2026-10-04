@@ -2,7 +2,7 @@
 // 画面と同じ関数を、メンバーとして呼んで作る。日付は今日から数えるので、いつ作っても今の月の画面になる
 import type { Actor } from '../auth/guard';
 import { DEV_USERS } from '../auth/dev-users';
-import { SAMPLE_WEBHOOK } from '../discord/send';
+import { SAMPLE_CHANNEL } from '../discord/send';
 import { setAvailability, setAvailabilityBulk, setAvailNote, setDayNote } from '../domain/availability';
 import { loadGroup } from '../domain/load';
 import { setPollVote, startPoll } from '../domain/polls';
@@ -11,7 +11,7 @@ import { addDays, fmtDateTime, jst } from '../lib/jst';
 
 const NOTES: Record<string, string> = { ひより: 'GM が多め', こまち: '平日は 21 時から', ミナト: 'TRPG は始めたばかり' };
 
-// 回答の呼び出しに渡す io の data と sleep は、型を満たすためだけ。サンプルの Webhook には送ったことにするので、待つことも画面のデータを返すことも無い
+// 回答の呼び出しに渡す io の data と sleep は、型を満たすためだけ。サンプルのチャンネルには送ったことにするので、待つことも画面のデータを返すことも無い
 /* istanbul ignore next -- @preserve サンプルづくりでは呼ばれない */
 async function noData(): Promise<unknown> { return {}; }
 /* istanbul ignore next -- @preserve サンプルづくりでは呼ばれない */
@@ -25,7 +25,7 @@ export async function seedSample(db: D1Database, groupId: string, appUrl: string
       db.prepare('INSERT INTO members (group_id, name, discord_id, note, is_admin, created_at) VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT (group_id, name) DO NOTHING')
         .bind(groupId, u.name, u.id, NOTES[u.name] ?? '', u.manager ? 1 : 0, at),
     ),
-    db.prepare('UPDATE groups SET webhook_url = ?2, remind_enabled = 1, remind_set_by = ?3 WHERE id = ?1').bind(groupId, SAMPLE_WEBHOOK, 'ひより / ' + fmtDateTime(now)),
+    db.prepare('UPDATE groups SET channel_id = ?2, remind_enabled = 1, remind_set_by = ?3 WHERE id = ?1').bind(groupId, SAMPLE_CHANNEL, 'ひより / ' + fmtDateTime(now)),
   ]);
   const ids = new Map(
     (await db.prepare('SELECT id, name FROM members WHERE group_id = ?').bind(groupId).all<{ id: number; name: string }>()).results.map((m) => [m.name, m.id]),
@@ -78,7 +78,7 @@ export async function seedSample(db: D1Database, groupId: string, appUrl: string
   await setDayNote(await as('ソラ'), { ymd: T(5), text: 'ユドナリウムの部屋は前日に作ります' });
   // Discord に送った跡（送ったことにするだけ）。案内は今日が開催前の知らせの日なので、開催前の知らせ済みにもなる
   await db.batch([
-    db.prepare("INSERT INTO notify_log (group_id, at, kind, target, result) VALUES (?1, ?2, '案内', '星降る港の依頼', 'OK (204)'), (?1, ?2, '参加確認', '雪原の古城（募集のチャンネル）', 'OK (204)')").bind(groupId, at),
+    db.prepare("INSERT INTO notify_log (group_id, at, kind, target, result) VALUES (?1, ?2, '案内', '星降る港の依頼', 'OK (200)'), (?1, ?2, '参加確認', '雪原の古城（募集のチャンネル）', 'OK (200)')").bind(groupId, at),
     db.prepare('UPDATE sessions SET notified_at = ?3 WHERE group_id = ?1 AND seq = ?2').bind(groupId, Number(port.id.slice(1)), at),
     db.prepare('UPDATE sessions SET asked_at = ?3 WHERE group_id = ?1 AND seq = ?2').bind(groupId, Number(castle.id.slice(1)), at),
   ]);

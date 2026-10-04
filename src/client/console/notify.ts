@@ -5,12 +5,12 @@ import { D } from './state';
 
 /** シリーズごとの通知の設定（無ければ null） */
 export function snEntry(name: string): SeriesNotifyView | null { return (D.seriesNotify || []).filter((x) => x.series === name)[0] || null; }
-/** そのシリーズに専用の送り先（Webhook）があるか */
-export function seriesHook(name: string | undefined): boolean { const e = name ? snEntry(name) : null; return !!(e && e.hasWebhook); }
+/** そのシリーズに専用のチャンネルがあるか */
+export function seriesHook(name: string | undefined): boolean { const e = name ? snEntry(name) : null; return !!(e && e.channelId); }
 /** 種類ごとのチャンネル（'remind' 開催前の知らせ・'recruit' 募集）が決めてあるか */
-export function kindSet(kind: string): boolean { return kind === 'recruit' ? !!D.recruitWebhookSet : kind === 'remind' ? !!D.remindWebhookSet : false; }
-/** その卓の知らせに送り先があるか。基本の URL・種類ごとのチャンネル・シリーズ専用の URL のどれか */
-export function hookFor(series: string | undefined, kind?: string): boolean { return !!D.webhookSet || kindSet(kind || '') || seriesHook(series); }
+export function kindSet(kind: string): boolean { return kind === 'recruit' ? !!D.recruitChannelSet : kind === 'remind' ? !!D.remindChannelSet : false; }
+/** その卓の知らせに送り先があるか。基本のチャンネル・種類ごとのチャンネル・シリーズ専用のチャンネルのどれか */
+export function hookFor(series: string | undefined, kind?: string): boolean { return !!D.channelSet || kindSet(kind || '') || seriesHook(series); }
 /** 卓の知らせの種類。状態が「募集」の卓は募集 */
 export function kindOf(s: ConsoleSession | null): string { return s && s.status === '募集' ? 'recruit' : ''; }
 

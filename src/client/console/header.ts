@@ -31,13 +31,4 @@ export function init(): void {
     sel.classList.toggle('need', !sel.value); sel.classList.remove('attn');
     renderAvail(); renderDayDetail(); renderRecruit(); renderNotices();
   });
-  // popover に対応していないブラウザでは、ボタンで開け閉めする
-  if (!Object.prototype.hasOwnProperty.call(HTMLElement.prototype, 'popover')) {
-    document.querySelectorAll<HTMLElement>('[popovertarget]').forEach((b) => {
-      b.addEventListener('click', () => {
-        const p = document.getElementById(b.getAttribute('popovertarget') || ''); if (!p) return;
-        p.classList.toggle('pop-open', b.getAttribute('popovertargetaction') !== 'hide' && !p.classList.contains('pop-open'));
-      });
-    });
-  }
 }

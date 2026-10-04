@@ -18,11 +18,11 @@ beforeEach(async () => {
 });
 afterEach(() => vi.restoreAllMocks());
 
-/** そのメンバーとして、グループのデータを読み込む */
+/** そのメンバーとして、グループのデータを読み込む（Bot のトークンも渡し、送るときは本当に送ろうとするようにする） */
 async function ctxAs(name: string, isAdmin: boolean) {
   const m = await env.DB.prepare('SELECT id, user_id FROM members WHERE group_id = ? AND name = ?').bind(G.id, name).first<{ id: number; user_id: string | null }>();
   const actor: Actor = { memberId: m!.id, name, isAdmin, userId: m!.user_id ?? '' };
-  return loadGroup(env.DB, G.id, actor, APP_URL);
+  return loadGroup(env.DB, G.id, actor, APP_URL, new Date(), { token: env.DISCORD_BOT_TOKEN, clientId: env.DISCORD_CLIENT_ID });
 }
 
 test('無いグループは読み込めない', async () => {
@@ -31,10 +31,10 @@ test('無いグループは読み込めない', async () => {
 });
 
 test('開催日を決めた直後に、ほかの人が卓を中止にしていたら、決まった知らせは送らない', async () => {
-  await env.DB.prepare('UPDATE groups SET webhook_url = ?').bind('https://discord.com/api/webhooks/123456789012345678/abc').run();
+  await env.DB.prepare('UPDATE groups SET channel_id = ?').bind('123456789012345678').run();
   await ok(G.admin, G.id, 'saveSession', { name: '迷宮', gm: 'ひより', members: ['ソラ'], status: '調整中' });
   await ok(G.admin, G.id, 'startPoll', { id: 'S001', dates: [T(5)] });
-  const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async () => new Response(null, { status: 204 }));
+  const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async () => new Response('{}', { status: 200 }));
   const io: Io = {
     // 読み直す前に、別の呼び出しが「中止」にした
     reload: async () => {

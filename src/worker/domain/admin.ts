@@ -1,5 +1,5 @@
 // 運営者の管理画面のための読み書き（グループ・利用者・送信の失敗・見回りの様子）。
-// 運営者はグループの中身（卓・予定・Webhook の URL）は見ない。見るのは数と名前だけ
+// 運営者はグループの中身（卓・予定）は見ない。見るのは数と名前だけ
 import type { AdminFailure, AdminGroupDetail, AdminGroupRow, AdminMember, AdminOverview, AdminUserRow, PatrolRecord } from '../../shared/admin';
 import { badRequest, notFound } from '../lib/errors';
 import { NAME_SEPARATORS, RESERVED_NAMES } from '../lib/text';
@@ -60,9 +60,9 @@ export async function overview(db: D1Database, now = new Date()): Promise<AdminO
 
 type GroupRowDb = {
   id: string; title: string; guild_id: string; guild_name: string; created_by: string; created_by_name: string; created_at: string; last_used_at: string | null;
-  member_count: number; linked_count: number; admin_count: number; session_count: number; active_count: number; failures_week: number; webhook_url: string;
+  member_count: number; linked_count: number; admin_count: number; session_count: number; active_count: number; failures_week: number; channel_id: string;
 };
-const GROUP_SELECT = `SELECT g.id, g.title, g.guild_id, g.guild_name, g.created_by, coalesce(u.global_name, u.username, '') AS created_by_name, g.created_at, g.last_used_at, g.webhook_url,
+const GROUP_SELECT = `SELECT g.id, g.title, g.guild_id, g.guild_name, g.created_by, coalesce(u.global_name, u.username, '') AS created_by_name, g.created_at, g.last_used_at, g.channel_id,
     (SELECT count(*) FROM members m WHERE m.group_id = g.id) AS member_count,
     (SELECT count(*) FROM members m WHERE m.group_id = g.id AND m.user_id IS NOT NULL) AS linked_count,
     (SELECT count(*) FROM members m WHERE m.group_id = g.id AND m.is_admin = 1) AS admin_count,
@@ -99,7 +99,7 @@ export async function groupDetail(db: D1Database, id: string, now = new Date()):
   ]);
   return {
     ...groupRow(g),
-    webhookSet: !!g.webhook_url,
+    channelSet: !!g.channel_id,
     members: (members!.results as { id: number; name: string; discord_id: string; user_id: string | null; user_name: string; is_admin: number; last_login_at: string }[]).map(
       (m): AdminMember => ({ id: m.id, name: m.name, discordId: m.discord_id, userId: m.user_id, userName: m.user_name, isAdmin: m.is_admin === 1, lastLoginAt: m.last_login_at }),
     ),
@@ -151,9 +151,10 @@ export async function setGroupAdmin(db: D1Database, groupId: string, form: Form,
 }
 
 /**
- * グループを別の Discord サーバーに結び直す（サーバーを引っ越したとき）。form: { guildId, guildName?, clearWebhooks? }。
+ * グループを別の Discord サーバーに結び直す（サーバーを引っ越したとき）。form: { guildId, guildName? }。
  * 名前とアイコンは、そのサーバーからログインした人の控えにあればそこから取る。無ければ guildName が要る。
- * 新しいサーバーの人は、控えを読み直したときに入れるようになり、古いサーバーの人は入れなくなる。メンバーの行と管理者の印は残る
+ * 新しいサーバーの人は、控えを読み直したときに入れるようになり、古いサーバーの人は入れなくなる。メンバーの行と管理者の印は残る。
+ * 知らせのチャンネルは古いサーバーのものなので、いつも外す（新しいサーバーに Bot を招いて選び直す）
  */
 export async function changeGuild(db: D1Database, groupId: string, form: Form): Promise<{ message: string }> {
   const g = await requireGroup(db, groupId);
@@ -163,13 +164,12 @@ export async function changeGuild(db: D1Database, groupId: string, form: Form): 
   const known = await db.prepare('SELECT name, icon FROM user_guilds WHERE guild_id = ? LIMIT 1').bind(guildId).first<{ name: string; icon: string | null }>();
   const name = known?.name || str(form.guildName);
   if (!name) throw badRequest('サーバーの名前を入れてください（そのサーバーから、まだ誰もログインしていないため分かりません）。');
-  const stmts = [db.prepare('UPDATE groups SET guild_id = ?, guild_name = ?, guild_icon = ? WHERE id = ?').bind(guildId, name, known?.icon ?? null, groupId)];
-  if (form.clearWebhooks === true) {
-    stmts.push(db.prepare("UPDATE groups SET webhook_url = '', remind_webhook_url = '', recruit_webhook_url = '' WHERE id = ?").bind(groupId));
-    stmts.push(db.prepare("UPDATE series_notify SET webhook_url = '' WHERE group_id = ?").bind(groupId));
-  }
-  await db.batch(stmts);
-  return { message: '「' + g.title + '」を Discord サーバー「' + name + '」に結び直しました。' + (form.clearWebhooks === true ? 'Webhook も外しました。' : '') };
+  await db.batch([
+    db.prepare("UPDATE groups SET guild_id = ?, guild_name = ?, guild_icon = ?, channel_id = '', remind_channel_id = '', recruit_channel_id = '' WHERE id = ?")
+      .bind(guildId, name, known?.icon ?? null, groupId),
+    db.prepare("UPDATE series_notify SET channel_id = '' WHERE group_id = ?").bind(groupId),
+  ]);
+  return { message: '「' + g.title + '」を Discord サーバー「' + name + '」に結び直しました。知らせのチャンネルは外したので、新しいサーバーに Bot を招いて選び直してください。' };
 }
 
 /** 利用者の一覧。最後にログインしたのが新しい順 */

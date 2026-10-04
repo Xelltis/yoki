@@ -663,20 +663,7 @@ body[data-area="admin"] { --appbar-h: 56px; --nav-h: 0px; }
 .settings input[type=text].num { width: 3.6em; text-align: center; font-variant-numeric: tabular-nums; }
 .settings input[type=text].num.bad { border-color: var(--err-text); }
 .settings #stWhenSay { margin: 6px 0 0; }
-.settings #stWhenSay.bad, #snMsg.bad { color: var(--err-text); }
-.lbl-row { display: flex; align-items: center; gap: 4px; margin: 12px 0 6px; }
-.settings .lbl-row label.f { margin: 0; }
-.qhelp { display: inline-grid; place-items: center; width: 32px; height: 32px; flex-shrink: 0; border: 0; border-radius: var(--radius-pill); background: none; color: var(--accent-text); cursor: pointer; }
-.qhelp:hover { background: var(--hover); }
-.qhelp:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
-.pop { display: none; width: min(460px, calc(100vw / var(--zoom, 1) - 32px)); max-height: calc(100dvh / var(--zoom, 1) - 32px); overflow: auto; margin: auto; padding: 18px 20px 16px; border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--card); color: var(--text); box-shadow: var(--shadow-lg); }
-.pop:popover-open { display: block; }
-.pop.pop-open { display: block; position: fixed; inset: 0; height: fit-content; z-index: 90; }
-.pop::backdrop { background: var(--scrim); }
-.pop-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.pop h3 { margin: 0; font-size: 16px; text-wrap: balance; }
-.pop ol { margin: 12px 0 10px; padding-left: 1.4em; display: grid; gap: 8px; font-size: 14px; line-height: 1.65; text-wrap: pretty; }
-.pop p.hint { margin: 6px 0 0; font-size: 13px; line-height: 1.6; }
+.settings #stWhenSay.bad, #snMsg.bad, #botState.bad { color: var(--err-text); }
 .setup-card h3 .close-guide { margin-left: auto; }
 #snList tr[data-sn] { cursor: pointer; }
 #snList tr[data-sn]:hover td, #snList tr[data-sn]:focus-visible td { background: var(--hover); }

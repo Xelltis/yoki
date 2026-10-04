@@ -325,43 +325,47 @@
             </div>
 
             <details class="fold-card" id="chFold">
-              <summary><span class="material-icons sm" aria-hidden="true">notifications</span>チャンネル（Discord の Webhook URL）<span class="hint" id="chSum"></span></summary>
+              <summary><span class="material-icons sm" aria-hidden="true">notifications</span>チャンネル<span class="hint" id="chSum"></span></summary>
               <div class="fold-body">
+                <div class="card" id="botCard">
+                  <h3>卓予定の Bot</h3>
+                  <p class="hint">知らせは、卓予定の Bot がチャンネルに書き込みます。はじめに、このグループの Discord サーバーに Bot を招きます（サーバーの管理の権限が要ります）。</p>
+                  <p class="hint" id="botState"></p>
+                  <div class="btns">
+                    <a class="btn primary" id="botInvite" href="#" target="_blank" rel="noopener"><span class="material-icons sm" aria-hidden="true">add</span>Bot をサーバーに招く</a>
+                    <button type="button" class="btn" id="botReload"><span class="material-icons sm" aria-hidden="true">refresh</span>読み直す</button>
+                  </div>
+                  <p class="hint">Bot には「チャンネルを見る」「メッセージを送信」「埋め込みリンク」の権限が付きます。限られた人だけが見られるチャンネルに送るときは、そのチャンネルの権限で Bot を許可してください。</p>
+                </div>
                 <div class="card">
                   <h3>基本のチャンネル</h3>
                   <p class="hint">種類ごとのチャンネルやシリーズ専用のチャンネルを決めていない知らせは、ここへ送ります。</p>
-                  <div>いまの Webhook URL: <span id="stWebhook" class="hint"></span></div>
-                  <div class="lbl-row"><label class="f" for="stWebhookNew">新しい Webhook URL <small>変えるときだけ貼る</small></label><button type="button" class="qhelp" popovertarget="whHelp" aria-label="Webhook URL の取り方" title="Webhook URL の取り方"><span class="material-icons sm" aria-hidden="true">help</span></button></div>
-                  <input type="text" id="stWebhookNew" placeholder="https://discord.com/api/webhooks/…">
+                  <label class="f" for="stChannel">チャンネル</label>
+                  <select id="stChannel"></select>
                   <div class="btns">
-                    <button type="button" class="btn primary" id="stWebhookSave">URL を保存</button>
+                    <button type="button" class="btn primary" id="stChannelSave">保存</button>
                     <button type="button" class="btn" id="stTest">接続テスト</button>
-                    <button type="button" class="btn danger" id="stClear">URL を空にする</button>
-                    <span class="hint" id="stWebhookMsg"></span>
+                    <span class="hint" id="stChannelMsg"></span>
                   </div>
                 </div>
                 <div class="card" id="kwCard">
                   <h3>種類ごとのチャンネル</h3>
-                  <p class="hint">開催前の知らせと募集の知らせを、別のチャンネルに送れます。空なら基本のチャンネルへ。シリーズ専用のチャンネルがあれば、そちらが先です。</p>
+                  <p class="hint">開催前の知らせと募集の知らせを、別のチャンネルに送れます。「基本のチャンネルと同じ」なら基本へ。シリーズ専用のチャンネルがあれば、そちらが先です。</p>
                   <div class="kw">
-                    <div class="lbl-row"><label class="f" for="kwRemind">開催前の知らせ <small>期間前の催促と、開始直前の知らせもここへ</small></label><button type="button" class="qhelp" popovertarget="whHelp" aria-label="Webhook URL の取り方" title="Webhook URL の取り方"><span class="material-icons sm" aria-hidden="true">help</span></button></div>
-                    <div class="hint">いま: <span id="kwRemindNow"></span></div>
-                    <input type="text" id="kwRemind" placeholder="https://discord.com/api/webhooks/…">
+                    <label class="f" for="kwRemind">開催前の知らせ <small>期間前の催促と、開始直前の知らせもここへ</small></label>
+                    <select id="kwRemind"></select>
                     <div class="btns">
-                      <button type="button" class="btn primary" id="kwRemindSave">URL を保存</button>
+                      <button type="button" class="btn primary" id="kwRemindSave">保存</button>
                       <button type="button" class="btn" id="kwRemindTest">接続テスト</button>
-                      <button type="button" class="btn danger" id="kwRemindClear">外して基本に戻す</button>
                       <span class="hint" id="kwRemindMsg"></span>
                     </div>
                   </div>
                   <div class="kw">
-                    <div class="lbl-row"><label class="f" for="kwRecruit">募集 <small>募集の卓の登録・変更・削除・案内と、興味ありの人への参加確認</small></label><button type="button" class="qhelp" popovertarget="whHelp" aria-label="Webhook URL の取り方" title="Webhook URL の取り方"><span class="material-icons sm" aria-hidden="true">help</span></button></div>
-                    <div class="hint">いま: <span id="kwRecruitNow"></span></div>
-                    <input type="text" id="kwRecruit" placeholder="https://discord.com/api/webhooks/…">
+                    <label class="f" for="kwRecruit">募集 <small>募集の卓の登録・変更・削除・案内と、興味ありの人への参加確認</small></label>
+                    <select id="kwRecruit"></select>
                     <div class="btns">
-                      <button type="button" class="btn primary" id="kwRecruitSave">URL を保存</button>
+                      <button type="button" class="btn primary" id="kwRecruitSave">保存</button>
                       <button type="button" class="btn" id="kwRecruitTest">接続テスト</button>
-                      <button type="button" class="btn danger" id="kwRecruitClear">外して基本に戻す</button>
                       <span class="hint" id="kwRecruitMsg"></span>
                     </div>
                   </div>
@@ -379,8 +383,8 @@
                   <select id="snSeries"></select>
                   <div id="snFields" hidden>
                     <p class="hint" id="snNow"></p>
-                    <div class="lbl-row"><label class="f" for="snWebhook">このシリーズの Webhook URL <small>貼ると専用のチャンネルに送る。変えるときだけ貼る</small></label><button type="button" class="qhelp" popovertarget="whHelp" aria-label="Webhook URL の取り方" title="Webhook URL の取り方"><span class="material-icons sm" aria-hidden="true">help</span></button></div>
-                    <input type="text" id="snWebhook" placeholder="https://discord.com/api/webhooks/…">
+                    <label class="f" for="snChannel">このシリーズのチャンネル <small>選ぶと専用のチャンネルに送る</small></label>
+                    <select id="snChannel"></select>
                     <label class="c"><input type="checkbox" id="snAlsoBase"> 基本のチャンネルにも送る</label>
                     <label class="c"><input type="checkbox" id="snSame"> <span id="snSameLbl">開催前の知らせは上の表と同じ日時</span></label>
                     <div class="when-row" id="snWhen">開催日の <input type="text" class="num" id="snDays" inputmode="numeric" maxlength="2" aria-label="何日前（0〜30）"> 日前、<input type="text" class="num" id="snHour" inputmode="numeric" maxlength="2" aria-label="何時台（0〜23）"> 時台に送る</div>
@@ -460,18 +464,6 @@
   <datalist id="memberList"></datalist>
   <datalist id="seriesList"></datalist>
 
-  <div class="pop" id="whHelp" popover role="dialog" aria-labelledby="whHelpTitle">
-    <div class="pop-head"><h3 id="whHelpTitle">Webhook URL の取り方</h3><button type="button" class="btn icon" popovertarget="whHelp" popovertargetaction="hide" aria-label="閉じる"><span class="material-icons" aria-hidden="true">close</span></button></div>
-    <ol>
-      <li>Discord で、知らせを流したいチャンネルの <b>チャンネルの編集</b>（歯車）を開く。スマホはチャンネルを長押しして「チャンネルを編集」。</li>
-      <li><b>連携サービス</b> → <b>ウェブフック</b> を開き、<b>新しいウェブフック</b> を押す。</li>
-      <li>できたウェブフックを押して開く。名前とアイコンは好みで変えてよい。投稿先のチャンネルが合っているか確かめる。</li>
-      <li><b>ウェブフック URL をコピー</b> を押す。</li>
-      <li>この画面の URL の欄に貼って保存し、「接続テスト」で届くか確かめる。</li>
-    </ol>
-    <p class="hint">「連携サービス」が出てこないときは、そのサーバーで「ウェブフックの管理」の権限がありません。サーバーの管理者に作ってもらうか、権限をもらってください。</p>
-    <p class="hint">URL を知っている人は、誰でもそのチャンネルに投稿できます。卓の仲間の外には出さないでください。</p>
-  </div>
   <div class="modal" id="formModal" hidden>
     <div class="box wide" role="dialog" aria-modal="true" aria-labelledby="formTitle" tabindex="-1">
       <div class="bar"><h2 id="formTitle">卓を登録</h2><button type="button" class="btn small" id="formClose" style="margin-left:auto"><span class="material-icons sm" aria-hidden="true">close</span>閉じる</button></div>

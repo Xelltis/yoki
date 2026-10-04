@@ -2,6 +2,7 @@
 import { env } from 'cloudflare:test';
 import { describe, expect, test } from 'vitest';
 import { addDays, daysBetween, fmtDateJa, jst, normTime, parseYmd, stampText } from '../../src/worker/lib/jst';
+import { SAMPLE_CHANNEL } from '../../src/worker/discord/send';
 import { seedSample } from '../../src/worker/seed/sample';
 import { makeGroup, ok, setupGroup, today } from './helpers';
 
@@ -26,14 +27,35 @@ describe('画面データ', () => {
     const G = await setupGroup();
     const d = await ok(G.sora, G.id, 'getConsoleData');
     expect(Object.keys(d).sort()).toEqual([
-      'admins', 'appUrl', 'availDays', 'availNotes', 'avail', 'booked', 'group', 'isAdmin', 'loadedAt', 'log', 'me', 'members', 'notes',
-      'notifyDefault', 'notifySetter', 'recruitWebhookSet', 'remindWebhookSet', 'seriesNotify', 'sessions', 'settings', 'statuses', 'title', 'today', 'webhookSet',
+      'admins', 'appUrl', 'availDays', 'availNotes', 'avail', 'booked', 'bot', 'channelSet', 'group', 'isAdmin', 'loadedAt', 'log', 'me', 'members', 'notes',
+      'notifyDefault', 'notifySetter', 'recruitChannelSet', 'remindChannelSet', 'seriesNotify', 'sessions', 'settings', 'statuses', 'title', 'today',
     ].sort());
     expect(d).toMatchObject({ me: { name: 'ソラ', isAdmin: false }, isAdmin: false, appUrl: 'https://yoki.test/g/grp/', today: await today() });
     expect(d.loadedAt).toMatch(/^\d{4}\/\d{2}\/\d{2} \d{2}:\d{2}$/);
     expect(d.members.map((m: any) => m.name)).toEqual(['ひより', 'ソラ', 'こまち']);
     expect(d.statuses).toEqual(['募集', '調整中', '開催', '終了', '中止']);
     expect((await ok(G.admin, G.id, 'getConsoleData')).isAdmin).toBe(true);
+  });
+
+  test('知らせのチャンネルと Bot。チャンネルは ID のまま渡し、Bot はトークンがあるかと、招く URL だけを渡す', async () => {
+    const G = await setupGroup();
+    let d = await ok(G.sora, G.id, 'getConsoleData');
+    expect(d).toMatchObject({ channelSet: false, remindChannelSet: false, recruitChannelSet: false, seriesNotify: [] });
+    expect(d.settings).toMatchObject({ channelId: '', remindChannelId: '', recruitChannelId: '' });
+    expect(d.bot.ready).toBe(true);
+    // 招く URL は、このグループのサーバーを選んだ形
+    const invite = new URL(d.bot.inviteUrl);
+    expect(invite.searchParams.get('client_id')).toBe('test-client');
+    expect(invite.searchParams.get('guild_id')).toBe('guild-t');
+    expect(JSON.stringify(d)).not.toContain('test-bot-token');
+    await env.DB.batch([
+      env.DB.prepare("UPDATE groups SET channel_id = '123456789012345678', recruit_channel_id = '123456789012345680'"),
+      env.DB.prepare("INSERT INTO series_notify (group_id, series, channel_id, also_base, days, updated_at) VALUES ('grp', '港', '123456789012345681', 0, 3, 'x')"),
+    ]);
+    d = await ok(G.sora, G.id, 'getConsoleData');
+    expect(d).toMatchObject({ channelSet: true, remindChannelSet: false, recruitChannelSet: true });
+    expect(d.settings).toMatchObject({ channelId: '123456789012345678', remindChannelId: '', recruitChannelId: '123456789012345680' });
+    expect(d.seriesNotify).toEqual([{ series: '港', channelId: '123456789012345681', alsoBase: false, days: 3, hour: null }]);
   });
 
   test('開催日が過ぎた「開催」の卓は、読み込んだときに「終了」になる（設定が ON のとき）', async () => {
@@ -78,5 +100,7 @@ describe('サンプルデータ', () => {
     expect(await n('SELECT count(*) AS n FROM availability')).toBeGreaterThan(10);
     const names = (await env.DB.prepare("SELECT name, status FROM sessions WHERE group_id = 'sample' ORDER BY seq").all()).results;
     expect(names.slice(0, 4).map((r: any) => r.name)).toEqual(['鉄鳴界の夜明け #1', '鉄鳴界の夜明け #2', '鉄鳴界の夜明け #3', '鉄鳴界の夜明け #4']);
+    // 知らせは、実在しないサンプルのチャンネルへ（送ったことにする）
+    expect(await env.DB.prepare("SELECT channel_id FROM groups WHERE id = 'sample'").first('channel_id')).toBe(SAMPLE_CHANNEL);
   });
 });

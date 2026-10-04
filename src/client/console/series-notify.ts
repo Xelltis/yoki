@@ -1,6 +1,7 @@
-// 設定の「シリーズごとの通知」。シリーズ専用のチャンネルと、開催前の知らせの日時
+// 管理画面の「知らせ」の「シリーズごとの上書き」。シリーズ専用のチャンネルと、開催前の知らせの日時
 import type { SeriesNotifyView } from '../../shared/api';
 import { api, discordSend, failToast, refetch, useData } from './api';
+import { channelLabel, fillChannelSelect, markDirty } from './channels';
 import { $, esc, hit, toast } from './dom';
 import { askConfirm } from './modal';
 import { me, seriesNames } from './model';
@@ -20,9 +21,9 @@ export function readWhen(dId: string, hId: string): { days: number; hour: number
   else if (!hOk) out.err = '時刻は 0〜23 の数で入れてください。';
   return out;
 }
-function snWhere(e: SeriesNotifyView | null, withUrl?: boolean): string {
-  if (!e || !e.hasWebhook) return D.webhookSet ? '基本のチャンネル' : '送り先なし（基本の URL が未設定）';
-  return '専用のチャンネル' + (withUrl ? '（' + e.webhookMasked + '）' : '') + (e.alsoBase && D.webhookSet ? ' ＋ 基本のチャンネル' : '');
+function snWhere(e: SeriesNotifyView | null, withName?: boolean): string {
+  if (!e || !e.channelId) return D.channelSet ? '基本のチャンネル' : '送り先なし（基本のチャンネルが未設定）';
+  return '専用のチャンネル' + (withName ? '（' + channelLabel(e.channelId) + '）' : '') + (e.alsoBase && D.channelSet ? ' ＋ 基本のチャンネル' : '');
 }
 function snWhenText(e: SeriesNotifyView | null): string {
   if (!e || (!hasVal(e.days) && !hasVal(e.hour))) return '基本と同じ（' + whenText(baseDays(), baseHour()) + '）';
@@ -53,7 +54,8 @@ function fillSeriesNotify(): void {
   $('snFields').hidden = !name;
   if (!name) return;
   $('snNow').textContent = 'いま: ' + snWhere(e, true) + '、開催前の知らせは' + snWhenText(e);
-  $('snWebhook').value = '';
+  markDirty('snChannel', false);
+  fillSeriesChannel();
   $('snAlsoBase').checked = e ? !!e.alsoBase : true;
   $('snSame').checked = !(e && (hasVal(e.days) || hasVal(e.hour)));
   $('snDays').value = String(e && hasVal(e.days) ? e.days : baseDays());
@@ -61,10 +63,17 @@ function fillSeriesNotify(): void {
   $('snDays').classList.remove('bad'); $('snHour').classList.remove('bad'); $('snMsg').classList.remove('bad');
   syncSnButtons();
 }
+/** 選んでいるシリーズの、チャンネルの選択を作り直す（一覧を読んだときにも呼ばれる） */
+export function fillSeriesChannel(): void {
+  const name = $('snSeries').value; if (!name) return;
+  const e = snEntry(name);
+  fillChannelSelect('snChannel', e ? e.channelId : '', '専用にしない（基本のチャンネルへ）');
+  syncSnButtons();
+}
 function syncSnButtons(): void {
   const e = snEntry($('snSeries').value);
-  $('snAlsoBase').disabled = !(e && e.hasWebhook) && !$('snWebhook').value.trim();   // 専用の URL が無ければ、もともと基本のチャンネルへ送る
-  $('snTest').disabled = !(e && e.hasWebhook);
+  $('snAlsoBase').disabled = !$('snChannel').value;   // 専用のチャンネルが無ければ、もともと基本のチャンネルへ送る
+  $('snTest').disabled = !(e && e.channelId);
   $('snRemove').disabled = !e;
   $('snWhen').hidden = $('snSame').checked;   // 基本と同じなら、日時の欄は出さない
 }
@@ -78,9 +87,10 @@ export function init(): void {
     const tr = hit(ev, 'tr[data-sn]'); if (!tr) return;
     ev.preventDefault(); pickSeriesNotify(tr.dataset.sn!);
   });
-  ['snWebhook', 'snAlsoBase', 'snSame', 'snDays', 'snHour'].forEach((id) => {
+  ['snChannel', 'snAlsoBase', 'snSame', 'snDays', 'snHour'].forEach((id) => {
     ['input', 'change'].forEach((t) => { $(id).addEventListener(t, () => { snDraft = true; syncSnButtons(); }); });
   });
+  $('snChannel').addEventListener('change', () => { markDirty('snChannel', true); });
   $('snSave').onclick = () => {
     const name = $('snSeries').value; if (!name) return;
     const form: Record<string, unknown> = { series: name, alsoBase: $('snAlsoBase').checked, days: '', hour: '', me: me() };
@@ -90,7 +100,10 @@ export function init(): void {
       form.days = String(wn.days); form.hour = String(wn.hour);
     }
     $('snMsg').classList.remove('bad');
-    const w = $('snWebhook').value.trim(); if (w) form.webhook = w;
+    // チャンネルは変えたときだけ送る（変えなければサーバーは今のまま。'' なら外す）
+    const e = snEntry(name), ch = $('snChannel').value;
+    if (ch !== (e ? e.channelId : '')) form.channelId = ch;
+    markDirty('snChannel', false);
     const btn = $('snSave'); btn.disabled = true; $('snMsg').textContent = '保存しています…';
     api().withSuccessHandler((res) => {
       btn.disabled = false; snDraft = false; toast(res.message);

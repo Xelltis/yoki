@@ -8,9 +8,10 @@ export type GroupRow = {
   guild_name: string;
   title: string;
   next_session_seq: number;
-  webhook_url: string;
-  remind_webhook_url: string;
-  recruit_webhook_url: string;
+  /** 知らせの送り先の Discord のチャンネル（ID）。基本と、種類ごと（空なら基本へ） */
+  channel_id: string;
+  remind_channel_id: string;
+  recruit_channel_id: string;
   notify_on_save: number;
   remind_enabled: number;
   remind_set_by: string;
@@ -58,7 +59,7 @@ export type Session = {
   pollReadyAt: string | null;
 };
 
-export type SeriesNotify = { webhook: string; alsoBase: boolean; days: number | null; hour: number | null };
+export type SeriesNotify = { channelId: string; alsoBase: boolean; days: number | null; hour: number | null };
 
 export type LogRow = { at: string; kind: string; target: string; result: string };
 
@@ -82,4 +83,8 @@ export type Ctx = {
   actor: Actor;
   /** このグループの画面の URL（Discord の文に使う） */
   appUrl: string;
+  /** 知らせを送る Bot（卓予定の Discord アプリ）。token が空なら送れない。clientId は Bot を招く URL に使う */
+  bot: Bot;
 };
+
+export type Bot = { token: string; clientId: string };

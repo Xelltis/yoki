@@ -51,7 +51,7 @@ function renderOpsBar(): void {
   $('bulkSeries').hidden = a !== 'setSeries';
   $('bulkRun').disabled = n === 0;
   $('bulkRun').className = 'btn ' + (a === 'delete' ? 'danger' : 'primary');
-  $('bulkNotify').disabled = !D.webhookSet;
+  $('bulkNotify').disabled = !D.channelSet;
 }
 
 export function init(): void {

@@ -44,7 +44,7 @@ export function renderDayDetail(): void {
     if (s.notified) html += '<div class="row2 hint">開催前の知らせ 送信済み ' + esc(s.notified) + '</div>';
     else if (isDated(s) && s.date && s.date >= D.today && D.notifySetter) html += '<div class="row2 hint">' + esc(notifyState(s)) + '</div>';
     html += '<div class="btns">' +
-      (isActive(s) ? '<button type="button" class="btn small primary" data-notify="' + esc(s.id) + '"' + (hookFor(s.series, kindOf(s)) ? '' : ' disabled title="Webhook 未設定"') + '>Discord に通知</button>' : '') +
+      (isActive(s) ? '<button type="button" class="btn small primary" data-notify="' + esc(s.id) + '"' + (hookFor(s.series, kindOf(s)) ? '' : ' disabled title="チャンネル未設定"') + '>Discord に通知</button>' : '') +
       (isAdjusting(s) ? (hasPoll(s) ? '<button type="button" class="btn small" data-goto-recruit>' + mi('how_to_vote', 'sm') + '回答する</button>' : '<button type="button" class="btn small" data-poll="' + esc(s.id) + '">' + mi('how_to_vote', 'sm') + '日程を調整する</button>') : '') +
       '<button type="button" class="btn small" data-edit="' + esc(s.id) + '">編集</button>' +
       '<button type="button" class="btn small" data-cont="' + esc(s.id) + '" title="設定を引き継いで翌日の卓を登録">続きを登録</button>' +

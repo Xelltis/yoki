@@ -65,7 +65,7 @@ export function openPoll(id: string): void {
   $('pollOkOnly').checked = false;
   const canPoll = hookFor(s.series);
   $('pollNotify').disabled = !canPoll; $('pollNotify').checked = canPoll;
-  $('pollNotifyHint').textContent = canPoll ? '' : '（Webhook 未設定）';
+  $('pollNotifyHint').textContent = canPoll ? '' : '（チャンネル未設定）';
   $('pollSend').textContent = hasPoll(s) ? 'この候補日に変える' : 'この候補日で聞く';
   $('pollMsg').textContent = '';
   renderPollDays();

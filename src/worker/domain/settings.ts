@@ -1,5 +1,5 @@
 // グループの設定（管理画面の「知らせ」と「この卓予定」。GAS 版 Settings.js）。知らせの設定・グループの名前・シリーズごとの知らせ
-import { isDiscordWebhook, WEBHOOK_FORMAT_ERROR } from '../discord/webhook';
+import { getChannel, isChannelId, listChannels } from '../discord/channel';
 import { badRequest } from '../lib/errors';
 import { fmtDateTime } from '../lib/jst';
 import { NOTIFY_DAYS_MAX } from './constants';
@@ -28,39 +28,43 @@ function intIn(v: unknown, min: number, max: number, message: string): number | 
 }
 const onOff = (b: unknown) => (b ? 'ON' : 'OFF');
 
-const KIND = { remind: { col: 'remind_webhook_url', label: '開催前の知らせのチャンネル' }, recruit: { col: 'recruit_webhook_url', label: '募集のチャンネル' } } as const;
+const KIND = { remind: { col: 'remind_channel_id', label: '開催前の知らせのチャンネル' }, recruit: { col: 'recruit_channel_id', label: '募集のチャンネル' } } as const;
+
+/**
+ * 送り先にするチャンネルを確かめ、名前を返す。このグループの Discord サーバーのチャンネルで、Bot が見られるものだけを受ける
+ * （Bot はほかのサーバーにもいるので、そのチャンネルに送らせないため）
+ */
+async function checkChannel(ctx: Ctx, channelId: string): Promise<string> {
+  if (!isChannelId(channelId)) throw badRequest('チャンネルの ID が正しくありません。');
+  if (!ctx.bot.token) throw badRequest('卓予定の Bot が設定されていないので、チャンネルを確かめられません。運営者に知らせてください。');
+  const ch = await getChannel(ctx.bot.token, channelId);
+  if (!ch) throw badRequest('Bot がそのチャンネルを見られません。サーバーに Bot を招き、チャンネルの権限を確かめてください。');
+  if (ch.guildId !== ctx.group.guild_id) throw badRequest('このグループの Discord サーバーのチャンネルではありません。');
+  return ch.name;
+}
 
 /**
  * 設定を書く。送られた項目だけを変える。
- * form: { webhook, clearWebhook, kindWebhook: { kind, url, clear }, remind, days, hour, notifyOnSave, urge, soon, soonMinutes, autoFinish, calMonths, availDays }
+ * form: { channelId（'' なら外す）, kindChannel: { kind, channelId（'' なら基本へ） }, remind, days, hour, notifyOnSave, urge, soon, soonMinutes, autoFinish, calMonths, availDays }
  */
 export async function saveConsoleSettings(ctx: Ctx, form: Form) {
   const g = ctx.group;
   const set: Record<string, string | number> = {};
   const changes: string[] = [];
-  if (form.webhook !== undefined) {
-    const w = str(form.webhook);
-    if (w) {
-      if (!isDiscordWebhook(w)) throw badRequest(WEBHOOK_FORMAT_ERROR);
-      set.webhook_url = w;
-      changes.push('Webhook URL');
-    } else if (form.clearWebhook) {
-      set.webhook_url = '';
-      changes.push('Webhook URL を空に');
-    }
+  // チャンネルは、今と違うときだけ確かめて変える（同じ ID を送り直しても、Discord に聞かず、変更に数えない）
+  const channelId = form.channelId === undefined ? g.channel_id : str(form.channelId);
+  if (channelId !== g.channel_id) {
+    set.channel_id = channelId;
+    changes.push(channelId ? '基本のチャンネルを「#' + (await checkChannel(ctx, channelId)) + '」に' : '基本のチャンネルを外す');
   }
-  if (form.kindWebhook && typeof form.kindWebhook === 'object') {
-    const kw = form.kindWebhook as Form;
-    const kind = KIND[str(kw.kind) as keyof typeof KIND];
-    if (!kind) throw badRequest('知らせの種類が不正です: ' + str(kw.kind));
-    const w = str(kw.url);
-    if (w) {
-      if (!isDiscordWebhook(w)) throw badRequest(WEBHOOK_FORMAT_ERROR);
-      set[kind.col] = w;
-      changes.push(kind.label + 'の Webhook URL');
-    } else if (kw.clear) {
-      set[kind.col] = '';
-      changes.push(kind.label + 'を外して基本へ');
+  if (form.kindChannel && typeof form.kindChannel === 'object') {
+    const kc = form.kindChannel as Form;
+    const kind = KIND[str(kc.kind) as keyof typeof KIND];
+    if (!kind) throw badRequest('知らせの種類が不正です: ' + str(kc.kind));
+    const id = str(kc.channelId);
+    if (id !== g[kind.col]) {
+      set[kind.col] = id;
+      changes.push(id ? kind.label + 'を「#' + (await checkChannel(ctx, id)) + '」に' : kind.label + 'を外して基本へ');
     }
   }
   const nd = parseNotifyDays(form.days), nh = parseNotifyHour(form.hour);
@@ -108,8 +112,8 @@ export async function renameGroup(ctx: Ctx, form: Form) {
 }
 
 /**
- * シリーズごとの知らせ。form: { series, webhook, clearWebhook, alsoBase, days, hour（'' なら基本の値）, remove }
- * webhook は変えるときだけ送る（空なら今の値を残す。clearWebhook で空にする）
+ * シリーズごとの知らせ。form: { series, channelId, alsoBase, days, hour（'' なら基本の値）, remove }
+ * channelId は変えるときだけ送る（送らなければ今のまま。'' なら外して基本のチャンネルへ）
  */
 export async function saveSeriesNotify(ctx: Ctx, form: Form) {
   const series = str(form.series);
@@ -120,13 +124,11 @@ export async function saveSeriesNotify(ctx: Ctx, form: Form) {
     await db.prepare('DELETE FROM series_notify WHERE group_id = ? AND series = ?').bind(ctx.group.id, series).run();
     return { ok: true, message: '「' + series + '」の通知の設定を消しました。基本のチャンネルと基本の時刻で送ります。' };
   }
-  let webhook = cur?.webhook ?? '';
-  const w = str(form.webhook);
-  if (w) {
-    if (!isDiscordWebhook(w)) throw badRequest(WEBHOOK_FORMAT_ERROR);
-    webhook = w;
-  } else if (form.clearWebhook) {
-    webhook = '';
+  let channelId = cur?.channelId ?? '';
+  if (form.channelId !== undefined) {
+    channelId = str(form.channelId);
+    // 今と同じチャンネルなら確かめ直さない
+    if (channelId && channelId !== cur?.channelId) await checkChannel(ctx, channelId);
   }
   let days = cur?.days ?? null;
   if (form.days !== undefined && form.days !== null) days = parseNotifyDays(form.days) ?? null;
@@ -135,18 +137,28 @@ export async function saveSeriesNotify(ctx: Ctx, form: Form) {
   const alsoBase = form.alsoBase === undefined ? (cur ? cur.alsoBase : true) : !!form.alsoBase;
   await db
     .prepare(
-      `INSERT INTO series_notify (group_id, series, webhook_url, also_base, days, hour, updated_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
-       ON CONFLICT (group_id, series) DO UPDATE SET webhook_url = excluded.webhook_url, also_base = excluded.also_base, days = excluded.days,
+      `INSERT INTO series_notify (group_id, series, channel_id, also_base, days, hour, updated_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
+       ON CONFLICT (group_id, series) DO UPDATE SET channel_id = excluded.channel_id, also_base = excluded.also_base, days = excluded.days,
          hour = excluded.hour, updated_at = excluded.updated_at`,
     )
-    .bind(ctx.group.id, series, webhook, alsoBase ? 1 : 0, days, hour, ctx.now.toISOString())
+    .bind(ctx.group.id, series, channelId, alsoBase ? 1 : 0, days, hour, ctx.now.toISOString())
     .run();
   const g = ctx.group;
   const parts = [
-    webhook ? '専用のチャンネルへ' + (alsoBase ? '（基本のチャンネルにも）' : '') : '基本のチャンネルへ',
+    channelId ? '専用のチャンネルへ' + (alsoBase ? '（基本のチャンネルにも）' : '') : '基本のチャンネルへ',
     days === null && hour === null
       ? '基本と同じ日時（開催日の' + notifyWhenText(g.notify_days, g.notify_hour) + '）に'
       : '開催日の' + notifyWhenText(days ?? g.notify_days, hour ?? g.notify_hour) + 'に',
   ];
   return { ok: true, message: '「' + series + '」の通知を保存しました: ' + parts.join('、') + '送ります。' };
+}
+
+/**
+ * 送り先に選べるチャンネルの一覧（管理画面の「知らせ」が読む）。Bot がこのグループのサーバーにいなければ inGuild: false、
+ * Bot が設定されていなければ（運営者の設定）botReady: false
+ */
+export async function getDiscordChannels(ctx: Ctx) {
+  if (!ctx.bot.token) return { ok: true, botReady: false, inGuild: false, channels: [] };
+  const channels = await listChannels(ctx.bot.token, ctx.group.guild_id);
+  return { ok: true, botReady: true, inGuild: channels !== null, channels: channels ?? [] };
 }

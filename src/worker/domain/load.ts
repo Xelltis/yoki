@@ -2,7 +2,7 @@
 import type { Actor } from '../auth/guard';
 import { addDays, jst } from '../lib/jst';
 import type { Status } from './constants';
-import type { Ctx, GroupRow, Member, Role, Session } from './types';
+import type { Bot, Ctx, GroupRow, Member, Role, Session } from './types';
 
 type SessionRow = {
   id: number; seq: number; name: string; status: Status; date: string | null; start_time: string; end_time: string;
@@ -13,7 +13,7 @@ type SessionRow = {
 
 export const sessionCode = (seq: number) => 'S' + String(seq).padStart(3, '0');
 
-export async function loadGroup(db: D1Database, groupId: string, actor: Actor, appUrl: string, now = new Date()): Promise<Ctx> {
+export async function loadGroup(db: D1Database, groupId: string, actor: Actor, appUrl: string, now = new Date(), bot: Bot = { token: '', clientId: '' }): Promise<Ctx> {
   const today = jst(now).ymd;
   const at = now.toISOString();
   const res = await db.batch([
@@ -54,7 +54,7 @@ export async function loadGroup(db: D1Database, groupId: string, actor: Actor, a
           WHERE s.group_id = ?`,
       )
       .bind(groupId),
-    db.prepare('SELECT series, webhook_url, also_base, days, hour FROM series_notify WHERE group_id = ?').bind(groupId),
+    db.prepare('SELECT series, channel_id, also_base, days, hour FROM series_notify WHERE group_id = ?').bind(groupId),
     db.prepare('SELECT at, kind, target, result FROM notify_log WHERE group_id = ? ORDER BY id DESC LIMIT 10').bind(groupId),
   ]);
   const rows = <T>(i: number) => res[i]!.results as T[];
@@ -125,8 +125,8 @@ export async function loadGroup(db: D1Database, groupId: string, actor: Actor, a
     votes.set(v.session_id, byDay);
   }
   const seriesNotify: Ctx['seriesNotify'] = {};
-  for (const s of rows<{ series: string; webhook_url: string; also_base: number; days: number | null; hour: number | null }>(9)) {
-    seriesNotify[s.series] = { webhook: s.webhook_url, alsoBase: s.also_base === 1, days: s.days, hour: s.hour };
+  for (const s of rows<{ series: string; channel_id: string; also_base: number; days: number | null; hour: number | null }>(9)) {
+    seriesNotify[s.series] = { channelId: s.channel_id, alsoBase: s.also_base === 1, days: s.days, hour: s.hour };
   }
 
   return {
@@ -145,5 +145,6 @@ export async function loadGroup(db: D1Database, groupId: string, actor: Actor, a
     today,
     actor,
     appUrl,
+    bot,
   };
 }

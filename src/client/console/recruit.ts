@@ -48,7 +48,7 @@ export function renderRecruit(): void {
     html += '<button type="button" class="btn small" data-edit="' + esc(s.id) + '" style="margin-left:auto">編集</button>';
     html += '<span class="res" data-rres="' + esc(s.id) + '"></span></div>';
     // GM 向け: 興味ありの人に Discord で聞く。返事は各自が募集タブの「参加希望」で
-    const askTitle = !hookFor(s.series, 'recruit') ? 'Webhook 未設定' : !s.interest.length ? '興味ありの人がいません' : '興味ありの人にメンションして、参加できるか Discord で聞く';
+    const askTitle = !hookFor(s.series, 'recruit') ? 'チャンネル未設定' : !s.interest.length ? '興味ありの人がいません' : '興味ありの人にメンションして、参加できるか Discord で聞く';
     html += '<div class="btns gm"><button type="button" class="btn small primary" data-hold="' + esc(s.id) + '" title="状態を「開催」にした登録の窓を開きます">' + mi('event', 'sm') + '開催にする</button>';
     html += '<button type="button" class="btn small" data-ask="' + esc(s.id) + '"' + (hookFor(s.series, 'recruit') && s.interest.length ? '' : ' disabled') + ' title="' + esc(askTitle) + '">興味ありの人に聞く</button>';
     html += '<span class="res" data-ares="' + esc(s.id) + '">' + (s.asked ? '確認文を送りました（' + esc(s.asked) + '）' : '') + '</span></div>';

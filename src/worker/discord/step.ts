@@ -36,12 +36,12 @@ export async function sendDiscordStep(ctx: Ctx, form: Form, io: { data: () => Pr
       if (series) {
         // シリーズを指定したときは、そのシリーズのチャンネルだけ
         const sn = ctx.seriesNotify[series];
-        if (!sn || !sn.webhook) throw badRequest('シリーズ「' + series + '」には専用の Webhook URL がありません。');
-        targets = [{ url: sn.webhook, label: 'シリーズ「' + series + '」のチャンネル', series }];
+        if (!sn || !sn.channelId) throw badRequest('シリーズ「' + series + '」には専用のチャンネルがありません。');
+        targets = [{ channelId: sn.channelId, label: 'シリーズ「' + series + '」のチャンネル', series }];
         payload = testPayload(ctx.group.title, 'シリーズ「' + series + '」');
       } else if (channel === 'remind' || channel === 'recruit') {
         const t = kindBase(ctx, channel);
-        if (!t || t.kind !== channel) throw badRequest((channel === 'remind' ? '開催前の知らせのチャンネル' : '募集のチャンネル') + 'の Webhook URL がありません。');
+        if (!t || t.kind !== channel) throw badRequest((channel === 'remind' ? '開催前の知らせのチャンネル' : '募集のチャンネル') + 'が決まっていません。');
         targets = [t];
         payload = testPayload(ctx.group.title, t.label);
       } else {
@@ -123,10 +123,10 @@ export async function sendDiscordStep(ctx: Ctx, form: Form, io: { data: () => Pr
     default:
       throw badRequest('送る種類が不正です: ' + kind);
   }
-  if (!targets.length) throw badRequest('Webhook URL が空です。管理画面の「知らせ」で貼って「URL を保存」してから送ってください。');
+  if (!targets.length) throw badRequest('送り先のチャンネルが決まっていません。管理画面の「知らせ」でチャンネルを選んでから送ってください。');
   const to = Math.min(Math.max(Math.trunc(Number(form.to)) || 0, 0), targets.length - 1);
   const t = targets[to]!;
-  const r = await discordAttempt({ db: ctx.db, groupId: ctx.group.id }, payload, label, target + targetNote(t), Number(form.attempt) || 1, t.url);
+  const r = await discordAttempt({ db: ctx.db, groupId: ctx.group.id, token: ctx.bot.token }, payload, label, target + targetNote(t), Number(form.attempt) || 1, t.channelId);
   const out: Record<string, unknown> = { ...r, to, targetCount: targets.length, targetLabel: t.label };
   const sent = s as Session | null;
   if (r.ok && kind === 'ask' && sent) {

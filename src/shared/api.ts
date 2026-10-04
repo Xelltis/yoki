@@ -15,7 +15,7 @@ export type Status = (typeof STATUS)[keyof typeof STATUS];
 export const RPC_FUNCS = [
   'getConsoleData', 'sendDiscordStep', 'setDayNote', 'setInterest', 'bulkUpdateSessions', 'setAvailability', 'setAvailabilityBulk', 'setAvailNote',
   'saveSession', 'deleteSession', 'saveMember', 'deleteMember', 'saveConsoleSettings', 'saveSeriesNotify', 'renameGroup', 'startPoll', 'setPollVote',
-  'setPollVoteAll', 'cancelPoll', 'decidePoll', 'setAdmin', 'deleteGroup',
+  'setPollVoteAll', 'cancelPoll', 'decidePoll', 'setAdmin', 'deleteGroup', 'getDiscordChannels',
 ] as const;
 export type RpcName = (typeof RPC_FUNCS)[number];
 
@@ -67,7 +67,8 @@ export type ConsoleMember = {
   admin: boolean;
 };
 
-export type SeriesNotifyView = { series: string; hasWebhook: boolean; webhookMasked: string; alsoBase: boolean; days: number | null; hour: number | null };
+/** シリーズごとの知らせ。channelId が空なら、基本のチャンネルへ送る */
+export type SeriesNotifyView = { series: string; channelId: string; alsoBase: boolean; days: number | null; hour: number | null };
 
 /** 画面のデータ（getConsoleData の返事。書き込みの返事の data にも付く） */
 export type ConsoleData = {
@@ -95,16 +96,19 @@ export type ConsoleData = {
   booked: Record<string, Record<string, string>>;
   /** 予定表に出す日（今日から） */
   availDays: string[];
-  webhookSet: boolean;
-  remindWebhookSet: boolean;
-  recruitWebhookSet: boolean;
+  /** 知らせのチャンネル（Discord のチャンネルの ID）が決まっているか。基本と、種類ごと */
+  channelSet: boolean;
+  remindChannelSet: boolean;
+  recruitChannelSet: boolean;
+  /** 知らせを送る Bot。ready: サーバーに Bot のトークンがある（運営者の設定）。inviteUrl: このグループのサーバーに Bot を招く URL */
+  bot: { ready: boolean; inviteUrl: string };
   notifyDefault: boolean;
   /** 開催前の知らせを有効にした人（無効なら空） */
   notifySetter: string;
   settings: {
-    webhookMasked: string;
-    remindWebhookMasked: string;
-    recruitWebhookMasked: string;
+    channelId: string;
+    remindChannelId: string;
+    recruitChannelId: string;
     notifyHour: number;
     notifyDays: number;
     remind: boolean;
@@ -119,6 +123,10 @@ export type ConsoleData = {
   };
   seriesNotify: SeriesNotifyView[];
 };
+
+/** 送り先に選べる Discord のチャンネル（getDiscordChannels の返事）。category はカテゴリーの名前（無ければ空） */
+export type DiscordChannel = { id: string; name: string; category: string };
+export type DiscordChannelsResult = { ok: true; botReady: boolean; inGuild: boolean; channels: DiscordChannel[] };
 
 /** 呼び出しの返事（書き込み）。message は画面の吹き出しに出す。ほかは呼び出しごとに付く */
 export type RpcResult = {
