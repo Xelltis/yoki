@@ -1,0 +1,69 @@
+/* 部品（components の層）。いくつもの画面で使う形。場面ごとの調整は、Tailwind のクラスで足す（クラスは部品に勝つ） */
+
+/* アイコン（Material Symbols Rounded。<Icon name>）。飾りなので読み上げない（aria-hidden） */
+.material-icons {
+  font-family: 'Material Symbols Rounded'; font-weight: normal; font-style: normal; font-size: 20px; line-height: 1;
+  letter-spacing: normal; text-transform: none; display: inline-block; white-space: nowrap; word-wrap: normal; direction: ltr;
+  font-feature-settings: 'liga'; -webkit-font-smoothing: antialiased; font-variation-settings: 'FILL' 0;
+  width: 1em; overflow: hidden; flex-shrink: 0; vertical-align: -5px; user-select: none;
+}
+.material-icons.sm { font-size: 18px; vertical-align: -4px; }
+.material-icons.xs { font-size: 14px; vertical-align: -2px; }
+
+/* 小さな説明 */
+.hint { color: var(--muted); font-size: 12px; text-wrap: pretty; }
+p.hint { max-width: 62em; margin: 8px 0 12px; }
+
+/* カード */
+.card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 16px 18px; margin-bottom: 16px; box-shadow: var(--elev-sm); }
+.card > :first-child, .card > label:first-child { margin-top: 0; }
+.card > :last-child { margin-bottom: 0; }
+@media (width < 601px) { .card { padding: 14px; } }
+
+/* ボタン。primary（黒）・danger（赤い字）・danger-fill（赤）・small・xl・on（押してある）・icon（アイコンだけ） */
+.btn {
+  font: inherit; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  min-height: var(--h-control); padding: 0 14px; border-radius: var(--radius-pill); border: 1px solid var(--line-strong);
+  background: var(--card); color: var(--text); cursor: pointer; white-space: nowrap; text-decoration: none;
+  transition: background-color var(--dur-fast) ease-out, border-color var(--dur-fast) ease-out, transform var(--dur-fast) ease-out;
+}
+.btn .material-icons { vertical-align: 0; }
+.btn:hover:not(:disabled) { background: var(--hover); }
+.btn:active:not(:disabled) { transform: scale(.97); }
+.btn.icon { width: var(--h-control); padding: 0; }
+.btn.primary { background: var(--primary); border-color: var(--primary); color: var(--primary-ink); }
+.btn.primary:hover:not(:disabled) { background: color-mix(in srgb, var(--primary) 84%, var(--bg)); }
+.btn.danger { color: var(--err-text); border-color: color-mix(in srgb, var(--err-text) 40%, var(--card)); }
+.btn.danger:hover:not(:disabled) { background: var(--warn); }
+.btn.danger-fill { background: var(--err-text); border-color: var(--err-text); color: var(--card); }
+.btn.danger-fill:hover:not(:disabled) { background: color-mix(in srgb, var(--err-text) 86%, var(--text)); }
+.btn.small { min-height: var(--h-control-sm); padding: 0 12px; font-size: 12px; }
+.btn.xl { min-height: 44px; padding: 0 22px; font-size: 15px; font-weight: 700; box-shadow: var(--elev-sm); }
+.btn.xl .material-icons { font-size: 22px; }
+.btn.on { background: var(--accent-soft); border-color: var(--accent-line); color: var(--accent-text); }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+
+/* ボタンの並び。danger のボタンは右へ寄せる */
+.btns { display: flex; gap: 8px; margin-top: 14px; align-items: center; flex-wrap: wrap; }
+.btns > label { display: inline-flex; align-items: center; gap: 8px; margin: 0; font-weight: normal; }
+.btns .danger { margin-left: auto; }
+
+/* 欄を横に並べる行 */
+.row { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; }
+.row > div { flex: 1; min-width: 140px; }
+.row > div.narrow { flex: 0 0 130px; }
+@media (width < 601px) { .row > div.narrow { flex: 1 1 0; min-width: 0; } }
+
+/* 名前の横のチェック */
+label.chk { display: inline-flex; align-items: center; gap: 6px; margin: 0; font-weight: normal; }
+
+/* 表を入れる枠（横にずらせる）と、表の行 */
+.wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--card); }
+tr.click { cursor: pointer; }
+tr.click:hover > td { background: var(--hover); }
+tr.done td { background: var(--past); color: var(--muted); }
+tr.checked td { background: var(--accent-soft); }
+td.sel, th.sel { width: 36px; text-align: center; }
+td.c, th.c { text-align: center; }
+td.nw { white-space: nowrap; }
+tr.r-past td { background: var(--warn); }
