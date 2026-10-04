@@ -48,7 +48,7 @@ Worker 1 つで、次の 3 つを受け持つ。
 - `currentViewer` は締め出した人を「ログインしていない」として扱う。締め出す前に持っていた cookie も効かない（締め出すときに、その人のログインも消す）
 - users の行は消さない（印がそこにあるため）。Discord のユーザー ID は使い回されないので印は保てるが、別のアカウントは止められない
 
-**運営者**（`auth/operator.ts`）。`OPERATOR_IDS`（wrangler の vars か secret。カンマか空白で区切る）に書いた Discord ユーザー ID の人。開発サーバーでは、手元（localhost）から開いたときだけ、開発用ログインのひよりも運営者になる。運営者は締め出せない。
+**運営者**（`auth/operator.ts`）。`OPERATOR_IDS`（Worker の secret。カンマか空白で区切る）に書いた Discord ユーザー ID の人。開発サーバーでは、手元（localhost）から開いたときだけ、開発用ログインのひよりも運営者になる。運営者は締め出せない。
 
 **CSRF**（`auth/csrf.ts`）。cookie は SameSite=Lax。GET 以外は、`Origin` か `Sec-Fetch-Site` が自分のときだけ受ける。`/api` は JSON だけを受ける。
 
@@ -166,3 +166,13 @@ TypeScript で書き、Vite が組み立てる。ページは 3 つ: 入口（`i
 - `npm run dev`: Vite と Cloudflare のプラグインで、Worker とローカルの D1 ごと動く。開発用ログイン（`auth/dev.ts`）は `import.meta.env.DEV` のときだけ登録され、本番のビルドからは消える（組み立てた JS に残っていたら、vite.config.ts の `noDevLogin` が組み立てを止める）
 - `npm test`: サーバーのテストは `@cloudflare/vitest-pool-workers` で、Workers の実行環境とローカルの D1 で動かす。テストごとに表を空にする。Discord への通信は `vi.spyOn(globalThis, 'fetch')` で差し替える
 - `npm run e2e`: Playwright で、開発用ログインから卓の登録・日程調整の回答、グループの管理画面、グループを消す、運営の管理画面（ログインを切る・締め出す）までを通す
+
+## 公開
+
+アプリは GitHub Actions（`.github/workflows/deploy.yml`）が、main にアプリの変更が入ったときに公開する。
+
+- OSS として、公開する Cloudflare ごとに違う値はリポジトリに置かない。`wrangler.jsonc` には仮の値（D1 の ID は 0 が並んだもの、APP_URL と DISCORD_CLIENT_ID は空）だけを置き、手元の開発とテストはそのまま動く
+- 本番の値は GitHub の environment「production」に置く。組み立てのとき、`vite.config.ts` が環境変数（`YOKI_D1_DATABASE_ID`・`YOKI_APP_URL`・`YOKI_DISCORD_CLIENT_ID`）を、組み立てた設定（`dist/yoki/wrangler.json`）に入れる。`YOKI_DEPLOY=1` のときに欠けていたら、組み立てを止める（仮の値のまま公開しないように）
+- 秘密の値（`DISCORD_CLIENT_SECRET`）と運営者の ID（`OPERATOR_IDS`）は vars に置かず、Worker の secret にする。公開のたびに `wrangler deploy --secrets-file` で版と一緒に送る。vars は公開のログに出るため（公開のリポジトリでは、Actions のログはだれでも読める）
+- マイグレーションと公開は、どちらも組み立てた設定（`--config dist/yoki/wrangler.json`）で行う
+- wrangler には D1 の ID を省くと自動で作る機能もあるが、試験中で、マイグレーションとの順番も合わないので使わない
