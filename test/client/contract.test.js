@@ -36,16 +36,17 @@ test('運営者の管理画面で使うアイコンが、読み込むアイコ�
   expect([...used].filter((n) => !names.has(n))).toEqual([]);
 });
 
-/** React の画面（src/client の .tsx。古い console/ と operator/ は除く） */
-const tsxFiles = (dir) => fs.readdirSync(path.join(root, dir), { withFileTypes: true, recursive: true })
-  .filter((e) => e.isFile() && e.name.endsWith('.tsx'))
-  .map((e) => path.join(e.parentPath, e.name));
+/** React の画面のファイル（src/client の .tsx と .ts。古い console/ と operator/、アイコンの一覧そのものは除く） */
+const reactFiles = (dir) => fs.readdirSync(path.join(root, dir), { withFileTypes: true, recursive: true })
+  .filter((e) => e.isFile() && /\.tsx?$/.test(e.name))
+  .map((e) => path.join(e.parentPath, e.name))
+  .filter((f) => !/^src[/\\]client[/\\](console|operator|\.wrangler)[/\\]/.test(path.relative(root, f)) && !f.endsWith(path.join('ui', 'icons.ts')));
 
 test('React の画面のアイコン: 一覧（ui/icons.ts）は並んでいて重ならず、どれも使っている。index.html はその一覧を読み込む', () => {
   const list = /ICON_NAMES = \[([^\]]*)\]/.exec(read('src/client/ui/icons.ts'))[1].match(/[a-z_]+/g);
   expect(list).toEqual([...new Set(list)].sort());
-  // 使う名前は型で確かめる（<Icon name="…">）。ここでは、使っていない名前が一覧に残っていないかを見る
-  const used = new Set(tsxFiles('src/client').flatMap((f) => [...fs.readFileSync(f, 'utf8').matchAll(/<Icon\b[^>]*\bname="([a-z_]+)"/g)].map((m) => m[1])));
-  expect(list.filter((n) => !used.has(n))).toEqual([]);
+  // 使う名前は型で確かめる（<Icon name="…"> や、名前の一覧）。ここでは、どこにも書いていない名前が一覧に残っていないかを見る
+  const src = reactFiles('src/client').map((f) => fs.readFileSync(f, 'utf8')).join('\n');
+  expect(list.filter((n) => !new RegExp(`['"]${n}['"]`).test(src))).toEqual([]);
   expect(read('src/client/index.html')).toContain('icon_names=%ICON_NAMES%&');
 });
