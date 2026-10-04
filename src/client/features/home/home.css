@@ -1,4 +1,4 @@
-/* 入口の見た目。色はアプリ（console/app.css）と同じ決め方 */
+/* 入口の見た目。色はアプリ（ui/app.css）と同じ決め方 */
 :root {
   color-scheme: light dark;
   --accent: #0891b2; --accent-strong: #0e7490; --accent-ink: #ffffff; --accent-soft: #e0f5f9;

@@ -36,11 +36,6 @@ test('<Shot> で載せるスクリーンショットが public/screenshots/ に�
 
 test('アプリの「使い方」は、サイトのアドレス（config.ts の SITE_URL）を指す', () => {
   const url = /const SITE_URL = '([^']+)'/.exec(config)[1];
-  // React の画面は app/links.ts の HELP_URL を使う
+  // 画面は app/links.ts の HELP_URL を使う
   expect(/HELP_URL = '([^']+)'/.exec(read('src/client/app/links.ts'))[1]).toBe(url);
-  for (const p of ['src/client/console/index.html']) {
-    const links = [...read(p).matchAll(/<a\b[^>]*>(?:(?!<\/a>)[\s\S])*使い方/g)].map((m) => /href="([^"]+)"/.exec(m[0])[1]);
-    expect(links.length, p).toBeGreaterThan(0);
-    expect(links.every((h) => h === url), p).toBe(true);
-  }
 });
