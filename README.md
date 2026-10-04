@@ -86,7 +86,7 @@ Workers のテスト用の道具（`@cloudflare/vitest-pool-workers`）は、古
 
 公開する Cloudflare ごとに違う値（D1 の ID・アプリのアドレス・Discord アプリの値・運営者の ID）は、リポジトリに置かない。GitHub の environment「production」に置き、公開のときに組み立てた設定（`dist/yoki/wrangler.json`）に入れる（`vite.config.ts`）。リポジトリの `wrangler.jsonc` には仮の値だけがある。フォークして自分の Cloudflare に公開するときも、同じ手順で進める。
 
-1. **公開するアドレスを決める**。最初は `https://yoki.<アカウントのサブドメイン>.workers.dev` になる（サブドメインは、Cloudflare の画面の Workers で分かる）。独自のドメインは、あとから足せる
+1. **公開するアドレスを決める**。Cloudflare だけなら `https://yoki.<アカウントのサブドメイン>.workers.dev` になる（サブドメインは、Cloudflare の画面の Workers で分かる）。Route 53 などのドメインで公開するなら、下の「独自のドメインで公開する」の CloudFront のアドレス（`https://yoki.example.com` など）
 2. **Discord アプリを作る**。[Discord Developer Portal](https://discord.com/developers/applications) で New Application → OAuth2 で、Redirects に `https://<公開するアドレス>/auth/callback` と `http://localhost:5173/auth/callback` を足す。Client ID と Client Secret を控える（Bot は要らない）
 3. **Cloudflare で D1 と API トークンを作る**
    - D1: `npx wrangler login` のあと `npx wrangler d1 create yoki`（Cloudflare の画面の D1 で作ってもよい）。出てきた database ID を控える
@@ -109,7 +109,25 @@ Workers のテスト用の道具（`@cloudflare/vitest-pool-workers`）は、古
    - 公開のたびに確かめたいなら、environment の「Required reviewers」に自分を入れる。承認するまで公開が止まる
 5. **公開する**。main にアプリの変更（`src/`・`migrations/`・設定）を push すると動く。Actions の画面の「アプリを公開する」から、手で動かすこともできる。型の確認 → テスト（カバレッジ 100%）→ 組み立て（値が欠けていたら止まる。開発用ログインが残っていても止まる）→ 本番の D1 にマイグレーション → 公開、の順に進む。秘密の値は、公開する版と一緒に送る
 
-独自のドメインは、あとから Cloudflare の画面で足せる。そのときは、`YOKI_APP_URL` と Discord の Redirects も直す。
+### 独自のドメインで公開する（Route 53 と CloudFront）
+
+Workers に独自のドメインを直接付けるには、そのドメインの DNS を Cloudflare に移す必要がある（DNS を別のところに残す形は、Cloudflare の有料のプランが要る）。ドメインの DNS を Route 53 に残したまま公開するときは、前に AWS CloudFront を置き、CloudFront から workers.dev のアドレスへ渡す。
+
+- Worker に届く要求のアドレスは workers.dev のままになる。アプリは、自分のアドレス（Discord ログインの戻り先・知らせのリンク・CSRF の確かめ）を `YOKI_APP_URL` で決めるので、そのまま動く
+- workers.dev のアドレスもそのまま開けるが、ログインの戻り先と cookie は公開のアドレスに結びつくので、workers.dev のままでは使えない（ログインの途中で止まる）。使う人を絞りたいときは、運営の管理画面で新規登録の受付を止める
+
+1. **公開する Cloudflare の側**: 上の 1〜5 のとおり。workers.dev は有効のままにする（CloudFront の行き先になる）
+2. **証明書**: AWS Certificate Manager で、**us-east-1（バージニア北部）** に、使うドメイン（`yoki.example.com` など）の証明書を作る。検証は Route 53 の DNS で行う
+3. **CloudFront のディストリビューションを作る**
+   - オリジン: `yoki.<アカウントのサブドメイン>.workers.dev`。プロトコルは HTTPS のみ
+   - 既定のビヘイビア: ビューワーのプロトコルは「Redirect HTTP to HTTPS」、許可するメソッドは「GET, HEAD, OPTIONS, PUT, POST, PATCH, DELETE」、キャッシュポリシーは「CachingDisabled」、オリジンリクエストポリシーは「AllViewerExceptHostHeader」（Host 以外のヘッダー・cookie・クエリをすべて渡す。Host を渡すと Cloudflare が受け取らない）
+   - （速くしたいとき）`/assets/*` のビヘイビアを足し、キャッシュポリシーを「CachingOptimized」にする。組み立てた JS と CSS は、名前に中身の印が付くので長く控えてよい
+   - 代替ドメイン名に `yoki.example.com`、証明書に 2 を選ぶ
+4. **Route 53**: `yoki.example.com` の A と AAAA のレコードを、エイリアスで CloudFront のディストリビューションに向ける。ほかのレコードはそのまま
+5. **値を直す**: `YOKI_APP_URL` を `https://yoki.example.com` にし、Discord アプリの Redirects に `https://yoki.example.com/auth/callback` を足して、公開し直す
+6. **確かめる**: `https://yoki.example.com/` でログインでき、グループを開けること
+
+DNS を Cloudflare に移せるドメインなら、CloudFront を置かずに、Cloudflare の画面で Worker に独自のドメイン（Custom Domain）を足せる。そのときも `YOKI_APP_URL` と Discord の Redirects を直す。
 
 Cloudflare は無料のプランで動く。グループが増えて、知らせの見回りで送る数が多くなったら、有料のプラン（Workers Paid）にする。
 
