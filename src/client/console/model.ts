@@ -1,7 +1,7 @@
 // 卓とメンバーの読み方（状態・人・日程調整・並び）。画面のデータ D から読むだけで、書き換えない
 import type { ConsoleSession } from '../../shared/api';
 import { addDaysYmd, fmtJa } from './dates';
-import { $, toast } from './dom';
+import { $ } from './dom';
 import { D } from './state';
 
 /* 状態。募集 → 調整中 → 開催 → 終了、中止は別 */
@@ -97,7 +97,7 @@ export function memberOrder(names: string[]): string[] {
 }
 
 /** 「、」や改行で区切った名前 */
-export function splitNames(v: string): string[] { return String(v || '').split(/[、,，;；\n\/／]+/).map((x) => x.trim()).filter(Boolean); }
+export function splitNames(v: string): string[] { return String(v || '').split(/[、,，;；\n/／]+/).map((x) => x.trim()).filter(Boolean); }
 
 /* ---- 都合の判定 ---- */
 /** 都合を見る相手。「全員」はメンバー全員、「（なし）」は誰も見ない。卓の名前なら、その卓の人 */

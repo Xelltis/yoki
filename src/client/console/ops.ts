@@ -1,5 +1,5 @@
 // 管理画面の「卓をまとめて変える」。卓の一覧から選び、状態・参加者・開催日などをまとめて変える。メンバーに無い参加者の注意は、メンバーの予定のタブに出す
-import { api, discordSend, failToast, useData } from './api';
+import { api, discordSend, failToast, takeData } from './api';
 import { renderAvail } from './avail';
 import { daysBetween, fmtJa } from './dates';
 import { $, esc, hit, mi, store, toast } from './dom';
@@ -81,7 +81,7 @@ export function init(): void {
       $('bulkRun').disabled = true; $('bulkMsg').textContent = '保存しています…';
       const wantBulkNotify = $('bulkNotify').checked;
       api().withSuccessHandler((res) => {
-        $('bulkMsg').textContent = res.message; toast(res.message); clearSelected(); useData(res);
+        $('bulkMsg').textContent = res.message; toast(res.message); clearSelected(); takeData(res);
         if (!wantBulkNotify) return;
         discordSend({ kind: 'bulk', names: res.names || names, ids: res.ids || ids, label: res.label || what },
           (t) => { $('bulkMsg').textContent = res.message + '　' + t; },

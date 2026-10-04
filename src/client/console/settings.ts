@@ -1,6 +1,6 @@
 // グループの管理画面（/g/:id/admin/）の区分（知らせ・この卓予定・管理者・送信の記録・グループを消す）と、ふだんの画面の「この端末」
 import type { RpcName } from '../../shared/api';
-import { api, discordSend, failToast, refetch, useData } from './api';
+import { api, discordSend, failToast, refetch, takeData } from './api';
 import { ensureChannels, markDirty, renderChannels } from './channels';
 import { addDaysYmd, fmtJa } from './dates';
 import { $, esc, fillSelect, load, mi, store, toast } from './dom';
@@ -108,7 +108,7 @@ export function showSetPane(k: string): void {
 export function stCall(btnId: string, msgId: string, fnName: RpcName, form?: object): void {
   const btn = $(btnId), msg = $(msgId);
   btn.disabled = true; msg.textContent = '保存しています…';
-  const runner = api().withSuccessHandler((res) => { btn.disabled = false; msg.textContent = res.message; toast(res.message); useData(res, () => { msg.textContent = res.message; }); })
+  const runner = api().withSuccessHandler((res) => { btn.disabled = false; msg.textContent = res.message; toast(res.message); takeData(res, () => { msg.textContent = res.message; }); })
     .withFailureHandler((e) => { btn.disabled = false; msg.textContent = e.message; toast(e.message); });
   runner[fnName](form);
 }

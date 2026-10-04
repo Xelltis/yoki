@@ -1,6 +1,6 @@
 // 日程調整: 候補日を選ぶ窓。決まったこと・回答がそろったことを Discord で知らせ直す
 import type { ConsoleSession } from '../../shared/api';
-import { api, discordSend, failToast, useData } from './api';
+import { api, discordSend, failToast, takeData } from './api';
 import { addDaysYmd, fmtJa, holidayName, parseYmd } from './dates';
 import { $, esc, hit, toast } from './dom';
 import { byId, hasPoll, me, peopleOf } from './model';
@@ -107,7 +107,7 @@ export function init(): void {
     $('pollSend').disabled = true; $('pollMsg').textContent = '';
     api().withSuccessHandler((res) => {
       $('pollSend').disabled = false; $('pollModal').hidden = true;
-      toast(res.message); useData(res);
+      toast(res.message); takeData(res);
       if (!wantNotify) return;
       discordSend({ kind: 'poll', id: res.id, me: me() }, () => {}, (ok, r) => { toast(res.message + (ok ? '　Discord に送りました。' : '　' + failToast(r))); });
     }).withFailureHandler((e) => { $('pollSend').disabled = false; $('pollMsg').textContent = e.message; })

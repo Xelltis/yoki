@@ -43,7 +43,7 @@ await withDevServer(async (base) => {
   async function open(width, height, scale, theme) {
     const ctx = await browser.newContext({ viewport: { width, height }, deviceScaleFactor: scale });
     // 見た目は画面が読む前に決める（最初はカレンダー）
-    await ctx.addInitScript((t) => { try { localStorage.setItem('taku.theme', t); localStorage.removeItem('taku.tab'); } catch (e) {} }, theme);
+    await ctx.addInitScript((t) => { try { localStorage.setItem('taku.theme', t); localStorage.removeItem('taku.tab'); } catch {} }, theme);
     const pg = await ctx.newPage();
     await devLogin(pg, base);
     await pg.addStyleTag({ content: HIDE });

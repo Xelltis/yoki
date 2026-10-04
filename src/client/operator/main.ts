@@ -43,7 +43,7 @@ async function call<T>(path: string, body?: unknown): Promise<T> {
   const data = (await res.json().catch(() => ({}))) as T & { error?: string };
   if (res.ok) return data;
   const msg = String(data.error || 'うまくいきませんでした。');
-  if (/^AUTH:/.test(msg)) location.href = '/auth/login?return_to=' + encodeURIComponent('/admin/');
+  if (msg.startsWith('AUTH:')) location.href = '/auth/login?return_to=' + encodeURIComponent('/admin/');
   throw new Error(msg.replace(/^AUTH:\s*/, ''));
 }
 /** 変える操作。結果を吹き出しに出し、読み直す */
