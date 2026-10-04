@@ -23,7 +23,8 @@
     "site:build": "vitepress build website",
     "site:preview": "vitepress preview website",
     "screenshots": "node website/tools/screenshots.js",
-    "og-image": "node website/tools/og-image.js"
+    "og-image": "node website/tools/og-image.js",
+    "icons": "node website/tools/icons.js"
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "^1.62.5",
