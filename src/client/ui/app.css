@@ -26,13 +26,6 @@ details.howto .howto-body p:last-child { margin-bottom: 0; }
 .warn-box .material-icons { color: var(--violet); margin-top: 2px; }
 
 
-/* メンバーの予定の上に出す、募集中・調整中の帯 */
-.hot-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin: 0 0 12px; padding: 8px 10px; border: 1px solid color-mix(in srgb, var(--violet) 35%, var(--line)); border-radius: var(--radius-lg); background: var(--soon); font-size: 13px; }
-.hot-bar .hb-l { display: inline-flex; align-items: center; gap: 4px; font-weight: 600; }
-.hot-bar .hb-l .material-icons { color: var(--violet); }
-.hot-bar button { font: inherit; font-size: 12px; font-weight: 600; height: 28px; padding: 0 10px; border-radius: var(--radius-pill); border: 1px solid var(--line); background: var(--card); color: var(--text); cursor: pointer; }
-.hot-bar button:hover { background: var(--hover); }
-.hot-bar button.on { background: var(--accent-strong); border-color: transparent; color: var(--accent-ink); }
 
 
 /* ---- 募集・調整 ---- */
@@ -45,102 +38,15 @@ details.howto .howto-body p:last-child { margin-bottom: 0; }
 #matrix th { white-space: nowrap; }
 .bulk { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .bulk .cnt { font-weight: 700; min-width: 5em; }
-.wds, .members { display: inline-flex; flex-wrap: wrap; gap: 6px; }
-.wds label, .members label { display: inline-flex; align-items: center; gap: 6px; margin: 0; padding: 3px 10px 3px 8px; border: 1px solid var(--line-strong); border-radius: var(--radius-pill); font-size: 13px; font-weight: normal; cursor: pointer; background: var(--card); }
-.wds label:has(input:checked), .members label:has(input:checked) { background: var(--accent-soft); border-color: var(--accent-line); color: var(--accent-text); }
-.wds label.sun { color: var(--sun); } .wds label.sat { color: var(--sat); }
+.members { display: inline-flex; flex-wrap: wrap; gap: 6px; }
+.members label { display: inline-flex; align-items: center; gap: 6px; margin: 0; padding: 3px 10px 3px 8px; border: 1px solid var(--line-strong); border-radius: var(--radius-pill); font-size: 13px; font-weight: normal; cursor: pointer; background: var(--card); }
+.members label:has(input:checked) { background: var(--accent-soft); border-color: var(--accent-line); color: var(--accent-text); }
 .members { display: flex; margin-bottom: 10px; }
 
-/* ---- メンバーの予定 ---- */
-.fold-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
-.fold-bar .fold.on { background: var(--head); }
-.fold-bar .fold .material-icons { margin-left: -4px; }
-.panel .pgrid { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 10px 16px; align-items: center; }
-.panel .plabel { font-size: 12px; font-weight: 600; color: var(--muted); margin: 0; }
-.panel .pctl { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; min-width: 0; }
-.panel > .btns { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
-.wrap.avail { max-height: max(360px, calc((100dvh - 40px) / var(--zoom, 1) - var(--appbar-h) - var(--nav-h))); overflow: auto; cursor: grab; }
-.wrap.avail.dragging { cursor: grabbing; user-select: none; }
-.avail table { border-collapse: separate; border-spacing: 0; width: 100%; }
-.avail th, .avail td { border: 0; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); background-clip: padding-box; padding: 6px 8px; }
-.avail tr:last-child > td { border-bottom: 0; }
-.avail th { position: sticky; top: 0; z-index: var(--z-cell-head); color: var(--text); }
-.avail th small { display: block; font-weight: normal; font-size: 10px; color: var(--muted); line-height: 1.2; }
-.avail th.mine small { color: inherit; opacity: .85; }
-.avail th.d, .avail td.d { position: sticky; background: var(--card); z-index: var(--z-cell); }
-.avail th.d { z-index: var(--z-cell-corner); background: var(--head); }
-/* 固定する 3 列は幅を決め打ちにする。left の値と実際の幅がずれると、横に送ったときに重なる */
-.avail .c1 { left: 0; width: 62px; min-width: 62px; }
-.avail .c2 { left: 62px; width: 52px; min-width: 52px; text-align: center; }
-.avail .c3 { left: 114px; width: 220px; min-width: 220px; max-width: 220px; }
-/* その日の卓: 長い名前は折り返す。祝日は 2 行目に小さく出す */
-.avail td.c3 { white-space: normal; overflow-wrap: anywhere; line-height: 1.45; }
-.avail td.c3 .c3-h { display: block; font-size: 11px; color: var(--muted); }
-.avail tr.sat td.d { color: var(--sat); }
-.avail tr.sun td.d, .avail tr.hol td.d { color: var(--sun); }
-.avail tr.sat td, .avail tr.sat th { border-bottom: 2px solid var(--week-line); }
-.avail tr.free td.c3 { background: var(--soft); }   /* 表示中の全員が空いている日。卓のある日は卓の色を優先する */
-.avail tr.has td.c3 { background: var(--session); }
-.avail .hol-badge { display: inline-block; font-size: 10px; padding: 0 4px; border-radius: 4px; background: var(--sun); color: var(--card); margin-left: 3px; vertical-align: 1px; }
-.avail td.mine { padding: 0 18px 0 0; user-select: none; text-align: center; font-size: 16px; }
-.avail td.mine:hover { box-shadow: inset 0 0 0 2px var(--accent); }
-/* 自分のマスはボタン（キーボードでも押せる）。マスいっぱいに広げる */
-.avail td.mine .mk { display: block; width: 100%; min-height: 34px; padding: 0 0 0 18px; border: 0; border-radius: var(--radius-sm); background: none; color: inherit; font: inherit; cursor: pointer; }
-.avail td.mine .mk:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
-.avail td.m-ok { background: var(--ok); } .avail td.m-soft { background: var(--soft); } .avail td.m-ng { background: var(--warn); }
-.avail tr.wk td.d, .avail tr.hol td.d { background: var(--weekend); } .avail tr.today td.d { background: var(--today); }
-.avail th.mine { background: var(--accent-strong); color: var(--accent-ink); }
-.avail td.other { text-align: center; color: var(--muted); }
-.avail td.booked { background: var(--session); text-align: center; font-weight: 700; color: var(--booked-text); cursor: default; }
-/* 卓に入っている日の札（参・GM）。押せないことを形で示す */
-.bk-tag { display: inline-block; min-width: 2.4em; padding: 0 6px; border: 1px solid currentColor; border-radius: var(--radius-pill); color: var(--booked-text); font-size: 12px; font-weight: 700; line-height: 20px; text-align: center; white-space: nowrap; }
 #matrix td.nw, #matrix th { white-space: nowrap; }
 /* 参加者・送り先・結果は、狭い画面でも 1 文字ずつ折り返さない（表は横にずらせる） */
 #matrix td.ppl { min-width: 14em; }
 #stLog td.txt { min-width: 11em; }
-/* 予定メモ。自分の列の鉛筆で書く。マスには点だけ付き、文は吹き出しで出る */
-.avail td.own { position: relative; padding-right: 18px; }
-.avail .pen { position: absolute; right: 1px; top: 1px; border: 0; background: none; line-height: 1; opacity: .45; cursor: pointer; padding: 2px; color: var(--text); border-radius: 4px; }
-.avail .pen:hover { opacity: 1; background: var(--hover); }
-.avail td.has-memo { cursor: pointer; position: relative; }
-.mdot { position: absolute; left: 3px; top: 3px; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); pointer-events: none; }
-/* 表の上の絞り込み。押すたびに入り切り */
-.av-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 10px; }
-.av-chip { height: 32px; padding: 0 12px; border: 1px solid var(--line); border-radius: var(--radius-pill); background: var(--card); color: var(--muted); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
-.av-chip:hover { background: var(--hover); }
-.av-chip[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent-line); color: var(--accent-text); }
-.av-chips select { width: auto; max-width: 16em; height: 32px; min-height: 0; border-radius: var(--radius-pill); font-size: 13px; }
-.av-chips .hint { margin-left: auto; }
-/* 日ごとのリスト（狭い画面で表の代わりに出す） */
-.avail-list { display: none; }
-.avl-day { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--card); }
-.avl-day + .avl-day { margin-top: 8px; }
-.avl-day.today { border-color: var(--accent-line); box-shadow: inset 3px 0 0 var(--accent); }
-.avl-day.free { background: var(--soft); }
-.avl-day .d { flex: none; width: 58px; font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.3; }
-.avl-day .d small { display: block; font-size: 11px; font-weight: 400; color: var(--muted); }
-.avl-day.sun .d { color: var(--sun); }
-.avl-day.sat .d { color: var(--sat); }
-.avl-day .info { flex: 1; min-width: 0; font-size: 12.5px; line-height: 1.5; color: var(--muted); overflow-wrap: anywhere; }
-.avl-day .info .plans { color: var(--text); font-weight: 600; }
-.avl-day .info .ng { margin-right: 8px; color: var(--err-text); }
-.avl-day .info .sk { color: var(--ok-text); }
-.avl-day .info .memo { font-size: 11.5px; }
-.avl-day .pick { flex: none; display: flex; align-items: center; gap: 4px; }
-.avl-day .pk { width: 38px; height: 38px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--card); color: var(--muted); font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }
-.avl-day .pk[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent-line); color: var(--accent-text); }
-.avl-day .pk[data-mark="△"][aria-pressed="true"] { background: var(--soft); border-color: var(--ok-text); color: var(--ok-text); }
-.avl-day .pk[data-mark="×"][aria-pressed="true"] { background: var(--warn); border-color: var(--err-text); color: var(--err-text); }
-.avl-day .pen { display: grid; place-items: center; width: 34px; height: 38px; padding: 0; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--card); color: var(--muted); cursor: pointer; }
-.avl-day .pk:focus-visible, .avl-day .pen:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
-@media (max-width: 760px) {
-  #tab-avail .wrap.avail { display: none; }
-  .avail-list { display: block; }
-  .av-chips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
-  .av-chips::-webkit-scrollbar { display: none; }
-  .av-chip, .av-chips select { flex: none; }
-  .av-chips .hint { display: none; }
-}
 
 /* ---- 設定・メンバー ---- */
 #tab-settings { max-width: 1120px; }
@@ -243,12 +149,6 @@ details.howto .howto-body p:last-child { margin-bottom: 0; }
   .ntx td.what { padding-right: 62px; }
   .ntx td.sw { position: absolute; top: 10px; right: 0; width: auto; }
 }
-/* 項目ごとの説明。「？」にマウスを載せるか、押すと出る */
-.tip { display: inline-grid; place-items: center; width: 22px; height: 22px; margin-left: 4px; padding: 0; flex-shrink: 0;
-  border: 0; border-radius: var(--radius-pill); background: none; color: var(--muted); cursor: help; vertical-align: 1px; }
-.tip:hover, .tip[aria-expanded="true"] { background: var(--hover); color: var(--accent-text); }
-.tip:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
-.bar .tip, .fold-bar .tip { margin-left: 2px; }
 /* 卓の登録の窓: 状態ごとの手順。いまの段を水色で示す */
 .flow { margin: 14px 0 2px; padding: 12px 14px 12px; border: 1px solid var(--accent-line); border-radius: var(--radius-lg); background: var(--accent-soft); }
 .flow[hidden] { display: none; }
@@ -294,11 +194,7 @@ details.howto .howto-body p:last-child { margin-bottom: 0; }
 /* ---- 幅ごとの組み替え ---- */
 @media (max-width: 600px) {
   .page-head h1 { font-size: 20px; }
-  .avail .c3 { width: 120px; min-width: 120px; max-width: 120px; }
-  .panel .pgrid { grid-template-columns: minmax(0, 1fr); gap: 4px; }
-  .panel .plabel { margin-top: 6px; }
   #dateRow > div:first-child { flex-basis: 100%; }
-  .avail .c3 { width: 140px; min-width: 140px; max-width: 140px; }
   .modal .box.wide .bar { margin: 0 -16px 4px; padding: 14px 16px 12px; }
   .form-actions { margin: 16px -16px 0; padding: 12px 16px max(16px, env(safe-area-inset-bottom)); }
 }
