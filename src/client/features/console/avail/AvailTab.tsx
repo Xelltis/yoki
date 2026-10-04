@@ -11,6 +11,7 @@ import { useConsole, useData } from '../context';
 import { WD, fmtJa } from '../model/dates';
 import { active, isAdjusting, isRecruit, me, peopleOf, sortSessions, sortedActive } from '../model/model';
 import { withAvail, withAvailNote } from '../model/optimistic';
+import { notice } from '../styles';
 import { AvailList, AvailTable } from './AvailTable';
 import { type AvailFilter, type Mark, activeNames, availRows, markIn, targetNames, visibleNames } from './rows';
 
@@ -31,7 +32,7 @@ function UnknownWarn({ d }: { d: ConsoleData }) {
   sortedActive(d).forEach((s) => { peopleOf(s).forEach((n) => { if (names.indexOf(n) < 0 && unknown.indexOf(n) < 0) unknown.push(n); }); });
   return (
     <div id="unknownWarn">
-      {unknown.length > 0 && <div className="notice adjust" style={{ marginBottom: 8 }}><Icon name="warning" />{'メンバーに無い参加者: ' + unknown.join('、') + '　→ 管理画面の「メンバー」で足すと、予定表に列ができます。'}</div>}
+      {unknown.length > 0 && <div className={notice('adjust', false) + ' mb-8'}><Icon name="warning" />{'メンバーに無い参加者: ' + unknown.join('、') + '　→ 管理画面の「メンバー」で足すと、予定表に列ができます。'}</div>}
     </div>
   );
 }

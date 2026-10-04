@@ -3,8 +3,8 @@
 @layer legacy {
 
 /* ---- 土台と部品は styles/base.css・styles/components.css ---- */
-.notice, .sub, .lead { text-wrap: pretty; }
-.cal, .notices, .sess, .rc, .marks, #monthLabel, .res, .poll { font-variant-numeric: tabular-nums; }
+.lead { text-wrap: pretty; }
+.rc, .res, .poll { font-variant-numeric: tabular-nums; }
 
 
 /* ページの見出しと「使い方」 */
@@ -23,96 +23,12 @@ details.howto .howto-body p:last-child { margin-bottom: 0; }
 .empty { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
 .empty p { margin: 0; }
 
-/* はじめの導線: メンバー → 卓 */
-.setup-card { border-color: var(--accent-line); }
-.setup-card h3 { display: flex; align-items: center; gap: 6px; }
-ol.setup { list-style: none; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px 24px; margin: 0; padding: 0; }
-ol.setup li { display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 10px; align-items: start; }
-ol.setup .n { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 50%; background: var(--head); color: var(--muted); font-weight: 700; font-size: 14px; }
-ol.setup li.now .n { background: var(--accent-strong); color: var(--accent-ink); }
-ol.setup li.done .n { background: var(--ok); color: var(--ok-text); }
-ol.setup b { font-size: 15px; }
-ol.setup p { margin: 2px 0 8px; }
-ol.setup .btn { margin-top: 2px; }
-@media (max-width: 700px) { ol.setup { grid-template-columns: minmax(0, 1fr); } }
 
 /* 同じ日の重なりや × の注意。止めはせず、気づけるようにするだけ */
 .warn-box { display: flex; align-items: flex-start; gap: 8px; margin-top: 12px; padding: 10px 12px; border-radius: var(--radius-md); background: var(--soon); color: var(--text); font-size: 13px; line-height: 1.6; }
 .warn-box .material-icons { color: var(--violet); margin-top: 2px; }
 
-/* ---- カレンダー: 左 7 右 3 ---- */
-.frame { display: grid; grid-template-columns: minmax(0, 7fr) minmax(300px, 3fr); gap: 20px; align-items: start; }
-.frame-r { position: sticky; top: calc(var(--appbar-h) + 16px); display: flex; flex-direction: column; gap: 16px; }
-.frame-r .card { margin-bottom: 0; }
-#dayDetail { scroll-margin-top: calc(var(--appbar-h) + 12px); scroll-margin-bottom: calc(var(--nav-h) + 12px); }
-.calbar { display: flex; align-items: center; gap: 10px 12px; flex-wrap: wrap; margin: 0 0 12px; }
-.calbar .calnav { display: flex; align-items: center; gap: 6px; }
-.calbar .month { margin: 0; font-weight: 700; font-size: 20px; min-width: 6.6em; text-align: center; }
-.calbar .caltools { margin-left: auto; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.calbar label { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
-/* 卓を登録・募集を始める・日程調整を始める。月と「都合を見る卓」の下に 1 段で並べる */
-.calbar .newgroup { display: flex; flex-wrap: wrap; gap: 8px; flex-basis: 100%; }
-@media (max-width: 600px) { .calbar .newgroup { width: 100%; } .calbar .newgroup #newRecruit, .calbar .newgroup #newAdjust { flex: 1 1 auto; padding: 0 12px; } }
-.legend { display: flex; align-items: center; gap: 4px 14px; flex-wrap: wrap; font-size: 12px; color: var(--muted); margin-bottom: 12px; }
-.legend .sw { display: inline-flex; align-items: center; gap: 6px; }
-.legend .sw i { width: 14px; height: 14px; border-radius: 4px; border: 1px solid var(--line-strong); }
-.legend .brk { flex-basis: 100%; height: 0; }
-.legend-icons { display: flex; align-items: center; flex-wrap: wrap; gap: 2px 10px; padding-left: 14px; border-left: 1px solid var(--line); }
-.legend-icons .li { display: inline-flex; align-items: center; gap: 2px; white-space: nowrap; }
-.legend-icons .li.cand .material-icons { color: var(--accent-text); }
-.cal { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: var(--radius-lg); overflow: hidden; touch-action: pan-y; box-shadow: var(--elev-sm); }
-.cal .wd { background: var(--card); text-align: center; font-weight: 600; padding: 8px 0; font-size: 12px; color: var(--muted); }
-.cal .wd.sun { color: var(--sun); } .cal .wd.sat { color: var(--sat); }
-.cal .day { appearance: none; font: inherit; font-size: 12px; color: inherit; text-align: left; display: flex; flex-wrap: wrap; align-content: flex-start; align-items: center; width: 100%; margin: 0; border: 0; border-radius: 0; background: var(--card); min-height: 108px; padding: 6px; cursor: pointer; position: relative; min-width: 0; overflow: hidden; }
-.cal div.day { cursor: default; }
-.cal .day:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; z-index: var(--z-cell); }
-.cal .day.out { background: var(--out); }
-.cal .day.weekend { background: var(--weekend); }
-.cal .day.has { background: var(--session); }
-.cal .day.ok { background: var(--ok); }
-.cal .day.soft { background: var(--soft); }
-.cal .day.past { background: var(--past); }
-.cal .day.win { box-shadow: inset 0 0 0 2px var(--accent-line); }
-.cal .day.sel { outline: 2px solid var(--accent); outline-offset: -2px; z-index: var(--z-cell); }
-.cal .day .n { display: inline-flex; align-items: center; justify-content: center; min-width: 24px; height: 24px; padding: 0 5px; border-radius: 12px; font-weight: 600; font-size: 13px; }
-.cal .day .n.sun, .cal .day .n.hol { color: var(--sun); } .cal .day .n.sat { color: var(--sat); }
-.cal .day.today .n { background: var(--accent-strong); color: var(--accent-ink); }
-.cal .day .hn { font-size: 10px; color: var(--sun); margin-left: 2px; }
-.cal .av { position: absolute; right: 6px; top: 6px; font-size: 11px; color: var(--ok-text); font-weight: 700; }
-.cal .chip { display: block; flex: 0 0 100%; min-width: 0; margin-top: 3px; padding: 2px 6px 2px 8px; border-radius: var(--radius-sm); background: var(--card); color: var(--text); box-shadow: inset 3px 0 0 var(--accent), 0 0 0 1px var(--line); font-weight: 600; font-size: 11.5px; line-height: 1.45; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.cal .chip .material-icons { margin-right: 3px; color: var(--accent-text); }
-.cal .chip.held { box-shadow: inset 3px 0 0 var(--ok-text), 0 0 0 1px var(--line); }
-.cal .chip.held .material-icons { color: var(--ok-text); }
-.cal .chip.adj { box-shadow: inset 3px 0 0 var(--violet), 0 0 0 1px var(--line); }
-.cal .chip.adj .material-icons { color: var(--violet); }
-.cal .chip.done, .cal .chip.cancel { color: var(--muted); font-weight: 500; box-shadow: inset 3px 0 0 var(--line-strong), 0 0 0 1px var(--line); }
-.cal .chip.done .material-icons, .cal .chip.cancel .material-icons { color: var(--muted); }
-.cal .chip.cancel { text-decoration: line-through; }
-.cal .chip.note { background: var(--soon); box-shadow: none; font-weight: 500; }
-.cal .chip.note .material-icons { color: var(--violet); }
-/* 調整中の卓はカレンダーではアイコンだけ。名前は title と読み上げ用の名前で持つ */
-.cal .cal-icos { display: flex; flex: 0 0 100%; flex-wrap: wrap; gap: 3px; margin-top: 3px; }
-.cal .cal-ico { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: var(--radius-sm); background: var(--card); color: var(--muted); box-shadow: 0 0 0 1px var(--line); }
-.cal .cal-ico.cand { color: var(--accent-text); box-shadow: 0 0 0 1px var(--accent-line); }
 
-/* ---- 右の枠: 卓予定と内訳 ---- */
-.notices { display: flex; flex-direction: column; gap: 8px; }
-.notice { position: relative; display: block; width: 100%; margin: 0; padding: 10px 12px 10px 48px; border-radius: var(--radius-md); background: var(--card); border: 1px solid var(--line); color: var(--text); font: inherit; text-align: left; line-height: 1.55; }
-button.notice { cursor: pointer; transition: background-color var(--dur-fast) ease-out, border-color var(--dur-fast) ease-out; }
-button.notice:hover { background: var(--hover); border-color: var(--line-strong); }
-.notice > .material-icons:first-child { position: absolute; left: 10px; top: 9px; width: 28px; height: 28px; line-height: 28px; text-align: center; border-radius: 50%; font-size: 17px; vertical-align: 0; background: var(--head); color: var(--muted); }
-.notice.today { font-weight: 600; border-color: color-mix(in srgb, var(--err-text) 30%, var(--line)); }
-.notice.today > .material-icons { background: var(--warn); color: var(--err-text); }
-.notice.tomorrow { font-weight: 600; }
-.notice.tomorrow > .material-icons { background: var(--accent-soft); color: var(--accent-text); }
-.notice.week > .material-icons { background: var(--head); color: var(--text); }
-.notice.adjust > .material-icons { background: var(--soon); color: var(--violet); }
-.notice.overdue { color: var(--muted); }
-.notice.mine { border-color: var(--accent-line); background: var(--accent-soft); }
-/* 募集中・調整中は上に出して色を変える（見落としやすいので） */
-.notice.hot { background: var(--soon); border-color: color-mix(in srgb, var(--violet) 45%, var(--line)); }
-.notice.hot > .material-icons { background: var(--violet); color: var(--card); }
-.notices .hot + :not(.hot) { margin-top: 10px; }
 /* メンバーの予定の上に出す、募集中・調整中の帯 */
 .hot-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin: 0 0 12px; padding: 8px 10px; border: 1px solid color-mix(in srgb, var(--violet) 35%, var(--line)); border-radius: var(--radius-lg); background: var(--soon); font-size: 13px; }
 .hot-bar .hb-l { display: inline-flex; align-items: center; gap: 4px; font-weight: 600; }
@@ -120,29 +36,11 @@ button.notice:hover { background: var(--hover); border-color: var(--line-strong)
 .hot-bar button { font: inherit; font-size: 12px; font-weight: 600; height: 28px; padding: 0 10px; border-radius: var(--radius-pill); border: 1px solid var(--line); background: var(--card); color: var(--text); cursor: pointer; }
 .hot-bar button:hover { background: var(--hover); }
 .hot-bar button.on { background: var(--accent-strong); border-color: transparent; color: var(--accent-ink); }
-.notice.info { padding: 2px 0 0; border: 0; background: none; color: var(--muted); font-size: 12px; }
-.notice .sub { display: block; font-weight: normal; font-size: 12px; color: var(--muted); }
-.sess { border: 1px solid var(--line); border-radius: var(--radius-md); padding: 12px; margin-top: 10px; background: var(--card); }
-.sess .sess-h { display: flex; gap: 4px 10px; align-items: baseline; flex-wrap: wrap; }
-.sess .sess-h b { font-size: 15px; }
-.sess .st { font-size: 11px; font-weight: 600; padding: 1px 8px; border-radius: var(--radius-pill); background: var(--head); color: var(--muted); }
-.sess .row2 { margin-top: 4px; }
-.sess .btns { margin-top: 10px; gap: 6px; }
-.sess .res, .rc .res { font-size: 12px; color: var(--muted); }
-.sess.done { opacity: .8; }
-.sess.done .sess-h b { color: var(--muted); }
-.sess.cancel .sess-h b { text-decoration: line-through; color: var(--muted); }
-.people, .marks { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px; }
-.people span, .marks span { padding: 1px 10px; border-radius: var(--radius-pill); border: 1px solid var(--line); font-size: 12px; background: var(--card); }
+.rc .res { font-size: 12px; color: var(--muted); }
+.people { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px; }
+.people span { padding: 1px 10px; border-radius: var(--radius-pill); border: 1px solid var(--line); font-size: 12px; background: var(--card); }
 .people span.gm { background: var(--primary); border-color: var(--primary); color: var(--primary-ink); font-weight: 700; }
 .people span.no { color: var(--muted); border-style: dashed; }
-.marks span { position: relative; border-color: transparent; background: var(--head); }
-.marks span.m-ok { background: var(--ok); } .marks span.m-soft { background: var(--soft); } .marks span.m-ng { background: var(--warn); } .marks span.m-bk { background: var(--session); }
-.marks span.has-memo { cursor: pointer; padding-left: 16px; }
-.marks span .mdot { left: 6px; top: 50%; margin-top: -3px; }
-.note-box { margin-top: 14px; border-top: 1px solid var(--line); padding-top: 12px; }
-.note-box textarea { width: 100%; height: 64px; resize: vertical; }
-.note-box .btns { margin-top: 8px; }
 
 /* ---- 日程調整: カードの中の回答欄と、候補日を選ぶ窓 ---- */
 .poll { margin-top: 12px; padding: 10px 12px; border-radius: var(--radius-md); background: var(--head); }
@@ -429,7 +327,6 @@ button.notice:hover { background: var(--hover); border-color: var(--line-strong)
 .settings input[type=text].num.bad { border-color: var(--err-text); }
 .settings #stWhenSay { margin: 6px 0 0; }
 .settings #stWhenSay.bad, #snMsg.bad, #botState.bad { color: var(--err-text); }
-.setup-card h3 .close-guide { margin-left: auto; }
 #snList tr[data-sn] { cursor: pointer; }
 #snList tr[data-sn]:hover td, #snList tr[data-sn]:focus-visible td { background: var(--hover); }
 #snNow { margin: 10px 0 0; }
@@ -451,32 +348,8 @@ button.notice:hover { background: var(--hover); border-color: var(--line-strong)
 
 
 /* ---- 幅ごとの組み替え ---- */
-@media (max-width: 900px) {
-  .frame { grid-template-columns: minmax(0, 1fr); }
-  .frame-r { position: static; }
-  #dayDetail.nosel { display: none; }
-}
 @media (max-width: 600px) {
   .page-head h1 { font-size: 20px; }
-  .calbar .calnav { width: 100%; }
-  .calbar .month { flex: 1; min-width: 0; font-size: 18px; }
-  .calbar .caltools { margin-left: 0; width: 100%; }
-  .calbar .caltools label { flex: 1; min-width: 0; }
-  .calbar .caltools select { flex: 1; min-width: 0; }
-  #newSession {
-    position: fixed; right: max(16px, env(safe-area-inset-right)); bottom: calc(var(--nav-h) + 16px + env(safe-area-inset-bottom)); z-index: var(--z-fab);
-    min-height: 56px; padding: 0 20px 0 16px; border-radius: var(--radius-xl); font-size: 15px; box-shadow: var(--elev-lg);
-  }
-  .legend { gap: 2px 10px; font-size: 11px; margin-bottom: 10px; }
-  .legend .sw i { width: 12px; height: 12px; }
-  .legend-icons { padding-left: 0; border-left: 0; width: 100%; }
-  .cal .day { min-height: 68px; font-size: 11px; padding: 3px; }
-  .cal .day .n { min-width: 22px; height: 22px; font-size: 12px; padding: 0 3px; }
-  .cal .chip { font-size: 10px; padding: 1px 3px 1px 5px; margin-top: 2px; }
-  .cal .chip .material-icons { display: none; }
-  .cal .av, .cal .chip .t, .cal .day .hn { display: none; }
-  .cal .cal-ico { width: 16px; height: 16px; }
-  .cal .cal-ico .material-icons { font-size: 12px; }
   .avail .c3 { width: 120px; min-width: 120px; max-width: 120px; }
   .panel .pgrid { grid-template-columns: minmax(0, 1fr); gap: 4px; }
   .panel .plabel { margin-top: 6px; }
