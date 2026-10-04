@@ -18,6 +18,7 @@ Worker 1 つで、次の 3 つを受け持つ。
 | `/g/:id/` | グループのアプリ。入れる人には `console/index.html`（データの入っていない骨組み）を返す。データは画面が API で読む |
 | `/g/:id/admin/` | グループの管理画面。同じ `console/index.html` を返し、画面が URL を見て管理の区域で開く。そのグループの管理者でなければ 403 の案内 |
 | `/admin/` | 運営の管理画面（`operator/index.html`）。ログインしていなければ Discord ログインへ、運営者でなければ 403 の案内 |
+| `/terms` `/privacy` | 利用規約とプライバシーポリシー。だれでも読める。Worker が D1 から本文を読み、その場で HTML にして返す（JS は使わない。`routes/html.ts` の `legalPage`） |
 | `/auth/login` `/auth/callback` `POST /auth/logout` | Discord ログイン |
 | `GET /api/me` `POST /api/groups` | 入口の画面が使う |
 | `POST /api/g/:id/:fn` | 画面からの呼び出し |
@@ -61,7 +62,7 @@ Worker 1 つで、次の 3 つを受け持つ。
 - `members`: メンバー。名前はグループの中で一意
 - `sessions`・`session_people`: 卓と、関わる人（GM・参加者・参加希望・興味あり）
 - `availability`・`avail_notes`・`day_notes`・`poll_votes`・`series_notify`・`notify_log`
-- `meta`: cron の「この時刻はもう回した」印、最後の見回りの記録、新規登録の受付（`registration`）
+- `meta`: cron の「この時刻はもう回した」印、最後の見回りの記録、新規登録の受付（`registration`）、利用規約とプライバシーポリシー（`legal_operator`・`legal_contact`・直した本文の `legal_terms`・`legal_privacy`）
 
 **メンバーは中では ID で持つ**。画面とのやり取りは GAS 版と同じく名前で行い、`domain/people.ts` で変換する。名前を変えても 1 か所を直すだけで済む（GAS 版では、名前の変更が一部の表に伝わらなかった）。メンバーに無い人（ゲスト）は、`guest_name` に名前だけで持つ。メンバーを消すと、その人が入っていた卓と回答はゲストの名前に置き換わり、予定とメモは消える。
 
@@ -127,7 +128,9 @@ Worker 1 つで、次の 3 つを受け持つ。
 | `POST /api/admin/groups/:id/guild` | Discord サーバーを付け替える。メンバーの行・管理者の印は残す。知らせのチャンネルは古いサーバーのものなので、いつも外す |
 | `POST /api/admin/groups/:id/delete` | グループを消す。名前を打ち込んで、一致したときだけ |
 | `GET /api/admin/users` `POST /api/admin/users/:id/logout` `POST /api/admin/users/:id/ban` | 利用者の一覧、ログインを切る、締め出す・戻す |
+| `POST /api/admin/users/:id/delete` | 利用者を消す（本人から頼まれたとき）。users の行（ログインとサーバーの控えは表の決まりで一緒に消える）と、どのグループでもその人のメンバーの行（`user_id` か `discord_id` が同じもの）を消し、グループの `created_by` を空にする。メンバーの行の消し方はグループの管理者がメンバーを消すときと同じ（予定とメモは消え、卓と回答はゲストの名前になる）。運営者と、締め出している人（消すと印も消える）は断る |
 | `POST /api/admin/registration` | 新規登録を受け付ける・止める（`{open}`） |
+| `GET /api/admin/legal` `POST /api/admin/legal` | 利用規約とプライバシーポリシーの、運営者の名前・問い合わせ先・本文を読む・保存する（`{operator?, contact?, terms?, privacy?}`。省いたものは変えない） |
 
 - どの道も、ログインしていなければ `AUTH:` の 401、運営者でなければ 403。返事は `Cache-Control: no-store`
 - 読むものは GET、変えるものは POST（JSON）。CSRF の確かめは `/api` のほかの道と同じ
@@ -136,6 +139,7 @@ Worker 1 つで、次の 3 つを受け持つ。
 - 送信の失敗に数えるのは、`送信失敗` と `送らず` で始まる記録だけ（`HTTP…`・`ERROR…` は送り直しの途中）
 - 見回りは、最後の回が 15 分より前なら止まっているかもしれない、として出す
 - 新規登録の受付（`domain/registration.ts`）。止めると、グループを作る道（`POST /api/groups`）と、初めての人のログイン（`/auth/callback`・開発用ログイン。users に行が無い人）を断る。もう使っている人と運営者は通す。運営者が自分を締め出さないように、運営者はいつでも入れて、グループも作れる。画面には `/api/me` の `registration` で知らせる
+- 利用規約とプライバシーポリシー（`domain/legal.ts`）。既定の文（`domain/legal-text.ts`）は、このリポジトリのままの卓予定に合わせて書いてあり、アプリの作りが変わってずれたら直す。運営者が本文を直すと `meta` に保存し、直していなければ既定の文を出す（既定の文を直せば、直していない公開先にもそのまま出る）。本文を空か既定の文と同じにして保存すると、既定の文に戻る。本文の書き方は見出し・箇条書き・段落・リンクだけで、HTML はそのまま文字で出す（`lib/markup.ts`）
 - Discord サーバーを付け替えると、新しいサーバーの人は、控えが 5 分より古くなったときに黙って読み直して入れるようになり、古いサーバーの人は入れなくなる
 
 ## 日本時間
