@@ -35,12 +35,17 @@ export default defineConfig(async (): Promise<ViteUserConfig> => {
                   // 区切りの読み方（カンマと空白）も確かめる
                   OPERATOR_IDS: '400000000000000098, 400000000000000099',
                 },
-                // 画面の静的ファイルの代わり（テストでは組み立てない）。グループの画面と運営者の管理画面の骨組みだけ返す
+                // 画面の静的ファイルの代わり（テストでは組み立てない）。骨組みだけ返す: 新しい画面（React の SPA）と、
+                // 書き直しのあいだだけ残る古いグループの画面・運営者の管理画面
                 serviceBindings: {
                   ASSETS: (request: Request) => {
-                    const page: Record<string, string> = { '/console/': '卓予定', '/operator/': '運営の管理画面' };
-                    const title = page[new URL(request.url).pathname];
-                    return title ? new Response('<!doctype html><title>' + title + '</title>', { headers: { 'Content-Type': 'text/html' } }) : new Response('not found', { status: 404 });
+                    const page: Record<string, string> = {
+                      '/': '<title>卓予定</title><div id="root"></div>',
+                      '/console/': '<title>卓予定</title>',
+                      '/operator/': '<title>運営の管理画面</title>',
+                    };
+                    const body = page[new URL(request.url).pathname];
+                    return body ? new Response('<!doctype html>' + body, { headers: { 'Content-Type': 'text/html' } }) : new Response('not found', { status: 404 });
                   },
                 },
               },

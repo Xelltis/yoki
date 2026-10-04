@@ -1,5 +1,6 @@
 // Discord でログイン・ログアウト
 import { Hono } from 'hono';
+import { isReturnPath } from '../../shared/routes';
 import { deleteCookie, getCookie, setCookie } from 'hono/cookie';
 import type { AppEnv } from '../app';
 import { authorizeUrl, fetchDiscordProfile, saveProfile } from '../auth/oauth';
@@ -10,8 +11,6 @@ import { endSession, isBanned, isLocalHttp, startSession } from '../auth/session
 import { randomToken, safeEqual } from '../lib/ids';
 import { noticePage } from './html';
 
-/** ログインのあとに戻ってよい場所（入口・グループのページ・グループの管理画面・運営者の管理画面） */
-export const RETURN_TO = /^\/(g\/[a-z0-9-]{1,40}\/(admin\/)?|admin\/)?$/;
 const STATE_COOKIE = 'yoki_oauth';
 
 export const authRoutes = new Hono<AppEnv>();
@@ -25,7 +24,8 @@ authRoutes.get('/auth/login', (c) => {
   }
   const url = new URL(c.req.url);
   const want = c.req.query('return_to') ?? '/';
-  const returnTo = RETURN_TO.test(want) ? want : '/';
+  // 戻ってよいのは、画面の道の一覧（src/shared/routes.ts）にある道だけ
+  const returnTo = isReturnPath(want) ? want : '/';
   // 初めは prompt=none（許可済みなら画面を出さずに戻る）。Discord が断ったら一度だけ consent でやり直す
   const consent = c.req.query('consent') === '1';
   const state = randomToken();
@@ -62,7 +62,7 @@ authRoutes.get('/auth/callback', async (c) => {
   if (!(await mayLogIn(c.env.DB, user.id, isOperator(c.env, user.id, url)))) return c.redirect('/?login=closed');
   await saveProfile(c.env.DB, user, guilds);
   await startSession(c, user.id);
-  return c.redirect(RETURN_TO.test(returnTo) ? returnTo : '/');
+  return c.redirect(isReturnPath(returnTo) ? returnTo : '/');
 });
 
 authRoutes.post('/auth/logout', async (c) => {
