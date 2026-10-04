@@ -61,6 +61,7 @@ CLAUDE.md          Claude Code で作業するときの決まり（コミット�
 
 ```
 npm test             サーバーと画面のテスト
+npm run test:coverage  テストのカバレッジ（サーバーと共有の型。表に出し、coverage/index.html にも書く）
 npm run typecheck    型の確認
 npm run e2e          ブラウザで通しで確かめる（開発サーバーをその場で立てる。初回は npx playwright install chromium）
 ```
