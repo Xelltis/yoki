@@ -8,6 +8,7 @@ import type { Viewer } from '../auth/session';
 import { changeGuild, groupDetail, listGroups, listUsers, logoutUser, overview, setBan, setGroupAdmin } from '../domain/admin';
 import { readForm, str } from '../domain/form';
 import { deleteGroupById } from '../domain/groups';
+import { readLegal, saveLegal } from '../domain/legal';
 import { setRegistrationOpen } from '../domain/registration';
 
 export const adminRoutes = new Hono<AppEnv>();
@@ -34,6 +35,19 @@ adminRoutes.post('/api/admin/registration', async (c) => {
   await setRegistrationOpen(c.env.DB, open);
   audit(op, 'setRegistration', open ? 'open' : 'closed');
   return c.json(done(open ? '新規登録を受け付けます。' : '新規登録の受付を止めました。もう使っている人と運営者は、そのまま使えます。'));
+});
+
+adminRoutes.get('/api/admin/legal', async (c) => {
+  await requireOperator(c);
+  return c.json(await readLegal(c.env.DB));
+});
+
+adminRoutes.post('/api/admin/legal', async (c) => {
+  const op = await requireOperator(c);
+  const form = await readForm(c.req);
+  const { changed } = await saveLegal(c.env.DB, form, new Date());
+  audit(op, 'setLegal', 'legal', { operator: form.operator ?? null, contact: form.contact ?? null, changed });
+  return c.json(done('利用規約とプライバシーポリシーの設定を保存しました。'));
 });
 
 adminRoutes.get('/api/admin/groups', async (c) => {

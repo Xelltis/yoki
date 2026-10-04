@@ -30,6 +30,7 @@
     <h1>卓予定</h1>
     <p class="lead">TRPG の卓の予定を、Discord サーバーの仲間と管理します。卓の登録・メンバーの予定・募集・日程調整をこの画面で行い、知らせを Discord に送ります。</p>
     <a class="btn primary" id="loginBtn" href="/auth/login"><span class="ms" aria-hidden="true">login</span>Discord でログイン</a>
+    <p class="hint">ログインすると、<a href="/terms">利用規約</a>と<a href="/privacy">プライバシーポリシー</a>に同意したものとします。</p>
     <p class="hint" id="noDiscord" hidden>Discord ログインの設定がありません（DISCORD_CLIENT_ID）。</p>
     <p class="hint" id="closedGuest" hidden>今は新しい登録を受け付けていません。すでに使っている人は、そのままログインできます。</p>
     <form class="dev" id="devForm" method="post" action="/dev/login" hidden>
@@ -65,7 +66,7 @@
     </form>
   </section>
 
-  <p class="foot"><a href="https://xelltis.github.io/yoki/" target="_blank" rel="noopener"><span class="ms sm" aria-hidden="true">menu_book</span>使い方</a></p>
+  <p class="foot"><a href="https://xelltis.github.io/yoki/" target="_blank" rel="noopener"><span class="ms sm" aria-hidden="true">menu_book</span>使い方</a><a href="/terms">利用規約</a><a href="/privacy">プライバシーポリシー</a></p>
 </main>
 <script type="module" src="./home.ts"></script>
 </body>

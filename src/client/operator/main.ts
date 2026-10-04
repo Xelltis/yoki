@@ -1,10 +1,11 @@
-// 運営者の管理画面（/admin/ で開く。ファイルは src/client/operator/）。様子（数・見回り・送信の失敗）・グループ（管理者と Discord サーバーの付け替え・消す）・利用者（ログインを切る・締め出す）。
+// 運営者の管理画面（/admin/ で開く。ファイルは src/client/operator/）。様子（数・見回り・送信の失敗）・グループ（管理者と Discord サーバーの付け替え・消す）・利用者（ログインを切る・締め出す）・
+// 規約（利用規約とプライバシーポリシーの運営者の名前・問い合わせ先・本文）。
 // 読み書きは /api/admin/*（サーバーが運営者かを確かめる）。形は src/shared/admin.ts
-import type { AdminGroupDetail, AdminGroupRow, AdminOverview, AdminResult, AdminUserRow } from '../../shared/admin';
+import type { AdminGroupDetail, AdminGroupRow, AdminLegal, AdminOverview, AdminResult, AdminUserRow, LegalKind } from '../../shared/admin';
 import { $, esc, hit, load, store, toast } from '../console/dom';
 import { askConfirm, init as initModal } from '../console/modal';
 
-const PANES = ['overview', 'groups', 'users'];
+const PANES = ['overview', 'groups', 'users', 'legal'];
 /** Material Icons の 1 つ。飾りなので読み上げない */
 const mi = (name: string, cls = 'sm') => '<span class="material-icons ' + cls + '" aria-hidden="true">' + name + '</span>';
 
@@ -169,10 +170,30 @@ function openBan(id: string): void {
   $('banReason').focus();
 }
 
+/* ---- 規約 ---- */
+let legal: AdminLegal | null = null;
+/** 書きかけ（保存していない）なら、読み直しても入力を上書きしない */
+let legalDirty = false;
+const LEGAL_FIELDS: Record<LegalKind, { area: string; state: string }> = { terms: { area: 'lgTerms', state: 'lgTermsState' }, privacy: { area: 'lgPrivacy', state: 'lgPrivacyState' } };
+/** '2026-10-04' → '2026年10月4日' */
+const longDate = (ymd: string) => ymd.replace(/^(\d+)-0?(\d+)-0?(\d+)$/, '$1年$2月$3日');
+async function loadLegal(): Promise<void> {
+  legal = await call<AdminLegal>('/api/admin/legal');
+  (Object.keys(LEGAL_FIELDS) as LegalKind[]).forEach((k) => {
+    const d = legal![k];
+    $(LEGAL_FIELDS[k].state).textContent = (d.custom ? '直した文' : '既定の文') + '・更新日 ' + longDate(d.updatedAt);
+  });
+  if (legalDirty) return;
+  $('lgOperator').value = legal.operator;
+  $('lgContact').value = legal.contact;
+  $(LEGAL_FIELDS.terms.area).value = legal.terms.text;
+  $(LEGAL_FIELDS.privacy.area).value = legal.privacy.text;
+}
+
 /* ---- 読み込み ---- */
 async function loadAll(): Promise<void> {
   try {
-    await Promise.all([loadOverview(), loadGroups(), loadUsers()]);
+    await Promise.all([loadOverview(), loadGroups(), loadUsers(), loadLegal()]);
   } catch (e) {
     toast((e as Error).message);
   }
@@ -244,6 +265,19 @@ function init(): void {
     act('/api/admin/users/' + encodeURIComponent(banId) + '/ban', { banned: true, reason: $('banReason').value.trim() }, async () => { await Promise.all([loadUsers(), loadOverview()]); });
   });
   $('banCancel').onclick = () => { $('banModal').hidden = true; };
+  // 規約: 書いたら「書きかけ」にし、保存したら外す。「既定の文に戻す」は入力に既定の文を入れるだけ（保存で決まる）
+  $('opLegal').addEventListener('input', () => { legalDirty = true; });
+  $('opLegal').addEventListener('click', (ev) => {
+    const b = hit(ev, 'button[data-default]'); if (!b || !legal) return;
+    const k = b.dataset.default as LegalKind;
+    $(LEGAL_FIELDS[k].area).value = legal[k].defaultText;
+    legalDirty = true;
+  });
+  $('opLegal').addEventListener('submit', (ev) => {
+    ev.preventDefault();
+    const body = { operator: $('lgOperator').value, contact: $('lgContact').value, terms: $(LEGAL_FIELDS.terms.area).value, privacy: $(LEGAL_FIELDS.privacy.area).value };
+    act('/api/admin/legal', body, async () => { legalDirty = false; await loadLegal(); });
+  });
   showPane(location.hash.slice(1) || load('opPane') || 'overview');
   loadAll();
 }

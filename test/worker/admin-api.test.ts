@@ -26,8 +26,8 @@ const post = async (path: string, body: unknown, sid = op) => {
 const count = (sql: string, ...args: unknown[]) => env.DB.prepare(sql).bind(...args).first<number>('n');
 
 describe('入れる人', () => {
-  const reads = ['/api/admin/overview', '/api/admin/groups', '/api/admin/groups/grp', '/api/admin/users'];
-  const writes = ['/api/admin/groups/grp/admins', '/api/admin/groups/grp/guild', '/api/admin/groups/grp/delete', '/api/admin/users/x/logout', '/api/admin/users/x/ban', '/api/admin/registration'];
+  const reads = ['/api/admin/overview', '/api/admin/groups', '/api/admin/groups/grp', '/api/admin/users', '/api/admin/legal'];
+  const writes = ['/api/admin/groups/grp/admins', '/api/admin/groups/grp/guild', '/api/admin/groups/grp/delete', '/api/admin/users/x/logout', '/api/admin/users/x/ban', '/api/admin/registration', '/api/admin/legal'];
 
   test('ログインしていなければ AUTH:、運営者でなければ 403。グループの管理者でも入れない', async () => {
     const { admin } = await setupGroup();
@@ -231,6 +231,7 @@ describe('利用者', () => {
     expect((await post('/api/admin/users/' + OP.id + '/ban', { banned: true })).body.error).toMatch(/運営者/);
     expect(logs.filter((l) => l.includes('"audit":"operator"')).map((l) => JSON.parse(l).action)).toEqual(['ban', 'unban']);
   });
+
 });
 
 
