@@ -17,6 +17,7 @@ import { ConsoleSync, domBlocked } from '../api/sync';
 import { type ConsoleCtx, ConsoleContext, type ConsoleUi } from '../context';
 import { parseYmd } from '../model/dates';
 import { seriesNames } from '../model/model';
+import { FormModal } from '../form/FormModal';
 import { Header } from './Header';
 import { Loading } from './Loading';
 import { type MainTab, TAB_TO, tabOf } from './nav';
@@ -69,6 +70,7 @@ export function ConsoleLayout() {
           <datalist id="memberList">{d.members.map((m) => <option key={m.name} value={m.name} />)}</datalist>
           {/* oxlint-disable-next-line jsx-a11y/control-has-associated-label */}
           <datalist id="seriesList">{seriesNames(d).map((n) => <option key={n} value={n} />)}</datalist>
+          <FormModal />
         </>
       )}
       <ConfirmDialog />
