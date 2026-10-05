@@ -3,8 +3,14 @@ import { type AdminLegal, LEGAL_KINDS, LEGAL_TITLES, type LegalKind } from '../.
 import { fmtDateLong } from '../lib/jst';
 import { esc, inline, renderDoc } from '../lib/markup';
 
-/** どのページにも付ける頭のタグ（ファビコン・ホーム画面のアイコン・manifest。画面の index.html と同じ） */
-const HEAD_ICONS = '<link rel="icon" href="/favicon.ico" sizes="32x32"><link rel="icon" href="/icon-192.png" type="image/png" sizes="192x192"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><link rel="manifest" href="/manifest.webmanifest"><meta name="theme-color" content="#0b111b">';
+/** どのページにも付ける頭のタグ（ファビコン・ホーム画面のアイコン・manifest・文字。画面の index.html と同じ） */
+const HEAD_ICONS = '<link rel="icon" href="/favicon.ico" sizes="32x32"><link rel="icon" href="/icon-192.png" type="image/png" sizes="192x192"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><link rel="manifest" href="/manifest.webmanifest"><meta name="theme-color" content="#2d2afe">'
+  + '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400..700&display=swap">';
+/** 色（画面の src/client/styles/theme.css と同じ。明るい・端末のダーク） */
+const COLORS = ':root { color-scheme: light dark; --bg: #f3f4ff; --card: #fff; --text: #15163a; --muted: #5d608a; --line: #e1e3fa; --link: #2421d6; --bar: #2d2afe; }'
+  + ' @media (prefers-color-scheme: dark) { :root { --bg: #0c0d29; --card: #16173e; --text: #eceeff; --muted: #a2a5d4; --line: #2a2c66; --link: #a8c0ff; --bar: #2422c9; } }'
+  + ' body { margin: 0; font-family: "Noto Sans JP", system-ui, sans-serif; background: var(--bg); color: var(--text); -webkit-font-smoothing: antialiased; }'
+  + ' .card { border-radius: 16px; background: var(--card); border: 1px solid var(--line); box-shadow: 0 1px 2px rgba(21, 22, 58, .05), 0 6px 18px rgba(45, 42, 254, .06); }';
 
 /** お知らせのページ。どのページにも、次に行く先のリンクを 1 つ付ける */
 export function noticePage(title: string, message: string, link: { href: string; label: string }): string {
@@ -12,14 +18,14 @@ export function noticePage(title: string, message: string, link: { href: string;
 <html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${esc(title)} - 卓予定</title>${HEAD_ICONS}
 <style>
-  :root { color-scheme: light dark; }
-  body { margin: 0; min-height: 100vh; display: grid; place-items: center; font: 15px/1.7 system-ui, sans-serif; background: #f3f5f8; color: #1d2433; }
-  @media (prefers-color-scheme: dark) { body { background: #0b0f16; color: #e6ebf2; } .card { background: #151b26 !important; } }
-  .card { max-width: 440px; margin: 16px; padding: 28px 32px; border-radius: 16px; background: #fff; box-shadow: 0 8px 30px rgba(0, 0, 0, .08); }
-  h1 { font-size: 18px; margin: 0 0 8px; }
-  a { color: #0e7490; font-weight: 600; }
+  ${COLORS}
+  body { min-height: 100vh; display: grid; place-items: center; font-size: 15px; line-height: 1.7; }
+  .card { max-width: 440px; margin: 16px; padding: 28px 32px; border-top: 6px solid var(--bar); }
+  .logo { display: block; width: 40px; height: 40px; margin-bottom: 14px; border-radius: 11px; }
+  h1 { font-size: 19px; margin: 0 0 8px; }
+  a { color: var(--link); font-weight: 700; }
 </style></head>
-<body><div class="card"><h1>${esc(title)}</h1><p>${esc(message)}</p><p><a href="${esc(link.href)}">${esc(link.label)}</a></p></div></body></html>`;
+<body><div class="card"><img class="logo" src="/icon-192.png" alt=""><h1>${esc(title)}</h1><p>${esc(message)}</p><p><a href="${esc(link.href)}">${esc(link.label)}</a></p></div></body></html>`;
 }
 
 /** 利用規約・プライバシーポリシーのページ。上に運営者と問い合わせ先、下にもう一方への道を出す。JS は使わない */
@@ -31,12 +37,13 @@ export function legalPage(kind: LegalKind, legal: AdminLegal): string {
 <html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${title} - 卓予定</title>${HEAD_ICONS}
 <style>
-  :root { color-scheme: light dark; --bg: #f3f5f8; --card: #fff; --text: #1d2433; --muted: #5b6577; --line: #e2e6ed; --link: #0e7490; }
-  @media (prefers-color-scheme: dark) { :root { --bg: #0b0f16; --card: #151b26; --text: #e6ebf2; --muted: #9aa4b5; --line: #273041; --link: #22d3ee; } }
-  body { margin: 0; font: 15px/1.8 system-ui, sans-serif; background: var(--bg); color: var(--text); }
+  ${COLORS}
+  body { font-size: 15px; line-height: 1.8; }
+  header { background: var(--bar); }
+  .brand { display: inline-flex; align-items: center; gap: 10px; padding: 12px 20px; color: #fff; font-size: 17px; font-weight: 700; text-decoration: none; }
+  .brand img { width: 32px; height: 32px; border-radius: 9px; box-shadow: 0 0 0 2px rgba(255, 255, 255, .9); }
   main { max-width: 760px; margin: 0 auto; padding: 24px 16px 48px; }
-  .brand { display: inline-block; margin-bottom: 12px; color: var(--muted); font-weight: 700; text-decoration: none; }
-  .card { padding: 28px 32px; border-radius: 16px; background: var(--card); box-shadow: 0 8px 30px rgba(0, 0, 0, .08); overflow-wrap: anywhere; }
+  .card { padding: 28px 32px; overflow-wrap: anywhere; }
   h1 { font-size: 24px; margin: 0 0 12px; }
   h2 { font-size: 18px; margin: 32px 0 8px; padding-top: 16px; border-top: 1px solid var(--line); }
   h3 { font-size: 15px; margin: 20px 0 4px; }
@@ -51,8 +58,7 @@ export function legalPage(kind: LegalKind, legal: AdminLegal): string {
   nav span { color: var(--muted); }
   @media (max-width: 600px) { .card { padding: 20px 18px; } dl.who { grid-template-columns: 1fr; } dl.who dd { margin-bottom: 6px; } }
 </style></head>
-<body><main>
-<a class="brand" href="/">卓予定</a>
+<body><header><a class="brand" href="/"><img src="/icon-192.png" alt="">卓予定</a></header><main>
 <article class="card">
 <h1>${title}</h1>
 <dl class="who"><dt>運営者</dt><dd>${legal.operator ? esc(legal.operator) : unset}</dd><dt>問い合わせ先</dt><dd>${legal.contact ? inline(legal.contact) : unset}</dd><dt>更新日</dt><dd>${fmtDateLong(doc.updatedAt)}</dd></dl>
