@@ -61,6 +61,9 @@ await withDevServer(async (base) => {
       assert.equal(await page.isVisible('#meMenu'), false, '選んだらメニューは閉じる');
       await page.click('#meBtn');
       await page.click('#theme');
+      await page.click('#meBtn');
+      await page.keyboard.press('Escape');
+      assert.equal(await page.isVisible('#meMenu'), false, 'Esc でメニューが閉じる');
       await page.click('#helpBtn');
       assert.equal(await page.isVisible('#helpLink'), true, 'ヘルプのメニューに使い方がある');
       await page.click('#guideBtn');
@@ -259,10 +262,7 @@ await withDevServer(async (base) => {
       await page.click('#toMain');
       await page.waitForURL('**/g/sample/');
       await page.waitForFunction(() => window.yoki && window.yoki.D, null, { timeout: 30000 });
-      await page.click('#groupMenuBtn');
-      assert.equal(await page.isVisible('#adminLink'), true, '管理者には、グループのメニューに管理画面への入口が出る');
-      await page.keyboard.press('Escape');
-      assert.equal(await page.isVisible('#groupMenu'), false, 'Esc でメニューが閉じる');
+      assert.equal(await page.isVisible('#adminLink'), true, '管理者には、右上に管理画面への入口が出る');
     });
 
     await step('「あなた」はログインした人で、ほかの人には切り替えられない', async () => {
@@ -301,10 +301,7 @@ await withDevServer(async (base) => {
       const sora = await ctx.newPage();
       sora.on('pageerror', (e) => errors.push(e.message));
       await devLogin(sora, base, 'ソラ');
-      await sora.click('#groupMenuBtn');
-      assert.equal(await sora.isVisible('#toGroups'), true);
       assert.equal(await sora.isVisible('#adminLink'), false);
-      await sora.keyboard.press('Escape');
       assert.equal((await sora.goto(base + 'g/sample/admin/')).status(), 403);
       await sora.goto(base + 'g/sample/');
       await sora.waitForFunction(() => window.yoki && window.yoki.D, null, { timeout: 30000 });
