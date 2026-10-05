@@ -213,7 +213,10 @@ TypeScript と React 19 で書き、Vite が組み立てる。1 つの SPA で�
 - 長い名前や URL は、切れ目が無くても折り返す（`base.css` の `overflow-wrap`）。名前を入れる選ぶ欄には最大の幅を付け、表の名前の列は折り返す。ページが横にはみ出さないように
 - グループの画面が読めない・グループが消された・ログインし直せないときは、カードで知らせて次にすることのボタンを出す（`shell/Loading.tsx`）。消されたあとは、タブを隠す
 - 画面の状態（選んでいる日・開いている窓など）は、小さな入れ物（`store.ts`。`useSyncExternalStore`）に置く。書きかけの入力は、保存するまで読み直しで上書きしない
-- アイコンは `<Icon name>` で、名前は `icons.ts` の `ICON_NAMES` に置き、型で確かめる。Google Fonts から読む名前の一覧は、Vite のプラグイン（`vite.config.ts` の `iconNames`）が `index.html` の `%ICON_NAMES%` に入れる
+- アイコンは `<Icon name>` で、SVG として JS に入っている（画像やフォントは読まない）。`icons.ts` が `~icons/material-symbols/<名前>-outline-rounded` を import し、[unplugin-icons](https://github.com/unplugin/unplugin-icons) が組み立てのときに SVG の React の部品にする。名前は `ICONS` の鍵で、型で確かめる。大きさは文字の大きさ（1em）、色は文字の色。いま開いているタブなど押してあることを示すときは、塗りの形（`filled`。`FILLED`）
+  - React 向けの変換は、unplugin-icons の既定（`@svgr` と Babel が要る）を使わず、`tools/icons.ts` の `reactIconCompiler` で、外側の `<svg>` の属性と中身をそのまま入れる。中身はアイコンの集まりの SVG で、利用者の入力は入らない
+  - 使ってよい集まりは、ライセンスを確かめたものだけ（`tools/icons.ts` の `ALLOWED_ICON_SETS`。今は Material Symbols の Apache License 2.0）。`test/client/contract.test.js` が、使っている集まりと、その `info.json` のライセンスを突き合わせる
+  - サイトも同じ集まりを unplugin-icons で使う（Vue の部品。`website/.vitepress/theme/icons.ts` と `<Ms name>`）。トップのページの特長は、VitePress が HTML の文字で受け取るので、`~icons/…?raw` の SVG の文字を渡す（`HomeFeatures.vue`）。SNS 用の画像を書き出す道具（`website/tools/og-image.js`）も、同じ集まりの SVG をページに入れる
 - 開発用ログインの部品は `import.meta.env.DEV` のときだけ描くので、本番の組み立てでは消える（`noDevLogin` が JS を見て確かめる）。ログアウトと開発用ログインは、素のフォームの POST（サーバーが cookie を付けて移す）
 - 確かめの道具（e2e・スクリーンショット）は、要素の ID・`data-*`・`body[data-area|data-tab]`・`window.yoki`（`D`・`selectDay`・`showTab`）を使う。変えるときは道具も直す
 

@@ -54,7 +54,7 @@ README の「書くときの決まり」に加えて、次を守る。
 - Google カレンダーと連携した人の refresh token だけは持つ（本人がいないときにも卓を書き直し、予定を読むため）。`GOOGLE_TOKEN_KEY` で暗号にして `google_links` に置き、画面・ログ・運営者の API には出さない。連携を外すときと利用者を消すときは、書き込んだ予定を消して Google の許可を取り消してから消す（`forgetGoogle`）。Google から受け取る欄は、要るものだけにする（予定の名前や中身は受け取らない）
 - 購読 URL（`/cal/<token>.ics`）は、知っていればだれでも読める。token は推測できない長さのランダムにし、作り直しと止めるができるようにする
 - 公開する Cloudflare ごとの値（D1 の ID・アプリのアドレス・Discord アプリの値と Bot のトークン・運営者の ID・Google の値・API トークン）は、リポジトリに書かない。GitHub の environment「production」に置き、`wrangler.jsonc` には仮の値だけを置く（README の「公開」）
-- アイコンを足したら、読み込む一覧にも足す（画面は `src/client/ui/icons.ts` の `ICON_NAMES`、サイトは `website/.vitepress/config.ts` の `ICONS`。型の確認とテストが確かめる）
+- アイコンは unplugin-icons で SVG にして入れ、画像やフォント（Google Fonts の Material Symbols）では読まない。集まりは、ライセンスを確かめたもの（`tools/icons.ts` の `ALLOWED_ICON_SETS`。今は Material Symbols の Apache-2.0）だけを使う。足したら一覧にも足す（画面は `src/client/ui/icons.ts` の `ICONS`、サイトは `website/.vitepress/theme/icons.ts` の `ICONS`。型の確認とテストが確かめる）
 
 ## コミット
 
