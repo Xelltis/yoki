@@ -8,7 +8,7 @@
 
 Worker 1 つで、次の 3 つを受け持つ。
 
-- **画面**: `src/client` を Vite で組み立てた静的ファイル（Workers Static Assets）。`wrangler.jsonc` の `run_worker_first` にある道（`/api/*`・`/auth/*`・`/g/*`・`/dev/*`・`/admin`・`/admin/*`）だけ Worker が先に受ける。ここに無い道は、確かめずに静的ファイルとして配られる
+- **画面**: `src/client` を Vite で組み立てた静的ファイル（Workers Static Assets）。`wrangler.jsonc` の `run_worker_first` にある道（`/api/*`・`/auth/*`・`/g/*`・`/dev/*`・`/admin`・`/admin/*`・`/terms`・`/privacy`・`/cal/*`）だけ Worker が先に受ける。ここに無い道は、確かめずに静的ファイルとして配られる
 - **API**: Hono（`src/worker/app.ts`）
 - **知らせの見回り**: 5 分おきの cron（`scheduled`）
 
@@ -23,7 +23,10 @@ Worker 1 つで、次の 3 つを受け持つ。
 | `GET /api/me` `POST /api/groups` | 入口の画面が使う |
 | `POST /api/g/:id/:fn` | 画面からの呼び出し |
 | `GET` / `POST /api/admin/*` | 運営の管理画面が使う（下の「運営の管理画面」） |
-| `POST /dev/login` `POST /dev/reset` | 開発用ログイン（開発サーバーだけ） |
+| `GET /cal/<token>.ics` | 購読 URL（iCalendar）。ログインせずに読む（下の「カレンダーとの連携」） |
+| `/auth/google/start` `/auth/google/callback` | Google カレンダーとの連携（OAuth） |
+| `POST /dev/login` `POST /dev/reset` | 開発用ログイン（開発サーバーだけ）。`/dev/reset` は、開発用の人の Google 連携と偽の Google の中身も消す |
+| `/dev/google/authorize` `/dev/google/state` `POST /dev/google/busy` | 開発用の偽の Google（開発サーバーで Google の値が空のときだけ） |
 
 ## ログインとメンバーの確認
 
@@ -55,14 +58,18 @@ Worker 1 つで、次の 3 つを受け持つ。
 
 ## データベース（D1）
 
-表の定義は `migrations/`（`0001_init.sql` が最初の形、`0002_admin.sql` が締め出し・最後に使われた日と索引）。日付（開催日・予定・メモ）は日本時間の `YYYY-MM-DD`、日時（〜した時刻）は UTC の ISO 文字列。
+表の定義は `migrations/`（`0001_init.sql` が最初の形、`0002_admin.sql` が締め出し・最後に使われた日と索引、`0003_bot.sql` が知らせの Bot、`0004_calendar.sql` がカレンダーとの連携）。日付（開催日・予定・メモ）は日本時間の `YYYY-MM-DD`、日時（〜した時刻）は UTC の ISO 文字列。
 
 - `users`・`user_guilds`・`auth_sessions`: ログイン。`users.banned_at`・`banned_reason` は締め出し
 - `groups`: グループと設定（知らせのチャンネル・知らせの日時・各種の ON/OFF・卓の番号の続き）。`last_used_at` は最後に使われた日時（画面から呼ばれるたびに、10 分に 1 回まで書き換える）
 - `members`: メンバー。名前はグループの中で一意
 - `sessions`・`session_people`: 卓と、関わる人（GM・参加者・参加希望・興味あり）
 - `availability`・`avail_notes`・`day_notes`・`poll_votes`・`series_notify`・`notify_log`
-- `meta`: cron の「この時刻はもう回した」印、最後の見回りの記録、新規登録の受付（`registration`）、利用規約とプライバシーポリシー（`legal_operator`・`legal_contact`・直した本文の `legal_terms`・`legal_privacy`）
+- `meta`: cron の「この時刻はもう回した」印、最後の見回りの記録、新規登録の受付（`registration`）、利用規約とプライバシーポリシー（`legal_operator`・`legal_contact`・直した本文の `legal_terms`・`legal_privacy`）。開発サーバーでは偽の Google の中身（`dev_google`）も
+- `calendar_feeds`: 購読 URL（人とグループの組で 1 つ。token・載せる卓・最後に読まれた日時）
+- `google_links`: Google カレンダーとの連携（人ごと。メール・暗号にした refresh token・書き込み／読み込みの ON と OFF・印を決める時間帯・最後に回った日時と失敗）
+- `google_events`: Google に書き込んだ予定（人と卓ごとの予定の ID と中身の要約）。卓や連携が消えても Google の予定を消すまで覚えておくので、外部キーにしない
+- `google_dismissed`: Google の予定から入った印を、本人が消した日（その日には、もう入れない）。`availability.source` は、本人が入れた印なら空、Google の予定から入れた印なら `google`
 
 **メンバーは中では ID で持つ**。画面とのやり取りは GAS 版と同じく名前で行い、`domain/people.ts` で変換する。名前を変えても 1 か所を直すだけで済む（GAS 版では、名前の変更が一部の表に伝わらなかった）。メンバーに無い人（ゲスト）は、`guest_name` に名前だけで持つ。メンバーを消すと、その人が入っていた卓と回答はゲストの名前に置き換わり、予定とメモは消える。
 
@@ -114,7 +121,31 @@ Worker 1 つで、次の 3 つを受け持つ。
 - 開催前の知らせは、送り先と「あと何日」ごとに 1 通にまとめ、10 卓ごとに分ける（Discord の embed は 1 通に 10 個まで）
 - 問い合わせは、送る卓のあるグループだけを読む
 - 毎日 1 回（日本時間の 4 時以降）、期限切れのログイン、古い送信記録（グループごとに 500 件まで）、90 日より前の予定とメモ、1 年より前の日付メモを片付ける
+- Google カレンダーと連携している人を、長く回っていない人から 5 人ずつ同期する（卓の書き込みと、1 時間おきの予定の読み込み。下の「カレンダーとの連携」）。毎日の片付けでは、90 日より前の「消した日」の記録と、連携が無くなった人・過ぎた卓の、書いた予定の控えも消す
 - 回ごとに、`runPatrol` が `meta` の `patrol`（時刻・かかった時間・成否・エラー）と、うまくいったら `patrol_ok_at` を書く。失敗は投げ直す（Cloudflare の cron の失敗としても残る）。記録が書けなくても、見回りの結果は変えない
+
+## カレンダーとの連携
+
+卓を、ふだん使っているカレンダーに出す。どれも、設定の画面の「カレンダー連携」（`settings/CalendarCard.tsx`）から、本人だけが使う。
+
+**購読 URL**（`domain/calendar.ts`・`routes/calendar.ts`・`lib/ics.ts`）。`/cal/<token>.ics` の iCalendar を、カレンダーのアプリ（Google カレンダーの「URL で追加」など）がログインせずに読む。
+
+- token は 32 バイトのランダム（43 文字）で、人とグループの組ごとに 1 つ。作り直すと token が変わり、前の URL は 404 になる。止めると消える
+- 読めるのは、作った人がまだそのグループのメンバーで、締め出されておらず、グループの Discord サーバーの控えがある間だけ。ほかは 404（あるかどうかも教えない）
+- 載せる卓は開催と終了（中止・募集・調整中は載せない）で、過ぎた卓は 180 日前まで。「自分が入る卓だけ（GM か参加者）」か「グループの卓すべて」を、人ごとに選ぶ。説明には GM・参加者・メモ・グループの画面の URL を入れる。URL を知っている人はメモまで読めるので、画面に「人に渡さない」と書いてある
+- 時刻は日本時間（`TZID:Asia/Tokyo` の VTIMEZONE）。終わりの時刻が無ければ 3 時間、終わりが開始より前なら次の日まで。時刻が無ければ終日。行は 75 オクテットで折り返す
+
+**卓ごとの「Google カレンダーに追加」**（`model/calendar.ts`）。日の内訳のボタンが、Google カレンダーの「予定を作成」の画面を、中身を入れた形で開く。連携していなくても使える。
+
+**Google との連携**（`google/`・`domain/google.ts`・`routes/google.ts`）。
+
+- OAuth2 の認可コードの流れ。scope は `openid`・`email`・`https://www.googleapis.com/auth/calendar.events`。refresh token を受け取るため、`access_type=offline`・`prompt=consent` で同意の画面を出す。state は HttpOnly の cookie（`/auth/google` だけ、10 分）に、連携を始めた人の ID と戻り先と一緒に入れ、戻ってきた人が同じでなければ受け取らない
+- **refresh token は持つ**（Discord のトークンを持たないのとは違う）。本人が画面を開いていないときにも、卓を書き直し、予定を読むため。`GOOGLE_TOKEN_KEY`（Worker の secret）で AES-GCM の暗号にして `google_links` に置き、画面・ログ・運営者の API には出さない。本人が連携を外すときと、運営者が利用者を消すときは、書き込んだ予定・Google の予定から入れた印・連携の行を消し、Google の許可も取り消す（`forgetGoogle`）。別の Google アカウントで連携し直したら、前のアカウントに書いた予定を消す
+- 書き込み: 本人が GM か参加者として入っている、開催と終了の卓。あるべき予定と `google_events` を比べ、足りない・変わった・要らなくなったものだけ Google を呼ぶ。開催日から 7 日より前の卓は、もう触らない（書いた予定は Google に残る）。卓の中身が変わる呼び出しは、返事のあとで（`waitUntil`）そのグループで書き込んでいる人を書き直す
+- 読み込み: 本人のメインのカレンダーの予定から、決めた時間帯（既定は 19:00〜23:00。30 分刻みで、終わりは 24:00 まで）が全部埋まれば ×、一部なら △ を入れる。数えないのは、卓予定が書いた予定・「予定なし」・欠席した予定・取り消された予定。終日の予定は、日本時間の 0 時から次の日の 0 時まで埋まっているとみる。本人が入れた印・本人が消した日・卓に入っている日には入れない。受け取るのは時間を決める欄だけで、予定の名前・場所・説明は受け取らない（`fields`）
+- Google を呼ぶのは 1 回の要求で 40 回まで。残りは次の回（見回り）に回す。どちらも、あるべき形に合わせ直す作りなので、途中でやめてよい
+- 本番は `GOOGLE_CLIENT_ID`（vars）・`GOOGLE_CLIENT_SECRET`・`GOOGLE_TOKEN_KEY`（secret）の 3 つがそろったときだけ使う。無ければ画面に「使えません」と出す（購読 URL と追加のボタンは使える）
+- 開発サーバーで `GOOGLE_CLIENT_ID` が空なら、開発用の偽の Google（`google/dev.ts`）を使う。同意の画面を出さずに許可したことにし、書き込んだ予定と「予定あり」の時間は `meta` の `dev_google` に置く。`app.ts` と `google/config.ts` が `import.meta.env.DEV` のときだけ使うので、本番の組み立てには入らない（`vite.config.ts` の `noDevLogin` が `/dev/google` も確かめる）
 
 ## 運営の管理画面
 
@@ -128,7 +159,7 @@ Worker 1 つで、次の 3 つを受け持つ。
 | `POST /api/admin/groups/:id/guild` | Discord サーバーを付け替える。メンバーの行・管理者の印は残す。知らせのチャンネルは古いサーバーのものなので、いつも外す |
 | `POST /api/admin/groups/:id/delete` | グループを消す。名前を打ち込んで、一致したときだけ |
 | `GET /api/admin/users` `POST /api/admin/users/:id/logout` `POST /api/admin/users/:id/ban` | 利用者の一覧、ログインを切る、締め出す・戻す |
-| `POST /api/admin/users/:id/delete` | 利用者を消す（本人から頼まれたとき）。users の行（ログインとサーバーの控えは表の決まりで一緒に消える）と、どのグループでもその人のメンバーの行（`user_id` か `discord_id` が同じもの）を消し、グループの `created_by` を空にする。メンバーの行の消し方はグループの管理者がメンバーを消すときと同じ（予定とメモは消え、卓と回答はゲストの名前になる）。運営者と、締め出している人（消すと印も消える）は断る |
+| `POST /api/admin/users/:id/delete` | 利用者を消す（本人から頼まれたとき）。users の行（ログインとサーバーの控えは表の決まりで一緒に消える）と、どのグループでもその人のメンバーの行（`user_id` か `discord_id` が同じもの）を消し、グループの `created_by` を空にする。メンバーの行の消し方はグループの管理者がメンバーを消すときと同じ（予定とメモは消え、卓と回答はゲストの名前になる）。運営者と、締め出している人（消すと印も消える）は断る。Google カレンダーと連携していれば、書き込んだ予定を消し、Google の許可を取り消してから消す |
 | `POST /api/admin/registration` | 新規登録を受け付ける・止める（`{open}`） |
 | `GET /api/admin/legal` `POST /api/admin/legal` | 利用規約とプライバシーポリシーの、運営者の名前・問い合わせ先・本文を読む・保存する（`{operator?, contact?, terms?, privacy?}`。省いたものは変えない） |
 

@@ -1,6 +1,6 @@
 # Yoki（卓予定）
 
-TRPG の卓の予定を、Discord サーバーの仲間と管理する Web アプリ。卓の登録、メンバーの予定（△×）、募集、日程調整を画面で行い、知らせは卓予定の Bot が Discord のチャンネルに送る。
+TRPG の卓の予定を、Discord サーバーの仲間と管理する Web アプリ。卓の登録、メンバーの予定（△×）、募集、日程調整を画面で行い、知らせは卓予定の Bot が Discord のチャンネルに送る。卓はカレンダーのアプリにも出せる（購読 URL・Google カレンダーとの連携）。
 
 - サーバーは Cloudflare Workers、データは D1（SQLite）、ログインは Discord
 - 1 つの Cloudflare に、Discord サーバーごとのグループを何個でも作れる。グループに入れるのは、そのサーバーにいる人だけ
@@ -21,16 +21,18 @@ npm run dev
 - ひよりは、手元（localhost）から開いたときだけ運営者にもなる。入口の「運営の管理画面」から `/admin/` を開ける
 - サンプルのグループは、初めて入ったときに作られる。作り直すときは `curl -X POST http://localhost:5173/dev/reset -H 'Origin: http://localhost:5173'`
 - 本物の Discord でログインを試すときは、`.dev.vars.example` を `.dev.vars` に写して、Discord アプリの値を入れる（Discord アプリの作り方は、下の「公開」の 2）
+- Google カレンダーとの連携は、Google の値（`GOOGLE_CLIENT_ID` など）が空なら、開発用の偽の Google で試せる。同意の画面は出さずに連携したことにし、書き込んだ予定は `http://localhost:5173/dev/google/state` で見られる。予定ありの時間は `POST /dev/google/busy`（`{ "busy": [{ "start": "…", "end": "…" }] }`）で入れる。`/dev/reset` で、開発用の人の連携と偽の Google の中身も消える
 - サーバー側（`src/worker`）と画面（`src/client`）のどちらを直しても、開いている画面に反映される
 
 ## フォルダ構成
 
 ```
 src/worker/        サーバー（TypeScript、Hono）
-  routes/          道。auth（ログイン）・me（入口の API）・pages（グループと管理画面のページ、利用規約とプライバシーポリシー）・rpc（画面からの呼び出し）・admin（運営者の API）
+  routes/          道。auth（ログイン）・me（入口の API）・pages（グループと管理画面のページ、利用規約とプライバシーポリシー）・rpc（画面からの呼び出し）・admin（運営者の API）・calendar（購読 URL）・google（Google との連携の OAuth）
   auth/            Discord の OAuth・ログインの続き・グループに入れるかの確認・運営者の確認・CSRF・開発用ログイン
   domain/          卓・メンバー・予定・日程調整・設定・知らせの見回り・グループを消す・運営者の操作・利用規約とプライバシーポリシー（GAS 版の Sessions.js などを移したもの）
   discord/         Bot の API（チャンネル）・送り先の選び方・文面・送信と送り直し
+  google/          Google カレンダーの API・開発用の偽の Google・同期（卓を書き込む・予定から印を入れる）
   lib/             日本時間の日付・文字・エラー・ID・規約の本文の書き方
   seed/            サンプルデータ
 src/client/        画面（TypeScript・React。Vite の root）。1 つの SPA で、どの道も index.html から開く
@@ -115,12 +117,29 @@ Workers のテスト用の道具（`@cloudflare/vitest-pool-workers`）は、古
    | 秘密 | `DISCORD_CLIENT_SECRET` | Discord アプリの Client Secret |
    | 秘密 | `DISCORD_BOT_TOKEN` | Discord アプリの Bot のトークン（知らせを送る） |
    | 秘密 | `OPERATOR_IDS` | 運営者（下の「管理画面」）の Discord ユーザー ID。何人いても、カンマか空白で区切って並べる |
+   | 変数（任意） | `YOKI_GOOGLE_CLIENT_ID` | Google カレンダーとの連携を使うときだけ。下の「Google カレンダーと連携する」 |
+   | 秘密（任意） | `GOOGLE_CLIENT_SECRET` | 同じく。Google の OAuth クライアントのシークレット |
+   | 秘密（任意） | `GOOGLE_TOKEN_KEY` | 同じく。Google の refresh token を暗号にする鍵 |
 
    - Discord のユーザー ID は、Discord の設定の「詳細設定」で開発者モードを ON にし、自分のアイコンを右クリックして「ユーザー ID をコピー」で取れる
    - 運営者の ID は、公開のログに出さないように秘密に置く（公開のリポジトリでは、Actions のログはだれでも読める）
    - 公開のたびに確かめたいなら、environment の「Required reviewers」に自分を入れる。承認するまで公開が止まる
 5. **公開する**。main にアプリの変更（`src/`・`migrations/`・設定）を push すると動く。Actions の画面の「アプリを公開する」から、手で動かすこともできる。型の確認 → テスト（カバレッジ 100%）→ 組み立て（値が欠けていたら止まる。開発用ログインが残っていても止まる）→ 本番の D1 にマイグレーション → 公開、の順に進む。秘密の値は、公開する版と一緒に送る
 6. **利用規約とプライバシーポリシーを整える**。公開したアドレスの `/terms` と `/privacy` に出る。運営の管理画面（`/admin/`）の「規約」で、運営者の名前と問い合わせ先を入れ、本文を確かめる。既定の文は、このリポジトリのままの卓予定に合わせてある。前に CDN を置くなど、公開のしかたが違えば直す。Discord の開発者ポータルの「General Information」の Terms of Service URL と Privacy Policy URL にも、この 2 つのアドレスを入れる
+
+### Google カレンダーと連携する（任意）
+
+設定の画面の「カレンダー連携」には、購読 URL と、Google カレンダーとの連携がある。購読 URL と、卓ごとの「Google カレンダーに追加」は、何も設定しなくても使える。Google との連携（参加する卓を本人の Google カレンダーに書き込み、本人の予定から予定表に × と △ を入れる）は、次の 3 つの値をそろえたときだけ使える。そろっていなければ、画面に「使えません」と出る。
+
+1. **Google Cloud でプロジェクトを作る**。「API とサービス」で Google Calendar API を有効にする
+2. **OAuth 同意画面を作る**。アプリ名・サポートのメール・アプリのホームページ（公開するアドレス）・プライバシーポリシー（`<公開するアドレス>/privacy`）・利用規約（`/terms`）を入れる。スコープは `openid`・`email`・`https://www.googleapis.com/auth/calendar.events`
+3. **OAuth クライアント ID を作る**。種類は「ウェブ アプリケーション」。承認済みのリダイレクト URI に `<公開するアドレス>/auth/google/callback` を入れる（手元で本物を試すなら `http://localhost:5173/auth/google/callback` も）
+4. **鍵を作る**。`openssl rand -base64 32` の出力を `GOOGLE_TOKEN_KEY` にする。refresh token はこの鍵で暗号にして D1 に置くので、鍵を替えると、連携していた人は連携し直しになる
+5. **GitHub に値を入れる**。変数 `YOKI_GOOGLE_CLIENT_ID` にクライアント ID、秘密 `GOOGLE_CLIENT_SECRET` にクライアント シークレット、秘密 `GOOGLE_TOKEN_KEY` に 4 の鍵を入れて、公開し直す
+
+- `calendar.events` は Google の「機密性の高いスコープ」なので、だれでも連携できるようにするには、Google の審査（OAuth アプリの確認）を受ける。審査の前は、同意画面の「テストユーザー」に足した人だけが連携できる（100 人まで）。テストのあいだは、refresh token が 7 日で切れるので、連携し直しになる
+- 審査では、プライバシーポリシーに Google のデータの扱い（受け取るもの・使い道・Limited Use に従うこと）が書いてあるかを見られる。既定の文には書いてある。直したときは、消さないように気を付ける
+- 連携した人の refresh token は、画面・ログ・運営の管理画面には出さない。本人が連携を外すと、運営者が利用者を消すと、書き込んだ予定を消し、Google の許可を取り消してから消す
 
 ### 独自のドメインで公開する（Route 53 と CloudFront）
 
@@ -137,7 +156,7 @@ Workers に独自のドメインを直接付けるには、そのドメインの
    - （速くしたいとき）`/assets/*` のビヘイビアを足し、キャッシュポリシーを「CachingOptimized」にする。組み立てた JS と CSS は、名前に中身の印が付くので長く控えてよい
    - 代替ドメイン名に `yoki.example.com`、証明書に 2 を選ぶ
 4. **Route 53**: `yoki.example.com` の A と AAAA のレコードを、エイリアスで CloudFront のディストリビューションに向ける。ほかのレコードはそのまま
-5. **値を直す**: `YOKI_APP_URL` を `https://yoki.example.com` にし、Discord アプリの Redirects に `https://yoki.example.com/auth/callback` を足して、公開し直す
+5. **値を直す**: `YOKI_APP_URL` を `https://yoki.example.com` にし、Discord アプリの Redirects に `https://yoki.example.com/auth/callback` を足して、公開し直す。Google カレンダーと連携しているなら、Google の承認済みのリダイレクト URI にも `https://yoki.example.com/auth/google/callback` を足す
 6. **確かめる**: `https://yoki.example.com/` でログインでき、グループを開けること
 
 DNS を Cloudflare に移せるドメインなら、CloudFront を置かずに、Cloudflare の画面で Worker に独自のドメイン（Custom Domain）を足せる。そのときも `YOKI_APP_URL` と Discord の Redirects を直す。
@@ -148,14 +167,14 @@ Cloudflare は無料のプランで動く。グループが増えて、知らせ
 
 管理画面は 2 つある。
 
-- **グループの管理画面**（`/g/:id/admin/`）: そのグループの管理者が使う。メンバーの登録・卓をまとめて変える・Discord の知らせ・管理者・送信の記録・グループを消す、をまとめてある。ふだんの画面のタブの並びの「管理」（PC だけ）か、「設定」のタブから開く。管理者でなければ開けない。区分ごとに URL がある（`/g/:id/admin/notify/` など。`/g/:id/admin/` は前に開いていた区分へ移る）
+- **グループの管理画面**（`/g/:id/admin/`）: そのグループの管理者が使う。メンバーの登録・卓をまとめて変える・Discord の知らせ・管理者・送信の記録・グループを消す、をまとめてある。上の帯の右の「管理」のボタンか、あなたのメニューの「設定」から開く。管理者でなければ開けない。区分ごとに URL がある（`/g/:id/admin/notify/` など。`/g/:id/admin/` は前に開いていた区分へ移る）
 - **運営の管理画面**（`/admin/`）: 公開した人（運営者。秘密の `OPERATOR_IDS` に書いた人）が使う。入口の画面に「運営の管理画面」のリンクが出る。区分ごとに URL がある（`/admin/users/` など）
   - **様子**: グループ・利用者・有効なログイン・動いている卓の数、知らせの見回り（cron）が動いているか、Discord への送信の失敗
   - **新規登録の受付**（様子の中）: 止めると、新しいグループの作成と、初めての人のログインを断る。もう使っている人と今あるグループは、そのまま使える。運営者は、止めていてもログインでき、グループも作れる。初めは受け付けている
   - **グループ**: 一覧と中身（Discord サーバー・メンバー・卓の数・最後に使われた日）。管理者の付け替え、Discord サーバーの付け替え、グループを消す（名前を打ち込んで確かめる。中身も消え、戻せない）
   - **利用者**: ログインを切る、締め出す・戻す、消す。締め出した人は Discord でログインできなくなり、残っていたログインも効かなくなる。Discord のアカウントで止めるので、別のアカウントを作られると止められない。運営者は締め出せない
-    - 消すのは、本人から消してほしいと頼まれたとき（プライバシーポリシーの「消し方」）。その人の情報（ログイン・Discord の名前・入っているサーバーの控え）と、どのグループのメンバーの行も消える。予定とメモは消え、卓と回答には名前だけが残る。元に戻せない。Discord サーバーにいれば、次に開いたときにまた入れる。運営者と、締め出している人は消せない（締め出しの印も消えてしまうため）
-  - **規約**: 利用規約（`/terms`）とプライバシーポリシー（`/privacy`）の、運営者の名前・問い合わせ先・本文を直す。直していなければ既定の文が出る。本文を空にして保存すると、既定の文に戻る。2 つのページは、ログインしていない人も読める。入口の画面と、グループの画面の設定タブからリンクしている
+    - 消すのは、本人から消してほしいと頼まれたとき（プライバシーポリシーの「消し方」）。その人の情報（ログイン・Discord の名前・入っているサーバーの控え）と、どのグループのメンバーの行も消える。予定とメモは消え、卓と回答には名前だけが残る。元に戻せない。Discord サーバーにいれば、次に開いたときにまた入れる。運営者と、締め出している人は消せない（締め出しの印も消えてしまうため）。Google カレンダーと連携していれば、書き込んだ予定を消し、Google の許可を取り消してから消す
+  - **規約**: 利用規約（`/terms`）とプライバシーポリシー（`/privacy`）の、運営者の名前・問い合わせ先・本文を直す。直していなければ既定の文が出る。本文を空にして保存すると、既定の文に戻る。2 つのページは、ログインしていない人も読める。入口の画面と、グループの画面の設定からリンクしている
   - 運営者は、グループの中身（卓・予定）は見ない。運営者がした操作は、Cloudflare の Workers のログ（Observability）に 1 行ずつ残る（`"audit"` で探せる）
 
 ## サイト（GitHub Pages）
