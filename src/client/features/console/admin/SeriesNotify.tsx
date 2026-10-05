@@ -107,7 +107,8 @@ export function SeriesNotify() {
             {/* 基本と同じなら、日時の欄は出さない */}
             <div className="mt-8 flex flex-wrap items-center gap-6" id="snWhen" hidden={f.same}>開催日の <input type="text" className={'w-[3.6em] ' + numField + (bad.d ? ' border-err-text' : '')} id="snDays" inputMode="numeric" maxLength={2} aria-label="何日前（0〜30）" value={f.days} onChange={(ev) => edit({ days: ev.target.value })} /> 日前、<input type="text" className={'w-[3.6em] ' + numField + (bad.h ? ' border-err-text' : '')} id="snHour" inputMode="numeric" maxLength={2} aria-label="何時台（0〜23）" value={f.hour} onChange={(ev) => edit({ hour: ev.target.value })} /> 時台に送る</div>
             <div className="btns">
-              <button type="button" className="btn primary" id="snSave" disabled={saving} onClick={save}>保存</button>
+              {/* 変えるまでは押せない */}
+              <button type="button" className="btn primary" id="snSave" disabled={saving || !draft} onClick={save}>保存</button>
               <button type="button" className="btn" id="snTest" disabled={!(e && e.channelId) || testing} onClick={test}>接続テスト</button>
               <button type="button" className="btn danger" id="snRemove" disabled={!e || !!busy.snRemove} onClick={remove}>設定を消す</button>
               <span className={'hint' + (bad.msg ? ' text-err-text' : '')} id="snMsg">{msg.snMsg || ''}</span>
