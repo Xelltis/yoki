@@ -230,7 +230,8 @@ function BaseChannel() {
       <label className={fieldLabel} htmlFor="stChannel">チャンネル</label>
       <ChannelSelect className={field} id="stChannel" value={v} empty="（選んでいません）" onChange={setPick} />
       <div className="btns">
-        <button type="button" className="btn primary" id="stChannelSave" disabled={!canPick(ch) || !!busy.stChannelSave} onClick={saveIt}>保存</button>
+        {/* 選び直すまでは押せない */}
+        <button type="button" className="btn primary" id="stChannelSave" disabled={!canPick(ch) || !!busy.stChannelSave || v === cur} onClick={saveIt}>保存</button>
         <button type="button" className="btn" id="stTest" disabled={!d.channelSet || testing} onClick={() => test({ kind: 'test' }, 'Discord に届きました')}>接続テスト</button>
         <span className="hint" id="stChannelMsg">{msg.stChannelMsg || ''}</span>
       </div>
@@ -256,7 +257,7 @@ function KindChannel({ kind, label, note, first }: { kind: Kind; label: string; 
       <label className={fieldLabel} htmlFor={id}>{label + ' '}<small className={fieldNote}>{note}</small></label>
       <ChannelSelect className={field} id={id} value={v} empty="基本のチャンネルと同じ" onChange={setPick} />
       <div className="btns">
-        <button type="button" className="btn primary" id={id + 'Save'} disabled={!canPick(ch) || !!busy[id + 'Save']} onClick={saveIt}>保存</button>
+        <button type="button" className="btn primary" id={id + 'Save'} disabled={!canPick(ch) || !!busy[id + 'Save'] || v === cur} onClick={saveIt}>保存</button>
         <button type="button" className="btn" id={id + 'Test'} disabled={!kindSet(d, kind) || testing} onClick={() => test({ kind: 'test', channel: kind }, KW[kind].label + 'に届きました')}>接続テスト</button>
         <span className="hint" id={id + 'Msg'}>{msg[id + 'Msg'] || ''}</span>
       </div>
