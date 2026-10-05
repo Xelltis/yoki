@@ -16,3 +16,10 @@ export const label = 'm-0 grid flex-[1_1_220px] gap-6 text-13 font-bold';
 export const field = 'h-44 w-full rounded-md font-normal';
 /** 横に並べる行 */
 export const row = 'mt-12 mb-16 flex flex-wrap items-end gap-12';
+/** 青い枠の中のログインのボタン（白い地に青い字。押すと少し浮く）。ghost は枠線だけ（主役のボタンが別にあるとき） */
+export function heroBtn(ghost = false): string {
+  return 'relative inline-flex h-46 cursor-pointer items-center gap-8 rounded-full px-22 font-inherit text-15 font-bold no-underline transition-transform duration-(--dur-fast) hover:-translate-y-1 '
+    + (ghost ? 'border border-white/60 bg-transparent text-white' : 'border-0 bg-white text-brand shadow-[0_6px_18px_rgba(0,0,0,.18)]');
+}
+/** 青い枠の中の選ぶ欄（ボタンと同じ白い丸い形） */
+export const heroField = 'h-46 min-h-46 w-auto rounded-full border-0 bg-white pr-36 pl-18 font-inherit text-15 font-semibold text-brand';
