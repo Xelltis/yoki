@@ -22,8 +22,11 @@ export function hbtn(display = 'inline-flex', icon = false): string {
 export const hbtnIcon = 'align-[0]';
 /** ボタンの字（スマホでは隠して、アイコンだけにする） */
 export const btxt = 'max-sm:hidden!';
-/** 帯のメニューの一覧（Menu）。青い帯の上に、カードの色で出す。左右の寄せは Menu が足す */
-export const menuPanel = 'absolute top-[calc(100%+6px)] z-(--z-pop) flex min-w-220 animate-fade-in flex-col gap-2 rounded-md border border-line bg-card p-6 text-fg shadow-pop [&_:focus-visible]:outline-accent';
+/**
+ * 帯のメニューの一覧（Menu）。青い帯の上に、カードの色で出す。左右の寄せは Menu が足す。
+ * 中のフォーカスの枠は青（帯の黄色い枠は、白い地の上では見えにくいので、帯の決まりより強くする）
+ */
+export const menuPanel = 'absolute top-[calc(100%+6px)] z-(--z-pop) flex min-w-220 animate-fade-in flex-col gap-2 rounded-md border border-line bg-card p-6 text-fg shadow-pop [&_:focus-visible]:outline-accent!';
 /** メニューの項目 */
 export const menuItem = 'flex h-40 w-full cursor-pointer items-center gap-10 whitespace-nowrap rounded-sm border-0 bg-transparent px-10 text-left font-inherit text-14 font-semibold text-fg no-underline hover:bg-hover focus-visible:bg-hover';
 /** メニューの区切り線 */
