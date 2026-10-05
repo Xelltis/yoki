@@ -1,5 +1,6 @@
 <!-- 試せる例: 募集中の卓に「参加希望」か「興味あり」を付ける -->
 <script setup lang="ts">
+import Ms from './Ms.vue';
 import { computed, ref } from 'vue';
 
 const join = ref<'' | 'want' | 'interest'>('');
@@ -18,7 +19,7 @@ function set(v: '' | 'want' | 'interest') {
 
 <template>
   <figure class="stage vp-raw">
-    <p class="stage-cap try"><span class="ms" aria-hidden="true">touch_app</span>やってみる</p>
+    <p class="stage-cap try"><Ms name="touch_app" />やってみる</p>
     <div class="card-title">星降る港の依頼</div>
     <div class="card-when">10/3（金）〜10/17（金） に開催予定</div>
     <div class="people"><span class="gm">GM カレン</span><span>アリス</span><span>ボブ</span></div>

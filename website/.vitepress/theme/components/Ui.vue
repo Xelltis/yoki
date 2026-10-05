@@ -1,8 +1,11 @@
 <!-- アプリの画面にあるボタンやタブの名前。本文の中で「どれを押すか」を見た目で示す -->
 <script setup lang="ts">
-defineProps<{ icon?: string; primary?: boolean }>();
+import type { IconName } from '../icons';
+import Ms from './Ms.vue';
+
+defineProps<{ icon?: IconName; primary?: boolean }>();
 </script>
 
 <template>
-  <span class="ui" :class="{ primary }"><span v-if="icon" class="ms" aria-hidden="true">{{ icon }}</span><slot /></span>
+  <span class="ui" :class="{ primary }"><Ms v-if="icon" :name="icon" /><slot /></span>
 </template>

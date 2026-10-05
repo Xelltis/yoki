@@ -1,5 +1,6 @@
 <!-- 試せる例: メンバーの予定。「あなた」の行を押すと 空 → △ → × → 空。いちばん下に、全員が空いている日が出る -->
 <script setup lang="ts">
+import Ms from './Ms.vue';
 import { computed, reactive, useId } from 'vue';
 import { addDays, dowClass, md, mdw, useMonday, WD } from './demo';
 
@@ -31,7 +32,7 @@ const markClass = (m: Mark) => (m === '△' ? 'm-soft' : m === '×' ? 'm-ng' : '
 
 <template>
   <figure class="stage vp-raw">
-    <p class="stage-cap try"><span class="ms" aria-hidden="true">touch_app</span>やってみる</p>
+    <p class="stage-cap try"><Ms name="touch_app" />やってみる</p>
     <div class="board">
       <div class="board-head"><span><b>メンバーの予定</b>（例）</span><span class="mono">{{ md(days[0]) }}〜{{ md(days[6]) }}</span></div>
       <div class="board-scroll">

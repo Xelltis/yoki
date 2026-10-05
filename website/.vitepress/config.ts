@@ -1,19 +1,13 @@
 // 卓予定のサイト（GitHub Pages）。紹介と使い方を載せる
 //   npm run site         手元で開く（http://localhost:5174/yoki/）
 //   npm run site:build   組み立てる（website/.vitepress/dist/）
+import Icons from 'unplugin-icons/vite';
 import { defineConfig, postcssIsolateStyles } from 'vitepress';
 
 /** サイトを公開するアドレス（GitHub Pages）。base と、SNS に貼ったときの画像・URL に使う */
 const SITE_URL = 'https://xelltis.github.io/yoki/';
 /** アプリを公開したアドレス（例: https://yoki.example.workers.dev/）。書くと、上のナビに「アプリを開く」が出る */
 const APP_URL = '';
-
-/** 本文と部品で使う Material Symbols の名前（アルファベット順）。足したら、ここにも足す（テストが確かめる） */
-export const ICONS = [
-  'add', 'arrow_back', 'block', 'calendar_month', 'campaign', 'check', 'check_circle', 'date_range', 'edit_calendar', 'event',
-  'event_available', 'flag', 'group', 'help', 'how_to_vote', 'login', 'logout', 'notifications', 'play_circle', 'refresh',
-  'restart_alt', 'settings', 'shield', 'sticky_note_2', 'task_alt', 'touch_app', 'visibility',
-];
 
 const base = new URL(SITE_URL).pathname;
 
@@ -28,6 +22,8 @@ export default defineConfig({
     server: { port: 5174 },
     // vp-raw を付けた部品（試せる例など）には、本文の見た目（表の罫線など）を当てない
     css: { postcss: { plugins: [postcssIsolateStyles({ includeFiles: [/vp-doc\.css/] })] } },
+    // アイコン（~icons/<集まり>/<名前> を import すると、SVG の Vue の部品になる。使う名前は theme/icons.ts）。大きさは 1em
+    plugins: [Icons({ compiler: 'vue3', scale: 1 })],
   },
   sitemap: { hostname: SITE_URL },
   head: [
@@ -38,8 +34,7 @@ export default defineConfig({
     ['meta', { name: 'theme-color', content: '#2d2afe' }],
     ['link', { rel: 'preconnect', href: 'https://fonts.googleapis.com' }],
     ['link', { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' }],
-    ['link', { rel: 'stylesheet', href: 'https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..24,400,0..1,0&icon_names=' + ICONS.join(',') + '&display=block' }],
-    // 文字はアプリと同じ Noto Sans JP
+    // 文字はアプリと同じ Noto Sans JP（アイコンは SVG で JS に入っている。theme/icons.ts）
     ['link', { rel: 'stylesheet', href: 'https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400..700&display=swap' }],
     ['meta', { property: 'og:type', content: 'website' }],
     ['meta', { property: 'og:site_name', content: '卓予定' }],

@@ -4,7 +4,7 @@
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
-    "types": ["vitepress/client"],
+    "types": ["vitepress/client", "unplugin-icons/types/vue"],
     "strict": true,
     "noEmit": true,
     "skipLibCheck": true
