@@ -11,7 +11,7 @@ import { useStore } from '../../../ui/store';
 import type { SyncView } from '../api/sync';
 import { type Tab, useConsole, useMaybeData } from '../context';
 import { hhmm } from '../model/dates';
-import { isAdjusting, isRecruit } from '../model/model';
+import { isActive, isAdjusting, isRecruit } from '../model/model';
 import { guideShown, type MainTab, useGoTab } from './nav';
 
 const TABS: [MainTab, IconName, string][] = [
@@ -70,6 +70,8 @@ export function Header({ tab }: { tab: Tab }) {
   const logout = useLogout();
   const dark = currentTheme() === 'dark';
   const shown = d ? guideShown(d, guide) : false;
+  /** 3 つとも済んだら、上の帯の「はじめの 3 ステップ」はアイコンだけにする（目立たせる要がない） */
+  const allDone = !!d && d.members.length > 0 && d.sessions.some(isActive) && !!d.channelSet;
   const recruitCount = d ? d.sessions.filter((s) => isRecruit(s) || isAdjusting(s)).length : 0;
   /* 「はじめの 3 ステップ」ボタン。カレンダーで出ていれば閉じ、それ以外は出す（押すたびに切り替わる）。出したら、ページの頭まで戻す */
   const toggleGuide = () => {
@@ -133,7 +135,7 @@ export function Header({ tab }: { tab: Tab }) {
           </button>
         ))}
         <button type="button" id="guideBtn" className={tabHelp + 'relative flex-[0_0_auto] cursor-pointer bg-transparent font-inherit aria-expanded:border-chrome-active aria-expanded:bg-chrome-active aria-expanded:text-chrome-active-ink max-xl:px-11'} aria-label="はじめの 3 ステップ" {...guideProps}>
-          <Icon name="flag" className={shown ? 'text-chrome-active-ink ' + filled : 'text-chrome-accent'} /><span className="max-xl:hidden">はじめの 3 ステップ</span>
+          <Icon name="flag" className={shown ? 'text-chrome-active-ink ' + filled : 'text-chrome-accent'} /><span className={allDone ? 'hidden' : 'max-xl:hidden'}>はじめの 3 ステップ</span>
         </button>
         <Link id="adminLink" className={tabHelp} to="/g/$groupId/admin/" params={{ groupId }} hidden={!d || !d.isAdmin} title="グループの管理画面を開く（管理者だけ）">
           <Icon name="shield" className="text-chrome-accent" /><span>管理</span>
