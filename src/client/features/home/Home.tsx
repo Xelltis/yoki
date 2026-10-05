@@ -21,6 +21,8 @@ const NOTICE: Record<string, [string, 'info' | 'ok' | 'warn' | 'bad']> = {
   banned: ['このアカウントでは入れません（運営者が締め出しています）。', 'bad'],
   deleted: ['グループを消しました。', 'ok'],
   closed: ['今は新しい登録を受け付けていません。すでに使っている人は、そのままログインできます。', 'warn'],
+  'google-new': ['初めての Google アカウントです。続けて「Discord でログイン」を押してください。Discord のアカウントに結びつき、次からは Google でもログインできます。', 'info'],
+  'google-linked': ['Google でもログインできるようになりました。', 'ok'],
 };
 /** お知らせの色（地と字の組）とアイコン */
 const TONE: Record<'info' | 'ok' | 'warn' | 'bad', [string, IconName]> = {
@@ -100,7 +102,10 @@ function Who({ me }: { me: LoggedIn }) {
 /** ログインしていない: Discord でログイン（と、開発サーバーだけの開発用ログイン） */
 function Guest({ me, back }: { me: MeResponse; back: string | null }) {
   // ログインのあとに戻れる道（src/shared/routes.ts の一覧にある画面だけ）。入口（/）へは、付けなくても戻る
-  const login = back && back !== '/' && isReturnPath(back) ? '/auth/login?return_to=' + encodeURIComponent(back) : '/auth/login';
+  const ret = back && back !== '/' && isReturnPath(back) ? '?return_to=' + encodeURIComponent(back) : '';
+  const login = '/auth/login' + ret, googleLogin = '/auth/google/login' + ret;
+  /** 初めての Google アカウントで戻ってきて、Discord との結びつけを待っている */
+  const linking = new URLSearchParams(location.search).get('login') === 'google-new';
   return (
     <section id="guest">
       {/* 大きな青い枠。右上にアイコンを大きく薄く置く */}
@@ -116,9 +121,17 @@ function Guest({ me, back }: { me: MeResponse; back: string | null }) {
               Discord でログイン
             </a>
           )}
+          {/* Google はもう 1 つの入り口（初めてのときは、続けて Discord と結びつける）。初めての Google アカウントで戻ってきたときは、Discord だけを出す */}
+          {me.google && !linking && (
+            <a className={heroBtn(true)} id="googleLoginBtn" href={googleLogin}>
+              <Icon name="login" className="align-[0]" />
+              Google でログイン
+            </a>
+          )}
           {/* 本番の組み立てでは import.meta.env.DEV が偽になり、開発用ログインごと消える（vite.config.ts の noDevLogin が確かめる） */}
           {import.meta.env.DEV && me.dev && <DevLogin users={me.dev.users} ghost={me.discord} />}
         </div>
+        {me.google && !linking && <p className="relative mt-12 mb-0 text-13 text-white/80">Google でのログインは、初めてのときだけ Discord のアカウントと結びつけます（グループに入れるかは、Discord のサーバーで決まるため）。</p>}
         <p className="relative mt-14 mb-0 text-13 text-white/80">
           ログインすると、<a className="text-white underline underline-offset-2" href="/terms">利用規約</a>と<a className="text-white underline underline-offset-2" href="/privacy">プライバシーポリシー</a>に同意したものとします。
         </p>

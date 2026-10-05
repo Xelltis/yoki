@@ -86,6 +86,7 @@ export function consoleData(ctx: Ctx): ConsoleData {
       }),
     calendar: calendarView(ctx),
     availGoogle: ctx.availGoogle,
+    googleLogin: { ready: ctx.googleReady, email: ctx.googleLoginEmail },
   };
 }
 

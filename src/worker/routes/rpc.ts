@@ -20,7 +20,7 @@ import { getDiscordChannels, renameGroup, saveConsoleSettings, saveSeriesNotify 
 import type { Ctx } from '../domain/types';
 import { googleConfigured, googleDeps } from '../google/config';
 import { hasGoogleWriters, syncGroupWrites } from '../google/sync';
-import { saveGoogleSettings, syncGoogleNow, unlinkGoogle } from '../domain/google';
+import { saveGoogleSettings, syncGoogleNow, unlinkGoogle, unlinkGoogleLogin } from '../domain/google';
 import { deleteGroup } from '../domain/groups';
 import { AppError, adminError, authError, goneError, notFound } from '../lib/errors';
 import type { RpcName } from '../../shared/api';
@@ -64,6 +64,7 @@ export const RPC: Record<Exclude<RpcName, 'getConsoleData'>, Entry> = {
   saveGoogleSettings: { run: saveGoogleSettings, data: true, google: true },
   syncGoogleNow: { run: syncGoogleNow, data: true, google: true },
   unlinkGoogle: { run: unlinkGoogle, data: true, google: true },
+  unlinkGoogleLogin: { run: unlinkGoogleLogin, data: true },
   // 消したあとは画面のデータを読めないので data を付けない
   deleteGroup: { run: deleteGroup, admin: 'グループを消すこと' },
 };

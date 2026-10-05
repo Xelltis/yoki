@@ -73,6 +73,12 @@ export async function forgetGoogle(db: D1Database, deps: GoogleDeps, userId: str
   return removed;
 }
 
+/** Google でのログインを外す（Discord では今までどおりログインできる。カレンダーとの連携は別で、そのまま） */
+export async function unlinkGoogleLogin(ctx: Ctx) {
+  await ctx.db.prepare('DELETE FROM google_logins WHERE user_id = ?').bind(ctx.actor.userId).run();
+  return { ok: true, message: 'Google でのログインを外しました。Discord では、今までどおりログインできます。' };
+}
+
 /** 連携を外す（forgetGoogle） */
 export async function unlinkGoogle(ctx: Ctx, _form: Form, io: Io) {
   const deps = requireGoogle(ctx, io);

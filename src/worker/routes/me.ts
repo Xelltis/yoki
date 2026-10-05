@@ -10,13 +10,17 @@ import { DEV_USERS } from '../auth/dev-users';
 import { devAvailable, isOperator } from '../auth/operator';
 import { readForm, str } from '../domain/form';
 import { registrationOpen } from '../domain/registration';
+import { googleConfigured } from '../google/config';
 import type { CreateGroupResult, MeResponse } from '../../shared/api';
 
 export const meRoutes = new Hono<AppEnv>();
 
 meRoutes.get('/api/me', async (c) => {
   const url = new URL(c.req.url);
-  const base = { discord: !!c.env.DISCORD_CLIENT_ID, dev: devAvailable(url) ? { users: DEV_USERS.map((u) => u.name) } : null, registration: await registrationOpen(c.env.DB) };
+  const base = {
+    discord: !!c.env.DISCORD_CLIENT_ID, dev: devAvailable(url) ? { users: DEV_USERS.map((u) => u.name) } : null, registration: await registrationOpen(c.env.DB),
+    google: googleConfigured(c.env),
+  };
   const viewer = await currentViewer(c);
   if (!viewer) return c.json({ ...base, loggedIn: false } satisfies MeResponse);
   const db = c.env.DB;

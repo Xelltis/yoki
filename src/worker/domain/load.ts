@@ -60,6 +60,7 @@ export async function loadGroup(
     db.prepare('SELECT at, kind, target, result FROM notify_log WHERE group_id = ? ORDER BY id DESC LIMIT 10').bind(groupId),
     db.prepare('SELECT token, scope FROM calendar_feeds WHERE group_id = ? AND user_id = ?').bind(groupId, actor.userId),
     db.prepare('SELECT email, write_events, read_busy, busy_from, busy_to, synced_at, busy_at, error FROM google_links WHERE user_id = ?').bind(actor.userId),
+    db.prepare('SELECT email FROM google_logins WHERE user_id = ?').bind(actor.userId),
   ]);
   const rows = <T>(i: number) => res[i]!.results as T[];
   const group = rows<GroupRow>(1)[0];
@@ -155,6 +156,7 @@ export async function loadGroup(
     feed: rows<{ token: string; scope: FeedScope }>(11)[0] ?? null,
     google: rows<GoogleLinkRow>(12)[0] ?? null,
     googleReady,
+    googleLoginEmail: rows<{ email: string }>(13)[0]?.email ?? '',
     availGoogle,
   };
 }

@@ -13,9 +13,13 @@ import { toast } from '../../../ui/toast';
 import { useConsole, useData } from '../context';
 import { useLogout } from '../shell/Header';
 import { CalendarCard } from './CalendarCard';
+import { LoginCard } from './LoginCard';
 
 /** Google との連携から戻ってきたときの知らせ（?google=…） */
-const GOOGLE_RESULT: Record<string, string> = { linked: 'Google カレンダーと連携しました。', cancelled: 'Google カレンダーとの連携を取りやめました。' };
+const GOOGLE_RESULT: Record<string, string> = {
+  linked: 'Google カレンダーと連携しました。', cancelled: 'Google カレンダーとの連携を取りやめました。',
+  'login-linked': 'Google でもログインできるようになりました。', 'login-cancelled': 'Google でのログインの設定を取りやめました。',
+};
 
 export function SettingsTab() {
   const d = useData();
@@ -61,6 +65,7 @@ export function SettingsTab() {
         {/* 書き換えるまでは押せない */}
         <div className="btns"><button type="submit" className="btn primary" id="meSave" disabled={me.saving || !draft || (draft.name === (m ? m.name : d.me.name) && draft.note === (m ? m.note : ''))}>保存</button><span className="hint" id="meMsg">{me.msg}</span></div>
       </form>
+      <LoginCard />
       <CalendarCard />
       <div className="card">
         <h3><Icon name="devices" size="sm" />この端末</h3>

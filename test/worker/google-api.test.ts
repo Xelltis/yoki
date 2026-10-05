@@ -73,6 +73,28 @@ const idToken = (claims: Record<string, unknown>) =>
   'h.' + btoa(String.fromCharCode(...new TextEncoder().encode(JSON.stringify(claims)))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '') + '.s';
 const body = { summary: 'A', location: '', description: '', start: { date: '2026-10-10' }, end: { date: '2026-10-11' }, source: { title: '卓予定', url: 'u' }, extendedProperties: { private: { yoki: '1' as const, session: 'g-1' } } };
 
+describe('本物の Google でログイン', () => {
+  const g = realGoogle('cid', 'secret');
+  test('同意の画面は openid email だけを求め、アカウントを選んでもらう（refresh token は求めない）', () => {
+    const u = new URL(g.loginUrl('https://x/cb', 'st'));
+    expect(Object.fromEntries(u.searchParams)).toEqual({ client_id: 'cid', redirect_uri: 'https://x/cb', response_type: 'code', scope: 'openid email', prompt: 'select_account', state: 'st' });
+  });
+  test('id_token から sub とメールを読む。ほかのアプリ向け・sub が無い id_token と、失敗は断る', async () => {
+    let tok = idToken({ sub: '123', email: 'a@example.com', aud: 'cid' });
+    mockFetch(() => Response.json({ id_token: tok }));
+    expect(await g.exchangeLogin('c', 'u')).toEqual({ sub: '123', email: 'a@example.com' });
+    tok = idToken({ sub: '123', aud: 'cid' });
+    expect(await g.exchangeLogin('c', 'u')).toEqual({ sub: '123', email: '' });
+    tok = idToken({ sub: '123', aud: 'other' });
+    await expect(g.exchangeLogin('c', 'u')).rejects.toThrow('Google のログインを確かめられませんでした。');
+    tok = idToken({ aud: 'cid' });
+    await expect(g.exchangeLogin('c', 'u')).rejects.toThrow('Google のログインを確かめられませんでした。');
+    vi.restoreAllMocks();
+    mockFetch(() => new Response('x', { status: 500 }));
+    await expect(g.exchangeLogin('c', 'u')).rejects.toBeInstanceOf(GoogleHttpError);
+  });
+});
+
 describe('本物の Google の呼び方', () => {
   const g = realGoogle('cid', 'secret');
 

@@ -9,6 +9,8 @@ import type { Busy, GoogleApi, GoogleEventBody } from './api';
 import { GoogleRevoked } from './api';
 
 const KEY = 'dev_google';
+/** 偽の Google のアカウントの ID（ログインに使う） */
+export const DEV_GOOGLE_SUB = 'dev-google-account';
 
 /** 偽の Google の中身。events は書き込まれた予定、busy は「予定あり」の時間（ISO）、revoked は取り消した refresh token */
 export type FakeState = { seq: number; events: Record<string, GoogleEventBody>; busy: { start: string; end: string }[]; revoked: string[] };
@@ -42,6 +44,13 @@ export function fakeGoogle(db: D1Database, origin: string): GoogleApi {
     },
     async exchangeCode(code) {
       return { refreshToken: 'dev-refresh-' + code, email: 'dev@example.com' };
+    },
+    loginUrl(redirectUri, state) {
+      return origin + '/dev/google/authorize?' + new URLSearchParams({ redirect_uri: redirectUri, state }).toString();
+    },
+    // 偽の Google のアカウントは 1 つだけ（開発用の人のだれにでも結びつけられる）
+    async exchangeLogin() {
+      return { sub: DEV_GOOGLE_SUB, email: 'dev@example.com' };
     },
     async accessToken(refreshToken) {
       if ((await readFake(db)).revoked.includes(refreshToken)) throw new GoogleRevoked('取り消されています（偽の Google）');

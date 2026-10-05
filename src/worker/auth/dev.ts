@@ -3,6 +3,7 @@
 import type { Hono } from 'hono';
 import type { AppEnv } from '../app';
 import { mayLogIn } from '../domain/registration';
+import { consumeGoogleLink } from './google-login';
 import { seedSample } from '../seed/sample';
 import { isOperator } from './operator';
 import { saveProfile } from './oauth';
@@ -34,10 +35,12 @@ export function registerDevRoutes(app: Hono<AppEnv>): void {
       { id: DEV_GUILD.id, name: DEV_GUILD.name, owner: who.manager, permissions: '0' },
     ]);
     await startSession(c, who.id);
+    // 開発用ログインも Discord でのログインの代わりなので、初めての Google のアカウントで来ていたら結びつける
+    if (await consumeGoogleLink(c, who.id)) return c.redirect('/?login=google-linked', 303);
     return c.redirect('/g/' + SAMPLE_GROUP_ID + '/', 303);
   });
 
-  // サンプルのグループを作り直す（開いた日から数え直す）。開発用の人の Google 連携と、偽の Google の中身も消す（前の回の連携が残らないように）
+  // サンプルのグループを作り直す（開いた日から数え直す）。開発用の人の Google 連携・Google でのログインと、偽の Google の中身も消す（前の回の連携が残らないように）
   app.post('/dev/reset', async (c) => {
     const url = new URL(c.req.url);
     if (!isLocalHttp(url)) return c.notFound();
@@ -45,6 +48,7 @@ export function registerDevRoutes(app: Hono<AppEnv>): void {
     await c.env.DB.batch([
       c.env.DB.prepare('DELETE FROM google_links WHERE user_id IN (SELECT value FROM json_each(?))').bind(devIds),
       c.env.DB.prepare('DELETE FROM google_events WHERE user_id IN (SELECT value FROM json_each(?))').bind(devIds),
+      c.env.DB.prepare('DELETE FROM google_logins WHERE user_id IN (SELECT value FROM json_each(?))').bind(devIds),
       c.env.DB.prepare("DELETE FROM meta WHERE key = 'dev_google'"),
     ]);
     await c.env.DB.prepare('DELETE FROM groups WHERE id = ?').bind(SAMPLE_GROUP_ID).run();

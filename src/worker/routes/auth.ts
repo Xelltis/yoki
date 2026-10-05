@@ -1,8 +1,9 @@
-// Discord でログイン・ログアウト
+// Discord でログイン・ログアウト。初めての Google のアカウントで来た人は、ここでログインしたあとに結びつける（auth/google-login.ts）
 import { Hono } from 'hono';
 import { isReturnPath } from '../../shared/routes';
 import { deleteCookie, getCookie, setCookie } from 'hono/cookie';
 import type { AppEnv } from '../app';
+import { consumeGoogleLink } from '../auth/google-login';
 import { authorizeUrl, fetchDiscordProfile, saveProfile } from '../auth/oauth';
 import { isOperator } from '../auth/operator';
 import { appOrigin } from '../auth/origin';
@@ -62,7 +63,10 @@ authRoutes.get('/auth/callback', async (c) => {
   if (!(await mayLogIn(c.env.DB, user.id, isOperator(c.env, user.id, url)))) return c.redirect('/?login=closed');
   await saveProfile(c.env.DB, user, guilds);
   await startSession(c, user.id);
-  return c.redirect(isReturnPath(returnTo) ? returnTo : '/');
+  const back = isReturnPath(returnTo) ? returnTo : '/';
+  // 初めての Google のアカウントで来ていたら、この人に結びつける（入口へ戻るなら、そのことを知らせる）
+  if ((await consumeGoogleLink(c, user.id)) && back === '/') return c.redirect('/?login=google-linked');
+  return c.redirect(back);
 });
 
 authRoutes.post('/auth/logout', async (c) => {

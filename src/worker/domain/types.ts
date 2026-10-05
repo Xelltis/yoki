@@ -91,6 +91,8 @@ export type Ctx = {
   google: GoogleLinkRow | null;
   /** Google 連携を使えるか（運営者が Google の値を設定している） */
   googleReady: boolean;
+  /** 本人に結びつけた、ログインに使う Google アカウントのメール（無ければ空） */
+  googleLoginEmail: string;
   /** Google カレンダーの予定から入れた印 { 'YYYY-MM-DD': [名前] }（今日から avail_days 日分） */
   availGoogle: Record<string, string[]>;
 };
