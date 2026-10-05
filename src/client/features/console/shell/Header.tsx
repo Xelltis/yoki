@@ -1,5 +1,5 @@
-// 上の帯とタブ。帯の操作は、だれのことかで 3 つのメニューにまとめる。
-// グループの名前（グループの一覧・管理画面）、ヘルプ（はじめの 3 ステップ・使い方）、あなた（設定・見た目・ログアウト）。タブはふだんの 3 画面だけ
+// 上の帯とタブ。左はグループの名前（グループの一覧へ戻る）、真ん中はふだんの 3 画面のタブ。
+// 右は、更新・ヘルプ（はじめの 3 ステップ・使い方）・管理（管理者だけ）・あなた（設定・見た目・ログアウト）
 import { Link } from '@tanstack/react-router';
 import type { ConsoleData } from '../../../../shared/api';
 import { HELP_URL } from '../../../app/links';
@@ -45,10 +45,10 @@ const tabBtn = 'relative inline-flex flex-[0_0_auto] cursor-pointer items-center
   + 'max-sm:before:transition-[background-color] max-sm:before:duration-(--dur-fast) max-sm:before:ease-out ';
 /** 押してある（出している）ときのアイコン（塗りつぶす） */
 const filled = '[font-variation-settings:"FILL"_1]';
-/** 帯が 1 段になるうち、狭い幅（901〜1060px）では、右の操作の字を隠してアイコンだけにする（タブとグループの名前の場所を残す） */
-const btxtRow = btxt + ' lg:max-xl:hidden!';
+/** 帯が 1 段になるうち、狭い幅（901〜1200px）では、右の操作の字を隠してアイコンだけにする（タブとグループの名前の場所を残す） */
+const btxtRow = btxt + ' lg:max-2xl:hidden!';
 /** その幅で、字を隠したボタンを丸くする */
-const iconRow = ' lg:max-xl:w-(--h-control) lg:max-xl:p-0';
+const iconRow = ' lg:max-2xl:w-(--h-control) lg:max-2xl:p-0';
 
 /** ログアウト。この端末の控えを消し、サーバーのログインを消して、入口へ戻る（素の POST） */
 export function useLogout(): () => void {
@@ -60,10 +60,6 @@ export function useLogout(): () => void {
     document.body.appendChild(f); f.submit();
   });
 }
-
-/** グループの名前のボタン（押すとグループのメニュー）。名前が長ければ切る */
-const brandBtn = 'min-w-0 max-w-full cursor-pointer rounded-full border-0 bg-transparent py-2 pr-8 pl-2 text-left font-inherit '
-  + 'transition-[background-color] duration-(--dur-fast) ease-out hover:bg-chrome-hover aria-expanded:bg-chrome-hover';
 
 export function Header({ tab }: { tab: Tab }) {
   const { sync, ui, groupId, area } = useConsole();
@@ -93,20 +89,11 @@ export function Header({ tab }: { tab: Tab }) {
   };
   return (
     <header className={appbar}>
-      {/* グループのこと: グループの一覧へ・管理画面（管理者だけ） */}
-      <Menu id="groupMenu" buttonId="groupMenuBtn" className="relative flex min-w-0 [grid-area:brand]" buttonClass={brand + ' ' + brandBtn} align="start"
-        label={(d ? d.title : '卓予定') + '（グループのメニュー）'} title="グループの一覧・管理画面"
-        button={<>
-          <img className={logo} src="/icon-192.png" alt="" width={32} height={32} />
-          <span className="min-w-0 truncate max-sm:text-14" id="title">{d ? d.title : '卓予定'}</span>
-          <span className={areaBadge + (admin ? ' inline-block' : ' hidden')}>管理</span>
-          <Icon name="expand_more" size="sm" className="shrink-0 text-chrome-muted" />
-        </>}>
-        <Link role="menuitem" id="toGroups" className={menuItem} to="/"><Icon name="group" size="sm" />グループの一覧へ</Link>
-        <Link role="menuitem" id="adminLink" className={menuItem} to="/g/$groupId/admin/" params={{ groupId }} hidden={!d || !d.isAdmin || admin}>
-          <Icon name="shield" size="sm" />グループの管理画面
-        </Link>
-      </Menu>
+      <Link className={brand} to="/" title="グループの一覧へ">
+        <img className={logo} src="/icon-192.png" alt="" width={32} height={32} />
+        <span className="min-w-0 truncate max-sm:text-14" id="title">{d ? d.title : '卓予定'}</span>
+        <span className={areaBadge + (admin ? ' inline-block' : ' hidden')}>管理</span>
+      </Link>
       <div className={actions}>
         <Link id="toMain" className={hbtn(admin ? 'inline-flex' : 'hidden')} to="/g/$groupId/" params={{ groupId }} title="カレンダーなどの、ふだんの画面へ戻る">
           <Icon name="arrow_back" size="sm" className={hbtnIcon} /><span className={btxt}>予定の画面へ</span>
@@ -132,13 +119,18 @@ export function Header({ tab }: { tab: Tab }) {
             <Icon name="menu_book" size="sm" />使い方<Icon name="open_in_new" size="xs" className="ml-auto text-muted" />
           </a>
         </Menu>
+        {/* グループの管理画面への入口（管理者だけ）。管理画面の中では出さず、「予定の画面へ」で戻る */}
+        <Link id="adminLink" className={hbtn(d && d.isAdmin && !admin && !dead ? 'inline-flex' : 'hidden') + ' max-sm:w-(--h-control) max-sm:p-0' + iconRow}
+          to="/g/$groupId/admin/" params={{ groupId }} title="グループの管理画面を開く（管理者だけ）" aria-label="管理">
+          <Icon name="shield" size="sm" className={hbtnIcon} /><span className={btxtRow}>管理</span>
+        </Link>
         {/* あなたのこと: 設定（名前・この端末）・見た目・ログアウト。設定を開いているあいだは、押してある見た目 */}
         <Menu id="meMenu" buttonId="meBtn" active={tab === 'settings'}
           buttonClass={hbtn() + ' gap-6 max-sm:px-8 data-active:bg-chrome-active data-active:text-chrome-active-ink'}
           label={d ? 'あなた（' + d.me.name + '）のメニュー' : 'あなたのメニュー'} title="設定・見た目・ログアウト"
           button={<>
             <Icon name="person" size="sm" className={hbtnIcon + ' sm:hidden'} />
-            <span className="text-12 font-normal opacity-80 max-sm:hidden lg:max-xl:hidden">あなた</span>
+            <span className="text-12 font-normal opacity-80 max-sm:hidden lg:max-2xl:hidden">あなた</span>
             <b className="max-w-[12em] truncate text-14 font-semibold max-sm:max-w-[6em]" id="me" hidden={!d}>{d ? d.me.name : ''}</b>
             <Icon name="expand_more" size="sm" className={hbtnIcon + ' opacity-80 max-sm:hidden'} />
           </>}>
