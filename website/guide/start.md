@@ -38,7 +38,7 @@ description: 卓予定のグループを作り、使い始めるまでの手順�
 
 ### 3. 予定を登録する
 
-<Ui icon="calendar_month">カレンダー</Ui> で日を選んで <Ui icon="add" primary>卓を登録</Ui> を押します。日が決まっていなければ、「募集」か「調整中」を選んで登録します。くわしくは [卓を登録する](./register)。
+タブの <Ui icon="calendar_month">カレンダー</Ui> で日を選んで <Ui icon="add" primary>卓を登録</Ui> を押します。日が決まっていなければ、「募集」か「調整中」を選んで登録します。くわしくは [卓を登録する](./register)。
 
 ## 次に読む
 
