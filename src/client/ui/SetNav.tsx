@@ -16,6 +16,10 @@ export function SetLayout({ nav, label, id, children }: { nav: ReactNode; label:
   );
 }
 
+const navBtn = 'cursor-pointer rounded-md border-0 bg-transparent px-12 py-9 text-left font-inherit text-[13.5px] font-semibold '
+  + 'transition-[background-color,color] duration-(--dur-fast) ease-out max-tab:whitespace-nowrap ';
 /** 区分のボタン。いま開いている区分は水色 */
-export const setNavBtn = 'cursor-pointer rounded-md border-0 bg-transparent px-12 py-9 text-left font-inherit text-[13.5px] font-semibold text-muted '
-  + 'transition-[background-color,color] duration-(--dur-fast) ease-out hover:bg-hover hover:text-fg aria-[current=true]:bg-accent-soft aria-[current=true]:text-accent-text max-tab:whitespace-nowrap';
+export const setNavBtn = navBtn + 'text-muted hover:bg-hover hover:text-fg aria-[current=true]:bg-accent-soft aria-[current=true]:text-accent-text';
+/** 消すなど危ない区分のボタン。赤い字で、上に線を引いてほかと分ける（狭い画面の横並びでは線を引かない） */
+export const setNavDanger = navBtn + 'relative mt-9 text-err-text hover:bg-warn aria-[current=true]:bg-warn '
+  + 'before:absolute before:inset-x-12 before:-top-5 before:border-t before:border-line before:content-[""] max-tab:mt-0 max-tab:before:hidden';

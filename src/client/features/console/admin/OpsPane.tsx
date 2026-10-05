@@ -2,7 +2,6 @@
 import { useState } from 'react';
 import type { RpcResult } from '../../../../shared/api';
 import { askConfirm } from '../../../ui/confirm';
-import { field } from '../../../ui/fields';
 import { toast } from '../../../ui/toast';
 import { openForm } from '../actions';
 import { discordSend, failToast } from '../api/discord';
@@ -15,6 +14,8 @@ const ACTIONS = [
   ['shiftDays', '開催日をずらす'], ['setSeries', 'シリーズを変更'], ['delete', '削除'],
 ] as const;
 type Action = (typeof ACTIONS)[number][0];
+/** まとめて変えるときの選ぶ欄 */
+const bulkField = 'w-auto max-w-full';
 
 export function OpsPane() {
   const d = useData();
@@ -76,11 +77,11 @@ export function OpsPane() {
           }} /> 終了・中止も表示</label>
         </div>
         <div className="wrap">
-          <table id="matrix">
+          <table id="matrix" className="[&_td]:align-middle">
             <tbody>
               <tr>
                 <th className="sel"><input type="checkbox" id="selAll" aria-label="一覧の卓をすべて選ぶ" checked={all} onChange={(ev) => pick(rows.map((s) => s.id), ev.target.checked)} /></th>
-                <th>セッション名</th><th className="c">シリーズ</th><th className="c">状態</th><th className="c">開催日</th><th className="c">GM</th><th>参加者</th><th aria-label="編集"></th>
+                <th>卓の名前</th><th className="c">シリーズ</th><th className="c">状態</th><th className="c">開催日</th><th className="c">GM</th><th>参加者</th><th aria-label="編集"></th>
               </tr>
               {rows.map((s) => {
                 const on = !!selected[s.id];
@@ -100,14 +101,16 @@ export function OpsPane() {
             </tbody>
           </table>
         </div>
-        <div className="mt-10 flex flex-wrap items-center gap-8" id="bulkBar">
-          <select className={field} id="bulkAction" value={action} onChange={(ev) => setAction(ev.target.value as Action)}>
+        {/* 選んだ卓にすること。欄は中身の幅にして 1 行に並べる */}
+        <div className="mt-12 flex flex-wrap items-center gap-8 border-t border-line pt-12" id="bulkBar">
+          <span className="text-13 font-semibold text-muted">選んだ卓を</span>
+          <select className={bulkField} id="bulkAction" value={action} onChange={(ev) => setAction(ev.target.value as Action)}>
             {ACTIONS.map((x) => <option value={x[0]} key={x[0]}>{x[1]}</option>)}
           </select>
-          <select className={field} id="bulkStatus" hidden={action !== 'status'} value={statusV} onChange={(ev) => setStatus(ev.target.value)}>
+          <select className={bulkField} id="bulkStatus" hidden={action !== 'status'} value={statusV} onChange={(ev) => setStatus(ev.target.value)}>
             {d.statuses.map((s) => <option value={s} key={s}>{s}</option>)}
           </select>
-          <select className={field} id="bulkMember" hidden={!(action === 'addMember' || action === 'removeMember' || action === 'setGm')} value={memberV} onChange={(ev) => setMember(ev.target.value)}>
+          <select className={bulkField} id="bulkMember" hidden={!(action === 'addMember' || action === 'removeMember' || action === 'setGm')} value={memberV} onChange={(ev) => setMember(ev.target.value)}>
             {names.map((n) => <option value={n} key={n}>{n}</option>)}
           </select>
           <input type="text" className="w-[9em] max-w-640" id="bulkDays" inputMode="numeric" placeholder="日数（7 や -1）" hidden={action !== 'shiftDays'} value={days} onChange={(ev) => setDays(ev.target.value)} />

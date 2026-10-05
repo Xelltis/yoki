@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { ADMIN_PANES, type AdminPane } from '../../../../shared/routes';
 import { store } from '../../../app/storage';
 import { PageHead } from '../../../ui/PageHead';
-import { SetLayout, setNavBtn } from '../../../ui/SetNav';
+import { SetLayout, setNavBtn, setNavDanger } from '../../../ui/SetNav';
 import { useData } from '../context';
 import { useGoPane } from '../shell/nav';
 
@@ -37,7 +37,7 @@ export function AdminLayout() {
     <section id="tab-admin" className="max-w-1120">
       <PageHead title="グループの管理" lead="ここで変えたことは、グループの全員に効きます。管理者だけが開けます。" />
       <SetLayout id="setNav" label="管理の区分" nav={PANES.map(([p, set, label]) => (
-        <button type="button" className={setNavBtn} key={p} data-set={set} aria-current={pane === p ? 'true' : undefined} onClick={() => goPane(p)}>{label}</button>
+        <button type="button" className={p === 'danger' ? setNavDanger : setNavBtn} key={p} data-set={set} aria-current={pane === p ? 'true' : undefined} onClick={() => goPane(p)}>{label}</button>
       ))}>
         <Outlet />
       </SetLayout>

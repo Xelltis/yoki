@@ -48,7 +48,8 @@ export function SettingsTab() {
           <div><label className={fieldLabel} htmlFor="meNote">備考</label><input type="text" className={field} id="meNote" value={note} onChange={(ev) => setDraft({ name, note: ev.target.value })} /></div>
         </div>
         <p className="hint" id="meDiscord">{m && m.linked ? 'Discord でログインしています。Discord の ID は自動で入るので、知らせでメンションが付きます。' : ''}</p>
-        <div className="btns"><button type="submit" className="btn primary" id="meSave" disabled={me.saving}>保存</button><span className="hint" id="meMsg">{me.msg}</span></div>
+        {/* 書き換えるまでは押せない */}
+        <div className="btns"><button type="submit" className="btn primary" id="meSave" disabled={me.saving || !draft || (draft.name === (m ? m.name : d.me.name) && draft.note === (m ? m.note : ''))}>保存</button><span className="hint" id="meMsg">{me.msg}</span></div>
       </form>
       <div className="card">
         <h3><Icon name="devices" size="sm" />この端末</h3>
