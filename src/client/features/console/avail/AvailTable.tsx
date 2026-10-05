@@ -36,11 +36,15 @@ function Plans({ r }: { r: Row }): ReactNode {
 }
 const hasPlans = (r: Row) => r.list.length > 0 || r.wins.length > 0;
 
-/** メモを書く鉛筆。表ではマスの右上に小さく、リストでは四角いボタンにする */
+/**
+ * メモを書く鉛筆。表ではマスの右上に小さく、リストでは四角いボタンにする。
+ * 表の鉛筆は、マウスで使う端末ではマスに載せたときだけ出す（どの行にも出ていると、うるさいため）。キーボードで来たときも出す
+ */
 function Pen({ day, onPen, list }: { day: string; onPen: (day: string) => void; list?: boolean }) {
   const cls = list
     ? 'grid h-38 w-34 cursor-pointer place-items-center rounded-sm border border-line bg-card p-0 text-muted focus-visible:outline-offset-1'
-    : 'absolute top-1 right-1 cursor-pointer rounded-[4px] border-0 bg-transparent p-2 leading-none text-fg opacity-45 hover:bg-hover hover:opacity-100';
+    : 'absolute top-1 right-1 cursor-pointer rounded-[4px] border-0 bg-transparent p-2 leading-none text-muted opacity-60 hover:bg-hover hover:text-fg '
+      + 'pointer-fine:opacity-0 pointer-fine:group-hover/cell:opacity-100 focus-visible:opacity-100';
   return <button type="button" className={cls} data-pen={day} title="この日のメモを書く" aria-label={fmtJa(day) + ' のメモを書く'} onClick={() => onPen(day)}><Icon name="edit" size="xs" /></button>;
 }
 
@@ -83,7 +87,7 @@ export function AvailTable({ d, names, mine, rows, onMark, onPen }: Props) {
                 const dot = memo ? <span className={mdot} /> : null, pen = own ? <Pen day={key} onPen={onPen} /> : null;
                 if (r.bk[n]) {
                   return (
-                    <td className={cell + line + 'bg-session py-6 pl-8 text-center font-bold text-booked-text ' + (own ? 'relative pr-18 ' : 'pr-8 ') + (memo ? 'relative cursor-pointer' : 'cursor-default')}
+                    <td className={cell + line + 'group/cell bg-session py-6 pl-8 text-center font-bold text-booked-text ' + (own ? 'relative pr-18 ' : 'pr-8 ') + (memo ? 'relative cursor-pointer' : 'cursor-default')}
                       key={n} data-memo-of={n} data-day={key} data-memo={memo || undefined} title={memo ? undefined : 'この日の卓に入っています'}>
                       <span className={bkTag}>{r.bk[n]}</span>{dot}{pen}
                     </td>
@@ -92,7 +96,7 @@ export function AvailTable({ d, names, mine, rows, onMark, onPen }: Props) {
                 const v = markIn(r.marks, n);
                 if (own) {
                   return (
-                    <td className={cell + line + 'relative select-none py-0 pr-18 pl-0 text-center text-16 hover:shadow-[inset_0_0_0_2px_var(--accent)] ' + (MARK_BG[v] || clip)} key={n} data-memo={memo || undefined}>
+                    <td className={cell + line + 'group/cell relative select-none py-0 pr-18 pl-0 text-center text-16 hover:shadow-[inset_0_0_0_2px_var(--accent)] ' + (MARK_BG[v] || clip)} key={n} data-memo={memo || undefined}>
                       <button type="button" className="mk block min-h-34 w-full cursor-pointer rounded-sm border-0 bg-transparent py-0 pr-0 pl-18 font-inherit text-inherit focus-visible:outline-offset-[-2px]" data-day={key} aria-label={fmtJa(key) + ' ' + n + ' ' + MARK_WORD[v] + '。押すと' + MARK_WORD[MARK_NEXT[v]]} onClick={() => onMark(key, MARK_NEXT[v])}>{v || '·'}</button>
                       {dot}{pen}
                     </td>
