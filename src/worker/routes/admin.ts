@@ -3,6 +3,7 @@
 import { Hono } from 'hono';
 import type { AdminResult } from '../../shared/admin';
 import type { AppEnv } from '../app';
+import { appOrigin } from '../auth/origin';
 import { isOperator, requireOperator } from '../auth/operator';
 import type { Viewer } from '../auth/session';
 import { changeGuild, deleteUser, groupDetail, listGroups, listUsers, logoutUser, overview, setBan, setGroupAdmin } from '../domain/admin';
@@ -10,6 +11,7 @@ import { readForm, str } from '../domain/form';
 import { deleteGroupById } from '../domain/groups';
 import { readLegal, saveLegal } from '../domain/legal';
 import { setRegistrationOpen } from '../domain/registration';
+import { googleDeps } from '../google/config';
 
 export const adminRoutes = new Hono<AppEnv>();
 
@@ -99,7 +101,7 @@ adminRoutes.post('/api/admin/users/:id/logout', async (c) => {
 adminRoutes.post('/api/admin/users/:id/delete', async (c) => {
   const op = await requireOperator(c);
   const url = new URL(c.req.url);
-  const r = await deleteUser(c.env.DB, c.req.param('id'), (id) => isOperator(c.env, id, url));
+  const r = await deleteUser(c.env.DB, c.req.param('id'), (id) => isOperator(c.env, id, url), await googleDeps(c.env, appOrigin(c.env, c.req.url)));
   audit(op, 'deleteUser', c.req.param('id'));
   return c.json(done(r.message));
 });

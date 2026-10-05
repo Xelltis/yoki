@@ -4,18 +4,19 @@
 // 送る前に卓の「送った」印を取り（UPDATE … WHERE … IS NULL）、取れた卓だけを送る。重なって動いても二重には送らない。
 // 全部の送り先で失敗したら印を戻し、次の回で送り直す
 import type { PatrolRecord } from '../../shared/admin';
-import type { Actor } from '../auth/guard';
+import { SYSTEM_ACTOR } from '../auth/guard';
 import { mentionsOf, recruitLink, sessionEmbed } from '../discord/payloads';
 import { appendLog, postDiscord, postToTargets, realSleep, type Sleep } from '../discord/send';
 import { sessionTargets, type Target, targetNote } from '../discord/targets';
 import type { Bindings } from '../env';
+import { googleDeps } from '../google/config';
+import { patrolGoogle, WRITE_PAST_DAYS } from '../google/sync';
 import { addDays, daysBetween, jst, minutesOfTime } from '../lib/jst';
 import { DATED, SOON_LATE_MIN, STATUS } from './constants';
 import { loadGroup } from './load';
 import { aheadText, notifyHourOf, notifyYmdOf } from './notify';
 import type { Ctx, Session } from './types';
 
-const SYSTEM: Actor = { memberId: 0, name: '', isAdmin: true, userId: '' };
 /** 1 通に載せる卓の数（Discord の embed は 1 通に 10 個まで） */
 const EMBEDS_PER_MESSAGE = 10;
 const KEEP_LOG_ROWS = 500;
@@ -57,7 +58,7 @@ export async function patrol(env: Bindings, scheduledTime: number, deps: Deps): 
   const p = jst(now);
   const appBase = (env.APP_URL || '').replace(/\/$/, '');
   const bot = { token: env.DISCORD_BOT_TOKEN ?? '', clientId: env.DISCORD_CLIENT_ID };
-  const load = (groupId: string) => loadGroup(db, groupId, SYSTEM, appBase ? appBase + '/g/' + groupId + '/' : '', now, bot);
+  const load = (groupId: string) => loadGroup(db, groupId, SYSTEM_ACTOR, appBase ? appBase + '/g/' + groupId + '/' : '', now, bot);
   const groupsOf = async (sql: string, ...args: unknown[]) => (await db.prepare(sql).bind(...args).all<{ group_id: string }>()).results.map((r) => r.group_id);
 
   if (await claim(db, 'hourly', p.ymd + 'T' + String(p.hour).padStart(2, '0'))) {
@@ -86,6 +87,10 @@ export async function patrol(env: Bindings, scheduledTime: number, deps: Deps): 
       WHERE g.soon = 1 AND s.status = '開催' AND s.date = ?1 AND s.soon_at IS NULL AND s.start_time <> ''`,
     p.ymd,
   )) await sendStartingSoon(await load(id), deps);
+
+  // Google カレンダーとの同期（連携している人を、長く回っていない人から少しずつ）
+  const google = await googleDeps(env, appBase || 'http://localhost');
+  if (google) await patrolGoogle(db, google, now);
 
   if (p.hour >= 4 && (await claim(db, 'daily', p.ymd))) await cleanup(db, now);
 }
@@ -201,7 +206,7 @@ export async function sendStartingSoon(ctx: Ctx, deps: Deps): Promise<void> {
   }
 }
 
-/** 毎日 1 回の片付け: 期限切れのログイン、古い送信記録・予定・メモ */
+/** 毎日 1 回の片付け: 期限切れのログイン、古い送信記録・予定・メモ、Google の古い記録 */
 export async function cleanup(db: D1Database, now: Date): Promise<void> {
   const today = jst(now).ymd;
   await db.batch([
@@ -210,5 +215,8 @@ export async function cleanup(db: D1Database, now: Date): Promise<void> {
     db.prepare('DELETE FROM availability WHERE date < ?').bind(addDays(today, -KEEP_AVAIL_DAYS)),
     db.prepare('DELETE FROM avail_notes WHERE date < ?').bind(addDays(today, -KEEP_AVAIL_DAYS)),
     db.prepare('DELETE FROM day_notes WHERE date < ?').bind(addDays(today, -KEEP_DAY_NOTE_DAYS)),
+    db.prepare('DELETE FROM google_dismissed WHERE date < ?').bind(addDays(today, -KEEP_AVAIL_DAYS)),
+    // 連携が無くなった人（運営者が利用者を消したなど）と、触らなくなった過ぎた卓の、書いた予定の控え。Google の予定は残る
+    db.prepare('DELETE FROM google_events WHERE user_id NOT IN (SELECT user_id FROM google_links) OR date < ?').bind(addDays(today, -WRITE_PAST_DAYS)),
   ]);
 }

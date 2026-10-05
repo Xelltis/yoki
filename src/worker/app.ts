@@ -2,10 +2,13 @@
 import { type ErrorHandler, Hono, type NotFoundHandler } from 'hono';
 import { csrf } from './auth/csrf';
 import { registerDevRoutes } from './auth/dev';
+import { registerGoogleDevRoutes } from './google/dev';
 import type { Bindings } from './env';
 import { AppError } from './lib/errors';
 import { adminRoutes } from './routes/admin';
 import { authRoutes } from './routes/auth';
+import { calendarRoutes } from './routes/calendar';
+import { googleRoutes } from './routes/google';
 import { noticePage } from './routes/html';
 import { meRoutes } from './routes/me';
 import { pageRoutes } from './routes/pages';
@@ -27,8 +30,13 @@ app.route('/', meRoutes);
 app.route('/', pageRoutes);
 app.route('/', rpcRoutes);
 app.route('/', adminRoutes);
+app.route('/', calendarRoutes);
+app.route('/', googleRoutes);
 /* istanbul ignore else -- @preserve 本番の組み立てでは DEV が偽になり、開発用ログインごと消える（テストは開発の形で動く） */
-if (import.meta.env?.DEV) registerDevRoutes(app);
+if (import.meta.env?.DEV) {
+  registerDevRoutes(app);
+  registerGoogleDevRoutes(app);
+}
 
 const isApi = (url: string) => new URL(url).pathname.startsWith('/api/');
 

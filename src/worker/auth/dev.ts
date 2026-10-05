@@ -37,10 +37,16 @@ export function registerDevRoutes(app: Hono<AppEnv>): void {
     return c.redirect('/g/' + SAMPLE_GROUP_ID + '/', 303);
   });
 
-  // サンプルのグループを作り直す（開いた日から数え直す）
+  // サンプルのグループを作り直す（開いた日から数え直す）。開発用の人の Google 連携と、偽の Google の中身も消す（前の回の連携が残らないように）
   app.post('/dev/reset', async (c) => {
     const url = new URL(c.req.url);
     if (!isLocalHttp(url)) return c.notFound();
+    const devIds = JSON.stringify(DEV_USERS.map((u) => u.id));
+    await c.env.DB.batch([
+      c.env.DB.prepare('DELETE FROM google_links WHERE user_id IN (SELECT value FROM json_each(?))').bind(devIds),
+      c.env.DB.prepare('DELETE FROM google_events WHERE user_id IN (SELECT value FROM json_each(?))').bind(devIds),
+      c.env.DB.prepare("DELETE FROM meta WHERE key = 'dev_google'"),
+    ]);
     await c.env.DB.prepare('DELETE FROM groups WHERE id = ?').bind(SAMPLE_GROUP_ID).run();
     await ensureSampleGroup(c.env.DB, url.origin + '/g/' + SAMPLE_GROUP_ID + '/');
     return c.redirect('/g/' + SAMPLE_GROUP_ID + '/', 303);

@@ -17,7 +17,12 @@ function inRange(ctx: Ctx, ymd: string): boolean {
   return ymd >= ctx.today && ymd < addDays(ctx.today, ctx.group.avail_days);
 }
 
-const upsertMark = 'INSERT INTO availability (member_id, date, mark) VALUES (?1, ?2, ?3) ON CONFLICT (member_id, date) DO UPDATE SET mark = excluded.mark';
+/** 本人が入れる印。Google から入れた印の日も、本人の印になる（もう Google からは書き換えない） */
+const upsertMark = "INSERT INTO availability (member_id, date, mark) VALUES (?1, ?2, ?3) ON CONFLICT (member_id, date) DO UPDATE SET mark = excluded.mark, source = ''";
+/** Google から入れた印を本人が消したら、その日を覚えておく（もう入れない） */
+const dismissGoogle = `INSERT INTO google_dismissed (member_id, date)
+  SELECT member_id, date FROM availability WHERE member_id = ?1 AND source = 'google' AND date IN (SELECT value FROM json_each(?2))
+  ON CONFLICT DO NOTHING`;
 
 /** 予定の 1 マスを書く。form: { name（本人）, ymd, mark }。卓に入っている日は変えられない */
 export async function setAvailability(ctx: Ctx, form: Form) {
@@ -28,7 +33,12 @@ export async function setAvailability(ctx: Ctx, form: Form) {
   if (!inRange(ctx, ymd)) throw badRequest(fmtDateJa(ymd) + ' は予定表の範囲外です。設定の「予定の日数」を増やしてください。');
   if (bookedMap(ctx.sessions)[ymd]?.[name]) throw badRequest(fmtDateJa(ymd) + ' は ' + name + ' が卓に入っている日なので、都合は変えられません。');
   if (mark) await ctx.db.prepare(upsertMark).bind(memberId, ymd, mark).run();
-  else await ctx.db.prepare('DELETE FROM availability WHERE member_id = ? AND date = ?').bind(memberId, ymd).run();
+  else {
+    await ctx.db.batch([
+      ctx.db.prepare(dismissGoogle).bind(memberId, JSON.stringify([ymd])),
+      ctx.db.prepare('DELETE FROM availability WHERE member_id = ? AND date = ?').bind(memberId, ymd),
+    ]);
+  }
   return { ok: true, name, ymd, mark };
 }
 
@@ -61,11 +71,14 @@ export async function setAvailabilityBulk(ctx: Ctx, form: Form) {
     if (mark) {
       await ctx.db
         .prepare(`INSERT INTO availability (member_id, date, mark) SELECT ?1, value, ?3 FROM json_each(?2) WHERE true
-                  ON CONFLICT (member_id, date) DO UPDATE SET mark = excluded.mark`)
+                  ON CONFLICT (member_id, date) DO UPDATE SET mark = excluded.mark, source = ''`)
         .bind(memberId, json, mark)
         .run();
     } else {
-      await ctx.db.prepare('DELETE FROM availability WHERE member_id = ? AND date IN (SELECT value FROM json_each(?))').bind(memberId, json).run();
+      await ctx.db.batch([
+        ctx.db.prepare(dismissGoogle).bind(memberId, json),
+        ctx.db.prepare('DELETE FROM availability WHERE member_id = ? AND date IN (SELECT value FROM json_each(?))').bind(memberId, json),
+      ]);
     }
   }
   let message = name + ' の ' + days.length + ' 日に「' + (mark || '空欄') + '」を入れました。';

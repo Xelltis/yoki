@@ -8,10 +8,19 @@ import { fmtDateJa, normTime, parseYmd } from '../lib/jst';
 import { POLL_MARKS, POLL_MAX_DATES, STATUS } from './constants';
 import { type Form, list, requireSelf, str } from './form';
 import { findAdjusting, findSession, peopleOf, pollComplete } from './model';
+import type { GoogleDeps } from '../google/config';
 import type { Ctx, Session } from './types';
 
 /** 書いたあとで読み直す道具と、Discord の送り直しを待つ道具（routes/rpc.ts が渡す） */
-export type Io = { reload: () => Promise<Ctx>; data: () => Promise<unknown>; sleep: Sleep };
+export type Io = {
+  reload: () => Promise<Ctx>;
+  data: () => Promise<unknown>;
+  sleep: Sleep;
+  /** Google カレンダーとの連携に使う一式（設定が無ければ null。呼び出しが使うときだけ作る） */
+  google?: GoogleDeps | null;
+  /** 返事のあとも続ける仕事（Workers の waitUntil） */
+  defer?: (work: Promise<unknown>) => void;
+};
 
 /** 本人（ログインした人）の回答を書く文。vote が空なら消す。回答は本人だけが入れるので、いつもメンバーの行で書く */
 function voteStmts(ctx: Ctx, s: Session, days: string[], vote: string): D1PreparedStatement {

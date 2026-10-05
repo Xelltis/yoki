@@ -1,6 +1,6 @@
-// 設定のタブ（ふだんの画面）: あなたの名前と備考・この端末（自動更新・見た目・文字サイズ・ログアウト）。管理者には管理画面への入口
+// 設定のタブ（ふだんの画面）: あなたの名前と備考・カレンダー連携・この端末（自動更新・見た目・文字サイズ・ログアウト）。管理者には管理画面への入口
 import { Link } from '@tanstack/react-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { RpcResult } from '../../../../shared/api';
 import { HELP_URL } from '../../../app/links';
 import { load } from '../../../app/storage';
@@ -12,6 +12,10 @@ import { useStore } from '../../../ui/store';
 import { toast } from '../../../ui/toast';
 import { useConsole, useData } from '../context';
 import { useLogout } from '../shell/Header';
+import { CalendarCard } from './CalendarCard';
+
+/** Google との連携から戻ってきたときの知らせ（?google=…） */
+const GOOGLE_RESULT: Record<string, string> = { linked: 'Google カレンダーと連携しました。', cancelled: 'Google カレンダーとの連携を取りやめました。' };
 
 export function SettingsTab() {
   const d = useData();
@@ -25,6 +29,12 @@ export function SettingsTab() {
   const [me, setMe] = useState({ saving: false, msg: '' });
   const name = draft ? draft.name : m ? m.name : d.me.name, note = draft ? draft.note : m ? m.note : '';
   const font = load('font') === 'm' || load('font') === 'l' ? load('font') : '';
+  useEffect(() => {
+    const result = GOOGLE_RESULT[new URLSearchParams(location.search).get('google') ?? ''];
+    if (!result) return;
+    toast(result);
+    history.replaceState(history.state, '', location.pathname);
+  }, []);
   const saveMe = () => {
     const form = { oldName: d.me.name, name: name.trim(), note: note.trim(), discordId: m ? m.discordId : '' };
     if (!form.name) { setMe({ saving: false, msg: '名前を入れてください。' }); return; }
@@ -51,6 +61,7 @@ export function SettingsTab() {
         {/* 書き換えるまでは押せない */}
         <div className="btns"><button type="submit" className="btn primary" id="meSave" disabled={me.saving || !draft || (draft.name === (m ? m.name : d.me.name) && draft.note === (m ? m.note : ''))}>保存</button><span className="hint" id="meMsg">{me.msg}</span></div>
       </form>
+      <CalendarCard />
       <div className="card">
         <h3><Icon name="devices" size="sm" />この端末</h3>
         <p className="hint">このブラウザだけの設定です。グループのほかの人には関係しません。</p>

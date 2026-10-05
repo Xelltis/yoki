@@ -2,7 +2,7 @@
 import type { Actor } from '../auth/guard';
 import { addDays, jst } from '../lib/jst';
 import type { Status } from './constants';
-import type { Bot, Ctx, GroupRow, Member, Role, Session } from './types';
+import type { Bot, Ctx, FeedScope, GoogleLinkRow, GroupRow, Member, Role, Session } from './types';
 
 type SessionRow = {
   id: number; seq: number; name: string; status: Status; date: string | null; start_time: string; end_time: string;
@@ -13,7 +13,9 @@ type SessionRow = {
 
 export const sessionCode = (seq: number) => 'S' + String(seq).padStart(3, '0');
 
-export async function loadGroup(db: D1Database, groupId: string, actor: Actor, appUrl: string, now = new Date(), bot: Bot = { token: '', clientId: '' }): Promise<Ctx> {
+export async function loadGroup(
+  db: D1Database, groupId: string, actor: Actor, appUrl: string, now = new Date(), bot: Bot = { token: '', clientId: '' }, googleReady = false,
+): Promise<Ctx> {
   const today = jst(now).ymd;
   const at = now.toISOString();
   const res = await db.batch([
@@ -36,7 +38,7 @@ export async function loadGroup(db: D1Database, groupId: string, actor: Actor, a
       .bind(groupId),
     db
       .prepare(
-        `SELECT a.date, a.mark, m.name FROM availability a JOIN members m ON m.id = a.member_id
+        `SELECT a.date, a.mark, a.source, m.name FROM availability a JOIN members m ON m.id = a.member_id
           WHERE m.group_id = ?1 AND a.date >= ?2 AND a.date < ?3`,
       )
       .bind(groupId, today, '9999-12-31'),
@@ -56,6 +58,8 @@ export async function loadGroup(db: D1Database, groupId: string, actor: Actor, a
       .bind(groupId),
     db.prepare('SELECT series, channel_id, also_base, days, hour FROM series_notify WHERE group_id = ?').bind(groupId),
     db.prepare('SELECT at, kind, target, result FROM notify_log WHERE group_id = ? ORDER BY id DESC LIMIT 10').bind(groupId),
+    db.prepare('SELECT token, scope FROM calendar_feeds WHERE group_id = ? AND user_id = ?').bind(groupId, actor.userId),
+    db.prepare('SELECT email, write_events, read_busy, busy_from, busy_to, synced_at, busy_at, error FROM google_links WHERE user_id = ?').bind(actor.userId),
   ]);
   const rows = <T>(i: number) => res[i]!.results as T[];
   const group = rows<GroupRow>(1)[0];
@@ -110,9 +114,11 @@ export async function loadGroup(db: D1Database, groupId: string, actor: Actor, a
 
   const lastDay = addDays(today, group.avail_days);
   const avail: Ctx['avail'] = {};
-  for (const a of rows<{ date: string; mark: string; name: string }>(5)) {
+  const availGoogle: Ctx['availGoogle'] = {};
+  for (const a of rows<{ date: string; mark: string; source: string; name: string }>(5)) {
     if (a.date >= lastDay) continue;
     (avail[a.date] ??= {})[a.name] = a.mark;
+    if (a.source === 'google') (availGoogle[a.date] ??= []).push(a.name);
   }
   const availNotes: Ctx['availNotes'] = {};
   for (const n of rows<{ date: string; text: string; updated_at: string; name: string }>(6)) (availNotes[n.date] ??= {})[n.name] = { text: n.text, at: n.updated_at };
@@ -146,5 +152,9 @@ export async function loadGroup(db: D1Database, groupId: string, actor: Actor, a
     actor,
     appUrl,
     bot,
+    feed: rows<{ token: string; scope: FeedScope }>(11)[0] ?? null,
+    google: rows<GoogleLinkRow>(12)[0] ?? null,
+    googleReady,
+    availGoogle,
   };
 }

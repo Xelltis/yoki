@@ -11,6 +11,9 @@ export const RECHECK_MINUTES = 5;
 export type GroupRef = { id: string; guildId: string; guildName: string; title: string };
 export type Actor = { memberId: number; name: string; isAdmin: boolean; userId: string };
 
+/** 人ではなく、見回りや購読 URL が読むときの「あなた」（メンバーではない） */
+export const SYSTEM_ACTOR: Actor = { memberId: 0, name: '', isAdmin: true, userId: '' };
+
 export type Access =
   | { ok: true; group: GroupRef; actor: Actor }
   | { ok: false; reason: 'login' | 'recheck' | 'forbidden' | 'notfound' };
