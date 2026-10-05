@@ -81,9 +81,9 @@ export function EditSessionForm({ req, onClose, reopen }: { req: FormReq; onClos
         <NotifyCheck f={f} set={set} label="Discord に知らせる" />
         <div className={formActions}>
           <div className="btns mt-0">
+            <button type="button" className="btn danger" id="del" disabled={!s} onClick={() => remove(collect(d, f, ''), fail)}><Icon name="delete" size="sm" />この卓を削除</button>
+            <button type="button" className="btn" id="cont" hidden={!s || !s.date} title="GM・参加者・時間・場所を引き継いで、翌日の卓を新しく登録する" onClick={goContinue}><Icon name="add" size="sm" />続きを登録</button>
             <button type="submit" className="btn primary" id="save" disabled={!s}>{pollNext ? '保存して候補日を選ぶ' : '保存'}</button>
-            <button type="button" className="btn" id="cont" hidden={!s || !s.date} title="GM・参加者・時間・場所を引き継いで、翌日の卓を新しく登録する" onClick={goContinue}>続きを登録</button>
-            <button type="button" className="btn danger" id="del" disabled={!s} onClick={() => remove(collect(d, f, ''), fail)}>この卓を削除</button>
           </div>
           <FormMsg msg={msg} />
         </div>

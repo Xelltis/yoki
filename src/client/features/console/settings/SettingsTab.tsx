@@ -36,12 +36,12 @@ export function SettingsTab() {
     <section id="tab-settings" className="max-w-1120">
       <PageHead title="設定" lead="この端末の見た目と、あなたの名前です。グループの設定（知らせ・メンバー・管理者）は、管理者が管理画面で変えます。" />
       <div className="card border-accent-line" id="adminEntry" hidden={!d.isAdmin}>
-        <h3><Icon name="shield" size="sm" className="mr-4 text-accent-text" />グループの管理画面</h3>
+        <h3><Icon name="shield" size="sm" />グループの管理画面</h3>
         <p className="hint">メンバーの登録・卓をまとめて変える・知らせ（Discord）・管理者・送信の記録・グループを消す、は管理画面にあります。あなたは管理者なので開けます。</p>
         <div className="btns"><Link className="btn primary" to="/g/$groupId/admin/" params={{ groupId }}><Icon name="shield" size="sm" />管理画面を開く</Link></div>
       </div>
       <form className="card" id="meCard" onSubmit={(ev) => { ev.preventDefault(); saveMe(); }}>
-        <h3><Icon name="person" size="sm" className="mr-4 text-accent-text" />あなたの名前と備考</h3>
+        <h3><Icon name="person" size="sm" />あなたの名前と備考</h3>
         <p className="hint">予定表の列と、卓の参加者に出る名前です。グループの中で同じ名前は使えません。</p>
         <div className="row">
           <div><label className={fieldLabel} htmlFor="meName">名前</label><input type="text" className={field} id="meName" required value={name} onChange={(ev) => setDraft({ name: ev.target.value, note })} /></div>
@@ -51,7 +51,7 @@ export function SettingsTab() {
         <div className="btns"><button type="submit" className="btn primary" id="meSave" disabled={me.saving}>保存</button><span className="hint" id="meMsg">{me.msg}</span></div>
       </form>
       <div className="card">
-        <h3>この端末</h3>
+        <h3><Icon name="devices" size="sm" />この端末</h3>
         <p className="hint">このブラウザだけの設定です。グループのほかの人には関係しません。</p>
         <div className="row">
           <div>

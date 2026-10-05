@@ -300,8 +300,8 @@ export function RecruitTab() {
           <label htmlFor="askText">添える一言 <small>任意。500 文字まで</small></label>
           <textarea id="askText" ref={askRef} maxLength={500} placeholder="例: 10 月の土曜のどこかを考えています。都合を教えてください" value={ask ? ask.text : ''} onChange={(ev) => setAsk((a) => (a ? { ...a, text: ev.target.value } : a))} />
           <div className="btns">
+            <button type="button" className="btn" id="askCancel" onClick={() => setAsk(null)}>閉じる</button>
             <button type="submit" className="btn primary" id="askSend">Discord に送る</button>
-            <button type="button" className="btn ml-auto" id="askCancel" onClick={() => setAsk(null)}>閉じる</button>
           </div>
         </form>
       </Modal>

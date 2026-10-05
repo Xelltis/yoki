@@ -18,6 +18,10 @@ p.hint { max-width: 62em; margin: 8px 0 12px; }
 .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 16px 18px; margin-bottom: 16px; box-shadow: var(--elev-sm); }
 .card > :first-child, .card > label:first-child { margin-top: 0; }
 .card > :last-child { margin-bottom: 0; }
+/* カードの見出し。アイコンと字のあいだを空け、横の小さな説明は細い字で、入らなければ下の行へ */
+.card > h3 { display: flex; flex-wrap: wrap; align-items: center; column-gap: 6px; row-gap: 2px; }
+.card > h3 > .material-icons { color: var(--accent-text); }
+.card > h3 small { font-weight: 400; }
 @media (width < 601px) { .card { padding: 14px; } }
 
 /* ボタン。primary（黒）・danger（赤い字）・danger-fill（赤）・small・xl・on（押してある）・icon（アイコンだけ） */
@@ -50,7 +54,7 @@ p.hint { max-width: 62em; margin: 8px 0 12px; }
 
 /* 欄を横に並べる行 */
 .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; }
-.row > div { flex: 1; min-width: 140px; }
+.row > div { flex: 1; min-width: 200px; }
 .row > div.narrow { flex: 0 0 130px; }
 @media (width < 601px) { .row > div.narrow { flex: 1 1 0; min-width: 0; } }
 
@@ -81,7 +85,9 @@ tr.r-past td { background: var(--warn); }
 .modal .members label { display: inline-flex; margin: 0; font-weight: normal; }
 .modal .btns > label, .modal label.chk { display: inline-flex; align-items: center; gap: 8px; margin: 0; font-weight: normal; }
 .modal form .row > div { min-width: 120px; }
-.modal .btns { margin-top: 16px; }
+/* 窓の下のボタンは右に寄せ、進むボタンをいちばん右に置く。消すなど危ないボタン（danger）は左の端 */
+.modal .btns { margin-top: 16px; justify-content: flex-end; }
+.modal .btns .danger { margin-left: 0; margin-right: auto; }
 .modal textarea { width: 100%; height: 80px; resize: vertical; }
 .modal .box.wide { max-width: 760px; padding-top: 0; padding-bottom: 0; }
 .box.confirm #confirmText { white-space: pre-line; margin: 0; color: var(--muted); }
@@ -91,4 +97,6 @@ tr.r-past td { background: var(--warn); }
   .modal .box { max-width: none; border-radius: var(--radius-xl) var(--radius-xl) 0 0; max-height: calc(100dvh / var(--zoom, 1) - 24px); padding: 18px 16px max(16px, env(safe-area-inset-bottom)); animation-name: sheet-up; }
   .modal .box.wide { max-width: none; padding-top: 0; padding-bottom: 0; }
   .modal form .row > div.narrow { flex: 1 1 0; min-width: 0; }
+  /* スマホでは、窓の進むボタンを広げて押しやすくする */
+  .modal .btns .btn.primary, .modal .btns .btn.danger-fill { flex: 1 1 auto; min-height: 44px; font-size: 14px; }
 }
