@@ -35,10 +35,12 @@ export default defineConfig({
     ['link', { rel: 'icon', href: base + 'favicon.ico', sizes: '32x32' }],
     ['link', { rel: 'icon', type: 'image/png', href: base + 'icon-192.png', sizes: '192x192' }],
     ['link', { rel: 'apple-touch-icon', href: base + 'apple-touch-icon.png' }],
-    ['meta', { name: 'theme-color', content: '#0b111b' }],
+    ['meta', { name: 'theme-color', content: '#2d2afe' }],
     ['link', { rel: 'preconnect', href: 'https://fonts.googleapis.com' }],
     ['link', { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' }],
     ['link', { rel: 'stylesheet', href: 'https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..24,400,0..1,0&icon_names=' + ICONS.join(',') + '&display=block' }],
+    // 文字はアプリと同じ Noto Sans JP
+    ['link', { rel: 'stylesheet', href: 'https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400..700&display=swap' }],
     ['meta', { property: 'og:type', content: 'website' }],
     ['meta', { property: 'og:site_name', content: '卓予定' }],
     ['meta', { property: 'og:image', content: SITE_URL + 'og.png' }],
