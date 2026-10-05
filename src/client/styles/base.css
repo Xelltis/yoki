@@ -1,7 +1,6 @@
-/* 要素の既定（base の層）。グループの画面と運営の管理画面の土台。
- * 入口（html[data-page="home"]。index.html の小さなスクリプトが付ける）には、ここの文字・リンク・見出し・欄・表の決まりを当てない（入口を作り直すときにそろえる） */
+/* 要素の既定（base の層）。どの画面にも当てる土台 */
 * { box-sizing: border-box; }
-html, body { margin: 0; background: var(--bg); color: var(--text); }
+html, body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.6 var(--font-sans); }
 html.modal-open { overflow: hidden; }
 [hidden] { display: none !important; }
 
@@ -9,47 +8,44 @@ html.modal-open { overflow: hidden; }
   *, *::before, *::after { animation-duration: 1ms !important; animation-iteration-count: 1 !important; transition-duration: 1ms !important; }
 }
 
-:where(html:not([data-page="home"])) {
-  & { -webkit-text-size-adjust: 100%; }
-  &, body { font: 14px/1.6 var(--font-sans); }
-  body { -webkit-font-smoothing: antialiased; }
-  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-  ::selection { background: var(--accent-line); }
-  a { color: var(--accent-text); }
-  input[type=checkbox], input[type=radio] { accent-color: var(--accent-strong); width: 16px; height: 16px; margin: 0; }
-  h1, h2, h3 { text-wrap: balance; }
-  h2 { font-size: 16px; margin: 20px 0 10px; }
-  h3 { font-size: 15px; margin: 0 0 10px; color: var(--text); }
-  p { text-wrap: pretty; }
+html { -webkit-text-size-adjust: 100%; }
+body { -webkit-font-smoothing: antialiased; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+::selection { background: var(--accent-line); }
+a { color: var(--accent-text); }
+input[type=checkbox], input[type=radio] { accent-color: var(--accent-strong); width: 16px; height: 16px; margin: 0; }
+h1, h2, h3 { text-wrap: balance; }
+h2 { font-size: 16px; margin: 20px 0 10px; }
+h3 { font-size: 15px; margin: 0 0 10px; color: var(--text); }
+p { text-wrap: pretty; }
 
-  /* 表 */
-  table { border-collapse: separate; border-spacing: 0; width: 100%; background: var(--card); font-size: 13px; font-variant-numeric: tabular-nums; }
-  th, td { border-bottom: 1px solid var(--line); padding: 8px 10px; text-align: left; vertical-align: top; }
-  th { background: var(--head); white-space: nowrap; font-size: 12px; font-weight: 600; color: var(--muted); }
-  tr:last-child > td { border-bottom: 0; }
+/* 表 */
+table { border-collapse: separate; border-spacing: 0; width: 100%; background: var(--card); font-size: 13px; font-variant-numeric: tabular-nums; }
+th, td { border-bottom: 1px solid var(--line); padding: 8px 10px; text-align: left; vertical-align: top; }
+th { background: var(--head); white-space: nowrap; font-size: 12px; font-weight: 600; color: var(--muted); }
+tr:last-child > td { border-bottom: 0; }
 
-  /* 文字サイズ。端末ごとに 小（そのまま）・中・大。画面全体を拡げる */
-  &[data-font="m"] body { zoom: 1.12; }
-  &[data-font="l"] body { zoom: 1.25; }
-  /* 横のスクロールバーの分を、いつも空けておく（開け閉めで横にずれないように） */
-  @media (width >= 601px) { & { scrollbar-gutter: stable; } }
+/* 文字サイズ。端末ごとに 小（そのまま）・中・大。画面全体を拡げる */
+:root[data-font="m"] body { zoom: 1.12; }
+:root[data-font="l"] body { zoom: 1.25; }
+/* 横のスクロールバーの分を、いつも空けておく（開け閉めで横にずれないように） */
+@media (width >= 601px) { html { scrollbar-gutter: stable; } }
 
-  /* 入力欄と選ぶ欄 */
-  select, input[type=text], input[type=date], input[type=time], input[type=password], textarea {
-    font: inherit; min-height: var(--h-control); padding: 5px 10px; border: 1px solid var(--line-strong); border-radius: var(--radius-md);
-    background-color: var(--card); color: var(--text); transition: border-color var(--dur-fast) ease-out, box-shadow var(--dur-fast) ease-out;
-  }
-  select { appearance: none; -webkit-appearance: none; padding-right: 32px; background-image: var(--select-arrow); background-repeat: no-repeat; background-position: right 10px center; cursor: pointer; }
-  select:hover, input[type=text]:hover, input[type=date]:hover, input[type=time]:hover, input[type=password]:hover, textarea:hover { border-color: color-mix(in srgb, var(--line-strong) 55%, var(--text)); }
-  select:focus-visible, input:not([type=checkbox]):not([type=radio]):focus-visible, textarea:focus-visible { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
-  ::placeholder { color: var(--muted); opacity: .8; }
-  select.small { min-height: var(--h-control-sm); padding-top: 2px; padding-bottom: 2px; font-size: 12px; }
-
-  /* フォームの中の名前と欄 */
-  form label { display: block; font-weight: 600; font-size: 13px; margin: 14px 0 6px; }
-  form label small { font-weight: normal; color: var(--muted); margin-left: 6px; }
-  form input[type=text], form input[type=date], form input[type=time], form select, form textarea { width: 100%; }
-  form textarea { height: 68px; resize: vertical; }
-  fieldset { border: 1px solid var(--line); border-radius: var(--radius-md); margin: 14px 0 0; padding: 10px 12px 12px; }
-  legend { font-weight: 600; font-size: 13px; padding: 0 4px; }
+/* 入力欄と選ぶ欄 */
+select, input[type=text], input[type=search], input[type=date], input[type=time], input[type=password], textarea {
+  font: inherit; min-height: var(--h-control); padding: 5px 10px; border: 1px solid var(--line-strong); border-radius: var(--radius-md);
+  background-color: var(--card); color: var(--text); transition: border-color var(--dur-fast) ease-out, box-shadow var(--dur-fast) ease-out;
 }
+select { appearance: none; -webkit-appearance: none; padding-right: 32px; background-image: var(--select-arrow); background-repeat: no-repeat; background-position: right 10px center; cursor: pointer; }
+select:hover, input[type=text]:hover, input[type=search]:hover, input[type=date]:hover, input[type=time]:hover, input[type=password]:hover, textarea:hover { border-color: color-mix(in srgb, var(--line-strong) 55%, var(--text)); }
+select:focus-visible, input:not([type=checkbox]):not([type=radio]):focus-visible, textarea:focus-visible { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+::placeholder { color: var(--muted); opacity: .8; }
+select.small { min-height: var(--h-control-sm); padding-top: 2px; padding-bottom: 2px; font-size: 12px; }
+
+/* フォームの中の名前と欄 */
+form label { display: block; font-weight: 600; font-size: 13px; margin: 14px 0 6px; }
+form label small { font-weight: normal; color: var(--muted); margin-left: 6px; }
+form input[type=text], form input[type=date], form input[type=time], form select, form textarea { width: 100%; }
+form textarea { height: 68px; resize: vertical; }
+fieldset { border: 1px solid var(--line); border-radius: var(--radius-md); margin: 14px 0 0; padding: 10px 12px 12px; }
+legend { font-weight: 600; font-size: 13px; padding: 0 4px; }

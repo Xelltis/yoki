@@ -1,23 +1,18 @@
-// 入口の部品の見た目（Tailwind のクラス）。グループの画面とは別の見た目（入口を作り直すときに、そろえる）
+// 入口の部品の見た目（Tailwind のクラス）
 
 /** カード */
-export const card = 'mb-16 rounded-lg border border-line bg-card px-22 py-20 shadow-card';
+export const card = 'mb-18 rounded-lg border border-line bg-card px-26 py-24 shadow-card max-sm:px-20 max-sm:py-20';
 /** 見出し（アイコンと並べる） */
-export const h2 = 'm-0 mb-12 flex items-center gap-8 text-16';
+export const h2 = 'm-0 mb-14 flex items-center gap-8 text-18 font-bold [&>.material-icons]:text-accent-text';
 /** 小さな説明 */
-export const hint = 'text-13 text-muted';
-/** 説明の中のリンク */
-export const hintLink = 'text-accent-strong';
-/** ボタン。文字は親から受けず、ここで決める（ボタンは文字の決まりを親から受けないため） */
-const btnBase = 'inline-flex h-40 cursor-pointer items-center gap-6 rounded-full border px-16 py-0 font-home text-15 leading-[1.7] font-semibold no-underline disabled:cursor-default disabled:opacity-60';
-export const btn = btnBase + ' border-line bg-card text-fg hover:bg-hover';
-export const btnPrimary = btnBase + ' border-accent bg-accent text-accent-ink';
-/** 入力欄と選ぶ欄。文字の大きさと太さは、置く場所で足す */
-export const field = 'h-40 rounded-md border border-line bg-card px-10 py-0 font-home leading-[1.7] text-fg';
-/** 入力欄の名前（上に名前、下に欄） */
-export const label = 'flex flex-[1_1_200px] flex-col gap-4 text-13 font-semibold';
+export const hint = 'my-8 text-13 text-muted';
+/** 大きなボタン（入口の大事な操作） */
+export const bigBtn = 'inline-flex h-44 cursor-pointer items-center justify-center gap-8 rounded-full border px-20 py-0 font-inherit text-15 font-bold no-underline transition-[background-color,transform] duration-(--dur-fast) ease-out active:scale-[.97] disabled:cursor-default disabled:opacity-60 ';
+export const btnPrimary = bigBtn + 'border-primary bg-primary text-primary-ink hover:bg-[color-mix(in_srgb,var(--primary)_88%,var(--text))]';
+export const btn = bigBtn + 'border-line bg-card text-fg hover:bg-hover';
+/** 欄の名前（上に名前、下に欄） */
+export const label = 'm-0 grid flex-[1_1_220px] gap-6 text-13 font-bold';
+/** 入力欄と選ぶ欄 */
+export const field = 'h-44 w-full rounded-md font-normal';
 /** 横に並べる行 */
-export const row = 'mb-12 flex flex-wrap items-end gap-12';
-/** アイコン（入口は、グループの画面より少し下げて並べる） */
-export const icon = 'align-[-4px]';
-export const iconSm = 'text-17 align-[-3px]';
+export const row = 'mt-12 mb-16 flex flex-wrap items-end gap-12';

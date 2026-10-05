@@ -8,12 +8,10 @@
   /* 幅の区切り（sm: は 601px 以上、max-sm: は 600px 以下） */
   --breakpoint-xs: 401px; --breakpoint-sm: 601px; --breakpoint-md: 701px; --breakpoint-tab: 761px; --breakpoint-lg: 901px; --breakpoint-xl: 1061px;
   --text-10: 10px; --text-11: 11px; --text-12: 12px; --text-13: 13px; --text-14: 14px; --text-15: 15px;
-  --text-16: 16px; --text-17: 17px; --text-18: 18px; --text-20: 20px; --text-22: 22px; --text-28: 28px;
+  --text-16: 16px; --text-17: 17px; --text-18: 18px; --text-20: 20px; --text-22: 22px; --text-24: 24px; --text-26: 26px; --text-28: 28px; --text-30: 30px;
   --font-weight-normal: 400; --font-weight-medium: 500; --font-weight-semibold: 600; --font-weight-bold: 700;
   /* 文字は Noto Sans JP（index.html で Google Fonts から読む）。読めないあいだは端末の字 */
   --font-sans: "Noto Sans JP", system-ui, -apple-system, "Hiragino Sans", "Yu Gothic UI", Meiryo, sans-serif;
-  /* 入口の文字（グループの画面とは別。入口を作り直すときにそろえる） */
-  --font-home: system-ui, -apple-system, 'Hiragino Sans', 'Noto Sans JP', sans-serif;
   --color-white: #fff; --color-black: #000;
   /* サービスアイコンの色（明るい・ダークで変えない。飾りに使う） */
   --color-brand: #2d2afe; --color-brand-light: #769ffc; --color-orange: #fe841c; --color-pink: #fb2c85; --color-yellow: #fdd21f; --color-cream: #fcf9f0;
@@ -47,7 +45,7 @@
   --color-sun: var(--sun); --color-sat: var(--sat); --color-ok-text: var(--ok-text); --color-err-text: var(--err-text);
   --color-booked-text: var(--booked-text); --color-toast: var(--toast); --color-toast-text: var(--toast-text); --color-week-line: var(--week-line);
   --color-scrim: var(--scrim);
-  --color-fg: var(--text); --color-page: var(--bg); --color-home-bar: var(--home-bar);
+  --color-fg: var(--text); --color-page: var(--bg);
   --shadow-card: var(--elev-sm); --shadow-pop: var(--elev-lg);
 }
 /* ダーク（data-theme="dark" か、明るいを選んでいない OS のダーク）。色は変数で変わるので、たいていは要らない */
@@ -74,7 +72,7 @@
     --out: #f6f7fd; --weekend: #f8f9ff; --warn: #ffe4ee; --soon: #fff0e3; --past: #eceef6; --violet: #c45200;
     --text: #15163a; --muted: #5d608a; --line: #e1e3fa; --line-strong: #c7caee; --bg: #f3f4ff; --card: #ffffff; --hover: #eef0ff;
     --sun: #e0115f; --sat: #2d2afe; --ok-text: #0a7a45; --err-text: #d1104d;
-    --booked-text: #2421d6; --toast: #15163a; --toast-text: #ffffff; --week-line: #a3a6d8; --scrim: rgba(12, 13, 41, .55); --home-bar: #2d2afe;
+    --booked-text: #2421d6; --toast: #15163a; --toast-text: #ffffff; --week-line: #a3a6d8; --scrim: rgba(12, 13, 41, .55);
     --elev-sm: 0 1px 2px rgba(21, 22, 58, .05), 0 6px 18px rgba(45, 42, 254, .06);
     --elev-lg: 0 18px 44px rgba(21, 22, 58, .22), 0 2px 8px rgba(21, 22, 58, .08);
     --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%235d608a' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
@@ -92,7 +90,7 @@
     --out: #0f1030; --weekend: #111234; --warn: #3d1630; --soon: #3a2412; --past: #1a1b3b; --violet: #ffa04d;
     --text: #eceeff; --muted: #a2a5d4; --line: #2a2c66; --line-strong: #3c3f82; --bg: #0c0d29; --card: #16173e; --hover: #1f2150;
     --sun: #ff6ea6; --sat: #a8c0ff; --ok-text: #4ade9c; --err-text: #ff7aa6;
-    --booked-text: #b9caff; --toast: #eceeff; --toast-text: #0c0d29; --week-line: #4b4f93; --scrim: rgba(0, 0, 0, .65); --home-bar: #2422c9;
+    --booked-text: #b9caff; --toast: #eceeff; --toast-text: #0c0d29; --week-line: #4b4f93; --scrim: rgba(0, 0, 0, .65);
     --elev-sm: 0 1px 2px rgba(0, 0, 0, .4), 0 6px 18px rgba(0, 0, 0, .25);
     --elev-lg: 0 18px 44px rgba(0, 0, 0, .6), 0 2px 8px rgba(0, 0, 0, .4);
     --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23a2a5d4' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
@@ -111,7 +109,7 @@
       --out: #0f1030; --weekend: #111234; --warn: #3d1630; --soon: #3a2412; --past: #1a1b3b; --violet: #ffa04d;
       --text: #eceeff; --muted: #a2a5d4; --line: #2a2c66; --line-strong: #3c3f82; --bg: #0c0d29; --card: #16173e; --hover: #1f2150;
       --sun: #ff6ea6; --sat: #a8c0ff; --ok-text: #4ade9c; --err-text: #ff7aa6;
-      --booked-text: #b9caff; --toast: #eceeff; --toast-text: #0c0d29; --week-line: #4b4f93; --scrim: rgba(0, 0, 0, .65); --home-bar: #2422c9;
+      --booked-text: #b9caff; --toast: #eceeff; --toast-text: #0c0d29; --week-line: #4b4f93; --scrim: rgba(0, 0, 0, .65);
       --elev-sm: 0 1px 2px rgba(0, 0, 0, .4), 0 6px 18px rgba(0, 0, 0, .25);
       --elev-lg: 0 18px 44px rgba(0, 0, 0, .6), 0 2px 8px rgba(0, 0, 0, .4);
       --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23a2a5d4' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
