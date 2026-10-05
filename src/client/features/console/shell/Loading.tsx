@@ -21,16 +21,20 @@ export function Loading({ view, sync }: { view: SyncView; sync: ConsoleSync }) {
       </div>
     );
   }
+  // 読めなかった・グループが消された・ログインし直せなかった。カードで知らせ、次にすることのボタンを出す
+  const title = view.phase === 'gone' ? 'グループが見つかりません' : view.phase === 'relogin' ? 'ログインできませんでした' : '読み込めませんでした';
   return (
-    <div className="py-8 text-muted" id="loading" role="status" aria-label="読み込み中">
-      <div className="py-48 text-center">
-        <p>{view.message}</p>
+    <div className="py-8" id="loading" role="status">
+      <div className="card mx-auto mt-24 max-w-480 px-26 py-28 text-center max-sm:mt-12">
+        <span className="mx-auto mb-10 grid h-44 w-44 place-items-center rounded-full bg-warn text-err-text"><Icon name={view.phase === 'gone' ? 'block' : 'warning'} /></span>
+        <h1 className="m-0 text-18">{title}</h1>
+        <p className="hint mx-auto mt-6 mb-16 text-13">{view.message}</p>
         {view.phase === 'error' && (
           <button type="button" className="btn primary" id="loadRetry" onClick={() => { sync.view.set((v) => ({ ...v, phase: 'boot' })); void sync.refresh('boot'); }}>
             <Icon name="refresh" size="sm" />もう一度読み込む
           </button>
         )}
-        {view.phase === 'gone' && <Link className="btn primary" to="/">入口へ</Link>}
+        {view.phase !== 'error' && <Link className="btn primary" to="/"><Icon name="arrow_back" size="sm" />入口へ</Link>}
       </div>
     </div>
   );

@@ -72,6 +72,8 @@ export function Header({ tab }: { tab: Tab }) {
   const shown = d ? guideShown(d, guide) : false;
   /** 3 つとも済んだら、上の帯の「はじめの 3 ステップ」はアイコンだけにする（目立たせる要がない） */
   const allDone = !!d && d.members.length > 0 && d.sessions.some(isActive) && !!d.channelSet;
+  /** グループが消された・ログインし直せなかった。タブと、はじめの 3 ステップは出さない（移る先が無い） */
+  const dead = v.phase === 'gone' || v.phase === 'relogin';
   const recruitCount = d ? d.sessions.filter((s) => isRecruit(s) || isAdjusting(s)).length : 0;
   /* 「はじめの 3 ステップ」ボタン。カレンダーで出ていれば閉じ、それ以外は出す（押すたびに切り替わる）。出したら、ページの頭まで戻す */
   const toggleGuide = () => {
@@ -103,11 +105,12 @@ export function Header({ tab }: { tab: Tab }) {
             <Icon name="refresh" size="sm" className={hbtnIcon + (v.busy ? ' animate-spin' : '')} /><span className={btxt}>更新</span>
           </button>
         </span>
-        <span className="mx-4 flex items-center gap-6 text-12 text-chrome-muted max-sm:mx-2">
+        {/* あなたの名前。読み込むまでは出さない（「あなた」だけが残らないように） */}
+        <span className="mx-4 flex items-center gap-6 text-12 text-chrome-muted max-sm:mx-2" hidden={!d}>
           <span className="max-sm:absolute max-sm:h-1 max-sm:w-1 max-sm:overflow-hidden max-sm:whitespace-nowrap max-sm:[clip:rect(0_0_0_0)]">あなた</span>
           <b className="max-w-[12em] truncate text-14 font-semibold text-chrome-text max-sm:max-w-[6em]" id="me">{d ? d.me.name : ''}</b>
         </span>
-        <button type="button" id="guideBtnM" className={hbtn(admin ? 'hidden' : 'hidden max-sm:inline-flex', true) + ' max-sm:border-chrome-field-line max-sm:aria-expanded:border-chrome-active max-sm:aria-expanded:bg-chrome-active'} aria-label="はじめの 3 ステップ" {...guideProps}>
+        <button type="button" id="guideBtnM" className={hbtn(admin || dead ? 'hidden' : 'hidden max-sm:inline-flex', true) + ' max-sm:border-chrome-field-line max-sm:aria-expanded:border-chrome-active max-sm:aria-expanded:bg-chrome-active'} aria-label="はじめの 3 ステップ" {...guideProps}>
           <Icon name="flag" size="sm" className={hbtnIcon + (shown ? ' text-chrome-active-ink ' + filled : ' max-sm:text-chrome-accent')} />
         </button>
         {/* スマホではアイコンだけ（グループの名前の場所を残す）。隣の「はじめの 3 ステップ」と同じ丸いボタン */}
@@ -119,9 +122,9 @@ export function Header({ tab }: { tab: Tab }) {
         </button>
         <button type="button" id="logoutBtn" className={hbtn('inline-flex', true) + ' ' + btxt} hidden={!d} title="ログアウト" aria-label="ログアウト" onClick={logout}><Icon name="logout" size="sm" className={hbtnIcon} /></button>
       </div>
-      {/* tabs は e2e が探す印。管理画面では出さない */}
+      {/* tabs は e2e が探す印。管理画面と、グループが消された・ログインし直せなかったときは出さない */}
       <nav className={'tabs -mx-6 min-w-0 items-center gap-2 overflow-x-auto px-6 [grid-area:tabs] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden '
-        + (admin ? 'hidden! ' : 'flex ')
+        + (admin || dead ? 'hidden! ' : 'flex ')
         + 'max-sm:fixed max-sm:inset-x-0 max-sm:bottom-0 max-sm:z-(--z-appbar) max-sm:m-0 max-sm:grid max-sm:grid-cols-5 max-sm:gap-0 max-sm:overflow-visible max-sm:border-t max-sm:border-chrome-line max-sm:bg-chrome '
         + 'max-sm:pt-6 max-sm:pr-[max(4px,env(safe-area-inset-right))] max-sm:pb-[max(8px,env(safe-area-inset-bottom))] max-sm:pl-[max(4px,env(safe-area-inset-left))]'} aria-label="画面">
         {TABS.map(([key, icon, label]) => (
