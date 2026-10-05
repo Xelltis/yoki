@@ -1,5 +1,6 @@
 <!-- 試せる例: 日程調整に ◯ か × で答える。全員が答えると、GM に知らせが届く -->
 <script setup lang="ts">
+import Ms from './Ms.vue';
 import { computed, ref } from 'vue';
 import { addDays, mdw, useMonday } from './demo';
 
@@ -37,7 +38,7 @@ function reset() {
 
 <template>
   <figure class="stage vp-raw">
-    <p class="stage-cap try"><span class="ms" aria-hidden="true">touch_app</span>やってみる</p>
+    <p class="stage-cap try"><Ms name="touch_app" />やってみる</p>
     <div class="card-title">迷宮の底へ <span class="status">調整中</span></div>
     <div class="people"><span class="gm">GM ダン</span><span>アリス</span><span class="you">あなた</span></div>
     <div class="poll">
@@ -50,8 +51,8 @@ function reset() {
         <span class="poll-names">{{ r.names }}</span>
       </div>
     </div>
-    <div v-if="complete" class="decided"><span class="ms fill" aria-hidden="true">check_circle</span>全員の回答がそろいました。GM のダンに知らせが届き、ダンが開催日を選びます</div>
-    <div class="row-btns"><button type="button" class="pill-btn" @click="reset"><span class="ms" aria-hidden="true">restart_alt</span>最初から</button></div>
+    <div v-if="complete" class="decided"><Ms name="check_circle" fill />全員の回答がそろいました。GM のダンに知らせが届き、ダンが開催日を選びます</div>
+    <div class="row-btns"><button type="button" class="pill-btn" @click="reset"><Ms name="restart_alt" />最初から</button></div>
     <p class="say" aria-live="polite">{{ say }}</p>
   </figure>
 </template>

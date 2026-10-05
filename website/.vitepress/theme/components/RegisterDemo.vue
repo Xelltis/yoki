@@ -1,5 +1,6 @@
 <!-- 試せる例: カレンダーで日を選んでから「卓を登録」を押すと、その日の卓になる -->
 <script setup lang="ts">
+import Ms from './Ms.vue';
 import { computed, ref } from 'vue';
 import { addDays, dowClass, md, mdw, useMonday, WD } from './demo';
 
@@ -24,14 +25,14 @@ function open() {
 
 <template>
   <figure class="stage vp-raw">
-    <p class="stage-cap try"><span class="ms" aria-hidden="true">touch_app</span>やってみる</p>
+    <p class="stage-cap try"><Ms name="touch_app" />やってみる</p>
     <div class="week" role="group" aria-label="日を選ぶ">
       <button v-for="(d, i) in days" :key="i" type="button" class="day" :class="dowClass(d)" :aria-pressed="sel === i" @click="pick(i)">
         <span class="w">{{ WD[d.getDay()] }}</span><span class="d">{{ md(d) }}</span>
       </button>
     </div>
     <div class="row-btns">
-      <button type="button" class="pill-btn primary" @click="open"><span class="ms" aria-hidden="true">add</span>{{ picked ? md(picked) + ' に卓を登録' : '卓を登録' }}</button>
+      <button type="button" class="pill-btn primary" @click="open"><Ms name="add" />{{ picked ? md(picked) + ' に卓を登録' : '卓を登録' }}</button>
     </div>
     <div v-if="opened" class="form-peek">
       <div class="t">卓を登録</div>

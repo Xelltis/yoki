@@ -15,17 +15,18 @@ hero:
       text: 使い方を見る
       link: /guide/availability
 
-features:
-  - icon: <span class="ms" aria-hidden="true">event_available</span>
+# 特長（theme/components/HomeFeatures.vue が出す。icon は theme/icons.ts の名前）
+points:
+  - icon: event_available
     title: 全員が空いている日が分かる
     details: 付けるのは、行けない日の印（△・×）だけです。全員の印から、全員が空いている日がカレンダーに浮かびます。
-  - icon: <span class="ms" aria-hidden="true">how_to_vote</span>
+  - icon: how_to_vote
     title: 募集も日程調整も
     details: 参加者を募り、候補日に ◯ か × で答えてもらい、GM が開催日を決める。ここまでを 1 か所で進められます。
-  - icon: <span class="ms" aria-hidden="true">notifications</span>
+  - icon: notifications
     title: Discord に自動で知らせる
     details: 開催前の知らせ、日程調整の呼びかけ、回答がそろったことを、チャンネルに送ります。メンションも付きます。
-  - icon: <span class="ms" aria-hidden="true">login</span>
+  - icon: login
     title: Discord でログイン
     details: グループは Discord サーバーごとに作ります。入れるのは、そのサーバーにいる人だけです。
 ---
