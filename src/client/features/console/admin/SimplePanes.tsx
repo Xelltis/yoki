@@ -27,7 +27,7 @@ export function AdminsPane() {
             <span className="inline-flex h-30 items-center gap-6 rounded-full border border-accent-line bg-accent-soft py-0 pr-6 pl-12 text-13 font-semibold text-accent-text" key={n}>
               {n}
               {d.isAdmin && list.length > 1 && (
-                <button type="button" className="grid cursor-pointer place-items-center rounded-[50%] border-0 bg-transparent p-2 text-inherit opacity-70 hover:bg-chrome-hover hover:opacity-100" title="管理者から外す" aria-label={n + ' を管理者から外す'}
+                <button type="button" className="grid cursor-pointer place-items-center rounded-[50%] border-0 bg-transparent p-2 text-inherit opacity-70 hover:bg-accent-line hover:opacity-100" title="管理者から外す" aria-label={n + ' を管理者から外す'}
                   onClick={() => askConfirm({ title: '管理者から外しますか？', message: '「' + n + '」を管理者の名簿から外します。', ok: '外す', danger: true }, () => { void call('admAdd', 'admMsg', 'setAdmin', { name: n, admin: false }); })}>
                   <Icon name="close" size="xs" />
                 </button>

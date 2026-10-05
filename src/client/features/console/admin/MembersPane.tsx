@@ -88,8 +88,9 @@ export function MembersPane() {
             {d.members.map((x) => {
               const part = act.filter((s) => s.members.indexOf(x.name) >= 0 && s.gm !== x.name).length, gm = act.filter((s) => s.gm === x.name).length;
               return (
-                <tr className="click" data-name={x.name} key={x.name}>
-                  <td><b>{x.name}</b>{x.linked && <>{' '}<span className="hint" title="Discord でログインしたことがある"><Icon name="check" size="xs" />ログイン済み</span></>}</td>
+                // いまフォームで直している人の行は、色を付ける
+                <tr className={'click' + (x.name === sel ? ' checked' : '')} aria-selected={x.name === sel} data-name={x.name} key={x.name}>
+                  <td><b>{x.name}</b>{x.linked && <>{' '}<span className="hint inline-block whitespace-nowrap" title="Discord でログインしたことがある"><Icon name="check" size="xs" />ログイン済み</span></>}</td>
                   <td>{x.discordId ? <>{x.discordId}{x.idOk === false && <>{' '}<span className="hint text-err-text" title="Discord のユーザーID は 17〜20 桁の数字です"><Icon name="warning" size="xs" /> 桁がおかしい</span></>}</> : <span className="hint">（未設定）</span>}</td>
                   <td>{x.note}</td><td className="c">{part}</td><td className="c">{gm}</td>
                 </tr>
