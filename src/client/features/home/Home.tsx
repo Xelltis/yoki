@@ -5,6 +5,8 @@ import { useEffect } from 'react';
 import type { MeResponse } from '../../../shared/api';
 import { isReturnPath } from '../../../shared/routes';
 import { HELP_URL } from '../../app/links';
+import { fetchMe, ME_KEY } from '../../app/me';
+import { GroupTile } from '../../ui/GroupTile';
 import { Icon } from '../../ui/Icon';
 import type { IconName } from '../../ui/icons';
 import { CreateGroup } from './CreateGroup';
@@ -34,17 +36,9 @@ const FEATURES: [IconName, string, string, string][] = [
   ['campaign', '募集と日程調整', '候補日に ◯ × で答えるだけ', 'bg-soon text-soon-text'],
   ['notifications', 'Discord に知らせる', '開催前に自動でお知らせ', 'bg-warn text-err-text'],
 ];
-/** グループの頭文字の札の色（並びの順にくり返す） */
-const TILE = ['bg-brand', 'bg-orange', 'bg-pink', 'bg-brand-light'];
-
-async function fetchMe(): Promise<MeResponse> {
-  const res = await fetch('/api/me');
-  if (!res.ok) throw new Error('読み込めませんでした。');
-  return (await res.json()) as MeResponse;
-}
 
 export function Home() {
-  const me = useQuery({ queryKey: ['me'], queryFn: fetchMe });
+  const me = useQuery({ queryKey: ME_KEY, queryFn: fetchMe });
   useEffect(() => { document.title = '卓予定'; }, []);
   const q = new URLSearchParams(location.search);
   const say = NOTICE[q.get('login') || ''] || (q.get('deleted') === '1' ? NOTICE.deleted : null);
@@ -164,7 +158,7 @@ function Groups({ me }: { me: LoggedIn }) {
             <li key={g.id}>
               <Link className="flex items-center gap-14 rounded-md border border-line bg-card px-16 py-14 text-inherit no-underline transition-[border-color,background-color] duration-(--dur-fast) hover:border-accent-line hover:bg-hover"
                 to="/g/$groupId/" params={{ groupId: g.id }}>
-                <span className={'grid h-44 w-44 flex-none place-items-center rounded-[12px] text-18 font-bold text-white ' + TILE[i % TILE.length]} aria-hidden="true">{g.title.slice(0, 1)}</span>
+                <GroupTile title={g.title} index={i} />
                 <span className="min-w-0">
                   <b className="block truncate text-15">{g.title}</b>
                   <small className="block truncate text-[12.5px] text-muted">{g.guildName}</small>
