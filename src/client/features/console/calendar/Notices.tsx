@@ -1,4 +1,4 @@
-// 右上の「卓予定」。今日・明日の卓、募集中・調整中、期間や開催日を過ぎた卓を並べる。押すとその日・タブ・卓へ
+// 右上の「グループの予定」。今日・明日の卓、募集中・調整中、期間や開催日を過ぎた卓を並べる。押すとその日・タブ・卓へ
 import type { ReactNode } from 'react';
 import type { ConsoleData, ConsoleSession } from '../../../../shared/api';
 import { store } from '../../../app/storage';

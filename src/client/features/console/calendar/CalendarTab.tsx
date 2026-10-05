@@ -54,7 +54,7 @@ export function CalendarTab() {
   return (
     <section id="tab-cal">
       <SetupGuide d={d} />
-      {/* 左にカレンダー、右に内訳と卓予定。狭い画面では縦に並べる */}
+      {/* 左にカレンダー、右に内訳とグループの予定。狭い画面では縦に並べる */}
       <div className="grid grid-cols-[minmax(0,7fr)_minmax(300px,3fr)] items-start gap-20 max-lg:grid-cols-[minmax(0,1fr)]">
         <div>
           <div className="mb-12 flex flex-wrap items-center gap-x-12 gap-y-10">
@@ -104,7 +104,7 @@ export function CalendarTab() {
         <div className="sticky top-[calc(var(--appbar-h)+16px)] flex flex-col gap-16 max-lg:static">
           <DayDetail d={d} target={target} key={u.selDay} />
           <div className="card mb-0">
-            <h3>卓予定</h3>
+            <h3>グループの予定</h3>
             <Notices d={d} onTab={goTab} onTarget={(n) => ui.set((s) => ({ ...s, target: n }))} onDay={(k) => { selectDay(k); requestAnimationFrame(revealDay); }} />
           </div>
         </div>

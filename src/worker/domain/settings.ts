@@ -1,4 +1,4 @@
-// グループの設定（管理画面の「知らせ」と「この卓予定」。GAS 版 Settings.js）。知らせの設定・グループの名前・シリーズごとの知らせ
+// グループの設定（管理画面の「知らせ」と「このグループ」。GAS 版 Settings.js）。知らせの設定・グループの名前・シリーズごとの知らせ
 import { getChannel, isChannelId, listChannels } from '../discord/channel';
 import { badRequest } from '../lib/errors';
 import { fmtDateTime } from '../lib/jst';
