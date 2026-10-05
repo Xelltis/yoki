@@ -177,6 +177,7 @@ TypeScript と React 19 で書き、Vite が組み立てる。1 つの SPA で�
 **部品**（`ui/`）。
 
 - 窓（`Modal.tsx`）は body の直下の層に描き、`hidden` で開け閉めする。開いているあいだは後ろを触れなくし（inert）、閉じたらフォーカスを戻す。Esc はいちばん手前の窓だけを閉じる。確かめる窓（`confirm.tsx`）は、ほかの窓より手前の層に出す
+- 窓の下のボタンは右に寄せ、「やめる」「閉じる」の右に進むボタンを置く。消すなど危ないボタン（`danger`）は左の端に置く（`components.css` の `.modal .btns`）。スマホでは進むボタンを広げる
 - 画面の状態（選んでいる日・開いている窓など）は、小さな入れ物（`store.ts`。`useSyncExternalStore`）に置く。書きかけの入力は、保存するまで読み直しで上書きしない
 - アイコンは `<Icon name>` で、名前は `icons.ts` の `ICON_NAMES` に置き、型で確かめる。Google Fonts から読む名前の一覧は、Vite のプラグイン（`vite.config.ts` の `iconNames`）が `index.html` の `%ICON_NAMES%` に入れる
 - 開発用ログインの部品は `import.meta.env.DEV` のときだけ描くので、本番の組み立てでは消える（`noDevLogin` が JS を見て確かめる）。ログアウトと開発用ログインは、素のフォームの POST（サーバーが cookie を付けて移す）
