@@ -34,6 +34,15 @@ function deployValues(config: WorkerConfig): void {
 const root = path.join(import.meta.dirname, 'src/client');
 
 /**
+ * index.html の %APP_ORIGIN% を、公開するアドレス（YOKI_APP_URL。deploy.yml が渡す）にする。リンクを貼ったときの画像（og:image）は、
+ * アドレスを省かない形で書く必要があるため。値が無い（手元）ときは空にして、/og.png のような形にする
+ */
+function appOrigin(): Plugin {
+  const origin = (process.env.YOKI_APP_URL ?? '').replace(/\/+$/, '');
+  return { name: 'yoki:app-origin', transformIndexHtml: (html) => html.replaceAll('%APP_ORIGIN%', origin) };
+}
+
+/**
  * 組み立てた JS に開発用の道（/dev/login・/dev/reset・/dev/google）が残っていたら、組み立てを止める。
  * 開発用ログイン（src/worker/auth/dev.ts）と開発用の偽の Google（src/worker/google/dev.ts）は import.meta.env.DEV のときだけ使うので、組み立てでは消えるはず
  */
@@ -55,6 +64,7 @@ export default defineConfig(({ command }) => ({
     react(),
     // 見た目（Tailwind CSS。src/client/index.css が入口）
     tailwindcss(),
+    appOrigin(),
     // アイコン（~icons/<集まり>/<名前> を import すると、組み立てのときに SVG の React の部品になる。使う名前は src/client/ui/icons.ts）。
     // 大きさは 1em（文字の大きさに合わせる）
     Icons({ compiler: reactIconCompiler, scale: 1 }),

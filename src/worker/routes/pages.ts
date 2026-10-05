@@ -11,20 +11,35 @@ import { ADMIN_PANES, OPERATOR_PANES, TAB_PATHS } from '../../shared/routes';
 import type { AppEnv } from '../app';
 import { groupAccess } from '../auth/guard';
 import { isOperator } from '../auth/operator';
+import { appOrigin } from '../auth/origin';
 import { currentViewer } from '../auth/session';
 import { readLegal } from '../domain/legal';
 import { legalPage, noticePage } from './html';
+import { isPreviewBot, type OgPage, SITE_DESCRIPTION, withOg } from './og';
 
 export const pageRoutes = new Hono<AppEnv>();
 
 /** 画面の骨組み（'/' の index.html）。どの道も、画面の中の道（src/client/router.tsx）が中身を決める */
 const shell = (c: Context<AppEnv>) => c.env.ASSETS.fetch(new URL('/', c.req.url));
 
-/** ログインしに行く（Discord の設定が無い手元では入口へ）。戻り先は開こうとした道 */
-const toLogin = (c: Context<AppEnv>) => {
+/**
+ * リンクの中身を読みに来たもの（Discord など。routes/og.ts）に返す、画面の骨組み。OGP をこの道の文にする。
+ * 骨組みにはグループの中身が入っていない（中身は、ログインした人が API で読む）ので、ログインしていなくても返してよい
+ */
+async function previewShell(c: Context<AppEnv>, page: Omit<OgPage, 'url'>) {
+  const origin = appOrigin(c.env, c.req.url);
+  const html = await (await shell(c)).text();
+  return c.html(withOg(html, origin, { ...page, url: origin + c.req.path }));
+}
+
+/** ログインしに行く（Discord の設定が無い手元では入口へ）。戻り先は開こうとした道。リンクの中身を読みに来たものには、卓予定の見た目を返す */
+const toLogin = (c: Context<AppEnv>, preview: Omit<OgPage, 'url'>) => {
+  if (isPreviewBot(c.req.header('User-Agent'))) return previewShell(c, preview);
   const path = c.req.path;
   return c.redirect(c.env.DISCORD_CLIENT_ID ? '/auth/login?return_to=' + encodeURIComponent(path) : '/?return_to=' + encodeURIComponent(path));
 };
+/** グループの画面のリンクの見た目。グループの名前は出さない（ログインしていない人には、グループのことを見せない） */
+const GROUP_PREVIEW = { title: '卓予定のグループ', description: 'Discord でログインすると、このグループの卓の予定・メンバーの都合・募集・日程調整を見られます。' };
 /** 末尾の / が無い道は、付けた道へ移す */
 const withSlash = (c: Context<AppEnv>) => c.redirect(c.req.path + '/', 301);
 
@@ -44,13 +59,13 @@ async function groupPage(c: Context<AppEnv>, admin: boolean) {
       return c.html(noticePage('このグループには入れません', 'このグループの Discord サーバーのメンバーではありません。サーバーに入ってから、もう一度開いてください。', { href: '/', label: '入口へ' }), 403);
     default:
       // ログインしていない・参加しているサーバーの控えが古い。Discord に聞いて戻ってくる
-      return toLogin(c);
+      return toLogin(c, GROUP_PREVIEW);
   }
 }
 
 async function operatorPage(c: Context<AppEnv>) {
   const viewer = await currentViewer(c);
-  if (!viewer) return toLogin(c);
+  if (!viewer) return toLogin(c, { title: '卓予定', description: SITE_DESCRIPTION });
   if (!isOperator(c.env, viewer.id, new URL(c.req.url))) {
     return c.html(noticePage('運営者だけが開けます', 'この画面は、卓予定を公開している運営者だけが使えます。', { href: '/', label: '入口へ' }), 403);
   }
@@ -71,5 +86,5 @@ for (const p of ['/g/:id/', `/g/:id/${TAB}/`]) pageRoutes.get(p, (c) => groupPag
 for (const p of ['/g/:id/admin/', `/g/:id/admin/${PANE}/`]) pageRoutes.get(p, (c) => groupPage(c, true));
 for (const p of ['/admin/', `/admin/${OP_PANE}/`]) pageRoutes.get(p, (c) => operatorPage(c));
 
-pageRoutes.get('/terms', async (c) => c.html(legalPage('terms', await readLegal(c.env.DB))));
-pageRoutes.get('/privacy', async (c) => c.html(legalPage('privacy', await readLegal(c.env.DB))));
+pageRoutes.get('/terms', async (c) => c.html(legalPage('terms', await readLegal(c.env.DB), appOrigin(c.env, c.req.url))));
+pageRoutes.get('/privacy', async (c) => c.html(legalPage('privacy', await readLegal(c.env.DB), appOrigin(c.env, c.req.url))));

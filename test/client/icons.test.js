@@ -26,6 +26,18 @@ test('どのページも、同じアイコンと manifest を参照し、その�
   expect(fs.existsSync(path.join(root, PUBLIC, 'icon.png')), '古いアイコンは消した').toBe(false);
 });
 
+test('リンクを貼ったときの見た目（OGP）: 骨組みと Worker が同じ画像を指し、画像はサイトと同じもの（1600×900）', () => {
+  const html = read('src/client/index.html');
+  expect(html).toContain('<meta property="og:image" content="%APP_ORIGIN%/og.png">');
+  expect(read('src/worker/routes/og.ts')).toContain('/og.png');
+  const app = fs.readFileSync(path.join(root, PUBLIC, 'og.png')), site = fs.readFileSync(path.join(root, 'website/public/og.png'));
+  expect(pngSize(app)).toEqual([1600, 900]);
+  expect(app.equals(site), 'npm run og-image が両方に書き出す').toBe(true);
+  // 一言は、骨組みと Worker で同じ
+  const desc = /export const SITE_DESCRIPTION = '([^']+)'/.exec(read('src/worker/routes/og.ts'))[1];
+  expect(html).toContain('<meta name="description" content="' + desc + '">');
+});
+
 test('PNG の大きさが、名前と sizes に合う', () => {
   for (const [file, size] of [['icon-192.png', 192], ['icon-512.png', 512], ['icon-maskable-512.png', 512], ['apple-touch-icon.png', 180]]) {
     expect(pngSize(fs.readFileSync(path.join(root, PUBLIC, file))), file).toEqual([size, size]);

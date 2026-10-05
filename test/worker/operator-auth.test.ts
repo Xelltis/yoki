@@ -70,6 +70,15 @@ describe('締め出し', () => {
   });
 });
 
+describe('運営者の管理画面のリンク', () => {
+  test('リンクの中身を読みに来たものには、ログインへ送らずに、卓予定の見た目を返す', async () => {
+    const res = await call('/admin/', { headers: { 'User-Agent': 'Slackbot-LinkExpanding 1.0 (+https://api.slack.com/robots)' } });
+    expect(res.status).toBe(200);
+    expect(await res.text()).toContain('<meta property="og:title" content="卓予定">');
+    expect((await call('/admin/')).status).toBe(302);
+  });
+});
+
 describe('ログインのあとの戻り先', () => {
   test('入口・グループのページとタブ・グループの管理画面と区分・運営者の管理画面と区分だけ', () => {
     for (const ok of ['/', '/g/abc/', '/g/abc/recruit/', '/g/abc/settings/', '/g/abc/admin/', '/g/abc/admin/danger/', '/g/abc/admin/admins/', '/admin/', '/admin/legal/']) {
