@@ -3,7 +3,7 @@
 /** カード */
 export const card = 'mb-18 rounded-lg border border-line bg-card px-26 py-24 shadow-card max-sm:px-20 max-sm:py-20';
 /** 見出し（アイコンと並べる） */
-export const h2 = 'm-0 mb-14 flex items-center gap-8 text-18 font-bold [&>.material-icons]:text-accent-text';
+export const h2 = 'm-0 mb-14 flex items-center gap-8 text-18 font-bold [&>.ic]:text-accent-text';
 /** 小さな説明 */
 export const hint = 'my-8 text-13 text-muted';
 /** 大きなボタン（入口の大事な操作） */

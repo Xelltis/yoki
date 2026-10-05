@@ -1,14 +1,9 @@
 /* 部品（components の層）。いくつもの画面で使う形。場面ごとの調整は、Tailwind のクラスで足す（クラスは部品に勝つ） */
 
-/* アイコン（Material Symbols Rounded。<Icon name>）。飾りなので読み上げない（aria-hidden） */
-.material-icons {
-  font-family: 'Material Symbols Rounded'; font-weight: normal; font-style: normal; font-size: 20px; line-height: 1;
-  letter-spacing: normal; text-transform: none; display: inline-block; white-space: nowrap; word-wrap: normal; direction: ltr;
-  font-feature-settings: 'liga'; -webkit-font-smoothing: antialiased; font-variation-settings: 'FILL' 0;
-  width: 1em; overflow: hidden; flex-shrink: 0; vertical-align: -5px; user-select: none;
-}
-.material-icons.sm { font-size: 18px; vertical-align: -4px; }
-.material-icons.xs { font-size: 14px; vertical-align: -2px; }
+/* アイコン（SVG。<Icon name>）。大きさは文字の大きさ（1em）、色は文字の色。飾りなので読み上げない（aria-hidden） */
+.ic { display: inline-block; width: 1em; height: 1em; font-size: 20px; flex-shrink: 0; vertical-align: -5px; user-select: none; }
+.ic.sm { font-size: 18px; vertical-align: -4px; }
+.ic.xs { font-size: 14px; vertical-align: -2px; }
 
 /* 小さな説明 */
 .hint { color: var(--muted); font-size: 12px; text-wrap: pretty; }
@@ -20,7 +15,7 @@ p.hint { max-width: 62em; margin: 8px 0 12px; }
 .card > :last-child { margin-bottom: 0; }
 /* カードの見出し。アイコンと字のあいだを空け、横の小さな説明は細い字で、入らなければ下の行へ */
 .card > h3 { display: flex; flex-wrap: wrap; align-items: center; column-gap: 6px; row-gap: 2px; }
-.card > h3 > .material-icons { color: var(--accent-text); }
+.card > h3 > .ic { color: var(--accent-text); }
 .card > h3 small { font-weight: 400; }
 @media (width < 601px) { .card { padding: 14px; } }
 
@@ -31,7 +26,7 @@ p.hint { max-width: 62em; margin: 8px 0 12px; }
   background: var(--card); color: var(--text); cursor: pointer; white-space: nowrap; text-decoration: none;
   transition: background-color var(--dur-fast) ease-out, border-color var(--dur-fast) ease-out, transform var(--dur-fast) ease-out;
 }
-.btn .material-icons { vertical-align: 0; }
+.btn .ic { vertical-align: 0; }
 .btn:hover:not(:disabled) { background: var(--hover); }
 .btn:active:not(:disabled) { transform: scale(.97); }
 .btn.icon { width: var(--h-control); padding: 0; }
@@ -43,7 +38,7 @@ p.hint { max-width: 62em; margin: 8px 0 12px; }
 .btn.danger-fill:hover:not(:disabled) { background: color-mix(in srgb, var(--err-text) 86%, var(--text)); }
 .btn.small { min-height: var(--h-control-sm); padding: 0 12px; font-size: 12px; }
 .btn.xl { min-height: 44px; padding: 0 22px; font-size: 15px; font-weight: 700; box-shadow: var(--elev-sm); }
-.btn.xl .material-icons { font-size: 22px; }
+.btn.xl .ic { font-size: 22px; }
 .btn.on { background: var(--accent-soft); border-color: var(--accent-line); color: var(--accent-text); }
 .btn:disabled { opacity: .45; cursor: not-allowed; }
 
