@@ -47,7 +47,8 @@ export function UsersPane() {
                     <td>{u.groups.map((g) => g.title).join('、') || <span className="hint">なし</span>}</td>
                     <td className="nw">{fmt(u.lastLoginAt)}<small className={idCls}>{'はじめて ' + fmt(u.createdAt)}</small></td>
                     <td className="c">{u.logins}</td>
-                    <td className="nw flex flex-wrap justify-end gap-6 max-sm:justify-start">
+                    {/* マスそのものを flex にすると表の行からずれるので、中に並べる箱を置く */}
+                    <td className="nw"><div className="flex flex-wrap justify-end gap-6 max-sm:justify-start">
                       {u.logins > 0 && <button type="button" className="btn small" data-logout={u.id} onClick={() => logout(u)}><Icon name="logout" size="sm" />ログインを切る</button>}
                       {!u.operator && (u.bannedAt
                         ? <button type="button" className="btn small" data-unban={u.id} onClick={() => { void act(userPath(u.id, 'ban'), { banned: false }); }}><Icon name="undo" size="sm" />戻す</button>
@@ -57,7 +58,7 @@ export function UsersPane() {
                             <button type="button" className="btn small danger" data-del={u.id} onClick={() => del(u)}><Icon name="delete" size="sm" />消す</button>
                           </>
                         ))}
-                    </td>
+                    </div></td>
                   </tr>
                 ))}
                 {!list.length && <tr><td colSpan={5} className="hint">{q ? '合う人がいません。' : 'まだ誰もログインしていません。'}</td></tr>}
