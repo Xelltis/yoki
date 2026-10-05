@@ -46,6 +46,23 @@ describe('グループのページ（/g/:id/）', () => {
     expect(res.headers.get('Location')).toBe('/auth/login?return_to=%2Fg%2Fp1%2F');
   });
 
+  test('リンクの中身を読みに来たもの（Discord など）には、ログインへ送らずに、卓予定の見た目（OGP）の骨組みを返す。グループの名前は出さない', async () => {
+    await makeGroup('p9', 'gz');
+    const res = await call('/g/p9/', { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Discordbot/2.0; +https://discordapp.com)' } });
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    expect(html).toContain('<meta property="og:title" content="卓予定のグループ">');
+    expect(html).toContain('<meta property="og:url" content="https://yoki.test/g/p9/">');
+    expect(html).toContain('<meta property="og:image" content="https://yoki.test/og.png">');
+    // 骨組みにあった OGP のタグは、置き換えて 1 つずつにする
+    expect(html.match(/og:title/g)).toHaveLength(1);
+    expect(html.match(/twitter:card/g)).toHaveLength(1);
+    expect(html).toContain('<div id="root"></div>');
+    expect(html).not.toContain('テストの卓');
+    // ふつうのブラウザは、今までどおりログインへ
+    expect((await call('/g/p9/', { headers: { 'User-Agent': 'Mozilla/5.0 Chrome/140' } })).status).toBe(302);
+  });
+
   test('サーバーのメンバーなら画面を返し、メンバーを自動で作る（Discord ID 付き）', async () => {
     await makeGroup('p2', 'gq');
     const sid = await loginAs({ id: '20', name: 'レン' }, [{ id: 'gq', name: 'Q' }]);

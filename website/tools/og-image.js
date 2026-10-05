@@ -1,6 +1,6 @@
-// サイトを SNS に貼ったときに出る画像（og.png）を、og-image.html から書き出す。
+// サイトとアプリのリンクを SNS や Discord に貼ったときに出る画像（og.png）を、og-image.html から書き出す。
 //   npm run og-image
-// ページは 1600×900 で組んであり、そのままの大きさで website/public/og.png に出す（リポジトリに入れる）。
+// ページは 1600×900 で組んであり、そのままの大きさで website/public/og.png に出し、アプリの src/client/public/og.png にも写す（どちらもリポジトリに入れる）。
 // 文字は Google Fonts から読むので、書き出しにはネット接続が要る。アイコンは、ページの <span class="ms">名前</span> を
 // Material Symbols Rounded（@iconify-json/material-symbols。Apache License 2.0）の塗りの形の SVG にして入れる（フォントや画像は読まない）
 // 初めて使う前に、ブラウザを入れておく: npx playwright install chromium
@@ -32,5 +32,7 @@ await page.setContent(html, { waitUntil: 'networkidle' });
 await page.evaluate(() => document.fonts.ready);
 await page.waitForTimeout(800);
 await page.screenshot({ path: png });
+const appPng = path.join(here, '../../src/client/public/og.png');
+fs.copyFileSync(png, appPng);
 await browser.close();
-console.log(path.relative(path.join(here, '../..'), png), Math.round(fs.statSync(png).size / 1024), 'KB');
+for (const f of [png, appPng]) console.log(path.relative(path.join(here, '../..'), f), Math.round(fs.statSync(f).size / 1024), 'KB');

@@ -78,6 +78,10 @@ describe('ページ', () => {
     expect(t.html).toContain('<h2>7. 保証と責任</h2>');
     // もう一方のページへの道。いまのページはリンクにしない
     expect(t.html).toContain('<span>利用規約</span><a href="/privacy">プライバシーポリシー</a>');
+    // リンクを貼ったときの見た目
+    expect(t.html).toContain('<meta property="og:title" content="利用規約 - 卓予定">');
+    expect(t.html).toContain('<meta property="og:url" content="https://yoki.test/terms">');
+    expect(t.html).toContain('<meta property="og:image" content="https://yoki.test/og.png">');
     const p = await page('/privacy');
     expect(p.html).toContain('<h1>プライバシーポリシー</h1>');
     expect(p.html).toContain('<a href="/terms">利用規約</a><span>プライバシーポリシー</span>');

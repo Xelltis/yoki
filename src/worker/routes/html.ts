@@ -2,6 +2,7 @@
 import { type AdminLegal, LEGAL_KINDS, LEGAL_TITLES, type LegalKind } from '../../shared/admin';
 import { fmtDateLong } from '../lib/jst';
 import { esc, inline, renderDoc } from '../lib/markup';
+import { ogTags } from './og';
 
 /** どのページにも付ける頭のタグ（ファビコン・ホーム画面のアイコン・manifest・文字。画面の index.html と同じ） */
 const HEAD_ICONS = '<link rel="icon" href="/favicon.ico" sizes="32x32"><link rel="icon" href="/icon-192.png" type="image/png" sizes="192x192"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><link rel="manifest" href="/manifest.webmanifest"><meta name="theme-color" content="#2d2afe">'
@@ -28,14 +29,14 @@ export function noticePage(title: string, message: string, link: { href: string;
 <body><div class="card"><img class="logo" src="/icon-192.png" alt=""><h1>${esc(title)}</h1><p>${esc(message)}</p><p><a href="${esc(link.href)}">${esc(link.label)}</a></p></div></body></html>`;
 }
 
-/** 利用規約・プライバシーポリシーのページ。上に運営者と問い合わせ先、下にもう一方への道を出す。JS は使わない */
-export function legalPage(kind: LegalKind, legal: AdminLegal): string {
+/** 利用規約・プライバシーポリシーのページ。上に運営者と問い合わせ先、下にもう一方への道を出す。JS は使わない。origin は公開しているアドレス（リンクの見た目に使う） */
+export function legalPage(kind: LegalKind, legal: AdminLegal, origin: string): string {
   const doc = legal[kind], title = LEGAL_TITLES[kind];
   const unset = '<span class="unset">まだ設定されていません</span>';
   const links = LEGAL_KINDS.map((k) => (k === kind ? '<span>' + LEGAL_TITLES[k] + '</span>' : '<a href="/' + k + '">' + LEGAL_TITLES[k] + '</a>')).join('') + '<a href="/">卓予定の入口へ</a>';
   return `<!doctype html>
 <html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>${title} - 卓予定</title>${HEAD_ICONS}
+<title>${title} - 卓予定</title>${HEAD_ICONS}${ogTags(origin, { title: title + ' - 卓予定', description: '卓予定（TRPG の卓の予定を、Discord サーバーの仲間と管理する Web アプリ）の' + title + 'です。', url: origin + '/' + kind })}
 <style>
   ${COLORS}
   body { font-size: 15px; line-height: 1.8; }
