@@ -204,7 +204,7 @@ npm run site:build   組み立てる（website/.vitepress/dist/）
 | `npm run types` | `wrangler.jsonc` から型（`worker-configuration.d.ts`）を作り直す |
 | `npm run site` / `site:build` / `site:preview` | サイトを手元で開く・組み立てる・組み立てたものを開く（下の「サイト」） |
 | `npm run screenshots` | サイトに載せるアプリのスクリーンショットを `website/public/screenshots/` に撮る（開発サーバーをその場で立てる） |
-| `npm run og-image` | SNS に貼ったときに出る画像を `website/public/og.png` に書き出す |
+| `npm run og-image` | SNS や Discord にリンクを貼ったときに出る画像を、`website/public/og.png` とアプリの `src/client/public/og.png` に書き出す（同じもの） |
 | `npm run icons` | `brand/yoki.png` から、ファビコン（`favicon.ico`）・ホーム画面と上の帯のロゴ（`icon-192.png`）・iPhone と Android のアイコンを、`src/client/public/` と `website/public/` に書き出す。元の絵を変えたら回して、出したファイルをコミットする |
 
 ## 書くときの決まり
