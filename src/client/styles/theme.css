@@ -125,7 +125,8 @@
     --dur-fast: 120ms; --dur: 180ms;
   }
   @media (pointer: coarse) { :root { --h-control: 40px; --h-control-sm: 34px; } }
-  /* 上の帯とスマホの下のタブの高さ（貼り付けた要素の位置に使う）。管理画面と運営の管理画面は 1 段で、下のタブが無い */
+  /* 上の帯とスマホの下のタブの高さ（貼り付けた要素の位置に使う）。2 段になるのはタブレットの幅だけ。管理画面と運営の管理画面は 1 段で、下のタブが無い */
+  @media (width >= 901px) { :root { --appbar-h: 56px; } }
   @media (width < 601px) { :root { --appbar-h: 56px; --nav-h: 64px; } }
   body[data-area="admin"], body[data-area="operator"] { --appbar-h: 56px; --nav-h: 0px; }
 }
