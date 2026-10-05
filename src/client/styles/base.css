@@ -30,8 +30,9 @@ tr:last-child > td { border-bottom: 0; }
 /* 文字サイズ。端末ごとに ふつう（そのまま）・中・大。画面全体を拡げる */
 :root[data-font="m"] body { zoom: 1.12; }
 :root[data-font="l"] body { zoom: 1.25; }
-/* 横のスクロールバーの分を、いつも空けておく（開け閉めで横にずれないように） */
-@media (width >= 601px) { html { scrollbar-gutter: stable; } }
+/* 窓を開いてページのスクロールを止めるとき、スクロールバーが出ていたら、その分の場所を残す（窓の開け閉めで横にずれないように。ModalManager が印を付ける）。
+ * いつも空けておくと、スクロールバーの出ない短いページで、右端に地の色の隙間ができる（上の帯も届かない）ので、そうしない */
+html.modal-open.has-scrollbar { scrollbar-gutter: stable; }
 
 /* 入力欄と選ぶ欄 */
 select, input[type=text], input[type=search], input[type=date], input[type=time], input[type=password], textarea {
