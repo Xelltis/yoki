@@ -26,6 +26,8 @@ function deployValues(config: WorkerConfig): void {
   if (db && env.YOKI_D1_DATABASE_ID) db.database_id = env.YOKI_D1_DATABASE_ID;
   if (env.YOKI_APP_URL) config.vars.APP_URL = env.YOKI_APP_URL;
   if (env.YOKI_DISCORD_CLIENT_ID) config.vars.DISCORD_CLIENT_ID = env.YOKI_DISCORD_CLIENT_ID;
+  // Google カレンダーとの連携は、無くても動くので DEPLOY_VALUES（欠けたら止まる一覧）には入れない
+  if (env.YOKI_GOOGLE_CLIENT_ID) config.vars.GOOGLE_CLIENT_ID = env.YOKI_GOOGLE_CLIENT_ID;
 }
 
 const root = path.join(import.meta.dirname, 'src/client');
@@ -47,7 +49,7 @@ function noDevLogin(): Plugin {
     name: 'yoki:no-dev-login',
     apply: 'build',
     generateBundle(_, bundle) {
-      const bad = Object.values(bundle).filter((f) => f.type === 'chunk' && /\/dev\/(login|reset)/.test(f.code)).map((f) => f.fileName);
+      const bad = Object.values(bundle).filter((f) => f.type === 'chunk' && /\/dev\/(login|reset|google)/.test(f.code)).map((f) => f.fileName);
       if (bad.length) this.error('組み立てた JS に開発用ログインが残っています: ' + bad.join(', '));
     },
   };
