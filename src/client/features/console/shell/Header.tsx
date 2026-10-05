@@ -103,7 +103,8 @@ export function Header({ tab }: { tab: Tab }) {
         button={<>
           <img className={logo} src="/icon-192.png" alt="" width={32} height={32} />
           <span className="min-w-0 truncate max-sm:text-14" id="title">{d ? d.title : ''}</span>
-          <span className={areaBadge + (admin ? ' inline-block' : ' hidden')}>管理</span>
+          {/* スマホでは札を出さない（グループ名の場所を残す。管理画面は見出しで分かる） */}
+          <span className={areaBadge + (admin ? ' inline-block max-sm:hidden' : ' hidden')}>管理</span>
           <Icon name="expand_more" size="sm" className="shrink-0 text-chrome-muted" />
         </>}>
         <p className={menuHead}>グループ</p>
@@ -154,16 +155,18 @@ export function Header({ tab }: { tab: Tab }) {
         </Link>
         {/* あなたのこと: 設定（名前・この端末）・見た目・ログアウト。設定を開いているあいだは、押してある見た目 */}
         <Menu id="meMenu" buttonId="meBtn" active={tab === 'settings'}
-          buttonClass={hbtn() + ' gap-6 max-sm:px-8 data-active:bg-chrome-active data-active:text-chrome-active-ink'}
+          buttonClass={hbtn() + ' gap-6 max-sm:w-(--h-control) max-sm:px-0 data-active:bg-chrome-active data-active:text-chrome-active-ink'}
           label={d ? 'あなた（' + d.me.name + '）のメニュー' : 'あなたのメニュー'} title="設定・見た目・ログアウト"
           button={<>
             <Icon name="person" size="sm" className={hbtnIcon + ' sm:hidden'} />
             <span className="text-12 font-normal opacity-80 max-sm:hidden lg:max-2xl:hidden">あなた</span>
-            <b className="max-w-[12em] truncate text-14 font-semibold max-sm:max-w-[6em]" id="me" hidden={!d}>{d ? d.me.name : ''}</b>
+            {/* スマホでは名前を隠してアイコンだけにする（グループ名の場所を残す）。名前はメニューの頭に出す */}
+            <b className="max-w-[12em] truncate text-14 font-semibold max-sm:sr-only" id="me" hidden={!d}>{d ? d.me.name : ''}</b>
             <Icon name="expand_more" size="sm" className={hbtnIcon + ' opacity-80 max-sm:hidden'} />
           </>}>
+          {d && <p className={menuHead + ' truncate'}>{d.me.name + ' としてログイン中'}</p>}
           <button type="button" role="menuitem" id="toSettings" className={menuItem} hidden={dead} onClick={() => goTab('settings')}>
-            <Icon name="settings" size="sm" />設定（名前・この端末）
+            <Icon name="settings" size="sm" />設定（名前・カレンダー・この端末）
           </button>
           <button type="button" role="menuitem" id="theme" className={menuItem} title="このブラウザだけ" onClick={() => setTheme(dark ? 'light' : 'dark')}>
             <Icon name={dark ? 'light_mode' : 'dark_mode'} size="sm" />{dark ? 'ライトにする' : 'ダークにする'}
