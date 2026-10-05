@@ -27,7 +27,7 @@ describe('画面データ', () => {
     const G = await setupGroup();
     const d = await ok(G.sora, G.id, 'getConsoleData');
     expect(Object.keys(d).sort()).toEqual([
-      'admins', 'appUrl', 'availDays', 'availGoogle', 'availNotes', 'avail', 'booked', 'bot', 'calendar', 'channelSet', 'group', 'isAdmin', 'loadedAt', 'log', 'me', 'members', 'notes',
+      'admins', 'appUrl', 'availDays', 'availGoogle', 'availNotes', 'avail', 'booked', 'bot', 'calendar', 'channelSet', 'googleLogin', 'group', 'isAdmin', 'loadedAt', 'log', 'me', 'members', 'notes',
       'notifyDefault', 'notifySetter', 'recruitChannelSet', 'remindChannelSet', 'seriesNotify', 'sessions', 'settings', 'statuses', 'title', 'today',
     ].sort());
     expect(d).toMatchObject({ me: { name: 'ソラ', isAdmin: false }, isAdmin: false, appUrl: 'https://yoki.test/g/grp/', today: await today() });

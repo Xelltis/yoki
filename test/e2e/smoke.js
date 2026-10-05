@@ -452,6 +452,27 @@ await withDevServer(async (base) => {
       assert.equal(await page.isVisible('#tab-settings a[href="/privacy"]'), true, '設定の画面にリンクがある');
     });
 
+    await step('Google でログイン: 初めては Discord（開発用ログイン）と結びつけ、次からは Google だけで入れる。設定で外せる', async () => {
+      const ctx = await browser.newContext({ viewport: { width: 1280, height: 860 } });
+      const g = await ctx.newPage();
+      g.on('pageerror', (e) => errors.push(e.message));
+      await g.goto(base);
+      await Promise.all([g.waitForURL('**/?login=google-new'), g.click('#googleLoginBtn')]);
+      assert.match(await g.textContent('#notice'), /初めての Google アカウント/);
+      assert.equal(await g.locator('#googleLoginBtn').count(), 0, '結びつけを待つあいだは、Google のボタンを出さない');
+      await g.selectOption('#devAs', 'ひより');
+      await Promise.all([g.waitForURL('**/?login=google-linked'), g.click('#devForm button')]);
+      await Promise.all([g.waitForURL(base), g.click('form[action="/auth/logout"] button')]);
+      await Promise.all([g.waitForURL((u) => u.pathname === '/' && !u.search), g.click('#googleLoginBtn')]);
+      await g.waitForSelector('#groups');
+      await g.goto(base + 'g/sample/settings/');
+      await g.waitForSelector('#googleLoginEmail');
+      await g.click('#googleLoginUnlink');
+      await g.click('#confirmOk');
+      await g.waitForSelector('#googleLoginLink');
+      await ctx.close();
+    });
+
     await step('狭い画面では日ごとのリストで印を打てる', async () => {
       await tab('avail');
       await page.setViewportSize({ width: 390, height: 844 });

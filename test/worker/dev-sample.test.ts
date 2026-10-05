@@ -2,6 +2,9 @@
 import { env, SELF } from 'cloudflare:test';
 import { describe, expect, test } from 'vitest';
 import { ensureSampleGroup } from '../../src/worker/auth/dev';
+import type { Bindings } from '../../src/worker/env';
+import { googleDeps } from '../../src/worker/google/config';
+import { seal } from '../../src/worker/lib/secretbox';
 import { call, ORIGIN } from './helpers';
 
 const LOCAL = 'http://localhost:5173';
@@ -47,6 +50,19 @@ describe('開発用ログイン', () => {
     expect(await ids('google_links')).toEqual([OTHER]);
     expect(await ids('google_events')).toEqual([OTHER]);
     expect(await env.DB.prepare("SELECT value FROM meta WHERE key = 'dev_google'").first()).toBeNull();
+  });
+});
+
+describe('開発用ログインと Google でのログイン', () => {
+  test('初めての Google のアカウントを控えていれば、開発用ログインの人に結びつけ、入口で知らせる', async () => {
+    const key = (await googleDeps(env as unknown as Bindings, LOCAL))!.key;
+    const pending = await seal(key, JSON.stringify({ sub: 'g-dev', email: 'dev@example.com', at: new Date().toISOString() }));
+    const res = await SELF.fetch(LOCAL + '/dev/login', {
+      method: 'POST', redirect: 'manual', body: 'as=ひより',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded', Origin: LOCAL, Cookie: 'yoki_glink=' + encodeURIComponent(pending) },
+    });
+    expect(res.headers.get('Location')).toBe('/?login=google-linked');
+    expect(await env.DB.prepare("SELECT user_id FROM google_logins WHERE google_sub = 'g-dev'").first('user_id')).toBe('400000000000000010');
   });
 });
 

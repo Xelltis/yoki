@@ -3,6 +3,8 @@
 import { jstMs } from '../lib/ics';
 
 export const GOOGLE_SCOPE = 'openid email https://www.googleapis.com/auth/calendar.events';
+/** Google でログインするときの scope（だれかを知るだけ。カレンダーには触らない） */
+export const GOOGLE_LOGIN_SCOPE = 'openid email';
 
 const AUTH = 'https://accounts.google.com/o/oauth2/v2/auth';
 const TOKEN = 'https://oauth2.googleapis.com/token';
@@ -41,6 +43,10 @@ export type GoogleApi = {
   authorizeUrl(redirectUri: string, state: string): string;
   /** 認可コードを refresh token と、連携した Google アカウントのメールに換える */
   exchangeCode(code: string, redirectUri: string): Promise<{ refreshToken: string; email: string }>;
+  /** ログインの同意の画面の URL（openid email だけ。アカウントを選んでもらう） */
+  loginUrl(redirectUri: string, state: string): string;
+  /** ログインの認可コードを、Google のアカウントの ID（sub）とメールに換える */
+  exchangeLogin(code: string, redirectUri: string): Promise<{ sub: string; email: string }>;
   accessToken(refreshToken: string): Promise<string>;
   /** 許可を取り消す（連携を外すとき。失敗しても投げない） */
   revoke(refreshToken: string): Promise<void>;
@@ -73,12 +79,20 @@ export function toBusy(e: GoogleEvent): Busy | null {
   return end > start ? { start, end } : null;
 }
 
-/** id_token（JWT）の中身からメールを読む。トークンは Google から直接受け取ったものなので、署名は確かめない */
-export function emailOfIdToken(idToken: string | undefined): string {
+/**
+ * id_token（JWT）の中身。トークンは Google のトークンの窓口から HTTPS で直接受け取ったものなので、署名は確かめない
+ * （OpenID Connect の決まりで、直接受け取ったときは TLS の確かめで代えてよい）
+ */
+export function idTokenClaims(idToken: string | undefined): { sub?: string; email?: string; aud?: string } {
   const payload = idToken?.split('.')[1];
-  if (!payload) return '';
+  if (!payload) return {};
   const json = atob(payload.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - (payload.length % 4)) % 4));
-  return String((JSON.parse(new TextDecoder().decode(Uint8Array.from(json, (c) => c.charCodeAt(0)))) as { email?: string }).email ?? '');
+  return JSON.parse(new TextDecoder().decode(Uint8Array.from(json, (c) => c.charCodeAt(0)))) as { sub?: string; email?: string; aud?: string };
+}
+
+/** id_token からメールを読む */
+export function emailOfIdToken(idToken: string | undefined): string {
+  return String(idTokenClaims(idToken).email ?? '');
 }
 
 const form = (body: Record<string, string>) => ({ method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams(body) });
@@ -108,6 +122,20 @@ export function realGoogle(clientId: string, clientSecret: string): GoogleApi {
       const j = (await res.json()) as { refresh_token?: string; id_token?: string };
       if (!j.refresh_token) throw new Error('Google から refresh token が返りませんでした。');
       return { refreshToken: j.refresh_token, email: emailOfIdToken(j.id_token) };
+    },
+
+    loginUrl(redirectUri, state) {
+      const q = new URLSearchParams({ client_id: clientId, redirect_uri: redirectUri, response_type: 'code', scope: GOOGLE_LOGIN_SCOPE, prompt: 'select_account', state });
+      return AUTH + '?' + q.toString();
+    },
+
+    async exchangeLogin(code, redirectUri) {
+      const res = await fetch(TOKEN, form({ code, client_id: clientId, client_secret: clientSecret, redirect_uri: redirectUri, grant_type: 'authorization_code' }));
+      if (!res.ok) throw new GoogleHttpError(res.status, 'Google のログイン');
+      const claims = idTokenClaims(((await res.json()) as { id_token?: string }).id_token);
+      // ほかのアプリに向けて出された id_token は受け取らない
+      if (!claims.sub || claims.aud !== clientId) throw new Error('Google のログインを確かめられませんでした。');
+      return { sub: claims.sub, email: String(claims.email ?? '') };
     },
 
     async accessToken(refreshToken) {

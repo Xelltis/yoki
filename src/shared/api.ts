@@ -16,7 +16,7 @@ export const RPC_FUNCS = [
   'getConsoleData', 'sendDiscordStep', 'setDayNote', 'setInterest', 'bulkUpdateSessions', 'setAvailability', 'setAvailabilityBulk', 'setAvailNote',
   'saveSession', 'deleteSession', 'saveMember', 'deleteMember', 'saveConsoleSettings', 'saveSeriesNotify', 'renameGroup', 'startPoll', 'setPollVote',
   'setPollVoteAll', 'cancelPoll', 'decidePoll', 'setAdmin', 'deleteGroup', 'getDiscordChannels', 'saveCalendarFeed', 'deleteCalendarFeed',
-  'saveGoogleSettings', 'syncGoogleNow', 'unlinkGoogle',
+  'saveGoogleSettings', 'syncGoogleNow', 'unlinkGoogle', 'unlinkGoogleLogin',
 ] as const;
 export type RpcName = (typeof RPC_FUNCS)[number];
 
@@ -127,6 +127,8 @@ export type ConsoleData = {
   calendar: CalendarView;
   /** Google カレンダーの予定から入れた印 { 'YYYY-MM-DD': [名前] }（本人が入れた印と見分けるため） */
   availGoogle: Record<string, string[]>;
+  /** Google でのログイン（本人のぶん）。ready は運営者が Google の値を設定しているか、email は結びつけた Google アカウント（無ければ空） */
+  googleLogin: { ready: boolean; email: string };
 };
 
 /** 購読 URL に載せる卓。mine は自分が GM か参加者として入っている卓、all はグループの卓すべて */
@@ -194,6 +196,8 @@ export type MeResponse = {
   dev: { users: string[] } | null;
   /** 新規登録を受け付けているか（止めていると、新しいグループの作成と初めての人のログインを断る。運営者は別） */
   registration: boolean;
+  /** Google でもログインできるか（運営者が Google の値を設定している。初めてのときは Discord と結びつける） */
+  google: boolean;
 } & (
   | { loggedIn: false }
   | {

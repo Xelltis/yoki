@@ -5,7 +5,7 @@ import { beforeEach } from 'vitest';
 await applyD1Migrations(env.DB, env.TEST_MIGRATIONS);
 
 // 子の表から順に消す（外部キーのため）
-const TABLES = ['notify_log', 'poll_votes', 'day_notes', 'avail_notes', 'availability', 'google_dismissed', 'google_events', 'session_people', 'sessions', 'series_notify', 'members', 'calendar_feeds', 'groups', 'google_links', 'auth_sessions', 'user_guilds', 'users', 'meta'];
+const TABLES = ['notify_log', 'poll_votes', 'day_notes', 'avail_notes', 'availability', 'google_dismissed', 'google_events', 'session_people', 'sessions', 'series_notify', 'members', 'calendar_feeds', 'groups', 'google_links', 'google_logins', 'auth_sessions', 'user_guilds', 'users', 'meta'];
 
 beforeEach(async () => {
   await env.DB.batch(TABLES.map((t) => env.DB.prepare('DELETE FROM ' + t)));
