@@ -44,7 +44,7 @@ export function SettingsTab() {
   };
   return (
     <section id="tab-settings" className="max-w-1120">
-      <PageHead title="設定" lead="この端末の見た目と、あなたの名前です。グループの設定（知らせ・メンバー・管理者）は、管理者が管理画面で変えます。" />
+      <PageHead title="設定" lead="あなたの名前・カレンダー連携・この端末の見た目です。どれも、あなただけの設定です。グループの設定（知らせ・メンバー・管理者）は、管理者が管理画面で変えます。" />
       <div className="card border-accent-line" id="adminEntry" hidden={!d.isAdmin}>
         <h3><Icon name="shield" size="sm" />グループの管理画面</h3>
         <p className="hint">メンバーの登録・卓をまとめて変える・知らせ（Discord）・管理者・送信の記録・グループを消す、は管理画面にあります。あなたは管理者なので開けます。</p>
