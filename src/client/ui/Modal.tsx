@@ -59,7 +59,11 @@ export function ModalManager() {
       const open = openModals(), top = open[open.length - 1] || null;
       [document.querySelector('header'), document.querySelector('main')].forEach((el) => { if (!el) return; if (top) el.setAttribute('inert', ''); else el.removeAttribute('inert'); });
       open.forEach((m) => { if (m === top) m.removeAttribute('inert'); else m.setAttribute('inert', ''); });
-      document.documentElement.classList.toggle('modal-open', !!top);
+      // スクロールを止める前に、スクロールバーが出ているかを見る（出ていれば、止めたあともその分を空けておく。base.css）
+      const root = document.documentElement;
+      if (top && !root.classList.contains('modal-open')) root.classList.toggle('has-scrollbar', window.innerWidth > root.clientWidth);
+      if (!top) root.classList.remove('has-scrollbar');
+      root.classList.toggle('modal-open', !!top);
       if (top && !top.contains(document.activeElement)) top.querySelector<HTMLElement>('.box')?.focus({ preventScroll: true });
       if (!top && lastFocus && document.contains(lastFocus) && !lastFocus.closest('[hidden], [inert]')) { try { lastFocus.focus({ preventScroll: true }); } catch { /* 消えた要素 */ } }
     };
