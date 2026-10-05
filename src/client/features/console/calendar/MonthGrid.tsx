@@ -28,6 +28,8 @@ const chipBase = 'mt-3 block min-w-0 flex-[0_0_100%] overflow-hidden whitespace-
 const chipIcon = 'mr-2 align-[-3px] max-sm:hidden ';
 /** みんなの都合の印（◎・△）。マスの右上 */
 const avMark = 'absolute top-6 right-6 text-11 font-bold text-ok-text max-sm:hidden';
+/** マスに並べる卓の札の数。多い日は残りを「ほか N 件」にまとめる（その行だけ縦に伸びないように。全部は日の内訳に出る） */
+const MAX_CHIPS = 3;
 const CHIP: Record<string, [string, string]> = {
   '': ['bg-card font-semibold text-fg shadow-[inset_3px_0_0_var(--accent),0_0_0_1px_var(--line)]', 'text-accent-text'],
   held: ['bg-card font-semibold text-fg shadow-[inset_3px_0_0_var(--ok-text),0_0_0_1px_var(--line)]', 'text-ok-text'],
@@ -65,6 +67,8 @@ export function MonthGrid({ d, view, target, selDay, onPick, onShift }: Props) {
     const aria = (m + 1) + '月' + day + '日（' + WD[c] + '）' + (hol ? ' ' + hol : '') + (key === d.today ? '、今日' : '') + (list.length ? '、卓 ' + list.length + ' 件' : '') +
       (wins.length ? '、調整中 ' + wins.length + ' 件' : '') + (av[key] === 'ok' ? '、全員空き' : av[key] === 'soft' ? '、△あり' : '') + (note ? '、メモあり' : '');
     const icos = list.filter((s) => isAdjusting(s) && wins.indexOf(s) < 0).concat(wins);
+    // 調整中はアイコンだけ（下で並べる）。ほかは札にする
+    const chips = list.filter((s) => !isAdjusting(s));
     cells.push(
       <button type="button" key={i} className={cls} data-day={key} aria-label={aria} aria-pressed={key === selDay} aria-current={key === d.today ? 'date' : undefined}
         onClick={() => { if (!swiped.current) onPick(key); }}>
@@ -73,8 +77,7 @@ export function MonthGrid({ d, view, target, selDay, onPick, onShift }: Props) {
           + (key === d.today ? 'bg-accent-strong text-accent-ink' : (c === 0 || hol ? 'text-sun' : c === 6 ? 'text-sat' : '') + (key < d.today ? ' opacity-50' : ''))} title={hol}>{day}</span>
         {hol && <span className="ml-2 text-10 text-sun max-sm:hidden">{hol}</span>}
         {av[key] === 'ok' ? <span className={avMark}>◎</span> : av[key] === 'soft' ? <span className={avMark}>△</span> : null}
-        {list.filter((s) => !isAdjusting(s)).map((s) => {
-          // 調整中はアイコンだけ（下で並べる）
+        {chips.slice(0, chips.length > MAX_CHIPS ? MAX_CHIPS - 1 : MAX_CHIPS).map((s) => {
           const today = s.status === '開催' && s.date === d.today;
           const k = s.status === '募集' ? 'adj' : today ? 'held' : s.status === '終了' ? 'done' : s.status === '中止' ? 'cancel' : '';
           return (
@@ -86,6 +89,7 @@ export function MonthGrid({ d, view, target, selDay, onPick, onShift }: Props) {
             </span>
           );
         })}
+        {chips.length > MAX_CHIPS && <span className="mt-3 block flex-[0_0_100%] pl-8 text-11 font-semibold text-muted max-sm:mt-2 max-sm:pl-4 max-sm:text-10">{'ほか ' + (chips.length - MAX_CHIPS + 1) + ' 件'}</span>}
         {icos.length > 0 && (
           <span className="mt-3 flex flex-[0_0_100%] flex-wrap gap-3">
             {icos.map((s, j) => {
