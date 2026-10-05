@@ -47,11 +47,13 @@ README の「書くときの決まり」に加えて、次を守る。
 - e2e とスクリーンショットの道具が使う要素の ID・`data-*`・`window.yoki`（`D`・`selectDay`・`showTab`）は保つ。変えるなら `test/e2e/smoke.js` と `website/tools/screenshots.js` も直す
 - 見た目は Tailwind CSS のクラスで書く。色・寸法・文字の大きさは `src/client/styles/theme.css` のトークンを使い、色を直に書かない。クラスの名前を文字列のつなぎで組み立てない（CSS が出ない）。くり返す形は `ui/` か `features/…/styles.ts` の定数にする
 - 配色はサービスアイコンの青（`#2D2AFE`）が主で、オレンジ・ピンク・黄は差し色（アイコンの色は `brand`・`orange` などのトークン）。白い地の字にオレンジを使わず、字は地と組の変数（`accent-text`・`soon-text` など）にする。配色を変えたら、Tailwind を通らない Worker のページ（`src/worker/routes/html.ts`）・サイト（`website/.vitepress/theme/style.css`）・SNS 用の画像（`npm run og-image`）・manifest と theme-color も直す
-- 開発用ログイン（`src/worker/auth/dev.ts`）は `import.meta.env.DEV` のときだけ登録する。画面の開発用ログインの部品も `import.meta.env.DEV` のときだけ描く（本番の組み立てから消すため）
+- 開発用ログイン（`src/worker/auth/dev.ts`）と開発用の偽の Google（`src/worker/google/dev.ts`）は `import.meta.env.DEV` のときだけ登録する。画面の開発用ログインの部品も `import.meta.env.DEV` のときだけ描く（本番の組み立てから消すため）
 - 運営者の API（`src/worker/routes/admin.ts`）は、どの道も最初に `requireOperator` を呼ぶ。変える操作は監査の控え（`audit`）を log に出す。運営者にも、グループの中身（卓・予定・Webhook の URL）は返さない
 - グループの画面の管理者向けのものは、管理の区域（`/g/:id/admin/<区分>/`。`src/client/features/console/admin/`）に置く。ふだんの区域には、だれでも使うものだけを置く
 - ログインした人の Discord のトークン（OAuth）は保存しない。知らせに使う Bot のトークンは Worker の secret（`DISCORD_BOT_TOKEN`）に置き、画面にもログにも出さない。秘密の値（`.dev.vars`）はコミットしない
-- 公開する Cloudflare ごとの値（D1 の ID・アプリのアドレス・Discord アプリの値と Bot のトークン・運営者の ID・API トークン）は、リポジトリに書かない。GitHub の environment「production」に置き、`wrangler.jsonc` には仮の値だけを置く（README の「公開」）
+- Google カレンダーと連携した人の refresh token だけは持つ（本人がいないときにも卓を書き直し、予定を読むため）。`GOOGLE_TOKEN_KEY` で暗号にして `google_links` に置き、画面・ログ・運営者の API には出さない。連携を外すときと利用者を消すときは、書き込んだ予定を消して Google の許可を取り消してから消す（`forgetGoogle`）。Google から受け取る欄は、要るものだけにする（予定の名前や中身は受け取らない）
+- 購読 URL（`/cal/<token>.ics`）は、知っていればだれでも読める。token は推測できない長さのランダムにし、作り直しと止めるができるようにする
+- 公開する Cloudflare ごとの値（D1 の ID・アプリのアドレス・Discord アプリの値と Bot のトークン・運営者の ID・Google の値・API トークン）は、リポジトリに書かない。GitHub の environment「production」に置き、`wrangler.jsonc` には仮の値だけを置く（README の「公開」）
 - アイコンを足したら、読み込む一覧にも足す（画面は `src/client/ui/icons.ts` の `ICON_NAMES`、サイトは `website/.vitepress/config.ts` の `ICONS`。型の確認とテストが確かめる）
 
 ## コミット
