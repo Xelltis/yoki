@@ -9,8 +9,7 @@
       <div><dt class="mono c-past">12</dt><dd>終わった卓<small>終了・中止の卓だけ</small></dd></div>
     </dl>
     <div class="icons">
-      <span><span class="ms" aria-hidden="true">event</span>予定</span>
-      <span><span class="ms" aria-hidden="true">play_circle</span>開催</span>
+      <span><span class="ms" aria-hidden="true">play_circle</span>今日の卓</span>
       <span class="v"><span class="ms" aria-hidden="true">campaign</span>募集</span>
       <span><span class="ms" aria-hidden="true">edit_calendar</span>調整期間</span>
       <span><span class="ms" aria-hidden="true">how_to_vote</span>候補日</span>
