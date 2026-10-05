@@ -15,6 +15,7 @@ import { fmtJa, holidayName, parseYmd, timeRange } from '../model/dates';
 import { byId, hasPoll, isAdjusting, isRecruit, me, peopleOf, periodOfSession, pollPending, pollVoters, sortSessions } from '../model/model';
 import { hookFor } from '../model/notify';
 import { withSession } from '../model/optimistic';
+import { Place } from '../Place';
 import { useGoTab } from '../shell/nav';
 import { people, personChip, res } from '../styles';
 import { notifyDecided, notifyReady } from './pollNotify';
@@ -191,7 +192,7 @@ export function RecruitTab() {
                 <div className="contents"><b className="font-semibold text-muted">参加希望</b>{s.want.length ? s.want.join('、') : <span className="hint">まだいません</span>}</div>
                 <div className="contents"><b className="font-semibold text-muted">興味あり</b>{s.interest.length ? s.interest.join('、') : <span className="hint">まだいません</span>}</div>
               </div>
-              {s.place && <div className={rcRow}>{'場所: ' + s.place}</div>}
+              {s.place && <Place place={s.place} className={rcRow} />}
               {s.memo && <div className={rcRow + ' hint'}>{s.memo}</div>}
               {s.gm === mine && <p className={next}><Icon name="arrow_forward" size="sm" className={nextIcon} /><span>集まったら「編集」で状態を「開催」（日が決まっている）か「調整中」（みんなで日を選ぶ）にします。参加希望の人はそのまま参加者に入ります。</span></p>}
               <div className="btns mt-12 gap-6">
@@ -244,7 +245,7 @@ export function RecruitTab() {
               <div className={rcWhen}>{s.windowLabel ? s.windowLabel + ' のどこか' : '候補の期間は未定'}</div>
               {s.series && <div className="hint">{'シリーズ: ' + s.series}</div>}
               <People d={d} s={s} none="GM・参加者 未定" />
-              {s.place && <div className={rcRow}>{'場所: ' + s.place}</div>}
+              {s.place && <Place place={s.place} className={rcRow} />}
               {s.memo && <div className={rcRow + ' hint'}>{s.memo}</div>}
               {poll && (
                 <div className="mt-12 rounded-md bg-head px-12 py-10 tabular-nums">

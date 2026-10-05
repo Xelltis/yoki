@@ -12,6 +12,7 @@ import { daysBetween, fmtJa, timeRange } from '../model/dates';
 import { hasPoll, isActive, isAdjusting, isDated, me, peopleOf, pollOk, pollVoters, seriesNames, sortSessions, targetPeople, windowByDay } from '../model/model';
 import { hookFor, kindOf, notifyState } from '../model/notify';
 import { useGoTab } from '../shell/nav';
+import { Place } from '../Place';
 import { people as peopleRow, personChip, res, row2 } from '../styles';
 
 /** 内訳のカード（狭い画面では、日を選ぶまで隠す）。上の帯と下のタブに隠れないように送る */
@@ -101,7 +102,7 @@ export function DayDetail({ d, target }: { d: ConsoleData; target: string }) {
                 })}
                 {!ppl.length && <span className={personChip(false, true)}>参加者 未定</span>}
               </div>
-              {s.place && <div className={row2}>{'場所: ' + s.place}</div>}
+              {s.place && <Place place={s.place} className={row2} />}
               {s.memo && <div className={row2 + ' hint'}>{s.memo}</div>}
               {s.notified ? <div className={row2 + ' hint'}>{'開催前の知らせ 送信済み ' + s.notified}</div>
                 : isDated(s) && s.date && s.date >= d.today && d.notifySetter ? <div className={row2 + ' hint'}>{notifyState(d, s)}</div> : null}
