@@ -205,8 +205,8 @@ export function RecruitTab() {
                 )}
                 <span className={res} data-rres={s.id}>{saving[s.id] ? '保存しています…' : ''}</span>
               </div>
-              {/* GM 向け: 興味ありの人に Discord で聞く。返事は各自が募集タブの「参加希望」で */}
-              <div className="btns mt-12 gap-6 border-t border-line pt-12">
+              {/* GM 向け: 開催にする・興味ありの人に Discord で聞く。返事は各自が募集タブの「参加希望」で。GM と管理者（GM が未定ならだれでも）にだけ出す */}
+              <div className="btns mt-12 gap-6 border-t border-line pt-12" hidden={!(s.gm === mine || !s.gm || d.isAdmin)}>
                 <button type="button" className="btn small primary" data-hold={s.id} title="状態を「開催」にした登録の窓を開きます" onClick={() => openForm(ui, { id: s.id, status: '開催', focus: 'date' })}><Icon name="event" size="sm" />開催にする</button>
                 <button type="button" className="btn small" data-ask={s.id} disabled={!(canAsk && s.interest.length) || !!off['ask:' + s.id]} title={askTitle}
                   onClick={() => { setAsk({ id: s.id, text: '' }); setTimeout(() => askRef.current?.focus(), 0); }}>興味ありの人に聞く</button>
