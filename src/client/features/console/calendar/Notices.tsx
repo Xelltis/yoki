@@ -31,11 +31,13 @@ export function Notices({ d, onDay, onTab, onTarget }: {
     add('adjust hot', (
       <>
         <Icon name="campaign" />{'募集中 ' + rec.length + ' 件'}
-        {rec.map((s) => (
+        {rec.slice(0, rec.length > 3 ? 2 : 3).map((s) => (
           <span className="block" key={s.id}>
             <b>{s.name}</b><span className="ml-6 text-12 font-normal text-muted">{(s.windowLabel || '期間未定') + (s.want.length ? '　希望 ' + s.want.length + ' 人' : '')}</span>
           </span>
         ))}
+        {/* 多いときは 2 件だけ出し、残りの数を出す（全部は「募集・調整」タブにある） */}
+        {rec.length > 3 && <span className="block text-12 font-semibold text-muted">{'ほか ' + (rec.length - 2) + ' 件'}</span>}
         <span className={noticeSub}>参加希望は「募集・調整」タブで出せます</span>
       </>
     ), '', 'recruit');
