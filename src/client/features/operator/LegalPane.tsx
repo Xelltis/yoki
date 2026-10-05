@@ -23,8 +23,11 @@ export function LegalPane() {
       <div className="mb-6 flex flex-wrap items-center gap-8">
         <b>{LEGAL_TITLES[k]}</b>
         <span className="hint mr-auto" id={IDS[k].state}>{legal ? (legal[k].custom ? '直した文' : '既定の文') + '・更新日 ' + longDate(legal[k].updatedAt) : ''}</span>
-        <a className="btn small" href={'/' + k} target="_blank" rel="noopener"><Icon name="open_in_new" size="sm" />開く</a>
-        <button type="button" className="btn small" data-default={k} onClick={() => { if (legal) edit({ [k]: legal[k].defaultText }); }}>既定の文に戻す</button>
+        {/* 2 つのボタンは、折り返すときも一緒に動かす（規約ごとに並びが変わらないように） */}
+        <span className="flex gap-8">
+          <a className="btn small" href={'/' + k} target="_blank" rel="noopener"><Icon name="open_in_new" size="sm" />開く</a>
+          <button type="button" className="btn small" data-default={k} onClick={() => { if (legal) edit({ [k]: legal[k].defaultText }); }}>既定の文に戻す</button>
+        </span>
       </div>
       <textarea className="h-360 w-full resize-y text-13 leading-[1.7]" id={IDS[k].area} rows={16} maxLength={LEGAL_MAX.text} aria-label={LEGAL_TITLES[k] + 'の本文'} value={f[k]} onChange={(ev) => edit({ [k]: ev.target.value })} />
     </div>
