@@ -22,6 +22,12 @@ export function hbtn(display = 'inline-flex', icon = false): string {
 export const hbtnIcon = 'align-[0]';
 /** ボタンの字（スマホでは隠して、アイコンだけにする） */
 export const btxt = 'max-sm:hidden!';
+/** 帯のメニューの一覧（Menu）。青い帯の上に、カードの色で出す。左右の寄せは Menu が足す */
+export const menuPanel = 'absolute top-[calc(100%+6px)] z-(--z-pop) flex min-w-220 animate-fade-in flex-col gap-2 rounded-md border border-line bg-card p-6 text-fg shadow-pop [&_:focus-visible]:outline-accent';
+/** メニューの項目 */
+export const menuItem = 'flex h-40 w-full cursor-pointer items-center gap-10 whitespace-nowrap rounded-sm border-0 bg-transparent px-10 text-left font-inherit text-14 font-semibold text-fg no-underline hover:bg-hover focus-visible:bg-hover';
+/** メニューの区切り線 */
+export const menuSep = 'my-4 border-t border-line';
 /** 本文。開いたときに、中の区分をそっと出す。スマホでは下のタブの分を空ける（カレンダーは「卓を登録」の丸いボタンの分も） */
 export function mainArea(bottom: 'tabs' | 'cal' = 'tabs'): string {
   return 'mx-auto max-w-1440 pt-20 pb-48 pr-[max(20px,env(safe-area-inset-right))] pl-[max(20px,env(safe-area-inset-left))] [&>section:not([hidden])]:animate-fade-in '
