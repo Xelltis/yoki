@@ -14,6 +14,8 @@ const ACTIONS = [
   ['shiftDays', '開催日をずらす'], ['setSeries', 'シリーズを変更'], ['delete', '削除'],
 ] as const;
 type Action = (typeof ACTIONS)[number][0];
+/** 広い画面だけに出す列 */
+const wide = 'max-sm:hidden';
 /** まとめて変えるときの選ぶ欄 */
 const bulkField = 'w-auto max-w-full';
 
@@ -81,7 +83,8 @@ export function OpsPane() {
             <tbody>
               <tr>
                 <th className="sel"><input type="checkbox" id="selAll" aria-label="一覧の卓をすべて選ぶ" checked={all} onChange={(ev) => pick(rows.map((s) => s.id), ev.target.checked)} /></th>
-                <th>卓の名前</th><th className="c">シリーズ</th><th className="c">状態</th><th className="c">開催日</th><th className="c">GM</th><th>参加者</th><th aria-label="編集"></th>
+                {/* スマホでは列を減らし、シリーズ・状態・開催日・GM・参加者は名前の下に出す（横に送らなくても読めるように） */}
+                <th>卓の名前</th><th className={'c ' + wide}>シリーズ</th><th className={'c ' + wide}>状態</th><th className={'c ' + wide}>開催日</th><th className={'c ' + wide}>GM</th><th className={wide}>参加者</th><th aria-label="編集"></th>
               </tr>
               {rows.map((s) => {
                 const on = !!selected[s.id];
@@ -91,8 +94,14 @@ export function OpsPane() {
                   <tr className={(isActive(s) ? '' : 'done') + (on ? ' checked' : '')} data-id={s.id} key={s.id}
                     onClick={(ev) => { if (!(ev.target instanceof Element && ev.target.closest('input,button'))) pick([s.id], !on); }}>
                     <td className="sel"><input type="checkbox" className="rowsel" data-id={s.id} aria-label={s.name + ' を選ぶ'} checked={on} onChange={(ev) => pick([s.id], ev.target.checked)} /></td>
-                    <td className="min-w-[14em]"><b>{s.name}</b></td><td className="c min-w-[6em]">{s.series}</td><td className="c nw">{s.status}</td><td className="c nw">{when}</td><td className="c min-w-[5em]">{s.gm}</td>
-                    <td className="min-w-[14em]">{s.members.join('、')}</td>
+                    <td className="min-w-[14em] max-sm:min-w-0">
+                      <b>{s.name}</b>
+                      <small className="hidden text-12 leading-[1.5] text-muted max-sm:block">
+                        {[s.status, when, s.series && 'シリーズ: ' + s.series, s.gm && 'GM: ' + s.gm, s.members.length ? '参加: ' + s.members.join('、') : ''].filter(Boolean).join('　')}
+                      </small>
+                    </td>
+                    <td className={'c nw ' + wide}>{s.series}</td><td className={'c nw ' + wide}>{s.status}</td><td className={'c nw ' + wide}>{when}</td><td className={'c min-w-[5em] ' + wide}>{s.gm}</td>
+                    <td className={'min-w-[10em] ' + wide}>{s.members.join('、')}</td>
                     <td className="nw"><button type="button" className="btn small" data-edit={s.id} onClick={() => openForm(ui, { id: s.id })}>編集</button></td>
                   </tr>
                 );
