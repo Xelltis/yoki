@@ -353,7 +353,7 @@ export function FormModal() {
             </div>
             {/* 同じ日の重なりや × の注意。止めはせず、気づけるようにするだけ */}
             <div id="conflictWarn" className="mt-12 flex items-start gap-8 rounded-md bg-soon px-12 py-10 text-13 leading-[1.6] text-fg" hidden={!conflict}>
-              {conflict && <><Icon name="warning" size="sm" className="mt-2 text-violet" /><span>{conflict}</span></>}
+              {conflict && <><Icon name="warning" size="sm" className="mt-2 text-soon-text" /><span>{conflict}</span></>}
             </div>
             <div className="mt-8" id="moreDatesWrap" hidden={moreHidden}>
               <div id="moreDates">

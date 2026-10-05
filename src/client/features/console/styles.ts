@@ -12,18 +12,18 @@ export function notice(kinds: string, button: boolean): string {
     + '[&>.material-icons:first-child]:rounded-[50%] [&>.material-icons:first-child]:text-center [&>.material-icons:first-child]:text-17 [&>.material-icons:first-child]:leading-[28px] [&>.material-icons:first-child]:align-[0] ';
   c += info ? 'border-0 bg-transparent px-0 pt-2 pb-0 text-12 ' : 'border py-10 pr-12 pl-48 ';
   // 色。hot（募集中・調整中）がいちばん強い
-  if (hot) c += 'border-[color-mix(in_srgb,var(--violet)_45%,var(--line))] bg-soon ';
+  if (hot) c += 'border-[color-mix(in_srgb,var(--soon-text)_45%,var(--line))] bg-soon ';
   else if (k('today')) c += 'border-[color-mix(in_srgb,var(--err-text)_30%,var(--line))] bg-card ';
   else if (!info) c += 'border-line bg-card ';
   c += k('overdue') || info ? 'text-muted ' : 'text-fg ';
   if (k('today') || k('tomorrow')) c += 'font-semibold ';
   if (button) c += 'cursor-pointer transition-[background-color,border-color] duration-(--dur-fast) ease-out hover:border-line-strong hover:bg-hover ';
   // 先頭のアイコンの丸の色（クラスの名前は、Tailwind が見つけられるように書き切る）
-  return c + (hot ? '[&>.material-icons:first-child]:bg-violet [&>.material-icons:first-child]:text-card'
+  return c + (hot ? '[&>.material-icons:first-child]:bg-soon-text [&>.material-icons:first-child]:text-card'
     : k('today') ? '[&>.material-icons:first-child]:bg-warn [&>.material-icons:first-child]:text-err-text'
       : k('tomorrow') ? '[&>.material-icons:first-child]:bg-accent-soft [&>.material-icons:first-child]:text-accent-text'
         : k('week') ? '[&>.material-icons:first-child]:bg-head [&>.material-icons:first-child]:text-fg'
-          : k('adjust') ? '[&>.material-icons:first-child]:bg-soon [&>.material-icons:first-child]:text-violet'
+          : k('adjust') ? '[&>.material-icons:first-child]:bg-soon [&>.material-icons:first-child]:text-soon-text'
             : '[&>.material-icons:first-child]:bg-head [&>.material-icons:first-child]:text-muted');
 }
 /** 知らせの行の 2 行目（小さな説明） */
