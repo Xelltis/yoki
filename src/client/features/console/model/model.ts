@@ -1,7 +1,7 @@
 // 卓とメンバーの読み方（状態・人・日程調整・並び）。画面のデータ d を受け取って読むだけで、書き換えない
 import type { ConsoleData, ConsoleSession } from '../../../../shared/api';
 import type { IconName } from '../../../ui/icons';
-import { addDaysYmd, fmtJa } from './dates';
+import { addDaysYmd } from './dates';
 
 /* 状態。募集 → 調整中 → 開催 → 終了、中止は別 */
 export const STATUS_ACTIVE: string[] = ['募集', '調整中', '開催'];
@@ -70,11 +70,6 @@ export function windowByDay(d: ConsoleData): Record<string, ConsoleSession[]> {
 }
 /** 募集の卓の期間。「10/3（金）〜10/17（金） に開催予定」 */
 export function periodOfSession(s: ConsoleSession): string { return s.windowLabel ? s.windowLabel + ' に開催予定' : '時期未定'; }
-/** 卓を選ぶ欄の見出し */
-export function pickLabel(s: ConsoleSession): string {
-  return (s.date ? fmtJa(s.date) : (isRecruit(s) || isAdjusting(s)) ? (s.windowLabel || '期間未定') : '日程未定') + ' ' + s.name + '（' + s.status + '）';
-}
-
 /**
  * 列の並び。sortByLoad なら、稼働中の卓に入っている人ほど左へ寄せる。
  * 卓の数（GM も参加も 1 件と数える）が多い順、同数なら GM の多い順、それも同じならメンバーの登録順
