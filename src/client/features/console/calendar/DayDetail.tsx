@@ -74,7 +74,13 @@ export function DayDetail({ d, target }: { d: ConsoleData; target: string }) {
 
   return (
     <div className={detailCard} id="dayDetail">
-      <h3 id="dayTitle">{fmtJa(selDay) + (n === 0 ? '　今日' : n === 1 ? '　明日' : n > 1 ? '　' + n + ' 日後' : '　' + (-n) + ' 日前')}</h3>
+      <h3 id="dayTitle">
+        {fmtJa(selDay)}
+        {/* 今日からどれだけ先か。今日・明日は青く */}
+        <span className={'rounded-full px-8 py-1 text-12 font-semibold ' + (n === 0 || n === 1 ? 'bg-accent-soft text-accent-text' : 'bg-head text-muted')}>
+          {n === 0 ? '今日' : n === 1 ? '明日' : n > 1 ? n + ' 日後' : (-n) + ' 日前'}
+        </span>
+      </h3>
       <div id="dayBody">
         {!list.length && <div className="hint">この日の卓はありません。</div>}
         {list.map((s, i) => {
@@ -100,14 +106,15 @@ export function DayDetail({ d, target }: { d: ConsoleData; target: string }) {
               {s.notified ? <div className={row2 + ' hint'}>{'開催前の知らせ 送信済み ' + s.notified}</div>
                 : isDated(s) && s.date && s.date >= d.today && d.notifySetter ? <div className={row2 + ' hint'}>{notifyState(d, s)}</div> : null}
               <div className="btns mt-10 gap-6">
-                {isActive(s) && (
-                  <button type="button" className="btn small primary" data-notify={s.id} disabled={!hookFor(d, s.series, kindOf(s)) || !!notifying[s.id]} title={hookFor(d, s.series, kindOf(s)) ? undefined : 'チャンネル未設定'} onClick={() => notify(s.id)}>Discord に通知</button>
-                )}
+                {/* 調整中の卓は、日程の操作をいちばん先に */}
                 {isAdjusting(s) && (hasPoll(s)
-                  ? <button type="button" className="btn small" data-goto-recruit onClick={() => goTab('recruit')}><Icon name="how_to_vote" size="sm" />回答する</button>
-                  : <button type="button" className="btn small" data-poll={s.id} onClick={() => openPoll(ui, s.id)}><Icon name="how_to_vote" size="sm" />日程を調整する</button>)}
-                <button type="button" className="btn small" data-edit={s.id} onClick={() => openForm(ui, { id: s.id })}>編集</button>
-                <button type="button" className="btn small" data-cont={s.id} title="設定を引き継いで翌日の卓を登録" onClick={() => openForm(ui, { cont: s.id })}>続きを登録</button>
+                  ? <button type="button" className="btn small primary" data-goto-recruit onClick={() => goTab('recruit')}><Icon name="how_to_vote" size="sm" />回答する</button>
+                  : <button type="button" className="btn small primary" data-poll={s.id} onClick={() => openPoll(ui, s.id)}><Icon name="how_to_vote" size="sm" />日程を調整する</button>)}
+                <button type="button" className="btn small" data-edit={s.id} onClick={() => openForm(ui, { id: s.id })}><Icon name="edit" size="sm" />編集</button>
+                <button type="button" className="btn small" data-cont={s.id} title="設定を引き継いで翌日の卓を登録" onClick={() => openForm(ui, { cont: s.id })}><Icon name="add" size="sm" />続きを登録</button>
+                {isActive(s) && (
+                  <button type="button" className="btn small" data-notify={s.id} disabled={!hookFor(d, s.series, kindOf(s)) || !!notifying[s.id]} title={hookFor(d, s.series, kindOf(s)) ? '卓の案内を Discord に送る' : 'チャンネル未設定'} onClick={() => notify(s.id)}><Icon name="notifications" size="sm" />Discord に通知</button>
+                )}
                 <span className={res} data-res={s.id}>{notifyRes[s.id] || ''}</span>
               </div>
             </div>
@@ -128,8 +135,8 @@ export function DayDetail({ d, target }: { d: ConsoleData; target: string }) {
                 return (
                   <span className={chip + ' cursor-pointer pl-16'} key={p} data-memo={mm.text} data-memo-of={p} data-day={selDay} role="button" tabIndex={0}
                     onClick={say} onKeyDown={(ev) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); say(); } }}>
-                    {/* 札と同じ形の点（前の見た目のまま） */}
-                    <span className="pointer-events-none relative top-1/2 left-6 -mt-3 h-7 w-7 rounded-full border border-transparent bg-head px-10 py-1 text-12" />{p + ' ' + v}
+                    {/* メモがある印の点（予定表のマスと同じ色） */}
+                    <span className="pointer-events-none absolute top-1/2 left-7 -mt-3 h-6 w-6 rounded-full bg-accent" />{p + ' ' + v}
                   </span>
                 );
               })}
@@ -151,7 +158,8 @@ export function DayDetail({ d, target }: { d: ConsoleData; target: string }) {
           <textarea className="h-64 w-full resize-y" id="dayNote" aria-label="この日のメモ" placeholder="卓と関係のない予定も書けます（合宿、イベント、忙しい週など）" value={noteText}
             onChange={(ev) => { dayNoteDraft[selDay] = ev.target.value; redraw(); }} />
           <div className="btns mt-8">
-            <button type="button" className="btn small primary" id="dayNoteSave" disabled={note.saving} onClick={saveNote}>メモを保存</button>
+            {/* 書き換えるまでは押せない */}
+            <button type="button" className="btn small primary" id="dayNoteSave" disabled={note.saving || noteText === (dayNote ? dayNote.text : '')} onClick={saveNote}>メモを保存</button>
             <span className="hint" id="dayNoteMsg">{note.msg}</span>
           </div>
         </div>

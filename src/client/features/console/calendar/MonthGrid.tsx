@@ -19,9 +19,13 @@ type Props = {
 /** マス（日）。中身は折り返して上から並べる（day は e2e が探す印） */
 const dayBase = 'day relative m-0 flex min-h-108 w-full min-w-0 appearance-none flex-wrap content-start items-center overflow-hidden rounded-none border-0 p-6 text-left font-inherit text-12 text-inherit '
   + 'max-sm:min-h-68 max-sm:p-3 max-sm:text-11 ';
-/** 卓の札。左の線の色で状態を示す */
-const chipBase = 'mt-3 block min-w-0 flex-[0_0_100%] overflow-hidden text-ellipsis whitespace-nowrap rounded-sm py-2 pr-6 pl-8 text-[11.5px] leading-[1.45] max-sm:mt-2 max-sm:py-1 max-sm:pr-3 max-sm:pl-5 max-sm:text-10 ';
-const chipIcon = 'mr-3 max-sm:hidden ';
+/**
+ * 卓の札。左の線の色で状態を示す。広い画面では 2 行まで折り返して名前を読めるようにし、
+ * スマホでは 1 行で、… を付けずに入るだけ見せる（狭いマスでは … が字の場所を取るため）
+ */
+const chipBase = 'mt-3 block min-w-0 flex-[0_0_100%] overflow-hidden whitespace-nowrap text-clip rounded-sm py-2 pr-6 pl-8 text-[11.5px] leading-[1.4] '
+  + 'sm:line-clamp-2 sm:whitespace-normal sm:wrap-anywhere max-sm:mt-2 max-sm:py-1 max-sm:pr-2 max-sm:pl-4 max-sm:text-10 ';
+const chipIcon = 'mr-2 align-[-3px] max-sm:hidden ';
 /** みんなの都合の印（◎・△）。マスの右上 */
 const avMark = 'absolute top-6 right-6 text-11 font-bold text-ok-text max-sm:hidden';
 const CHIP: Record<string, [string, string]> = {
@@ -64,8 +68,9 @@ export function MonthGrid({ d, view, target, selDay, onPick, onShift }: Props) {
     cells.push(
       <button type="button" key={i} className={cls} data-day={key} aria-label={aria} aria-pressed={key === selDay} aria-current={key === d.today ? 'date' : undefined}
         onClick={() => { if (!swiped.current) onPick(key); }}>
+        {/* 過ぎた日は、日付を薄くする */}
         <span className={'inline-flex h-24 min-w-24 items-center justify-center rounded-[12px] px-5 text-13 font-semibold max-sm:h-22 max-sm:min-w-22 max-sm:px-3 max-sm:text-12 '
-          + (key === d.today ? 'bg-accent-strong text-accent-ink' : c === 0 || hol ? 'text-sun' : c === 6 ? 'text-sat' : '')} title={hol}>{day}</span>
+          + (key === d.today ? 'bg-accent-strong text-accent-ink' : (c === 0 || hol ? 'text-sun' : c === 6 ? 'text-sat' : '') + (key < d.today ? ' opacity-50' : ''))} title={hol}>{day}</span>
         {hol && <span className="ml-2 text-10 text-sun max-sm:hidden">{hol}</span>}
         {av[key] === 'ok' ? <span className={avMark}>◎</span> : av[key] === 'soft' ? <span className={avMark}>△</span> : null}
         {list.filter((s) => !isAdjusting(s)).map((s) => {
@@ -74,8 +79,9 @@ export function MonthGrid({ d, view, target, selDay, onPick, onShift }: Props) {
           const k = s.status === '募集' ? 'adj' : today ? 'held' : s.status === '終了' ? 'done' : s.status === '中止' ? 'cancel' : '';
           return (
             <span className={chipBase + CHIP[k]![0]} key={s.id} title={s.name + '（' + s.status + (today ? '・今日' : '') + '）'}>
-              <Icon name={today ? 'play_circle' : (STATUS_ICON[s.status] || 'event')} size="xs" className={chipIcon + CHIP[k]![1]} />
-              {s.start && <span className="max-sm:hidden">{s.start} </span>}
+              {/* ふつうの開催の卓は、左の線だけで分かるのでアイコンを省く（名前の場所を空ける） */}
+              {k !== '' && <Icon name={today ? 'play_circle' : (STATUS_ICON[s.status] || 'event')} size="xs" className={chipIcon + CHIP[k]![1]} />}
+              {s.start && <span className="font-medium opacity-70 max-sm:hidden">{s.start + ' '}</span>}
               {s.name}
             </span>
           );

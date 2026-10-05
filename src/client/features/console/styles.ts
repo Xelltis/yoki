@@ -10,7 +10,8 @@ export function notice(kinds: string, button: boolean): string {
   let c = 'relative m-0 block w-full rounded-md text-left font-inherit leading-[1.55] text-pretty '
     + '[&>.material-icons:first-child]:absolute [&>.material-icons:first-child]:top-9 [&>.material-icons:first-child]:left-10 [&>.material-icons:first-child]:h-28 [&>.material-icons:first-child]:w-28 '
     + '[&>.material-icons:first-child]:rounded-[50%] [&>.material-icons:first-child]:text-center [&>.material-icons:first-child]:text-17 [&>.material-icons:first-child]:leading-[28px] [&>.material-icons:first-child]:align-[0] ';
-  c += info ? 'border-0 bg-transparent px-0 pt-2 pb-0 text-12 ' : 'border py-10 pr-12 pl-48 ';
+  // 押せる行は、右の印（Notices）の分を空ける
+  c += info ? 'border-0 bg-transparent px-0 pt-2 pb-0 text-12 ' : 'border py-10 pl-48 ' + (button ? 'pr-30 ' : 'pr-12 ');
   // 色。hot（募集中・調整中）がいちばん強い
   if (hot) c += 'border-[color-mix(in_srgb,var(--soon-text)_45%,var(--line))] bg-soon ';
   else if (k('today')) c += 'border-[color-mix(in_srgb,var(--err-text)_30%,var(--line))] bg-card ';

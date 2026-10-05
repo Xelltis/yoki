@@ -27,7 +27,18 @@ export function Notices({ d, onDay, onTab, onTarget }: {
   // 見落としやすい募集中・調整中を先に出す（色は hot）
   const rec = sortSessions(active(d).filter(isRecruit));
   if (rec.length) {
-    add('adjust hot', <><Icon name="campaign" />{'募集中: ' + rec.map((s) => s.name + '（' + (s.windowLabel || '期間未定') + (s.want.length ? '、希望 ' + s.want.length + ' 人' : '') + '）').join('　')}<span className={noticeSub}>タップすると「募集・調整」タブへ。参加希望はそこで出せます</span></>, '', 'recruit');
+    // 卓ごとに 1 行。参加希望はタブで出す
+    add('adjust hot', (
+      <>
+        <Icon name="campaign" />{'募集中 ' + rec.length + ' 件'}
+        {rec.map((s) => (
+          <span className="block" key={s.id}>
+            <b>{s.name}</b><span className="ml-6 text-12 font-normal text-muted">{(s.windowLabel || '期間未定') + (s.want.length ? '　希望 ' + s.want.length + ' 人' : '')}</span>
+          </span>
+        ))}
+        <span className={noticeSub}>参加希望は「募集・調整」タブで出せます</span>
+      </>
+    ), '', 'recruit');
   }
   const adj = sortSessions(active(d).filter(isAdjusting));
   adj.forEach((s) => {
@@ -37,7 +48,7 @@ export function Notices({ d, onDay, onTab, onTarget }: {
         <>
           <Icon name="how_to_vote" />{pend.length ? '日程調整の回答待ち: ' : '日程調整の回答がそろいました: '}<b>{s.name}</b>
           <span className={noticeSub}>{'候補 ' + s.candidates.length + ' 日　' + (pend.length ? '未回答: ' + pend.join('、') : '全員が回答済み。GM が開催日を選びます')}</span>
-          <span className={noticeSub}>{waitMe ? <b>あなたの回答を待っています。</b> : gmTurn ? <b>開催日を選んでください。</b> : null}タップすると「募集・調整」タブへ。</span>
+          {(waitMe || gmTurn) && <span className="block text-12 font-semibold text-soon-text">{waitMe ? 'あなたの回答を待っています' : '開催日を選んでください'}</span>}
         </>
       ), '', 'recruit');
       return;
@@ -46,7 +57,7 @@ export function Notices({ d, onDay, onTab, onTarget }: {
       <>
         <Icon name="edit_calendar" />日程調整中: <b>{s.name}</b>
         <span className={noticeSub}>{(s.windowLabel ? s.windowLabel + ' のどこか' : '期間未定') + '　GM: ' + (s.gm || '未定') + '　参加: ' + (s.members.join('、') || '未定')}</span>
-        <span className={noticeSub}>タップすると「都合を見る卓」がこの卓になり、候補の期間に枠が付きます。</span>
+        <span className={noticeSub}>押すと、この卓の人の都合をカレンダーに出し、候補の期間に枠を付けます</span>
       </>
     ), s.windowFrom || '', undefined, s.name);
   });
@@ -75,8 +86,13 @@ export function Notices({ d, onDay, onTab, onTarget }: {
       {items.map((it, i) => {
         // 募集中・調整中（hot）のあとは、少し離す
         const gap = i > 0 && items[i - 1]!.cls.indexOf('hot') >= 0 && it.cls.indexOf('hot') < 0 ? ' mt-10' : '';
+        // 押せる行は、右に印を付ける（日を選ぶ・タブへ移る・都合を見る卓を変える）
         return it.day || it.tab || it.target
-          ? <button type="button" key={i} className={notice(it.cls, true) + gap} data-day={it.day || undefined} data-tab={it.tab} data-target={it.target} onClick={() => press(it)}>{it.body}</button>
+          ? (
+            <button type="button" key={i} className={notice(it.cls, true) + gap} data-day={it.day || undefined} data-tab={it.tab} data-target={it.target} onClick={() => press(it)}>
+              {it.body}<Icon name="chevron_right" size="sm" className="absolute top-1/2 right-6 -translate-y-1/2 text-muted" />
+            </button>
+          )
           : <div key={i} className={notice(it.cls, false) + gap}>{it.body}</div>;
       })}
     </div>

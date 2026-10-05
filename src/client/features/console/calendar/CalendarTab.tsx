@@ -17,8 +17,11 @@ import { SetupGuide } from './SetupGuide';
 const sw = 'inline-flex items-center gap-6';
 const swatch = 'h-14 w-14 rounded-[4px] border border-line-strong max-sm:h-12 max-sm:w-12 ';
 
+/** 「募集を始める」「日程調整を始める」。スマホでは、カレンダーが上に見えるように低くする */
+const secondaryNew = 'btn xl max-sm:min-h-38 max-sm:flex-auto max-sm:px-12 max-sm:text-13 max-sm:shadow-none max-sm:[&_.material-icons]:text-18';
+
 /** カレンダーの下のアイコンの読み方。[アイコン, 名前, 付ける印] */
-const CAL_LEGEND: [IconName, string, string?][] = [['event', '開催'], ['play_circle', '今日'], ['campaign', '募集'], ['edit_calendar', '調整期間'], ['how_to_vote', '候補日', 'cand'], ['task_alt', '終了'], ['block', '中止'], ['sticky_note_2', 'メモ']];
+const CAL_LEGEND: [IconName, string, string?][] = [['play_circle', '今日の卓'], ['campaign', '募集'], ['edit_calendar', '調整期間'], ['how_to_vote', '候補日', 'cand'], ['task_alt', '終了'], ['block', '中止'], ['sticky_note_2', 'メモ']];
 
 /** 狭い画面では内訳がカレンダーの下に出る。画面の下のほうに隠れていたら、見える位置まで送る */
 function revealDay(): void {
@@ -71,18 +74,25 @@ export function CalendarTab() {
                 onClick={() => openForm(ui, { date: u.selDay || undefined })}>
                 <Icon name="add" /><span id="newSessionLbl">{sel ? (sel.getMonth() + 1) + '/' + sel.getDate() + ' に卓を登録' : '卓を登録'}</span>
               </button>
-              <button type="button" id="newRecruit" className="btn xl max-sm:flex-auto max-sm:px-12" title="状態を「募集」にした登録の窓を開きます" onClick={() => openForm(ui, { status: '募集' })}><Icon name="campaign" />募集を始める</button>
-              <button type="button" id="newAdjust" className="btn xl max-sm:flex-auto max-sm:px-12" title="状態を「調整中」にした登録の窓を開きます" onClick={() => openForm(ui, { status: '調整中' })}><Icon name="edit_calendar" />日程調整を始める</button>
+              <button type="button" id="newRecruit" className={secondaryNew} title="状態を「募集」にした登録の窓を開きます" onClick={() => openForm(ui, { status: '募集' })}><Icon name="campaign" />募集を始める</button>
+              <button type="button" id="newAdjust" className={secondaryNew} title="状態を「調整中」にした登録の窓を開きます" onClick={() => openForm(ui, { status: '調整中' })}><Icon name="edit_calendar" />日程調整を始める</button>
             </div>
           </div>
-          <div className="mb-12 flex flex-wrap items-center gap-x-14 gap-y-4 text-12 text-muted max-sm:mb-10 max-sm:gap-x-10 max-sm:gap-y-2 max-sm:text-11">
+          {/* マスの色とアイコンの読み方。狭い画面では、アイコンの読み方を畳む */}
+          <div className="mb-12 flex flex-wrap items-center gap-x-14 gap-y-6 text-12 text-muted max-sm:mb-10 max-sm:gap-x-10 max-sm:text-11">
             <span className={sw}><i className={swatch + 'bg-ok'} />全員空き</span><span className={sw}><i className={swatch + 'bg-soft'} />△あり</span>
-            <span className={sw}><i className={swatch + 'bg-session'} />卓あり</span><span className={sw}><i className={swatch + 'bg-past'} />終わった卓</span><span className={sw}><i className={swatch + 'bg-today'} />今日</span>
-            <span className="h-0 basis-full" aria-hidden="true" />
-            <span className="hint">日をタップすると内訳が出ます</span>
-            <div className="flex flex-wrap items-center gap-x-10 gap-y-2 border-l border-line pl-14 max-sm:w-full max-sm:border-l-0 max-sm:pl-0" id="iconLegend">
-              {CAL_LEGEND.map(([icon, name, cls]) => <span className="inline-flex items-center gap-2 whitespace-nowrap" key={icon}><Icon name={icon} size="xs" className={cls ? 'text-accent-text' : undefined} />{name}</span>)}
+            <span className={sw}><i className={swatch + 'bg-session'} />卓あり</span><span className={sw}><i className={swatch + 'bg-past'} />終わった卓</span>
+            <span className={sw}><i className="inline-grid h-16 min-w-16 place-items-center rounded-full bg-accent-strong px-3 text-10 font-bold text-accent-ink not-italic max-sm:h-14 max-sm:min-w-14">{t.getDate()}</i>今日</span>
+            <div className="contents sm:flex sm:flex-wrap sm:items-center sm:gap-x-10 sm:gap-y-2 sm:border-l sm:border-line sm:pl-14" id="iconLegend">
+              <details className="group basis-full sm:hidden">
+                <summary className="inline-flex cursor-pointer list-none items-center gap-2 font-semibold [&::-webkit-details-marker]:hidden">
+                  <Icon name="chevron_right" size="xs" className="transition-transform duration-(--dur-fast) group-open:rotate-90" />アイコンの見方
+                </summary>
+                <div className="mt-4 flex flex-wrap gap-x-10 gap-y-2">{CAL_LEGEND.map(([icon, name, cls]) => <span className="inline-flex items-center gap-2 whitespace-nowrap" key={icon}><Icon name={icon} size="xs" className={cls ? 'text-accent-text' : undefined} />{name}</span>)}</div>
+              </details>
+              {CAL_LEGEND.map(([icon, name, cls]) => <span className="inline-flex items-center gap-2 whitespace-nowrap max-sm:hidden" key={icon}><Icon name={icon} size="xs" className={cls ? 'text-accent-text' : undefined} />{name}</span>)}
             </div>
+            <span className="hint basis-full lg:hidden">日をタップすると、その日の内訳がカレンダーの下に出ます</span>
           </div>
           <MonthGrid d={d} view={view} target={target} selDay={u.selDay} onShift={shift}
             onPick={(key) => {
