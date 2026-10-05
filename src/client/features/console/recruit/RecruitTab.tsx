@@ -264,19 +264,22 @@ export function RecruitTab() {
                     const ok = voters.filter((n) => v[n] === '◯'), ng = voters.filter((n) => v[n] === '×'), no = voters.filter((n) => !v[n]);
                     const my = v[mine] || '';
                     return (
-                      <div className={'grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-8 gap-y-2 border-b border-line py-8 last-of-type:border-b-0' + (past ? ' opacity-55' : '')} data-day={k} key={k}>
-                        <div className="flex items-baseline gap-8"><b className={dow === 0 || hol ? 'text-sun' : dow === 6 ? 'text-sat' : ''}>{fmtJa(k)}</b><span className="text-12 text-muted">{'◯ ' + ok.length + '/' + voters.length}</span></div>
-                        {isVoter && !past && (
-                          <div className="flex gap-4">
-                            <button type="button" className={vote + (my === '◯' ? ' border-ok-text bg-ok text-ok-text' : '')} data-vote="◯" data-id={s.id} data-day={k} aria-pressed={my === '◯'} aria-label={fmtJa(k) + ' は ◯'} onClick={() => castVote(s, k, '◯')}>◯</button>
-                            <button type="button" className={vote + (my === '×' ? ' border-err-text bg-warn text-err-text' : '')} data-vote="×" data-id={s.id} data-day={k} aria-pressed={my === '×'} aria-label={fmtJa(k) + ' は ×'} onClick={() => castVote(s, k, '×')}>×</button>
-                          </div>
-                        )}
-                        <div className="hint m-0 self-center">{[ok.length ? '◯ ' + ok.join('、') : '', ng.length ? '× ' + ng.join('、') : '', no.length ? '未回答 ' + no.join('、') : ''].filter(Boolean).join('　')}</div>
-                        {/* 開催日を決めるボタンは、回答の横に（全員が ◯ なら青く） */}
-                        {canDecide && !past && (
-                          <button type="button" className={'btn small justify-self-end' + (ok.length === voters.length ? ' primary' : '')} data-decide={s.id} data-day={k} disabled={!!off['decide:' + s.id + ':' + k]} onClick={() => decide(s, k)}><Icon name="event_available" size="sm" />この日に決める</button>
-                        )}
+                      // 1 段目に日付・自分の ◯ ×・「この日に決める」（入りきらなければ、決めるボタンだけ次の行の右へ）、2 段目にみんなの回答（幅いっぱい）
+                      <div className={'border-b border-line py-8 last-of-type:border-b-0' + (past ? ' opacity-55' : '')} data-day={k} key={k}>
+                        <div className="flex flex-wrap items-center gap-x-8 gap-y-6">
+                          <div className="flex min-w-[7.5em] flex-1 items-baseline gap-8"><b className={dow === 0 || hol ? 'text-sun' : dow === 6 ? 'text-sat' : ''}>{fmtJa(k)}</b><span className="text-12 text-muted">{'◯ ' + ok.length + '/' + voters.length}</span></div>
+                          {isVoter && !past && (
+                            <div className="flex gap-4">
+                              <button type="button" className={vote + (my === '◯' ? ' border-ok-text bg-ok text-ok-text' : '')} data-vote="◯" data-id={s.id} data-day={k} aria-pressed={my === '◯'} aria-label={fmtJa(k) + ' は ◯'} onClick={() => castVote(s, k, '◯')}>◯</button>
+                              <button type="button" className={vote + (my === '×' ? ' border-err-text bg-warn text-err-text' : '')} data-vote="×" data-id={s.id} data-day={k} aria-pressed={my === '×'} aria-label={fmtJa(k) + ' は ×'} onClick={() => castVote(s, k, '×')}>×</button>
+                            </div>
+                          )}
+                          {/* 開催日を決めるボタン（全員が ◯ なら青く） */}
+                          {canDecide && !past && (
+                            <button type="button" className={'btn small ml-auto' + (ok.length === voters.length ? ' primary' : '')} data-decide={s.id} data-day={k} disabled={!!off['decide:' + s.id + ':' + k]} onClick={() => decide(s, k)}><Icon name="event_available" size="sm" />この日に決める</button>
+                          )}
+                        </div>
+                        <div className="hint mt-4">{[ok.length ? '◯ ' + ok.join('、') : '', ng.length ? '× ' + ng.join('、') : '', no.length ? '未回答 ' + no.join('、') : ''].filter(Boolean).join('　')}</div>
                       </div>
                     );
                   })}
