@@ -186,6 +186,7 @@ export function AvailTab() {
         <Tip className="ml-2" text="いま動いている卓に多く入っている人ほど、左の列に並べます。外すと登録した順になります。" label="並び順" />
       </div>
       <div className="card" id="availFilter" hidden={!fold.availFilter}>
+        <h3>絞り込み</h3>
         <div className={pgrid}>
           <span className={plabel}>卓</span>
           <div className={pctl}><label className="chk"><input type="checkbox" id="afOnly" checked={f.only} onChange={(ev) => setF({ only: ev.target.checked })} /> どれかの卓に入っている人だけ</label></div>
@@ -223,6 +224,7 @@ export function AvailTab() {
         </div>
       </div>
       <div className="card" id="availBulk" hidden={!fold.availBulk}>
+        <h3>自分の列にまとめて入れる</h3>
         <div className={pgrid}>
           <label className={plabel} htmlFor="abMark">印</label>
           <div className={pctl}>
@@ -262,7 +264,8 @@ export function AvailTab() {
         <span className="hint ml-auto max-tab:hidden">自分のマスを押すと 空 → △ → × と変わります</span>
       </div>
       {/* 表をつかんで動かせる（dragging は動かしているあいだ）。狭い画面では隠して、下の日ごとのリストを出す。wrap・avail・dragging は確かめと自動の読み直しが探す印 */}
-      <div className={'wrap avail max-h-[max(360px,calc((100dvh-40px)/var(--zoom,1)-var(--appbar-h)-var(--nav-h)))] cursor-grab overflow-auto [&.dragging]:cursor-grabbing [&.dragging]:select-none max-tab:hidden'} ref={wrapRef}><AvailTable d={d} names={names} mine={mine} rows={rows} onMark={setMark} onPen={openMemo} /></div>
+      {/* 枠は表の幅に合わせる（メンバーが少ないときに、列が横いっぱいに伸びないように） */}
+      <div className={'wrap avail w-fit max-w-full max-h-[max(360px,calc((100dvh-40px)/var(--zoom,1)-var(--appbar-h)-var(--nav-h)))] cursor-grab overflow-auto [&.dragging]:cursor-grabbing [&.dragging]:select-none max-tab:hidden'} ref={wrapRef}><AvailTable d={d} names={names} mine={mine} rows={rows} onMark={setMark} onPen={openMemo} /></div>
       {/* 狭い画面（760px 以下）では、表の代わりに日ごとのリストを出す。横にスクロールせずに自分の印を打てる */}
       <AvailList d={d} names={names} mine={mine} rows={rows} onMark={setMark} onPen={openMemo} />
 
