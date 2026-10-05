@@ -18,7 +18,7 @@ const sw = 'inline-flex items-center gap-6';
 const swatch = 'h-14 w-14 rounded-[4px] border border-line-strong max-sm:h-12 max-sm:w-12 ';
 
 /** 「募集を始める」「日程調整を始める」。スマホでは、カレンダーが上に見えるように低くする */
-const secondaryNew = 'btn xl max-sm:min-h-38 max-sm:flex-auto max-sm:px-12 max-sm:text-13 max-sm:shadow-none max-sm:[&_.material-icons]:text-18';
+const secondaryNew = 'btn xl max-sm:min-h-38 max-sm:flex-auto max-sm:px-12 max-sm:text-13 max-sm:shadow-none max-sm:[&_.ic]:text-18';
 
 /** カレンダーの下のアイコンの読み方。[アイコン, 名前, 付ける印] */
 const CAL_LEGEND: [IconName, string, string?][] = [['play_circle', '今日の卓'], ['campaign', '募集'], ['edit_calendar', '調整期間'], ['how_to_vote', '候補日', 'cand'], ['task_alt', '終了'], ['block', '中止'], ['sticky_note_2', 'メモ']];

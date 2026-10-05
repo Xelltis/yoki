@@ -9,9 +9,8 @@
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="manifest" href="/manifest.webmanifest">
 <meta name="theme-color" content="#2d2afe">
-<!-- アイコンは Material Symbols Rounded。使う名前だけに絞って読み込む（icon_names には、src/client/ui/icons.ts の一覧が入る。vite.config.ts） -->
+<!-- アイコンは SVG で JS に入っている（src/client/ui/icons.ts）。Google Fonts から読むのは文字だけ -->
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..24,400,0..1,0&icon_names=%ICON_NAMES%&display=block">
 <!-- 文字は Noto Sans JP（太さは 400〜700）。どの端末でも同じ見た目にする。読めるまでは端末の字で出す -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400..700&display=swap">
 <script>

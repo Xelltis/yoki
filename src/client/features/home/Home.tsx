@@ -24,10 +24,10 @@ const NOTICE: Record<string, [string, 'info' | 'ok' | 'warn' | 'bad']> = {
 };
 /** お知らせの色（地と字の組）とアイコン */
 const TONE: Record<'info' | 'ok' | 'warn' | 'bad', [string, IconName]> = {
-  info: ['border-accent-line bg-accent-soft [&>.material-icons]:text-accent-text', 'notifications'],
-  ok: ['border-[color-mix(in_srgb,var(--ok-text)_35%,var(--line))] bg-ok [&>.material-icons]:text-ok-text', 'check'],
-  warn: ['border-[color-mix(in_srgb,var(--soon-text)_35%,var(--line))] bg-soon [&>.material-icons]:text-soon-text', 'warning'],
-  bad: ['border-[color-mix(in_srgb,var(--err-text)_35%,var(--line))] bg-warn [&>.material-icons]:text-err-text', 'block'],
+  info: ['border-accent-line bg-accent-soft [&>.ic]:text-accent-text', 'notifications'],
+  ok: ['border-[color-mix(in_srgb,var(--ok-text)_35%,var(--line))] bg-ok [&>.ic]:text-ok-text', 'check'],
+  warn: ['border-[color-mix(in_srgb,var(--soon-text)_35%,var(--line))] bg-soon [&>.ic]:text-soon-text', 'warning'],
+  bad: ['border-[color-mix(in_srgb,var(--err-text)_35%,var(--line))] bg-warn [&>.ic]:text-err-text', 'block'],
 };
 
 /** できることの紹介（ログインの前）。[アイコン, 題, 一言, アイコンの色] */

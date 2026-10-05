@@ -7,8 +7,9 @@ import path from 'node:path';
 import { cloudflare, type WorkerConfig } from '@cloudflare/vite-plugin';
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
+import Icons from 'unplugin-icons/vite';
 import { defineConfig, type Plugin } from 'vite';
-import { ICON_NAMES } from './src/client/ui/icons.ts';
+import { reactIconCompiler } from './tools/icons.ts';
 
 /** 公開する Cloudflare ごとに違う値（環境変数の名前 → 入れる先）。リポジトリの wrangler.jsonc には仮の値だけを置く */
 const DEPLOY_VALUES = ['YOKI_D1_DATABASE_ID', 'YOKI_APP_URL', 'YOKI_DISCORD_CLIENT_ID'] as const;
@@ -32,14 +33,6 @@ function deployValues(config: WorkerConfig): void {
 
 const root = path.join(import.meta.dirname, 'src/client');
 
-/** index.html の %ICON_NAMES% を、React の画面で使うアイコンの名前（src/client/ui/icons.ts）に置き換える。Google Fonts から使う名前だけを読むため */
-function iconNames(): Plugin {
-  return {
-    name: 'yoki:icon-names',
-    transformIndexHtml: (html) => html.replaceAll('%ICON_NAMES%', [...ICON_NAMES].sort().join(',')),
-  };
-}
-
 /**
  * 組み立てた JS に開発用の道（/dev/login・/dev/reset・/dev/google）が残っていたら、組み立てを止める。
  * 開発用ログイン（src/worker/auth/dev.ts）と開発用の偽の Google（src/worker/google/dev.ts）は import.meta.env.DEV のときだけ使うので、組み立てでは消えるはず
@@ -62,7 +55,9 @@ export default defineConfig(({ command }) => ({
     react(),
     // 見た目（Tailwind CSS。src/client/index.css が入口）
     tailwindcss(),
-    iconNames(),
+    // アイコン（~icons/<集まり>/<名前> を import すると、組み立てのときに SVG の React の部品になる。使う名前は src/client/ui/icons.ts）。
+    // 大きさは 1em（文字の大きさに合わせる）
+    Icons({ compiler: reactIconCompiler, scale: 1 }),
     cloudflare({
       configPath: path.join(import.meta.dirname, 'wrangler.jsonc'),
       // ローカルの D1 などを、wrangler のコマンド（npm run db:migrate:local）と同じ場所に置く

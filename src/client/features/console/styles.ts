@@ -8,8 +8,9 @@ export function notice(kinds: string, button: boolean): string {
   const k = (n: string) => kinds.split(' ').indexOf(n) >= 0;
   const hot = k('hot'), info = k('info');
   let c = 'relative m-0 block w-full rounded-md text-left font-inherit leading-[1.55] text-pretty '
-    + '[&>.material-icons:first-child]:absolute [&>.material-icons:first-child]:top-9 [&>.material-icons:first-child]:left-10 [&>.material-icons:first-child]:h-28 [&>.material-icons:first-child]:w-28 '
-    + '[&>.material-icons:first-child]:rounded-[50%] [&>.material-icons:first-child]:text-center [&>.material-icons:first-child]:text-17 [&>.material-icons:first-child]:leading-[28px] [&>.material-icons:first-child]:align-[0] ';
+    + '[&>.ic:first-child]:absolute [&>.ic:first-child]:top-9 [&>.ic:first-child]:left-10 [&>.ic:first-child]:h-28 [&>.ic:first-child]:w-28 '
+    // 丸は 28px、中の形は 17px（SVG は中身の箱いっぱいに描くので、内側を空けて小さくする）
+    + '[&>.ic:first-child]:rounded-[50%] [&>.ic:first-child]:p-[5.5px] [&>.ic:first-child]:align-[0] ';
   // 押せる行は、右の印（Notices）の分を空ける
   c += info ? 'border-0 bg-transparent px-0 pt-2 pb-0 text-12 ' : 'border py-10 pl-48 ' + (button ? 'pr-30 ' : 'pr-12 ');
   // 色。hot（募集中・調整中）がいちばん強い
@@ -20,12 +21,12 @@ export function notice(kinds: string, button: boolean): string {
   if (k('today') || k('tomorrow')) c += 'font-semibold ';
   if (button) c += 'cursor-pointer transition-[background-color,border-color] duration-(--dur-fast) ease-out hover:border-line-strong hover:bg-hover ';
   // 先頭のアイコンの丸の色（クラスの名前は、Tailwind が見つけられるように書き切る）
-  return c + (hot ? '[&>.material-icons:first-child]:bg-soon-text [&>.material-icons:first-child]:text-card'
-    : k('today') ? '[&>.material-icons:first-child]:bg-warn [&>.material-icons:first-child]:text-err-text'
-      : k('tomorrow') ? '[&>.material-icons:first-child]:bg-accent-soft [&>.material-icons:first-child]:text-accent-text'
-        : k('week') ? '[&>.material-icons:first-child]:bg-head [&>.material-icons:first-child]:text-fg'
-          : k('adjust') ? '[&>.material-icons:first-child]:bg-soon [&>.material-icons:first-child]:text-soon-text'
-            : '[&>.material-icons:first-child]:bg-head [&>.material-icons:first-child]:text-muted');
+  return c + (hot ? '[&>.ic:first-child]:bg-soon-text [&>.ic:first-child]:text-card'
+    : k('today') ? '[&>.ic:first-child]:bg-warn [&>.ic:first-child]:text-err-text'
+      : k('tomorrow') ? '[&>.ic:first-child]:bg-accent-soft [&>.ic:first-child]:text-accent-text'
+        : k('week') ? '[&>.ic:first-child]:bg-head [&>.ic:first-child]:text-fg'
+          : k('adjust') ? '[&>.ic:first-child]:bg-soon [&>.ic:first-child]:text-soon-text'
+            : '[&>.ic:first-child]:bg-head [&>.ic:first-child]:text-muted');
 }
 /** 知らせの行の 2 行目（小さな説明） */
 export const noticeSub = 'block text-12 font-normal text-pretty text-muted';
