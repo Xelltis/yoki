@@ -11,7 +11,7 @@ import { Icon } from '../../ui/Icon';
 import type { IconName } from '../../ui/icons';
 import { CreateGroup } from './CreateGroup';
 import { DevLogin } from './DevLogin';
-import { card, h2, hint } from './styles';
+import { card, h2, heroBtn, hint } from './styles';
 
 type LoggedIn = Extract<MeResponse, { loggedIn: true }>;
 
@@ -108,12 +108,17 @@ function Guest({ me, back }: { me: MeResponse; back: string | null }) {
         <img className="pointer-events-none absolute -top-24 -right-28 h-190 w-190 rotate-12 rounded-[48px] opacity-22" src="/icon-192.png" alt="" />
         <h1 className="relative m-0 text-30 leading-[1.3] font-bold tracking-[.02em] max-sm:text-26">TRPG の卓の予定を、<br />Discord の仲間と。</h1>
         <p className="relative mt-12 mb-22 max-w-[34em] text-15 text-white/85">卓の登録・メンバーの予定・募集・日程調整をこの画面で行い、知らせを Discord に送ります。</p>
-        {me.discord && (
-          <a className="relative inline-flex h-46 items-center gap-8 rounded-full bg-white px-22 text-15 font-bold text-brand no-underline shadow-[0_6px_18px_rgba(0,0,0,.18)] transition-transform duration-(--dur-fast) hover:-translate-y-1" id="loginBtn" href={login}>
-            <Icon name="login" className="align-[0]" />
-            Discord でログイン
-          </a>
-        )}
+        {/* ログインの手段。本番は Discord。開発サーバーでは、開発用ログインも同じ場所に並べる */}
+        <div className="relative flex flex-wrap items-center gap-x-14 gap-y-10">
+          {me.discord && (
+            <a className={heroBtn()} id="loginBtn" href={login}>
+              <Icon name="login" className="align-[0]" />
+              Discord でログイン
+            </a>
+          )}
+          {/* 本番の組み立てでは import.meta.env.DEV が偽になり、開発用ログインごと消える（vite.config.ts の noDevLogin が確かめる） */}
+          {import.meta.env.DEV && me.dev && <DevLogin users={me.dev.users} ghost={me.discord} />}
+        </div>
         <p className="relative mt-14 mb-0 text-13 text-white/80">
           ログインすると、<a className="text-white underline underline-offset-2" href="/terms">利用規約</a>と<a className="text-white underline underline-offset-2" href="/privacy">プライバシーポリシー</a>に同意したものとします。
         </p>
@@ -129,8 +134,6 @@ function Guest({ me, back }: { me: MeResponse; back: string | null }) {
           </div>
         ))}
       </div>
-      {/* 本番の組み立てでは import.meta.env.DEV が偽になり、開発用ログインごと消える（vite.config.ts の noDevLogin が確かめる） */}
-      {import.meta.env.DEV && me.dev && <DevLogin users={me.dev.users} />}
     </section>
   );
 }
