@@ -21,7 +21,7 @@ export function setTheme(t: string): void {
   store('theme', t || '');
   themeStore.set((n) => n + 1);
 }
-/** 文字サイズ。画面全体を拡げる（'m' 中・'l' 大。空なら小） */
+/** 文字サイズ。画面全体を拡げる（'m' 中・'l' 大。空ならふつう） */
 export function setFont(v: string): void {
   const el = document.documentElement;
   if (v === 'm' || v === 'l') { el.setAttribute('data-font', v); el.style.setProperty('--zoom', v === 'l' ? '1.25' : '1.12'); } else { el.removeAttribute('data-font'); el.style.removeProperty('--zoom'); }

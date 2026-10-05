@@ -27,7 +27,7 @@ th, td { border-bottom: 1px solid var(--line); padding: 8px 10px; text-align: le
 th { background: var(--head); white-space: nowrap; font-size: 12px; font-weight: 600; color: var(--muted); }
 tr:last-child > td { border-bottom: 0; }
 
-/* 文字サイズ。端末ごとに 小（そのまま）・中・大。画面全体を拡げる */
+/* 文字サイズ。端末ごとに ふつう（そのまま）・中・大。画面全体を拡げる */
 :root[data-font="m"] body { zoom: 1.12; }
 :root[data-font="l"] body { zoom: 1.25; }
 /* 横のスクロールバーの分を、いつも空けておく（開け閉めで横にずれないように） */

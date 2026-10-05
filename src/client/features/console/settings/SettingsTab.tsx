@@ -76,9 +76,10 @@ export function SettingsTab() {
             <select className={field} id="stFont" value={font} onChange={(ev) => {
               const v = ev.target.value;
               setFont(v);
-              toast('文字サイズを' + (v === 'l' ? '大' : v === 'm' ? '中' : '小') + 'にしました（この端末だけ）');
+              toast('文字サイズを' + (v === 'l' ? '大' : v === 'm' ? '中' : 'ふつう') + 'にしました（この端末だけ）');
             }}>
-              <option value="">小</option><option value="m">中</option><option value="l">大</option>
+              {/* ふだんの大きさを「小」と呼ぶと、小さくしているように読めるので「ふつう」 */}
+              <option value="">ふつう</option><option value="m">中</option><option value="l">大</option>
             </select>
           </div>
         </div>
