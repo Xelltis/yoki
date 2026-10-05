@@ -1,52 +1,63 @@
-/* ---- 色。アプリと同じ組み立て: 黒い帯に水色、状態の色はミント・ローズ・バイオレット ---- */
+/* ---- 色。アプリと同じ組み立て: サービスアイコンの青（#2D2AFE）を大きく使い、オレンジ・ピンク・黄を差し色にする。
+ * 例の部品（--y-*）はアプリの画面の色（src/client/styles/theme.css と同じ） ---- */
 :root {
-  --vp-c-brand-1: #0e7490;
-  --vp-c-brand-2: #0891b2;
-  --vp-c-brand-3: #0891b2;
-  --vp-c-brand-soft: rgba(8, 145, 178, .14);
-  --vp-button-brand-bg: #22d3ee;
-  --vp-button-brand-border: #22d3ee;
-  --vp-button-brand-text: #042f37;
-  --vp-button-brand-hover-bg: #67e3f4;
-  --vp-button-brand-hover-border: #67e3f4;
-  --vp-button-brand-hover-text: #042f37;
-  --vp-button-brand-active-bg: #1cc3dd;
-  --vp-button-brand-active-border: #1cc3dd;
-  --vp-button-brand-active-text: #042f37;
+  --vp-c-brand-1: #2421d6;
+  --vp-c-brand-2: #2d2afe;
+  --vp-c-brand-3: #2d2afe;
+  --vp-c-brand-soft: rgba(45, 42, 254, .12);
+  --vp-c-bg-alt: #f3f4ff;
+  --vp-button-brand-bg: #2d2afe;
+  --vp-button-brand-border: #2d2afe;
+  --vp-button-brand-text: #ffffff;
+  --vp-button-brand-hover-bg: #4b48ff;
+  --vp-button-brand-hover-border: #4b48ff;
+  --vp-button-brand-hover-text: #ffffff;
+  --vp-button-brand-active-bg: #2421d6;
+  --vp-button-brand-active-border: #2421d6;
+  --vp-button-brand-active-text: #ffffff;
   --vp-home-hero-name-color: transparent;
-  --vp-home-hero-name-background: linear-gradient(110deg, #0b111b 35%, #0891b2);
-  --vp-font-family-base: "Inter", "Hiragino Sans", "BIZ UDPGothic", "Noto Sans JP", "Yu Gothic UI", Meiryo, system-ui, sans-serif;
+  --vp-home-hero-name-background: linear-gradient(110deg, #2d2afe 30%, #fb2c85 72%, #fe841c);
+  --vp-font-family-base: "Noto Sans JP", "Hiragino Sans", "Yu Gothic UI", Meiryo, system-ui, sans-serif;
 
-  /* 例の部品の色（アプリの画面の色） */
-  --y-ink: #0b111b; --y-ink-line: #1f2935; --y-on-ink: #f1f5f9; --y-on-ink-muted: #97a3b4; --y-ice: #22d3ee; --y-ice-ink: #042f37;
-  --y-ink-cell: rgba(255, 255, 255, .045); --y-ink-cell-line: rgba(255, 255, 255, .08); --y-ink-me-line: rgba(34, 211, 238, .45);
-  --y-ink-soft-bg: rgba(52, 211, 153, .14); --y-ink-soft-text: #6ee7b7; --y-ink-ng-bg: rgba(251, 113, 133, .17); --y-ink-ng-text: #fda4af;
-  --y-ink-ok-bg: rgba(34, 211, 238, .16); --y-ink-sun: #fb7185; --y-ink-sat: #7dd3fc;
-  --y-surface: #ffffff; --y-surface-2: #f0f2f5; --y-line: #e2e6ec; --y-line-strong: #c9d0da;
-  --y-text: #0b111b; --y-muted: #5a6474; --y-accent: #0891b2; --y-accent-text: #0e7490; --y-accent-soft: #e0f5f9; --y-accent-line: #a3dde9;
-  --y-primary: #0b111b; --y-primary-ink: #ffffff;
-  --y-ok: #ccf0e0; --y-ok-text: #046c4e; --y-soft: #e9f7f1; --y-warn: #fde1e7; --y-err-text: #be123c; --y-violet: #6d28d9;
-  --y-session: #e3eaf8; --y-past: #eceff3; --y-sun: #d4163f; --y-sat: #0369a1;
-  --y-shadow: 0 1px 2px rgba(11, 17, 27, .05), 0 16px 40px rgba(11, 17, 27, .07);
+  /* 例の部品の色（アプリの画面の色）。ink はアプリの青い帯 */
+  --y-ink: #2d2afe; --y-ink-line: #2d2afe; --y-on-ink: #ffffff; --y-on-ink-muted: rgba(255, 255, 255, .76); --y-ice: #fdd21f; --y-ice-ink: #15163a;
+  --y-ink-cell: rgba(255, 255, 255, .1); --y-ink-cell-line: rgba(255, 255, 255, .18); --y-ink-me-line: rgba(253, 210, 31, .75);
+  --y-ink-soft-bg: rgba(52, 211, 153, .28); --y-ink-soft-text: #c3f8df; --y-ink-ng-bg: rgba(251, 44, 133, .34); --y-ink-ng-text: #ffd6e7;
+  --y-ink-ok-bg: rgba(253, 210, 31, .26); --y-ink-sun: #ffbfd8; --y-ink-sat: #dbe5ff;
+  --y-surface: #ffffff; --y-surface-2: #eef0ff; --y-line: #e1e3fa; --y-line-strong: #c7caee;
+  --y-text: #15163a; --y-muted: #5d608a; --y-accent: #2d2afe; --y-accent-text: #2421d6; --y-accent-soft: #e8e9ff; --y-accent-line: #c2c5fd;
+  --y-primary: #2d2afe; --y-primary-ink: #ffffff;
+  --y-ok: #dcf5e7; --y-ok-text: #0a7a45; --y-soft: #eef9f3; --y-warn: #ffe4ee; --y-err-text: #d1104d; --y-violet: #c45200;
+  --y-session: #e8eaff; --y-past: #eceef6; --y-sun: #e0115f; --y-sat: #2d2afe;
+  --y-shadow: 0 1px 2px rgba(21, 22, 58, .05), 0 16px 40px rgba(45, 42, 254, .08);
   --y-font-mono: "BIZ UDGothic", "Hiragino Sans", "Noto Sans JP", ui-monospace, monospace;
 }
 .dark {
-  --vp-c-brand-1: #67e8f9;
-  --vp-c-brand-2: #22d3ee;
-  --vp-c-brand-3: #0891b2;
-  --vp-c-brand-soft: rgba(34, 211, 238, .16);
-  --vp-c-bg: #0b0e13;
-  --vp-c-bg-alt: #080a0e;
-  --vp-c-bg-soft: #12161d;
-  --vp-c-bg-elv: #12161d;
-  --vp-home-hero-name-background: linear-gradient(110deg, #f1f5f9 35%, #22d3ee);
+  --vp-c-brand-1: #a8c0ff;
+  --vp-c-brand-2: #8eaeff;
+  --vp-c-brand-3: #769ffc;
+  --vp-c-brand-soft: rgba(118, 159, 252, .16);
+  --vp-c-bg: #0c0d29;
+  --vp-c-bg-alt: #090a20;
+  --vp-c-bg-soft: #16173e;
+  --vp-c-bg-elv: #16173e;
+  --vp-button-brand-bg: #769ffc;
+  --vp-button-brand-border: #769ffc;
+  --vp-button-brand-text: #0c0d29;
+  --vp-button-brand-hover-bg: #9bb8ff;
+  --vp-button-brand-hover-border: #9bb8ff;
+  --vp-button-brand-hover-text: #0c0d29;
+  --vp-button-brand-active-bg: #6a90f0;
+  --vp-button-brand-active-border: #6a90f0;
+  --vp-button-brand-active-text: #0c0d29;
+  --vp-home-hero-name-background: linear-gradient(110deg, #a8c0ff 30%, #fb2c85 72%, #fe841c);
 
-  --y-ink: #06080c; --y-ink-line: #1a2029;
-  --y-surface: #12161d; --y-surface-2: #171c24; --y-line: #232a34; --y-line-strong: #343d49;
-  --y-text: #e6ebf2; --y-muted: #8d98a8; --y-accent: #22d3ee; --y-accent-text: #67e8f9; --y-accent-soft: #0b2930; --y-accent-line: #155e6b;
-  --y-primary: #e6ebf2; --y-primary-ink: #0b0e13;
-  --y-ok: #0c3a2d; --y-ok-text: #34d399; --y-soft: #10271f; --y-warn: #3b141f; --y-err-text: #fb7185; --y-violet: #a78bfa;
-  --y-session: #16213a; --y-past: #1a1f27; --y-sun: #fb7185; --y-sat: #38bdf8;
+  --y-ink: #2422c9; --y-ink-line: #2422c9;
+  --y-surface: #16173e; --y-surface-2: #1c1e50; --y-line: #2a2c66; --y-line-strong: #3c3f82;
+  --y-text: #eceeff; --y-muted: #a2a5d4; --y-accent: #8eaeff; --y-accent-text: #a8c0ff; --y-accent-soft: #22256a; --y-accent-line: #3e45a8;
+  --y-primary: #769ffc; --y-primary-ink: #0c0d29;
+  --y-ok: #123b2c; --y-ok-text: #4ade9c; --y-soft: #10271f; --y-warn: #3d1630; --y-err-text: #ff7aa6; --y-violet: #ffa04d;
+  --y-session: #1d2058; --y-past: #1a1b3b; --y-sun: #ff6ea6; --y-sat: #a8c0ff;
   --y-shadow: 0 1px 2px rgba(0, 0, 0, .5), 0 16px 40px rgba(0, 0, 0, .35);
 }
 
