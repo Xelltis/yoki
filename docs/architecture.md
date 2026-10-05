@@ -24,7 +24,7 @@ Worker 1 つで、次の 3 つを受け持つ。
 | `POST /api/g/:id/:fn` | 画面からの呼び出し |
 | `GET` / `POST /api/admin/*` | 運営の管理画面が使う（下の「運営の管理画面」） |
 | `GET /cal/<token>.ics` | 購読 URL（iCalendar）。ログインせずに読む（下の「カレンダーとの連携」） |
-| `/auth/google/start` `/auth/google/callback` | Google カレンダーとの連携（OAuth） |
+| `/auth/google/start` `/auth/google/login` `/auth/google/callback` | Google カレンダーとの連携と、Google でのログイン（OAuth） |
 | `POST /dev/login` `POST /dev/reset` | 開発用ログイン（開発サーバーだけ）。`/dev/reset` は、開発用の人の Google 連携と偽の Google の中身も消す |
 | `/dev/google/authorize` `/dev/google/state` `POST /dev/google/busy` | 開発用の偽の Google（開発サーバーで Google の値が空のときだけ） |
 
@@ -41,11 +41,18 @@ Worker 1 つで、次の 3 つを受け持つ。
 
 **ログインの続き**（`auth/session.ts`）。ランダムな 32 バイトを cookie（`__Host-yoki_sid`、HttpOnly・Secure・SameSite=Lax）に入れ、D1 にはその SHA-256 だけを置く。期限は 30 日。手元（http://localhost）では Secure を付けられないので、名前を `yoki_sid` にする。
 
+**Google でログイン**（`auth/google-login.ts`・`routes/google.ts`）。利用者そのものは Discord のアカウント（`users`）のままで、Google のアカウントは結びつけたもう 1 つの入り口（`google_logins`。人ごとに 1 つ、Google のアカウントごとに 1 人）。
+- `/auth/google/login` から Google の OAuth2（scope は `openid email`、`prompt=select_account`）。戻ってくる先はカレンダーの連携と同じ `/auth/google/callback` で、state の cookie（`yoki_glogin`）で見分ける。id_token は Google のトークンの窓口から直接受け取るので署名は確かめず、`aud` が自分のクライアント ID かを確かめて、`sub`（Google のアカウントの ID）を使う
+- 結びついている `sub` なら、その人でログインする（締め出された人は断る）。初めての `sub` は、`sub` とメールを暗号にした cookie（`yoki_glink`。10 分）に控えて入口へ戻し、続けて Discord でログイン（開発用ログインも）したあとに結びつける。cookie は `GOOGLE_TOKEN_KEY` の AES-GCM なので、書き換えて人の Google のアカウントを結びつけることはできない
+- ログインしている人は、設定の画面の「ログインの方法」から結びつけ（`?link=1`。始めた人と戻ってきた人が同じか確かめる）、外せる（`unlinkGoogleLogin`）。ほかの人に結びついている Google のアカウントは断る
+
 **グループに入れるか**（`auth/guard.ts`）。グループに結びつけた Discord サーバーが、控えにあれば入れる。
 
-- 控えが 24 時間より古ければ、`/auth/login` に送って Discord に聞き直す（`prompt=none` なので、画面はほとんど出ない）。サーバーを抜けた人は、最長 24 時間で入れなくなる
-- 控えにサーバーが無いとき、控えが 5 分より古ければ一度だけ聞き直す（そのあとサーバーに入った人のため）。新しければ 403
-- ログインした人の Discord のトークンは持たないので、その人のサーバーの出入りを裏で問い合わせることはない。そのかわり、抜けた人を締め出すまでに時間差がある（知らせに使う Bot のトークンは別で、Worker の secret に置く）
+- 控え（ログインのときに読んだサーバーの一覧か、Bot で確かめた日時）が 24 時間より新しければ、控えで決める
+- 古い・控えにサーバーが無いときは、知らせの Bot がそのサーバーにいれば、Bot に聞く（`discord/member.ts`。サーバーのメンバーを 1 人読むだけなので、Gateway の特別な権限は要らない）。いれば入れ、確かめた日時を `user_guilds.checked_at` に残す（管理できるかは、オーナーか、ロールの権限に管理者・サーバー管理があるかで決める）。いなければ 403 にして控えからも外す。Google でログインした人を、Discord のログインの画面へ送らずに済ませるため
+- Bot がいない・Discord が答えないときは、今までどおり。控えが 24 時間より古ければ `/auth/login` に送って Discord に聞き直す（`prompt=none` なので、画面はほとんど出ない）。控えにサーバーが無いとき、控えが 5 分より古ければ一度だけ聞き直し（そのあとサーバーに入った人のため）、新しければ 403
+- ログインした人の Discord のトークンは持たないので、裏で問い合わせるのは Bot がいるサーバーだけ。Bot がいないサーバーでは、抜けた人を締め出すまでに最長 24 時間の時間差がある（知らせに使う Bot のトークンは別で、Worker の secret に置く）
+- グループを作るとき（管理できるサーバーの一覧）は、今までどおり新しい Discord のログインが要る
 
 **「あなた」はサーバーが決める**。ログインした人に結びついたメンバーが「あなた」（`Actor`）になる。初めて入ったときは、管理者が Discord ID 付きで先に登録していた行に結びつけ、無ければ Discord の表示名で新しく作る。予定・参加希望・日程調整の回答は、本人のぶんだけ入れられる（`requireSelf`。管理者も、ほかの人の代わりには入れない）。画面から送られる名前は、本人の名前と同じかを確かめるだけに使う。なので、ゲストと Discord の ID の無いメンバーは回答できず、日程調整の「全員そろった」は回答できる人（`pollVoters`）で数える。
 
@@ -63,7 +70,7 @@ Worker 1 つで、次の 3 つを受け持つ。
 
 ## データベース（D1）
 
-表の定義は `migrations/`（`0001_init.sql` が最初の形、`0002_admin.sql` が締め出し・最後に使われた日と索引、`0003_bot.sql` が知らせの Bot、`0004_calendar.sql` がカレンダーとの連携）。日付（開催日・予定・メモ）は日本時間の `YYYY-MM-DD`、日時（〜した時刻）は UTC の ISO 文字列。
+表の定義は `migrations/`（`0001_init.sql` が最初の形、`0002_admin.sql` が締め出し・最後に使われた日と索引、`0003_bot.sql` が知らせの Bot、`0004_calendar.sql` がカレンダーとの連携、`0005_member_check.sql` が Bot で確かめた日時、`0006_google_login.sql` が Google でのログイン）。日付（開催日・予定・メモ）は日本時間の `YYYY-MM-DD`、日時（〜した時刻）は UTC の ISO 文字列。
 
 - `users`・`user_guilds`・`auth_sessions`: ログイン。`users.banned_at`・`banned_reason` は締め出し
 - `groups`: グループと設定（知らせのチャンネル・知らせの日時・各種の ON/OFF・卓の番号の続き）。`last_used_at` は最後に使われた日時（画面から呼ばれるたびに、10 分に 1 回まで書き換える）
@@ -74,6 +81,7 @@ Worker 1 つで、次の 3 つを受け持つ。
 - `calendar_feeds`: 購読 URL（人とグループの組で 1 つ。token・載せる卓・最後に読まれた日時）
 - `google_links`: Google カレンダーとの連携（人ごと。メール・暗号にした refresh token・書き込み／読み込みの ON と OFF・印を決める時間帯・最後に回った日時と失敗）
 - `google_events`: Google に書き込んだ予定（人と卓ごとの予定の ID と中身の要約）。卓や連携が消えても Google の予定を消すまで覚えておくので、外部キーにしない
+- `google_logins`: Google でのログイン（Google のアカウントの ID・メール → 利用者）。`user_guilds.checked_at` は、そのサーバーにいることを Bot で確かめた日時
 - `google_dismissed`: Google の予定から入った印を、本人が消した日（その日には、もう入れない）。`availability.source` は、本人が入れた印なら空、Google の予定から入れた印なら `google`
 
 **メンバーは中では ID で持つ**。画面とのやり取りは GAS 版と同じく名前で行い、`domain/people.ts` で変換する。名前を変えても 1 か所を直すだけで済む（GAS 版では、名前の変更が一部の表に伝わらなかった）。メンバーに無い人（ゲスト）は、`guest_name` に名前だけで持つ。メンバーを消すと、その人が入っていた卓と回答はゲストの名前に置き換わり、予定とメモは消える。
