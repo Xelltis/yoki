@@ -16,9 +16,10 @@ await withDevServer(async (base) => {
   const D = () => page.evaluate(() => window.yoki.D);
   /** 画面のデータが条件を満たすまで待つ（fn はブラウザの中で D と arg を受け取る） */
   const until = (fn, arg) => page.waitForFunction(`(${fn})(window.yoki.D, ${JSON.stringify(arg ?? null)})`, null, { timeout: 15000 });
-  /** タブを押して、タブの中身が出るのを待つ（中身はあとから読み込んで描くことがある） */
+  /** タブを押して、タブの中身が出るのを待つ（中身はあとから読み込んで描くことがある）。設定はタブでなく、あなたのメニューから開く */
   const tab = async (name) => {
-    await page.click(`nav.tabs button[data-tab=${name}]`);
+    if (name === 'settings') { await page.click('#meBtn'); await page.click('#toSettings'); }
+    else await page.click(`nav.tabs button[data-tab=${name}]`);
     await page.waitForSelector(`#tab-${name}`, { state: 'visible', timeout: 15000 });
   };
   /** グループの管理画面を開き、区分を選ぶ */
@@ -54,9 +55,19 @@ await withDevServer(async (base) => {
         assert.equal(await page.getAttribute('body', 'data-tab'), t);
       }
       const before = await page.evaluate(() => document.documentElement.getAttribute('data-theme'));
+      await page.click('#meBtn');
       await page.click('#theme');
       assert.notEqual(await page.evaluate(() => document.documentElement.getAttribute('data-theme')), before);
+      assert.equal(await page.isVisible('#meMenu'), false, '選んだらメニューは閉じる');
+      await page.click('#meBtn');
       await page.click('#theme');
+      await page.click('#helpBtn');
+      assert.equal(await page.isVisible('#helpLink'), true, 'ヘルプのメニューに使い方がある');
+      await page.click('#guideBtn');
+      await page.waitForSelector('#setupGuide', { state: 'visible', timeout: 15000 });
+      await page.click('#helpBtn');
+      await page.click('#guideBtn');
+      await page.waitForSelector('#setupGuide', { state: 'hidden', timeout: 15000 });
     });
 
     await step('カレンダーで日を選ぶと内訳が出て、月を送れる', async () => {
@@ -248,7 +259,10 @@ await withDevServer(async (base) => {
       await page.click('#toMain');
       await page.waitForURL('**/g/sample/');
       await page.waitForFunction(() => window.yoki && window.yoki.D, null, { timeout: 30000 });
-      assert.equal(await page.isVisible('#adminLink'), true, '管理者には管理画面への入口が出る');
+      await page.click('#groupMenuBtn');
+      assert.equal(await page.isVisible('#adminLink'), true, '管理者には、グループのメニューに管理画面への入口が出る');
+      await page.keyboard.press('Escape');
+      assert.equal(await page.isVisible('#groupMenu'), false, 'Esc でメニューが閉じる');
     });
 
     await step('「あなた」はログインした人で、ほかの人には切り替えられない', async () => {
@@ -287,11 +301,15 @@ await withDevServer(async (base) => {
       const sora = await ctx.newPage();
       sora.on('pageerror', (e) => errors.push(e.message));
       await devLogin(sora, base, 'ソラ');
+      await sora.click('#groupMenuBtn');
+      assert.equal(await sora.isVisible('#toGroups'), true);
       assert.equal(await sora.isVisible('#adminLink'), false);
+      await sora.keyboard.press('Escape');
       assert.equal((await sora.goto(base + 'g/sample/admin/')).status(), 403);
       await sora.goto(base + 'g/sample/');
       await sora.waitForFunction(() => window.yoki && window.yoki.D, null, { timeout: 30000 });
-      await sora.click('nav.tabs button[data-tab=settings]');
+      await sora.click('#meBtn');
+      await sora.click('#toSettings');
       assert.equal(await sora.isVisible('#adminEntry'), false);
       await sora.fill('#meNote', 'e2e の備考');
       await sora.click('#meSave');
@@ -346,7 +364,7 @@ await withDevServer(async (base) => {
       await until((d) => !d.members.some((m) => m.name === 'ソラ'));
     });
 
-    await step('運営の管理画面: 規約の運営者・問い合わせ先・本文を直すと、/terms に出る。入口と設定タブから開ける', async () => {
+    await step('運営の管理画面: 規約の運営者・問い合わせ先・本文を直すと、/terms に出る。入口と設定の画面から開ける', async () => {
       await page.goto(base + 'admin/#legal');
       // 欄は画面を描いてから出るので、出るのも待つ
       await page.waitForFunction(() => document.getElementById('lgTerms')?.value.includes('本サービス'), null, { timeout: 15000 });
@@ -374,7 +392,7 @@ await withDevServer(async (base) => {
       await page.waitForSelector('.foot a[href="/terms"]', { timeout: 15000 });
       await main();
       await tab('settings');
-      assert.equal(await page.isVisible('#tab-settings a[href="/privacy"]'), true, '設定タブにリンクがある');
+      assert.equal(await page.isVisible('#tab-settings a[href="/privacy"]'), true, '設定の画面にリンクがある');
     });
 
     await step('狭い画面では日ごとのリストで印を打てる', async () => {
