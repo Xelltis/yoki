@@ -181,10 +181,11 @@ export function AvailTab() {
           <Icon name={fold.availBulk ? 'expand_more' : 'chevron_right'} size="sm" className="-ml-4" />まとめて入れる
         </button>
         <Tip className="ml-2" text="自分の列に、期間と曜日を決めて △ か × をまとめて入れます。卓のある日は飛ばします。" label="まとめて入れるとは" />
-        <label className="chk ml-auto">
+        {/* 列の並び順は表だけのもの。狭い画面の日ごとのリストでは出さない */}
+        <label className="chk ml-auto max-tab:hidden!">
           <input type="checkbox" id="sortByLoad" checked={sortByLoad} onChange={(ev) => { store('sortByLoad', ev.target.checked ? '1' : '0'); sortStore.set(ev.target.checked); }} /> 卓の多い人を左に
         </label>
-        <Tip className="ml-2" text="いま動いている卓に多く入っている人ほど、左の列に並べます。外すと登録した順になります。" label="並び順" />
+        <Tip className="ml-2 max-tab:hidden!" text="いま動いている卓に多く入っている人ほど、左の列に並べます。外すと登録した順になります。" label="並び順" />
       </div>
       <div className="card" id="availFilter" hidden={!fold.availFilter}>
         <h3>絞り込み</h3>
