@@ -1,6 +1,7 @@
 // グループに入れるかの確認と、「あなた」（メンバー）を決める。
 // 入れるのは、グループに結びつけた Discord サーバーにいる人。参加しているサーバーはログインのときに控え、
-// 控えが古ければ（SNAPSHOT_HOURS）Discord に黙って聞き直す（/auth/login は prompt=none）
+// 控えが古ければ（SNAPSHOT_HOURS）、Bot がそのサーバーにいれば Bot に、いなければ Discord に黙って聞き直す（/auth/login は prompt=none）
+import { guildMembership } from '../discord/member';
 import type { Viewer } from './session';
 import { memberNameFrom } from '../lib/text';
 
@@ -22,22 +23,51 @@ export function snapshotAgeMs(viewer: Viewer, now: Date): number {
   return now.getTime() - Date.parse(viewer.guildsCheckedAt);
 }
 
-export async function groupAccess(db: D1Database, viewer: Viewer | null, groupId: string, now = new Date()): Promise<Access> {
+/**
+ * グループに入れるか。bot は知らせの Bot のトークン（無ければ undefined か空）。
+ * サーバーの一覧の控え（ログインのときに読む）か、Bot で確かめた日時（サーバーごと）が SNAPSHOT_HOURS より新しければ、控えで決める。
+ * 古い・控えにサーバーが無いときは、Bot がそのサーバーにいれば Bot に聞く（Discord のログインの画面へ送らずに済む。Google でログインした人のため）。
+ * Bot で分からなければ、今までどおり Discord に聞き直す（recheck）
+ */
+export async function groupAccess(db: D1Database, viewer: Viewer | null, groupId: string, bot: string | undefined, now = new Date()): Promise<Access> {
   const g = await db
     .prepare('SELECT id, guild_id, guild_name, title FROM groups WHERE id = ?')
     .bind(groupId)
     .first<{ id: string; guild_id: string; guild_name: string; title: string }>();
   if (!g) return { ok: false, reason: 'notfound' };
   if (!viewer) return { ok: false, reason: 'login' };
-  const age = snapshotAgeMs(viewer, now);
-  if (age > SNAPSHOT_HOURS * 3600_000) return { ok: false, reason: 'recheck' };
-  const ug = await db
-    .prepare('SELECT can_manage FROM user_guilds WHERE user_id = ? AND guild_id = ?')
-    .bind(viewer.id, g.guild_id)
-    .first<{ can_manage: number }>();
-  if (!ug) return { ok: false, reason: age > RECHECK_MINUTES * 60_000 ? 'recheck' : 'forbidden' };
   const group = { id: g.id, guildId: g.guild_id, guildName: g.guild_name, title: g.title };
-  return { ok: true, group, actor: await resolveMember(db, group.id, viewer, ug.can_manage === 1, now) };
+  const ok = async (canManage: boolean): Promise<Access> => ({ ok: true, group, actor: await resolveMember(db, group.id, viewer, canManage, now) });
+  const loginAge = snapshotAgeMs(viewer, now);
+  const ug = await db
+    .prepare('SELECT can_manage, checked_at FROM user_guilds WHERE user_id = ? AND guild_id = ?')
+    .bind(viewer.id, g.guild_id)
+    .first<{ can_manage: number; checked_at: string | null }>();
+  const age = ug && ug.checked_at ? Math.min(loginAge, now.getTime() - Date.parse(ug.checked_at)) : loginAge;
+  if (ug && age <= SNAPSHOT_HOURS * 3600_000) return ok(ug.can_manage === 1);
+  if (bot) {
+    const m = await guildMembership(bot, g.guild_id, viewer.id);
+    if (m && !m.member) {
+      // もうサーバーにいない。控えからも外す
+      await db.prepare('DELETE FROM user_guilds WHERE user_id = ? AND guild_id = ?').bind(viewer.id, g.guild_id).run();
+      return { ok: false, reason: 'forbidden' };
+    }
+    if (m) {
+      // 管理できるかが読めなければ、控えの値のまま（無ければ管理できない）
+      const canManage = m.canManage ?? ug?.can_manage === 1;
+      await db
+        .prepare(
+          `INSERT INTO user_guilds (user_id, guild_id, name, can_manage, checked_at) VALUES (?1, ?2, ?3, ?4, ?5)
+           ON CONFLICT (user_id, guild_id) DO UPDATE SET can_manage = excluded.can_manage, checked_at = excluded.checked_at`,
+        )
+        .bind(viewer.id, g.guild_id, g.guild_name, canManage ? 1 : 0, now.toISOString())
+        .run();
+      return ok(canManage);
+    }
+  }
+  if (loginAge > SNAPSHOT_HOURS * 3600_000) return { ok: false, reason: 'recheck' };
+  // ここに来るのは、控えにサーバーが無いとき（控えにあって新しければ、上で入れている）
+  return { ok: false, reason: loginAge > RECHECK_MINUTES * 60_000 ? 'recheck' : 'forbidden' };
 }
 
 type MemberRow = { id: number; name: string; is_admin: number };

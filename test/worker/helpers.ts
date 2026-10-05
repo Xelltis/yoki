@@ -67,6 +67,25 @@ export function mockDiscord(profile: { user: { id: string; username: string; glo
   return { calls, restore: () => spy.mockRestore() };
 }
 
+/**
+ * Bot の Discord の API（サーバーのメンバー・サーバー）の返事を差し替える。members はサーバーごとのメンバー（ID → ロール）。
+ * 載っていないサーバーは、Bot がいない（403）。owner と roles（ID → 権限の数）はサーバーの中身
+ */
+export function mockBotGuilds(guilds: Record<string, { members: Record<string, string[]>; owner?: string; roles?: Record<string, string> }> = {}) {
+  const calls: string[] = [];
+  const spy = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+    const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+    calls.push(url);
+    const m = /\/guilds\/([^/]+)(?:\/members\/([^/]+))?$/.exec(new URL(url).pathname);
+    const g = m && guilds[m[1]!];
+    if (!g) return Response.json({ code: 50001, message: 'Missing Access' }, { status: 403 });
+    if (m[2]) return m[2] in g.members ? Response.json({ roles: g.members[m[2]] }) : Response.json({ code: 10007, message: 'Unknown Member' }, { status: 404 });
+    if (!g.roles) return new Response('server error', { status: 500 });
+    return Response.json({ owner_id: g.owner ?? '0', roles: Object.entries(g.roles).map(([id, permissions]) => ({ id, permissions })) });
+  });
+  return { calls, restore: () => spy.mockRestore() };
+}
+
 export function setCookies(res: Response): string[] {
   return res.headers.getSetCookie();
 }
