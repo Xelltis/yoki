@@ -41,7 +41,8 @@ export function LegalPane() {
         {doc('privacy')}
         <p className="hint">書き方: 「## 」で始まる行は見出し、「### 」は小見出し、「- 」は箇条書き、「1. 」は番号付きになります。空行で段落を分けます。URL とメールアドレスはリンクになり、[文字](URL) でもリンクを書けます。HTML は使えません（そのまま文字で出ます）。</p>
         <p className="hint">既定の文は、このままの卓予定に合わせてあります。公開のしかた（前に置く CDN など）に合わせて直してください。本文を変えて保存すると、更新日が今日になります。本文を空にして保存すると、既定の文に戻ります。</p>
-        <button type="submit" className="btn primary mt-12">保存する</button>
+        {/* 変えるまで（既定の文に戻すを押すまで）は押せない */}
+        <button type="submit" className="btn primary mt-12" disabled={!draft}>保存する</button>
       </form>
     </div>
   );

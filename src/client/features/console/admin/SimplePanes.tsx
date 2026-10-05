@@ -51,7 +51,7 @@ export function AdminsPane() {
   );
 }
 
-/** この卓予定の区分。グループの名前・卓の後始末・予定の日数 */
+/** この卓予定の区分。グループの名前・卓の後始末・予定の日数。名前と日数は、変えるまで保存を押せない */
 export function TablePane() {
   const d = useData();
   const { busy, msg, setMsg, call } = useCall();
@@ -72,7 +72,7 @@ export function TablePane() {
         <p className="hint">画面の左上と、Discord の知らせに出る名前です。みんなに見えます。</p>
         <label className={fieldLabel} htmlFor="stName">グループの名前 <small className={fieldNote}>80 文字まで</small></label>
         <input type="text" className={field} id="stName" maxLength={80} value={nameV} onChange={(ev) => setName(ev.target.value)} />
-        <div className="btns"><button type="button" className="btn primary" id="stNameSave" disabled={!!busy.stNameSave} onClick={rename}>名前を変える</button><span className="hint" id="stNameMsg">{msg.stNameMsg || ''}</span></div>
+        <div className="btns"><button type="button" className="btn primary" id="stNameSave" disabled={!!busy.stNameSave || nameV.trim() === d.title} onClick={rename}>名前を変える</button><span className="hint" id="stNameMsg">{msg.stNameMsg || ''}</span></div>
       </div>
       <div className="card">
         <h3>卓の後始末</h3>
@@ -84,7 +84,7 @@ export function TablePane() {
         <div className="row">
           <div><label className={fieldLabel} htmlFor="stAvailDays">メンバーの予定の日数 <small className={fieldNote}>7〜366</small></label><input type="text" className="w-[8em] max-w-640" id="stAvailDays" inputMode="numeric" value={daysV} onChange={(ev) => setDays(ev.target.value)} /></div>
         </div>
-        <div className="btns"><button type="button" className="btn primary" id="stSave" disabled={!!busy.stSave} onClick={() => { void call('stSave', 'stMsg', 'saveConsoleSettings', { availDays: daysV.trim() }).then((r) => { if (r) setDays(null); }); }}>保存</button><span className="hint" id="stMsg">{msg.stMsg || ''}</span></div>
+        <div className="btns"><button type="button" className="btn primary" id="stSave" disabled={!!busy.stSave || daysV.trim() === String(d.settings.availDays || 60)} onClick={() => { void call('stSave', 'stMsg', 'saveConsoleSettings', { availDays: daysV.trim() }).then((r) => { if (r) setDays(null); }); }}>保存</button><span className="hint" id="stMsg">{msg.stMsg || ''}</span></div>
       </div>
     </div>
   );

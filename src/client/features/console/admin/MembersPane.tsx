@@ -75,7 +75,8 @@ export function MembersPane() {
         <label htmlFor="mnote">備考</label><input type="text" className={field} id="mnote" value={f.note} onChange={(ev) => edit({ note: ev.target.value })} />
         <p className="hint">Discord のユーザーID は、ユーザー設定 → 詳細設定 → 開発者モードを ON にしてから、名前を右クリック →「ユーザーIDをコピー」。入れておくと開催前の知らせなどでメンションされます。</p>
         <div className="btns">
-          <button type="submit" className="btn primary" id="msave" disabled={busy}>{m ? '更新' : '追加'}</button>
+          {/* いる人を直すときは、変えるまで押せない */}
+          <button type="submit" className="btn primary" id="msave" disabled={busy || (!!m && !draft)}>{m ? '更新' : '追加'}</button>
           <button type="button" className="btn" id="mclear" onClick={() => pick('')}>新規に戻す</button>
           <button type="button" className="btn danger" id="mdel" hidden={!m} disabled={busy} onClick={remove}>このメンバーを削除</button>
         </div>
