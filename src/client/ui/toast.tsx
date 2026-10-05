@@ -18,6 +18,8 @@ export function Toast() {
       + 'transition-[opacity,transform] duration-(--dur) ease-out '
       // スマホでは下のタブの上に出す。カレンダーでは「卓を登録」の丸いボタンの上
       + 'max-sm:bottom-[calc(var(--nav-h)+16px+env(safe-area-inset-bottom))] max-sm:[body[data-tab=cal]_&]:bottom-[calc(var(--nav-h)+88px+env(safe-area-inset-bottom))] '
+      // 窓を開いているあいだは、画面の上に出す（下から出る窓のボタンや文に重ならないように）
+      + '[html.modal-open_&]:top-[calc(16px+env(safe-area-inset-top))]! [html.modal-open_&]:bottom-auto! '
       + (s.show ? 'opacity-100 [transform:translate(-50%,0)]' : 'opacity-0 [transform:translate(-50%,8px)]')}>
       {s.text}
     </div>
