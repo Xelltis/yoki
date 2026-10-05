@@ -27,10 +27,10 @@ const avMark = 'absolute top-6 right-6 text-11 font-bold text-ok-text max-sm:hid
 const CHIP: Record<string, [string, string]> = {
   '': ['bg-card font-semibold text-fg shadow-[inset_3px_0_0_var(--accent),0_0_0_1px_var(--line)]', 'text-accent-text'],
   held: ['bg-card font-semibold text-fg shadow-[inset_3px_0_0_var(--ok-text),0_0_0_1px_var(--line)]', 'text-ok-text'],
-  adj: ['bg-card font-semibold text-fg shadow-[inset_3px_0_0_var(--violet),0_0_0_1px_var(--line)]', 'text-violet'],
+  adj: ['bg-card font-semibold text-fg shadow-[inset_3px_0_0_var(--soon-text),0_0_0_1px_var(--line)]', 'text-soon-text'],
   done: ['bg-card font-medium text-muted shadow-[inset_3px_0_0_var(--line-strong),0_0_0_1px_var(--line)]', 'text-muted'],
   cancel: ['bg-card font-medium text-muted line-through shadow-[inset_3px_0_0_var(--line-strong),0_0_0_1px_var(--line)]', 'text-muted'],
-  note: ['bg-soon font-medium text-fg shadow-none', 'text-violet'],
+  note: ['bg-soon font-medium text-fg shadow-none', 'text-soon-text'],
 };
 
 export function MonthGrid({ d, view, target, selDay, onPick, onShift }: Props) {

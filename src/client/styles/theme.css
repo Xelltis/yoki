@@ -40,7 +40,7 @@
   --color-chrome-accent-ink: var(--chrome-accent-ink); --color-chrome-accent-text: var(--chrome-accent-text); --color-live: var(--live);
   --color-live-off: var(--live-off); --color-live-err: var(--live-err); --color-head: var(--head); --color-today: var(--today);
   --color-session: var(--session); --color-ok: var(--ok); --color-soft: var(--soft); --color-out: var(--out); --color-weekend: var(--weekend);
-  --color-warn: var(--warn); --color-soon: var(--soon); --color-past: var(--past); --color-violet: var(--violet); --color-muted: var(--muted);
+  --color-warn: var(--warn); --color-soon: var(--soon); --color-past: var(--past); --color-soon-text: var(--soon-text); --color-muted: var(--muted);
   --color-line: var(--line); --color-line-strong: var(--line-strong); --color-card: var(--card); --color-hover: var(--hover);
   --color-sun: var(--sun); --color-sat: var(--sat); --color-ok-text: var(--ok-text); --color-err-text: var(--err-text);
   --color-booked-text: var(--booked-text); --color-toast: var(--toast); --color-toast-text: var(--toast-text); --color-week-line: var(--week-line);
@@ -58,7 +58,7 @@
 
 /* ---- 色。サービスアイコンの青（#2D2AFE）を帯と大事なボタンに大きく使い、オレンジ・ピンク・黄を差し色にする。
  * ライトが基本。ダークは紺の地に、明るめの青。ヘッダーの月・太陽のボタンか設定タブで切り替え、未設定なら OS に従う。
- * オレンジは白い地の小さな字には使わない（読みにくい）。字に使うときは濃いオレンジ（--violet。名前は前の紫のまま）にする ---- */
+ * オレンジは白い地の小さな字には使わない（読みにくい）。字に使うときは濃いオレンジ（--soon-text。--soon の地と組む）にする ---- */
 @layer theme {
   :root {
     color-scheme: light;
@@ -69,7 +69,7 @@
     --chrome-accent: #fdd21f; --chrome-accent-ink: #15163a; --chrome-accent-text: #fdd21f;
     --live: #4ade80; --live-off: rgba(255, 255, 255, .45); --live-err: #ff8fb8;
     --head: #eef0ff; --today: #e2e4ff; --session: #e8eaff; --ok: #dcf5e7; --soft: #eef9f3;
-    --out: #f6f7fd; --weekend: #f8f9ff; --warn: #ffe4ee; --soon: #fff0e3; --past: #eceef6; --violet: #c45200;
+    --out: #f6f7fd; --weekend: #f8f9ff; --warn: #ffe4ee; --soon: #fff0e3; --past: #eceef6; --soon-text: #c45200;
     --text: #15163a; --muted: #5d608a; --line: #e1e3fa; --line-strong: #c7caee; --bg: #f3f4ff; --card: #ffffff; --hover: #eef0ff;
     --sun: #e0115f; --sat: #2d2afe; --ok-text: #0a7a45; --err-text: #d1104d;
     --booked-text: #2421d6; --toast: #15163a; --toast-text: #ffffff; --week-line: #a3a6d8; --scrim: rgba(12, 13, 41, .55);
@@ -87,7 +87,7 @@
     --chrome-accent: #fdd21f; --chrome-accent-ink: #15163a; --chrome-accent-text: #fdd21f;
     --live: #4ade80; --live-off: rgba(255, 255, 255, .4); --live-err: #ff8fb8;
     --head: #1c1e50; --today: #23266d; --session: #1d2058; --ok: #123b2c; --soft: #10271f;
-    --out: #0f1030; --weekend: #111234; --warn: #3d1630; --soon: #3a2412; --past: #1a1b3b; --violet: #ffa04d;
+    --out: #0f1030; --weekend: #111234; --warn: #3d1630; --soon: #3a2412; --past: #1a1b3b; --soon-text: #ffa04d;
     --text: #eceeff; --muted: #a2a5d4; --line: #2a2c66; --line-strong: #3c3f82; --bg: #0c0d29; --card: #16173e; --hover: #1f2150;
     --sun: #ff6ea6; --sat: #a8c0ff; --ok-text: #4ade9c; --err-text: #ff7aa6;
     --booked-text: #b9caff; --toast: #eceeff; --toast-text: #0c0d29; --week-line: #4b4f93; --scrim: rgba(0, 0, 0, .65);
@@ -106,7 +106,7 @@
       --chrome-accent: #fdd21f; --chrome-accent-ink: #15163a; --chrome-accent-text: #fdd21f;
       --live: #4ade80; --live-off: rgba(255, 255, 255, .4); --live-err: #ff8fb8;
       --head: #1c1e50; --today: #23266d; --session: #1d2058; --ok: #123b2c; --soft: #10271f;
-      --out: #0f1030; --weekend: #111234; --warn: #3d1630; --soon: #3a2412; --past: #1a1b3b; --violet: #ffa04d;
+      --out: #0f1030; --weekend: #111234; --warn: #3d1630; --soon: #3a2412; --past: #1a1b3b; --soon-text: #ffa04d;
       --text: #eceeff; --muted: #a2a5d4; --line: #2a2c66; --line-strong: #3c3f82; --bg: #0c0d29; --card: #16173e; --hover: #1f2150;
       --sun: #ff6ea6; --sat: #a8c0ff; --ok-text: #4ade9c; --err-text: #ff7aa6;
       --booked-text: #b9caff; --toast: #eceeff; --toast-text: #0c0d29; --week-line: #4b4f93; --scrim: rgba(0, 0, 0, .65);
