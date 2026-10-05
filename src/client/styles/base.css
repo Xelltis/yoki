@@ -40,6 +40,9 @@ select, input[type=text], input[type=search], input[type=date], input[type=time]
   background-color: var(--card); color: var(--text); transition: border-color var(--dur-fast) ease-out, box-shadow var(--dur-fast) ease-out;
 }
 select { appearance: none; -webkit-appearance: none; padding-right: 32px; background-image: var(--select-arrow); background-repeat: no-repeat; background-position: right 10px center; cursor: pointer; }
+/* 候補のある入力欄（GM・シリーズ）は、選ぶ欄と同じ矢印にする（ブラウザの黒い三角は隠すが、押せば候補が開く） */
+input[list] { padding-right: 32px; background-image: var(--select-arrow); background-repeat: no-repeat; background-position: right 10px center; }
+input[list]::-webkit-calendar-picker-indicator { opacity: 0; cursor: pointer; }
 select:hover, input[type=text]:hover, input[type=search]:hover, input[type=date]:hover, input[type=time]:hover, input[type=password]:hover, textarea:hover { border-color: color-mix(in srgb, var(--line-strong) 55%, var(--text)); }
 select:focus-visible, input:not([type=checkbox]):not([type=radio]):focus-visible, textarea:focus-visible { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
 ::placeholder { color: var(--muted); opacity: .8; }

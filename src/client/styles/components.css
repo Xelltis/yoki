@@ -80,6 +80,8 @@ tr.r-past td { background: var(--warn); }
 .modal .members label { display: inline-flex; margin: 0; font-weight: normal; }
 .modal .btns > label, .modal label.chk { display: inline-flex; align-items: center; gap: 8px; margin: 0; font-weight: normal; }
 .modal form .row > div { min-width: 120px; }
+/* 折り返した段のあいだは、名前の上の余白だけにする（段の隙間と重なって、ほかより広く空かないように） */
+.modal form .row { row-gap: 0; }
 /* 窓の下のボタンは右に寄せ、進むボタンをいちばん右に置く。消すなど危ないボタン（danger）は左の端 */
 .modal .btns { margin-top: 16px; justify-content: flex-end; }
 .modal .btns .danger { margin-left: 0; margin-right: auto; }
