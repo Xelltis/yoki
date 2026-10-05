@@ -11,7 +11,7 @@ const APP_URL = '';
 /** 本文と部品で使う Material Symbols の名前（アルファベット順）。足したら、ここにも足す（テストが確かめる） */
 export const ICONS = [
   'add', 'arrow_back', 'block', 'calendar_month', 'campaign', 'check', 'check_circle', 'date_range', 'edit_calendar', 'event',
-  'event_available', 'flag', 'how_to_vote', 'login', 'notifications', 'play_circle', 'refresh',
+  'event_available', 'flag', 'help', 'how_to_vote', 'login', 'logout', 'notifications', 'play_circle', 'refresh',
   'restart_alt', 'settings', 'shield', 'sticky_note_2', 'task_alt', 'touch_app', 'visibility',
 ];
 
