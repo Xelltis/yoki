@@ -11,7 +11,7 @@
     // /admin（運営者の管理画面）も、運営者かを確かめてから返すので、ここに入れる（入れないと、確かめずに配ってしまう）。
     // /terms・/privacy（利用規約・プライバシーポリシー）は、運営者が直した本文を D1 から読んで返す
     "binding": "ASSETS",
-    "run_worker_first": ["/api/*", "/auth/*", "/g/*", "/dev/*", "/admin", "/admin/*", "/terms", "/privacy"]
+    "run_worker_first": ["/api/*", "/auth/*", "/g/*", "/dev/*", "/admin", "/admin/*", "/terms", "/privacy", "/cal/*"]
   },
   "d1_databases": [
     {
@@ -30,7 +30,8 @@
     // Discord の文に付けるアプリの URL と、Discord アプリのクライアント ID。手元では .dev.vars で、本番では公開のときに入れる。
     // 秘密の値（DISCORD_CLIENT_SECRET・DISCORD_BOT_TOKEN）と運営者の ID（OPERATOR_IDS）は vars に置かず、Worker の secret にする（src/worker/env.ts）
     "APP_URL": "",
-    "DISCORD_CLIENT_ID": ""
+    "DISCORD_CLIENT_ID": "",
+    "GOOGLE_CLIENT_ID": ""
   },
   "observability": { "enabled": true }
 }

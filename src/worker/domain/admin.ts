@@ -1,10 +1,12 @@
 // 運営者の管理画面のための読み書き（グループ・利用者・送信の失敗・見回りの様子）。
 // 運営者はグループの中身（卓・予定）は見ない。見るのは数と名前だけ
 import type { AdminFailure, AdminGroupDetail, AdminGroupRow, AdminMember, AdminOverview, AdminUserRow, PatrolRecord } from '../../shared/admin';
+import type { GoogleDeps } from '../google/config';
 import { badRequest, notFound } from '../lib/errors';
 import { NAME_SEPARATORS, RESERVED_NAMES } from '../lib/text';
 import { STATUS } from './constants';
 import { type Form, str } from './form';
+import { forgetGoogle } from './google';
 
 /** 送信の失敗に数える記録（送り直しの途中の HTTP…・ERROR… は数えない） */
 const FAILED = "(l.result LIKE '送信失敗%' OR l.result LIKE '送らず%')";
@@ -224,12 +226,15 @@ export async function setBan(db: D1Database, id: string, form: Form, isOp: (id: 
  * 利用者を消す（本人から消してほしいと頼まれたとき）。消すのは、利用者の行（ログインと、入っているサーバーの控えも一緒に消える）と、
  * どのグループでもその人のメンバーの行（ログインで結びついた行と、その Discord ID で先に登録されていた行）。メンバーの行の消し方は、
  * グループの管理者がメンバーを消すときと同じで、予定とメモは消え、卓と回答には名前だけが残る。グループの「作った人」の ID も外す。
- * Discord サーバーにいれば、次に開いたときにまた入れる。運営者は消せない。締め出している人は、消すと締め出しの印も消えるので消せない
+ * Discord サーバーにいれば、次に開いたときにまた入れる。運営者は消せない。締め出している人は、消すと締め出しの印も消えるので消せない。
+ * Google カレンダーと連携していれば、本人が外すときと同じく、書いた予定を消して Google の許可も取り消す（google は連携の一式。
+ * 運営者が Google の値を外していて null なら、連携の行と書いた予定の控えだけを消す。Google 側には予定と許可が残る）
  */
-export async function deleteUser(db: D1Database, id: string, isOp: (id: string) => boolean): Promise<{ message: string }> {
+export async function deleteUser(db: D1Database, id: string, isOp: (id: string) => boolean, google: GoogleDeps | null = null, now = new Date()): Promise<{ message: string }> {
   const u = await requireUser(db, id);
   if (isOp(id)) throw badRequest('運営者は消せません（OPERATOR_IDS から外してからにしてください）。');
   if (u.banned_at) throw badRequest('締め出している人は消せません。消すと締め出しの印も消え、また入れるようになるためです。消すなら、先に締め出しから戻してください。');
+  if (google) await forgetGoogle(db, google, id, now);
   const mine = 'SELECT id FROM members WHERE user_id = ?1 OR discord_id = ?1';
   // 消すメンバーの行の数は、消す前に同じ batch の中で数える（DELETE の changes は、一緒に消えた予定の行も数えるため）
   const [counted] = await db.batch([
@@ -238,6 +243,8 @@ export async function deleteUser(db: D1Database, id: string, isOp: (id: string) 
     db.prepare(`UPDATE OR IGNORE poll_votes SET guest_name = (SELECT name FROM members m WHERE m.id = poll_votes.member_id), member_id = NULL WHERE member_id IN (${mine})`).bind(id),
     db.prepare('DELETE FROM members WHERE user_id = ?1 OR discord_id = ?1').bind(id),
     db.prepare("UPDATE groups SET created_by = '' WHERE created_by = ?").bind(id),
+    // 書いた予定の控えは外部キーにしていないので、ここで消す（連携の行は users の CASCADE で消える）
+    db.prepare('DELETE FROM google_events WHERE user_id = ?').bind(id),
     db.prepare('DELETE FROM users WHERE id = ?').bind(id),
   ]);
   const n = (counted!.results[0] as { n: number }).n;

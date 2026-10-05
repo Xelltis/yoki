@@ -39,8 +39,8 @@ function iconNames(): Plugin {
 }
 
 /**
- * 組み立てた JS に開発用ログイン（/dev/login・/dev/reset）が残っていたら、組み立てを止める。
- * 開発用ログイン（src/worker/auth/dev.ts）は import.meta.env.DEV のときだけ登録するので、組み立てでは消えるはず
+ * 組み立てた JS に開発用の道（/dev/login・/dev/reset・/dev/google）が残っていたら、組み立てを止める。
+ * 開発用ログイン（src/worker/auth/dev.ts）と開発用の偽の Google（src/worker/google/dev.ts）は import.meta.env.DEV のときだけ使うので、組み立てでは消えるはず
  */
 function noDevLogin(): Plugin {
   return {

@@ -85,6 +85,29 @@ export type Ctx = {
   appUrl: string;
   /** 知らせを送る Bot（卓予定の Discord アプリ）。token が空なら送れない。clientId は Bot を招く URL に使う */
   bot: Bot;
+  /** 本人の購読 URL（このグループ。作っていなければ null） */
+  feed: { token: string; scope: FeedScope } | null;
+  /** 本人の Google 連携（していなければ null） */
+  google: GoogleLinkRow | null;
+  /** Google 連携を使えるか（運営者が Google の値を設定している） */
+  googleReady: boolean;
+  /** Google カレンダーの予定から入れた印 { 'YYYY-MM-DD': [名前] }（今日から avail_days 日分） */
+  availGoogle: Record<string, string[]>;
 };
 
 export type Bot = { token: string; clientId: string };
+
+/** 購読 URL に載せる卓。mine は自分が GM か参加者として入っている卓、all はグループの卓すべて */
+export type FeedScope = 'mine' | 'all';
+
+/** Google 連携の行（refresh_token は読まない。画面に出さないため） */
+export type GoogleLinkRow = {
+  email: string;
+  write_events: number;
+  read_busy: number;
+  busy_from: string;
+  busy_to: string;
+  synced_at: string | null;
+  busy_at: string | null;
+  error: string;
+};

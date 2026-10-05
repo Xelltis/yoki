@@ -6,4 +6,8 @@ export type Bindings = Env & {
   DISCORD_BOT_TOKEN?: string;
   /** 運営者の Discord ユーザー ID（カンマか空白で区切る）。公開の Actions のログに出さないように、vars ではなく secret にする */
   OPERATOR_IDS?: string;
+  /** Google カレンダーとの連携（OAuth のクライアント）。Client ID は vars、secret は Worker の secret */
+  GOOGLE_CLIENT_SECRET?: string;
+  /** Google の refresh token を D1 に置くときに暗号化する鍵（32 バイトを base64 にしたもの）。無ければ Google 連携は使えない */
+  GOOGLE_TOKEN_KEY?: string;
 };

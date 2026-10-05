@@ -8,6 +8,7 @@ import { toast } from '../../../ui/toast';
 import { openForm, openPoll } from '../actions';
 import { discordSend, failToast } from '../api/discord';
 import { useConsole } from '../context';
+import { googleAddUrl } from '../model/calendar';
 import { daysBetween, fmtJa, timeRange } from '../model/dates';
 import { hasPoll, isActive, isAdjusting, isDated, me, peopleOf, pollOk, pollVoters, seriesNames, sortSessions, targetPeople, windowByDay } from '../model/model';
 import { hookFor, kindOf, notifyState } from '../model/notify';
@@ -113,6 +114,9 @@ export function DayDetail({ d, target }: { d: ConsoleData; target: string }) {
                   : <button type="button" className="btn small primary" data-poll={s.id} onClick={() => openPoll(ui, s.id)}><Icon name="how_to_vote" size="sm" />日程を調整する</button>)}
                 <button type="button" className="btn small" data-edit={s.id} onClick={() => openForm(ui, { id: s.id })}><Icon name="edit" size="sm" />編集</button>
                 <button type="button" className="btn small" data-cont={s.id} title="設定を引き継いで翌日の卓を登録" onClick={() => openForm(ui, { cont: s.id })}><Icon name="add" size="sm" />続きを登録</button>
+                {isDated(s) && s.date && (
+                  <a className="btn small" data-gcal={s.id} href={googleAddUrl(s, d.title, d.appUrl)} target="_blank" rel="noopener" title="この卓を Google カレンダーに足す（新しいタブで開く）"><Icon name="event" size="sm" />Google カレンダーに追加</a>
+                )}
                 {isActive(s) && (
                   <button type="button" className="btn small" data-notify={s.id} disabled={!hookFor(d, s.series, kindOf(s)) || !!notifying[s.id]} title={hookFor(d, s.series, kindOf(s)) ? '卓の案内を Discord に送る' : 'チャンネル未設定'} onClick={() => notify(s.id)}><Icon name="notifications" size="sm" />Discord に通知</button>
                 )}

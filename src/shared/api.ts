@@ -15,7 +15,8 @@ export type Status = (typeof STATUS)[keyof typeof STATUS];
 export const RPC_FUNCS = [
   'getConsoleData', 'sendDiscordStep', 'setDayNote', 'setInterest', 'bulkUpdateSessions', 'setAvailability', 'setAvailabilityBulk', 'setAvailNote',
   'saveSession', 'deleteSession', 'saveMember', 'deleteMember', 'saveConsoleSettings', 'saveSeriesNotify', 'renameGroup', 'startPoll', 'setPollVote',
-  'setPollVoteAll', 'cancelPoll', 'decidePoll', 'setAdmin', 'deleteGroup', 'getDiscordChannels',
+  'setPollVoteAll', 'cancelPoll', 'decidePoll', 'setAdmin', 'deleteGroup', 'getDiscordChannels', 'saveCalendarFeed', 'deleteCalendarFeed',
+  'saveGoogleSettings', 'syncGoogleNow', 'unlinkGoogle',
 ] as const;
 export type RpcName = (typeof RPC_FUNCS)[number];
 
@@ -122,6 +123,23 @@ export type ConsoleData = {
     setter: string;
   };
   seriesNotify: SeriesNotifyView[];
+  /** カレンダーとの連携（本人のぶん） */
+  calendar: CalendarView;
+  /** Google カレンダーの予定から入れた印 { 'YYYY-MM-DD': [名前] }（本人が入れた印と見分けるため） */
+  availGoogle: Record<string, string[]>;
+};
+
+/** 購読 URL に載せる卓。mine は自分が GM か参加者として入っている卓、all はグループの卓すべて */
+export type FeedScope = 'mine' | 'all';
+
+/** カレンダーとの連携の様子（本人のぶん） */
+export type CalendarView = {
+  /** 購読 URL（このグループ。作っていなければ null） */
+  feed: { url: string; scope: FeedScope } | null;
+  /** Google 連携を使えるか（運営者が Google の値を設定している） */
+  googleReady: boolean;
+  /** Google 連携（していなければ null）。write: 卓を書き込む、read: 予定から印を入れる、from / to: 印を決める時間帯 */
+  google: { email: string; write: boolean; read: boolean; from: string; to: string; syncedAt: string; busyAt: string; error: string } | null;
 };
 
 /** 送り先に選べる Discord のチャンネル（getDiscordChannels の返事）。category はカテゴリーの名前（無ければ空） */

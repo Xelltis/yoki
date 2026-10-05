@@ -176,6 +176,56 @@ await withDevServer(async (base) => {
       await until((d, k) => d.notes[k]?.text === 'e2e のメモ', day);
     });
 
+    await step('カレンダー連携: 購読 URL を作って読め、作り直すと前の URL は読めない。止められる', async () => {
+      await tab('settings');
+      await page.selectOption('#feedScope', 'all');
+      await page.click('#feedCreate');
+      await until((d) => d.calendar.feed?.scope === 'all');
+      const url = await page.inputValue('#feedUrl');
+      // 購読 URL はログインせずに読むものなので、ブラウザの外から読む（前の URL の 404 が、画面のエラーに数えられないように）
+      const ics = await (await fetch(url)).text();
+      assert.match(ics, /^BEGIN:VCALENDAR/);
+      assert.match(ics, /SUMMARY:連れて帰る/);
+      await page.click('#feedRenew');
+      await confirm();
+      await until((d, u) => d.calendar.feed && d.calendar.feed.url !== u, url);
+      assert.equal((await fetch(url)).status, 404, '作り直す前の URL は読めない');
+      await page.click('#feedStop');
+      await confirm();
+      await until((d) => d.calendar.feed === null);
+    });
+
+    await step('カレンダー連携: 偽の Google と連携すると卓が書き込まれ、予定から × が入る。消した印は戻らない。外すと片付く', async () => {
+      const fake = () => page.evaluate(() => fetch('/dev/google/state').then((r) => r.json()));
+      await page.click('#googleLink');
+      await page.waitForSelector('#googleForm', { timeout: 15000 });
+      await until((d) => d.calendar.google?.email === 'dev@example.com');
+      // 連携したら、返事のあとで卓を書き込む
+      for (let i = 0; i < 30 && !Object.keys((await fake()).events).length; i++) await page.waitForTimeout(300);
+      assert.ok(Object.values((await fake()).events).some((e) => e.summary === '連れて帰る'), 'ひよりの卓が書き込まれる');
+      // 卓も印も無い日に、時間帯（19:00〜23:00）を埋める予定を入れて同期すると、× が Google の印として入る
+      const d0 = await D();
+      const day = d0.availDays.find((k) => !d0.booked[k]?.['ひより'] && !d0.avail[k]?.['ひより']);
+      await page.evaluate(async (k) => {
+        const at = (h) => new Date(k + 'T' + h + ':00+09:00').toISOString();
+        await fetch('/dev/google/busy', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ busy: [{ start: at('18:00'), end: at('23:30') }] }) });
+      }, day);
+      await page.click('#googleSync');
+      await until((d, k) => d.avail[k]?.['ひより'] === '×' && (d.availGoogle[k] || []).includes('ひより'), day);
+      // 本人が消すと、次に同期しても戻らない
+      await tab('avail');
+      await page.click(`#availTable button.mk[data-day="${day}"]`);
+      await until((d, k) => !d.avail[k]?.['ひより'], day);
+      await tab('settings');
+      await Promise.all([page.waitForResponse((r) => r.url().endsWith('/syncGoogleNow')), page.click('#googleSync')]);
+      assert.equal((await D()).avail[day]?.['ひより'], undefined, '消した日には入れない');
+      // 外すと、書いた予定と連携を消す
+      await page.click('#googleUnlink');
+      await confirm();
+      await until((d) => d.calendar.google === null);
+      assert.deepEqual((await fake()).events, {});
+    });
+
     await step('予定表の自分のマスを押すと印が変わる', async () => {
       await tab('avail');
       const cell = page.locator('#availTable button.mk').first();

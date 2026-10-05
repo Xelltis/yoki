@@ -8,3 +8,9 @@ DISCORD_BOT_TOKEN=
 APP_URL=http://localhost:5173
 # 運営者（/admin/）の Discord ユーザー ID。カンマで区切って何人でも書ける。開発用ログインでは、空でもひよりが運営者になる
 OPERATOR_IDS=
+# Google カレンダーとの連携（Google Cloud の OAuth クライアント）。3 つとも空なら、開発用の偽の Google（/dev/google/*）で連携を試せる。
+# 本物の Google を手元で試すときは、Google Cloud の「承認済みのリダイレクト URI」に http://localhost:5173/auth/google/callback を足す
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+# refresh token を暗号にする鍵（32 バイトを base64 にしたもの。openssl rand -base64 32 で作る）
+GOOGLE_TOKEN_KEY=

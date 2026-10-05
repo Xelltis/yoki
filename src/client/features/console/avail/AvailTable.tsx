@@ -94,17 +94,19 @@ export function AvailTable({ d, names, mine, rows, onMark, onPen }: Props) {
                   );
                 }
                 const v = markIn(r.marks, n);
+                const g = !!v && fromGoogle(d, key, n);
+                const gTag = g ? <sup className={gSup} title={G_TITLE} data-google>G</sup> : null;
                 if (own) {
                   return (
                     <td className={cell + line + 'group/cell relative select-none py-0 pr-18 pl-0 text-center text-16 hover:shadow-[inset_0_0_0_2px_var(--accent)] ' + (MARK_BG[v] || clip)} key={n} data-memo={memo || undefined}>
-                      <button type="button" className="mk block min-h-34 w-full cursor-pointer rounded-sm border-0 bg-transparent py-0 pr-0 pl-18 font-inherit text-inherit focus-visible:outline-offset-[-2px]" data-day={key} aria-label={fmtJa(key) + ' ' + n + ' ' + MARK_WORD[v] + '。押すと' + MARK_WORD[MARK_NEXT[v]]} onClick={() => onMark(key, MARK_NEXT[v])}>{v || '·'}</button>
+                      <button type="button" className="mk block min-h-34 w-full cursor-pointer rounded-sm border-0 bg-transparent py-0 pr-0 pl-18 font-inherit text-inherit focus-visible:outline-offset-[-2px]" data-day={key} aria-label={fmtJa(key) + ' ' + n + ' ' + MARK_WORD[v] + (g ? '（' + G_TITLE + '）' : '') + '。押すと' + MARK_WORD[MARK_NEXT[v]]} onClick={() => onMark(key, MARK_NEXT[v])}>{v || '·'}{gTag}</button>
                       {dot}{pen}
                     </td>
                   );
                 }
                 return (
                   <td className={cell + line + 'px-8 py-6 text-center text-muted ' + (MARK_BG[v] || clip) + (memo ? 'relative cursor-pointer' : '')} key={n} data-memo-of={n} data-day={key} data-memo={memo || undefined}>
-                    {v}{dot}
+                    {v}{gTag}{dot}
                   </td>
                 );
               })}
@@ -117,6 +119,12 @@ export function AvailTable({ d, names, mine, rows, onMark, onPen }: Props) {
     </table>
   );
 }
+
+/** Google カレンダーの予定から入った印の札（印の右肩の小さな G） */
+const gSup = 'ml-1 align-super text-[9px] leading-none font-bold text-muted';
+const G_TITLE = 'Google カレンダーの予定から入った印';
+/** その日のその人の印が、Google カレンダーの予定から入ったものか */
+const fromGoogle = (d: Props['d'], key: string, name: string) => (d.availGoogle[key] || []).includes(name);
 
 /** 日ごとのリストは、狭い画面だけに出す（pk は e2e が探す印） */
 const list = 'hidden max-tab:block';
@@ -151,6 +159,7 @@ export function AvailList({ d, names, mine, rows, onMark, onPen }: Props) {
             </div>
             {withMe && (
               <div className="ml-auto flex flex-none items-center gap-4">
+                {!r.bk[mine] && !!v && fromGoogle(d, key, mine) && <span className={gSup + ' align-baseline'} title={G_TITLE} data-google>G</span>}
                 {r.bk[mine] ? <span className={bkTag} title="この日の卓に入っています">{r.bk[mine]}</span>
                   : ([['', '◯'], ['△', '△'], ['×', '×']] as [Mark, string][]).map(([m, label]) => (
                     <button type="button" className={pick + (v !== m ? 'border-line bg-card text-muted' : m === '△' ? 'border-ok-text bg-soft text-ok-text' : m === '×' ? 'border-err-text bg-warn text-err-text' : 'border-accent-line bg-accent-soft text-accent-text')} key={label} data-day={key} data-mark={m} aria-pressed={v === m} aria-label={fmtJa(key) + 'を「' + MARK_WORD[m] + '」にする'} onClick={() => onMark(key, m)}>{label}</button>

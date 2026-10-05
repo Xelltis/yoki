@@ -84,6 +84,29 @@ export function consoleData(ctx: Ctx): ConsoleData {
         const sn = ctx.seriesNotify[k]!;
         return { series: k, channelId: sn.channelId, alsoBase: sn.alsoBase, days: sn.days, hour: sn.hour };
       }),
+    calendar: calendarView(ctx),
+    availGoogle: ctx.availGoogle,
+  };
+}
+
+/** カレンダーとの連携の様子。購読 URL は、グループの画面と同じアドレスで作る */
+function calendarView(ctx: Ctx): ConsoleData['calendar'] {
+  const g = ctx.google;
+  return {
+    feed: ctx.feed ? { url: new URL(ctx.appUrl).origin + '/cal/' + ctx.feed.token + '.ics', scope: ctx.feed.scope } : null,
+    googleReady: ctx.googleReady,
+    google: g
+      ? {
+          email: g.email,
+          write: g.write_events === 1,
+          read: g.read_busy === 1,
+          from: g.busy_from,
+          to: g.busy_to,
+          syncedAt: stampText(g.synced_at),
+          busyAt: stampText(g.busy_at),
+          error: g.error,
+        }
+      : null,
   };
 }
 

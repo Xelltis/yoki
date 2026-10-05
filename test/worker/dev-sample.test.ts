@@ -30,6 +30,24 @@ describe('開発用ログイン', () => {
     expect(await sessionCount()).toBe(n);
     expect((await call('/dev/reset', { method: 'POST', headers: { Origin: ORIGIN } })).status).toBe(404);
   });
+
+  test('/dev/reset は、開発用の人の Google 連携と偽の Google の中身も消す。ほかの人の連携は残す', async () => {
+    const HIYORI = '400000000000000010', OTHER = '900000000000000001';
+    await devPost('/dev/login', 'as=ひより');
+    await env.DB.batch([
+      env.DB.prepare("INSERT INTO users (id, username, guilds_checked_at, created_at, last_login_at) VALUES (?, 'other', '', '', '')").bind(OTHER),
+      ...[HIYORI, OTHER].flatMap((id) => [
+        env.DB.prepare("INSERT INTO google_links (user_id, email, refresh_token, created_at) VALUES (?, 'x@example.com', 'v1.x', '')").bind(id),
+        env.DB.prepare("INSERT INTO google_events (user_id, session_id, event_id, hash, date) VALUES (?, 1, 'e', 'h', '2026-10-10')").bind(id),
+      ]),
+      env.DB.prepare("INSERT INTO meta (key, value) VALUES ('dev_google', '{}')"),
+    ]);
+    await devPost('/dev/reset');
+    const ids = async (table: string) => (await env.DB.prepare('SELECT user_id FROM ' + table).all<{ user_id: string }>()).results.map((r) => r.user_id);
+    expect(await ids('google_links')).toEqual([OTHER]);
+    expect(await ids('google_events')).toEqual([OTHER]);
+    expect(await env.DB.prepare("SELECT value FROM meta WHERE key = 'dev_google'").first()).toBeNull();
+  });
 });
 
 describe('サンプルの来月の募集は、年をまたいでも正しい期間になる', () => {
