@@ -29,7 +29,7 @@ function Switch({ id, on, label, busy, onClick }: { id: string; on: boolean; lab
     <button type="button" id={id} role="switch" aria-checked={on} aria-label={label} disabled={busy} onClick={onClick}
       className={'relative h-26 w-44 cursor-pointer rounded-full border p-0 transition-[background-color,border-color] duration-(--dur-fast) ease-out disabled:cursor-default disabled:opacity-50 '
         + 'after:absolute after:top-2 after:left-2 after:h-20 after:w-20 after:rounded-[50%] after:shadow-card after:transition-[transform] after:duration-(--dur-fast) after:ease-out after:content-[""] '
-        + (on ? 'border-accent bg-accent after:bg-white after:[transform:translateX(18px)]' : 'border-line-strong bg-out after:bg-card')} />
+        + (on ? 'border-accent bg-accent after:bg-white after:[transform:translateX(18px)]' : 'border-line-strong bg-head after:bg-white')} />
   );
 }
 

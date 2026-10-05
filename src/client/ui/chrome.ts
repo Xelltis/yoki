@@ -6,7 +6,8 @@ export const appbar = 'sticky top-0 z-(--z-appbar) grid grid-cols-[minmax(0,1fr)
   + 'max-sm:min-h-56 max-sm:gap-8 max-sm:py-8 max-sm:pr-[max(12px,env(safe-area-inset-right))] max-sm:pl-[max(12px,env(safe-area-inset-left))] max-sm:[grid-template-areas:"brand_actions"]';
 /** 左の名前（ロゴと題） */
 export const brand = 'flex min-w-0 items-center gap-10 text-15 font-bold text-inherit no-underline [grid-area:brand]';
-export const logo = 'block h-32 w-32 shrink-0 max-sm:h-30 max-sm:w-30';
+/** ロゴ（青い帯の上でも形がわかるように、白い縁を付ける） */
+export const logo = 'block h-32 w-32 shrink-0 rounded-[9px] ring-2 ring-white/90 max-sm:h-30 max-sm:w-30';
 /** 区域の札（管理・運営） */
 export const areaBadge = 'ml-8 flex-none whitespace-nowrap rounded-full bg-chrome-accent px-8 py-1 text-12 leading-[18px] font-bold text-chrome-accent-ink';
 /** 右の操作の並び */
