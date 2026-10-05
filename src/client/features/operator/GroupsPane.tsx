@@ -40,9 +40,9 @@ export function GroupsPane() {
                   <tr className={'click' + (g.id === openId ? ' [&_td]:bg-accent-soft [&:hover_td]:bg-hover' : '')} data-gid={g.id} key={g.id} onClick={() => { void show(g.id); }}>
                     <td><b>{g.title}</b><small className={idCls}>{g.id}</small></td>
                     <td>{g.guildName}<small className={idCls}>{g.guildId}</small></td>
-                    <td className="c">{g.memberCount}<small className={idCls}>{'ログイン ' + g.linkedCount}</small></td>
+                    <td className="c nw">{g.memberCount}<small className={idCls}>{'ログイン ' + g.linkedCount}</small></td>
                     <td className="c">{g.adminCount}</td>
-                    <td className="c">{g.activeCount + ' / ' + g.sessionCount}</td>
+                    <td className="c nw">{g.activeCount + ' / ' + g.sessionCount}</td>
                     <td className="nw">{fmt(g.lastUsedAt)}<small className={idCls}>{ago(g.lastUsedAt)}</small></td>
                     <td className={'c' + (g.failuresWeek ? ' font-bold text-err-text' : '')}>{g.failuresWeek}</td>
                   </tr>
