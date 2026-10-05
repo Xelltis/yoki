@@ -30,13 +30,13 @@ export function PromoteModal({ ask, onDone }: { ask: PromoteAsk | null; onDone: 
             </label>
           ))}
         </div>
-        <div className="btns">
+        <div className="btns justify-start">
           <button type="button" className="btn small" id="promoteAll" onClick={() => setPicked(s ? s.interest.slice() : [])}>全員を参加者に</button>
           <button type="button" className="btn small" id="promoteNone" onClick={() => setPicked([])}>全員を取り下げ</button>
         </div>
         <div className={formActions}><div className="btns mt-0">
-          <button type="button" className="btn primary" id="promoteOk" onClick={() => onDone(picked)}>この内容で進む</button>
           <button type="button" className="btn" id="promoteCancel" onClick={() => onDone(null)}>やめる</button>
+          <button type="button" className="btn primary" id="promoteOk" onClick={() => onDone(picked)}>この内容で進む</button>
         </div></div>
       </div>
     </Modal>

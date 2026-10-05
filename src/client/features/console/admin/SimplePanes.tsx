@@ -135,7 +135,7 @@ export function DangerPane() {
   return (
     <div data-pane="danger">
       <div className="card border-[color-mix(in_srgb,var(--err-text)_40%,var(--line))]">
-        <h3><Icon name="delete" size="sm" className="mr-4 text-err-text" />グループを消す</h3>
+        <h3><Icon name="delete" size="sm" className="text-err-text" />グループを消す</h3>
         <p>このグループの卓・メンバーの予定・メモ・日程調整の回答・送信の記録が、すべて消えます。<b>元に戻せません。</b></p>
         <label className={fieldLabel} htmlFor="delConfirm">確かめのために、グループの名前「<span id="delTitle">{d.title}</span>」を入れてください</label>
         <input type="text" className={field} id="delConfirm" autoComplete="off" value={confirm} onChange={(ev) => setConfirm(ev.target.value)} />

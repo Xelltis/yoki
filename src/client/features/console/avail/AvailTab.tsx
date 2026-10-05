@@ -272,9 +272,9 @@ export function AvailTab() {
           <p className="hint">△ や × とは別に、その日の事情を短く書けます。ほかの人にも見えます。</p>
           <textarea id="memoText" ref={memoRef} maxLength={200} placeholder="例: 21 時からなら参加できます" aria-labelledby="memoTitle" value={memo ? memo.text : ''} onChange={(ev) => setMemo((m) => (m ? { ...m, text: ev.target.value } : m))} />
           <div className="btns">
+            <button type="button" className="btn danger" id="memoClear" hidden={!memo || !memo.had} onClick={() => saveMemo('')}><Icon name="delete" size="sm" />消す</button>
+            <button type="button" className="btn" id="memoCancel" onClick={() => setMemo(null)}>閉じる</button>
             <button type="submit" className="btn primary" id="memoSave">保存</button>
-            <button type="button" className="btn" id="memoClear" hidden={!memo || !memo.had} onClick={() => saveMemo('')}>消す</button>
-            <button type="button" className="btn ml-auto" id="memoCancel" onClick={() => setMemo(null)}>閉じる</button>
           </div>
         </form>
       </Modal>

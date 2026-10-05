@@ -5,14 +5,24 @@ import { createRootRouteWithContext, createRoute, createRouter, lazyRouteCompone
 import { ADMIN_PANES, type AdminPane, OPERATOR_PANES, type OperatorPane } from '../shared/routes';
 import { queryClient } from './app/queryClient';
 import { load } from './app/storage';
+import { Icon } from './ui/Icon';
 
+/** 知らない道。入口と同じ青い帯の下に、カードで知らせる */
 function NotFound() {
   return (
-    <main style={{ padding: 24 }}>
-      <h1>見つかりません</h1>
-      <p>URL を確かめてください。</p>
-      <p><Link to="/">入口へ</Link></p>
-    </main>
+    <>
+      <header className="flex items-center gap-10 bg-chrome px-24 py-12 text-18 font-bold text-chrome-text max-sm:px-14 max-sm:py-10">
+        <img className="block h-36 w-36 rounded-[10px] ring-2 ring-white/90" src="/icon-192.png" alt="" width={36} height={36} />
+        卓予定
+      </header>
+      <main className="mx-auto max-w-560 px-20 pt-48 pb-48 max-sm:px-14 max-sm:pt-24">
+        <div className="card px-26 py-28 text-center">
+          <h1 className="m-0 text-22">ページが見つかりません</h1>
+          <p className="hint mx-auto mt-8 mb-18 text-13">URL が違うか、ページが無くなったのかもしれません。</p>
+          <Link className="btn primary xl" to="/"><Icon name="arrow_back" />入口へ戻る</Link>
+        </div>
+      </main>
+    </>
   );
 }
 

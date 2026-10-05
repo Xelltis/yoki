@@ -110,7 +110,7 @@ export function PlaceMemo({ f, set }: Props) {
 export function NotifyCheck({ f, set, label }: Props & { label: string }) {
   const d = useData();
   return (
-    <div className="btns">
+    <div className="btns justify-start">
       <label><input type="checkbox" id="notify" disabled={!canNotify(d, f)} checked={f.notify} onChange={(ev) => set({ notify: ev.target.checked })} /> {label} <span className="hint" id="notifyHint">{notifyHint(d, f)}</span></label>
     </div>
   );
