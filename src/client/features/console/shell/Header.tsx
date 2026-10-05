@@ -103,13 +103,14 @@ export function Header({ tab }: { tab: Tab }) {
         </span>
         <span className="mx-4 flex items-center gap-6 text-12 text-chrome-muted max-sm:mx-2">
           <span className="max-sm:absolute max-sm:h-1 max-sm:w-1 max-sm:overflow-hidden max-sm:whitespace-nowrap max-sm:[clip:rect(0_0_0_0)]">あなた</span>
-          <b className="max-w-[12em] truncate text-14 font-semibold text-chrome-text max-sm:max-w-[8.5em]" id="me">{d ? d.me.name : ''}</b>
+          <b className="max-w-[12em] truncate text-14 font-semibold text-chrome-text max-sm:max-w-[6em]" id="me">{d ? d.me.name : ''}</b>
         </span>
         <button type="button" id="guideBtnM" className={hbtn(admin ? 'hidden' : 'hidden max-sm:inline-flex', true) + ' max-sm:border-chrome-field-line max-sm:aria-expanded:border-chrome-active max-sm:aria-expanded:bg-chrome-active'} aria-label="はじめの 3 ステップ" {...guideProps}>
           <Icon name="flag" size="sm" className={hbtnIcon + (shown ? ' text-chrome-active-ink ' + filled : ' max-sm:text-chrome-accent')} />
         </button>
-        <a id="helpLinkM" className={hbtn(admin ? 'hidden' : 'hidden max-sm:inline-flex') + ' max-sm:gap-4 max-sm:border-chrome-field-line max-sm:px-10'} href={HELP_URL} target="_blank" rel="noopener" title="使い方のページを新しいタブで開く">
-          <Icon name="help" size="sm" className={hbtnIcon + ' max-sm:text-chrome-accent'} />使い方
+        {/* スマホではアイコンだけ（グループの名前の場所を残す）。隣の「はじめの 3 ステップ」と同じ丸いボタン */}
+        <a id="helpLinkM" className={hbtn(admin ? 'hidden' : 'hidden max-sm:inline-flex', true) + ' max-sm:border-chrome-field-line'} href={HELP_URL} target="_blank" rel="noopener" title="使い方のページを新しいタブで開く" aria-label="使い方（新しいタブで開く）">
+          <Icon name="help" size="sm" className={hbtnIcon + ' max-sm:text-chrome-accent'} />
         </a>
         <button type="button" id="theme" className={hbtn('inline-flex', true) + ' ' + btxt} title="ライト／ダークを切り替える（このブラウザだけ）" aria-label={dark ? 'ライトに切り替える' : 'ダークに切り替える'} onClick={() => setTheme(dark ? 'light' : 'dark')}>
           <Icon name={dark ? 'light_mode' : 'dark_mode'} size="sm" className={hbtnIcon} />

@@ -135,13 +135,14 @@ export function AvailList({ d, names, mine, rows, onMark, onPen }: Props) {
         const sk = others.filter((n) => !r.bk[n] && markIn(r.marks, n) === '△');
         const v = markIn(r.marks, mine);
         const today = key === d.today;
-        const cls = 'flex items-center gap-10 rounded-md border px-12 py-10 ' + (ri > 0 ? 'mt-8 ' : '') + (today ? 'border-accent-line shadow-[inset_3px_0_0_var(--accent)] ' : 'border-line ') + (r.free ? 'bg-soft' : 'bg-card');
+        // 狭いとき（文字を大きくしたときなど）は、印のボタンを次の行へ回して、予定の欄を残す
+        const cls = 'flex flex-wrap items-center gap-x-10 gap-y-8 rounded-md border px-12 py-10 ' + (ri > 0 ? 'mt-8 ' : '') + (today ? 'border-accent-line shadow-[inset_3px_0_0_var(--accent)] ' : 'border-line ') + (r.free ? 'bg-soft' : 'bg-card');
         return (
           <div className={cls} key={key}>
             <div className={'w-58 flex-none text-14 leading-[1.3] font-bold tabular-nums ' + (r.dow === 0 || r.hol ? 'text-sun' : r.dow === 6 ? 'text-sat' : '')}>
               {(r.date.getMonth() + 1) + '/' + r.date.getDate()}<small className="block text-11 font-normal text-muted">{WD[r.dow] + (r.hol ? ' ' + r.hol : '')}</small>
             </div>
-            <div className="min-w-0 flex-1 text-[12.5px] leading-[1.5] text-muted wrap-anywhere">
+            <div className="min-w-[6em] flex-1 text-[12.5px] leading-[1.5] text-muted wrap-anywhere">
               {hasPlans(r) && <div className="font-semibold text-fg"><Plans r={r} /></div>}
               {ng.length || sk.length
                 ? <div>{ng.length > 0 && <span className="mr-8 text-err-text">{'× ' + ng.join('、')}</span>}{sk.length > 0 && <span className="text-ok-text">{'△ ' + sk.join('、')}</span>}</div>
@@ -149,7 +150,7 @@ export function AvailList({ d, names, mine, rows, onMark, onPen }: Props) {
               {names.filter((n) => r.notes[n]).map((n) => <div className="text-[11.5px]" key={n}>{n + ': ' + r.notes[n]!.text}</div>)}
             </div>
             {withMe && (
-              <div className="flex flex-none items-center gap-4">
+              <div className="ml-auto flex flex-none items-center gap-4">
                 {r.bk[mine] ? <span className={bkTag} title="この日の卓に入っています">{r.bk[mine]}</span>
                   : ([['', '◯'], ['△', '△'], ['×', '×']] as [Mark, string][]).map(([m, label]) => (
                     <button type="button" className={pick + (v !== m ? 'border-line bg-card text-muted' : m === '△' ? 'border-ok-text bg-soft text-ok-text' : m === '×' ? 'border-err-text bg-warn text-err-text' : 'border-accent-line bg-accent-soft text-accent-text')} key={label} data-day={key} data-mark={m} aria-pressed={v === m} aria-label={fmtJa(key) + 'を「' + MARK_WORD[m] + '」にする'} onClick={() => onMark(key, m)}>{label}</button>
