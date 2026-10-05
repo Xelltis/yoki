@@ -62,7 +62,7 @@ export function AvailTable({ d, names, mine, rows, onMark, onPen }: Props) {
           {names.map((n) => {
             const gmN = act.filter((s) => s.gm === n).length, plN = act.filter((s) => s.gm !== n && s.members.indexOf(n) >= 0).length, mineCol = n === mine;
             return (
-              <th className={cell + 'sticky top-0 z-(--z-cell-head) min-w-84 border-b px-8 py-6 ' + (mineCol ? 'bg-accent-strong text-accent-ink' : clip + 'text-fg')} key={n}>
+              <th className={cell + 'sticky top-0 z-(--z-cell-head) min-w-84 max-w-136 border-b px-8 py-6 whitespace-normal wrap-anywhere ' + (mineCol ? 'bg-accent-strong text-accent-ink' : clip + 'text-fg')} key={n}>
                 {n}<small className={'block text-10 leading-[1.2] font-normal ' + (mineCol ? 'text-inherit opacity-85' : 'text-muted')} title="いま動いている卓で GM をしている数と参加している数">{'GM ' + gmN + '・PL ' + plN}</small>
               </th>
             );

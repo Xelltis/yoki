@@ -1,6 +1,8 @@
 /* 要素の既定（base の層）。どの画面にも当てる土台 */
 * { box-sizing: border-box; }
 html, body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.6 var(--font-sans); }
+/* 長い URL などの切れ目の無い字は、入らなければ折り返す（ページが横にはみ出さないように） */
+body { overflow-wrap: break-word; }
 html.modal-open { overflow: hidden; }
 [hidden] { display: none !important; }
 

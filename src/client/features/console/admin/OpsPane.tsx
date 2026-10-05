@@ -91,7 +91,7 @@ export function OpsPane() {
                   <tr className={(isActive(s) ? '' : 'done') + (on ? ' checked' : '')} data-id={s.id} key={s.id}
                     onClick={(ev) => { if (!(ev.target instanceof Element && ev.target.closest('input,button'))) pick([s.id], !on); }}>
                     <td className="sel"><input type="checkbox" className="rowsel" data-id={s.id} aria-label={s.name + ' を選ぶ'} checked={on} onChange={(ev) => pick([s.id], ev.target.checked)} /></td>
-                    <td className="nw"><b>{s.name}</b></td><td className="c nw">{s.series}</td><td className="c nw">{s.status}</td><td className="c nw">{when}</td><td className="c nw">{s.gm}</td>
+                    <td className="min-w-[14em]"><b>{s.name}</b></td><td className="c min-w-[6em]">{s.series}</td><td className="c nw">{s.status}</td><td className="c nw">{when}</td><td className="c min-w-[5em]">{s.gm}</td>
                     <td className="min-w-[14em]">{s.members.join('、')}</td>
                     <td className="nw"><button type="button" className="btn small" data-edit={s.id} onClick={() => openForm(ui, { id: s.id })}>編集</button></td>
                   </tr>
