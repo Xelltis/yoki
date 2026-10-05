@@ -3,7 +3,7 @@ import { useMutation } from '@tanstack/react-query';
 import { useState } from 'react';
 import type { CreateGroupResult, MeResponse } from '../../../shared/api';
 import { Icon } from '../../ui/Icon';
-import { btnPrimary, card, field, h2, hint, icon, label, row } from './styles';
+import { btnPrimary, card, field, h2, hint, label, row } from './styles';
 
 type Creatable = Extract<MeResponse, { loggedIn: true }>['creatable'];
 
@@ -27,10 +27,10 @@ export function CreateGroup({ creatable, closed }: { creatable: Creatable; close
   return (
     <section className={card} id="create">
       <h2 className={h2}>
-        <Icon name="add" className={icon} />
+        <Icon name="add" />
         グループを作る
       </h2>
-      <p className={hint}>グループは Discord サーバーに結びつきます。入れるのは、そのサーバーにいる人だけです。作れるのは、サーバーのオーナーか、サーバー管理の権限がある人です。作った人が最初の管理者になります。</p>
+      <p className={hint + ' mt-0'}>グループは Discord サーバーに結びつきます。入れるのは、そのサーバーにいる人だけです。作れるのは、サーバーのオーナーか、サーバー管理の権限がある人です。作った人が最初の管理者になります。</p>
       {closed ? (
         <p className={hint} id="createClosed">今は新しいグループの受付を止めています。</p>
       ) : (
@@ -38,21 +38,21 @@ export function CreateGroup({ creatable, closed }: { creatable: Creatable; close
           <div className={row}>
             <label className={label}>
               Discord サーバー
-              <select className={field + ' text-13 font-semibold'} id="cGuild" required value={guildId} onChange={(ev) => setGuildId(ev.target.value)}>
+              <select className={field} id="cGuild" required value={guildId} onChange={(ev) => setGuildId(ev.target.value)}>
                 {creatable.map((g) => <option key={g.guildId} value={g.guildId}>{g.name}</option>)}
               </select>
             </label>
             <label className={label}>
-              グループの名前 <small className="font-normal text-muted">空ならサーバーの名前</small>
-              <input className={field + ' text-13 font-semibold'} id="cTitle" maxLength={80} value={title} onChange={(ev) => setTitle(ev.target.value)} />
+              <span>グループの名前 <small className="ml-4 font-normal text-muted">空ならサーバーの名前</small></span>
+              <input type="text" className={field} id="cTitle" maxLength={80} value={title} onChange={(ev) => setTitle(ev.target.value)} />
             </label>
           </div>
           {/* 作れたら画面を移るので、押せないままにする */}
           <button className={btnPrimary} type="submit" id="cOk" disabled={create.isPending || create.isSuccess}>
-            <Icon name="add" className={icon} />
+            <Icon name="add" className="align-[0]" />
             作る
           </button>
-          <span className={hint} id="cMsg">{msg}</span>
+          <span className="ml-10 text-13 text-muted" id="cMsg">{msg}</span>
         </form>
       )}
     </section>
