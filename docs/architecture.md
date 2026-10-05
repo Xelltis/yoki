@@ -186,7 +186,7 @@ TypeScript と React 19 で書き、Vite が組み立てる。1 つの SPA で�
 - 開発用ログインの部品は `import.meta.env.DEV` のときだけ描くので、本番の組み立てでは消える（`noDevLogin` が JS を見て確かめる）。ログアウトと開発用ログインは、素のフォームの POST（サーバーが cookie を付けて移す）
 - 確かめの道具（e2e・スクリーンショット）は、要素の ID・`data-*`・`body[data-area|data-tab]`・`window.yoki`（`D`・`selectDay`・`showTab`）を使う。変えるときは道具も直す
 
-**グループの画面**（`features/console/`）。ふだんの区域（カレンダー・募集・調整・メンバーの予定の 3 つのタブと、あなたのメニューから開く設定）と、管理の区域（メンバーの登録・卓をまとめて変える・知らせ・この卓予定・管理者・送信の記録・グループを消す）に分ける。外枠（`shell/ConsoleLayout.tsx`）は 1 つで、`body[data-area]` と `body[data-tab]` を置く。
+**グループの画面**（`features/console/`）。ふだんの区域（カレンダー・募集・調整・メンバーの予定の 3 つのタブと、あなたのメニューから開く設定）と、管理の区域（メンバーの登録・卓をまとめて変える・知らせ・このグループ・管理者・送信の記録・グループを消す）に分ける。外枠（`shell/ConsoleLayout.tsx`）は 1 つで、`body[data-area]` と `body[data-tab]` を置く。
 
 | フォルダ | 中身 |
 |---|---|

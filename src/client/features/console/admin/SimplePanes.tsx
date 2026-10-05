@@ -1,4 +1,4 @@
-// 管理画面の小さな区分: 管理者・この卓予定（名前・後始末・表示）・送信の記録・グループを消す
+// 管理画面の小さな区分: 管理者・このグループ（名前・後始末・表示）・送信の記録・グループを消す
 import { useState } from 'react';
 import { askConfirm } from '../../../ui/confirm';
 import { checkRow, field, fieldLabel, fieldNote } from '../../../ui/fields';
@@ -51,7 +51,7 @@ export function AdminsPane() {
   );
 }
 
-/** この卓予定の区分。グループの名前・卓の後始末・予定の日数。名前と日数は、変えるまで保存を押せない */
+/** このグループの区分。グループの名前・卓の後始末・予定の日数。名前と日数は、変えるまで保存を押せない */
 export function TablePane() {
   const d = useData();
   const { busy, msg, setMsg, call } = useCall();

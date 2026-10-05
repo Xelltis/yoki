@@ -13,7 +13,7 @@ import { DEV_GUILD, DEV_USERS, SAMPLE_GROUP_ID } from './dev-users';
 export async function ensureSampleGroup(db: D1Database, appUrl: string, now = new Date()): Promise<void> {
   const r = await db
     .prepare(
-      `INSERT INTO groups (id, guild_id, guild_name, title, created_by, created_at) VALUES (?, ?, ?, '卓予定', ?, ?)
+      `INSERT INTO groups (id, guild_id, guild_name, title, created_by, created_at) VALUES (?, ?, ?, 'サンプルのグループ', ?, ?)
        ON CONFLICT (id) DO NOTHING`,
     )
     .bind(SAMPLE_GROUP_ID, DEV_GUILD.id, DEV_GUILD.name, DEV_USERS[0]!.id, now.toISOString())

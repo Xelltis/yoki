@@ -1,7 +1,7 @@
 // グループの画面のいくつかのタブで使う形（Tailwind のクラス）
 
 /**
- * 知らせの行（右の「卓予定」と、メンバーの予定の上の注意）。kind は today・tomorrow・week・adjust・hot・overdue・info。
+ * 知らせの行（右の「グループの予定」と、メンバーの予定の上の注意）。kind は today・tomorrow・week・adjust・hot・overdue・info。
  * 先頭のアイコンは丸の中に出す。押せる行は button にする
  */
 export function notice(kinds: string, button: boolean): string {

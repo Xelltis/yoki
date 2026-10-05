@@ -13,7 +13,7 @@ const PANES: [AdminPane, string, string][] = [
   ['members', 'members', 'メンバー'],
   ['ops', 'ops', '卓をまとめて変える'],
   ['notify', 'notify', '知らせ'],
-  ['table', 'table', 'この卓予定'],
+  ['table', 'table', 'このグループ'],
   ['admins', 'admin', '管理者'],
   ['log', 'log', '送信の記録'],
   ['danger', 'danger', 'グループを消す'],

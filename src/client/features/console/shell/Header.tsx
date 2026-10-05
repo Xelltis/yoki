@@ -91,7 +91,7 @@ export function Header({ tab }: { tab: Tab }) {
     <header className={appbar}>
       <Link className={brand} to="/" title="グループの一覧へ">
         <img className={logo} src="/icon-192.png" alt="" width={32} height={32} />
-        <span className="min-w-0 truncate max-sm:text-14" id="title">{d ? d.title : '卓予定'}</span>
+        <span className="min-w-0 truncate max-sm:text-14" id="title">{d ? d.title : ''}</span>
         <span className={areaBadge + (admin ? ' inline-block' : ' hidden')}>管理</span>
       </Link>
       <div className={actions}>
