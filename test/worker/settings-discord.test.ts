@@ -2,7 +2,7 @@
 import { env } from 'cloudflare:test';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { addDays } from '../../src/worker/lib/jst';
-import { fail, GUILD, ok, setupGroup, today } from './helpers';
+import { fail, GUILD, mockBotGuilds, ok, setupGroup, today } from './helpers';
 
 let G: Awaited<ReturnType<typeof setupGroup>>;
 let T: (n: number) => string;
@@ -172,6 +172,9 @@ describe('権限', () => {
     expect((await fail(G.sora, G.id, 'login', {})).status).toBe(404);
     const other = await setupGroup('other');
     await env.DB.prepare("UPDATE groups SET guild_id = 'elsewhere' WHERE id = 'other'").run();
+    // Bot はそのサーバーにいない（控えで決める）
+    const bot = mockBotGuilds();
     expect((await fail(other.sora, 'other', 'getConsoleData')).status).toBe(403);
+    bot.restore();
   });
 });

@@ -1,7 +1,7 @@
 // グループを作る・グループのページに入る・メンバーを決める・CSRF・開発用ログイン・管理画面のページ・グループを消す
 import { env } from 'cloudflare:test';
 import { describe, expect, test } from 'vitest';
-import { call, loginAs, makeGroup, ORIGIN, postJson, rpc, setupGroup } from './helpers';
+import { call, loginAs, makeGroup, mockBotGuilds, ORIGIN, postJson, rpc, setupGroup } from './helpers';
 
 const member = (groupId: string, userId: string) =>
   env.DB.prepare('SELECT name, is_admin, discord_id FROM members WHERE group_id = ? AND user_id = ?').bind(groupId, userId).first<{ name: string; is_admin: number; discord_id: string }>();
@@ -95,7 +95,8 @@ describe('グループのページ（/g/:id/）', () => {
     expect((await member('p4', '40'))?.is_admin).toBe(0);
   });
 
-  test('サーバーにいない人は 403（控えが新しいとき）。控えが古ければ聞き直しに送る', async () => {
+  test('サーバーにいない人は 403（控えが新しいとき）。控えが古ければ聞き直しに送る（Bot がサーバーにいないとき）', async () => {
+    const bot = mockBotGuilds();
     await makeGroup('p5', 'gt');
     const fresh = await loginAs({ id: '50', name: 'X' }, [{ id: 'other', name: 'O' }]);
     expect((await call('/g/p5/', { sid: fresh })).status).toBe(403);
@@ -103,6 +104,7 @@ describe('グループのページ（/g/:id/）', () => {
     const res = await call('/g/p5/', { sid: old });
     expect(res.status).toBe(302);
     expect(res.headers.get('Location')).toContain('/auth/login?return_to=');
+    bot.restore();
   });
 
   test('無いグループは 404。末尾の / が無ければ付ける', async () => {
@@ -245,7 +247,8 @@ describe('最後に使われた日時', () => {
 });
 
 describe('参加しているサーバーの控え', () => {
-  test('控えにグループのサーバーが無く、控えが 5 分より古ければ、Discord に聞き直しに行く。新しければ 403', async () => {
+  test('控えにグループのサーバーが無く、控えが 5 分より古ければ、Discord に聞き直しに行く。新しければ 403（Bot がサーバーにいないとき）', async () => {
+    const bot = mockBotGuilds();
     await makeGroup('p1', 'gp');
     const old = await loginAs({ id: '700', name: 'ゆき' }, [], { checkedAt: new Date(Date.now() - 10 * 60_000) });
     const r = await call('/g/p1/', { sid: old });
@@ -253,6 +256,7 @@ describe('参加しているサーバーの控え', () => {
     expect(r.headers.get('Location')).toBe('/auth/login?return_to=%2Fg%2Fp1%2F');
     const fresh = await loginAs({ id: '701', name: 'みぞれ' }, []);
     expect((await call('/g/p1/', { sid: fresh })).status).toBe(403);
+    bot.restore();
   });
 });
 

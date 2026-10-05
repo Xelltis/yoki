@@ -45,7 +45,7 @@ const withSlash = (c: Context<AppEnv>) => c.redirect(c.req.path + '/', 301);
 
 async function groupPage(c: Context<AppEnv>, admin: boolean) {
   const id = c.req.param('id')!;
-  const access = await groupAccess(c.env.DB, await currentViewer(c), id);
+  const access = await groupAccess(c.env.DB, await currentViewer(c), id, c.env.DISCORD_BOT_TOKEN);
   if (access.ok) {
     if (admin && !access.actor.isAdmin) {
       return c.html(noticePage('管理者だけが開けます', 'グループの管理画面は、そのグループの管理者だけが開けます。管理者に頼むか、管理者にしてもらってください。', { href: '/g/' + id + '/', label: '予定の画面へ' }), 403);

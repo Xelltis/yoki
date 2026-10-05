@@ -83,7 +83,7 @@ rpcRoutes.post('/api/g/:groupId/:fn', async (c) => {
   const entry = Object.hasOwn(RPC, fn) ? RPC[fn as keyof typeof RPC] : undefined;
   if (!entry && fn !== 'getConsoleData') throw notFound('そんな操作はありません: ' + fn);
   const groupId = c.req.param('groupId');
-  const access = await groupAccess(c.env.DB, await currentViewer(c), groupId);
+  const access = await groupAccess(c.env.DB, await currentViewer(c), groupId, c.env.DISCORD_BOT_TOKEN);
   if (!access.ok) {
     if (access.reason === 'notfound') throw goneError();
     if (access.reason === 'forbidden') throw new AppError(403, 'このグループの Discord サーバーのメンバーではありません。');
