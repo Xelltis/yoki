@@ -7,7 +7,8 @@ import type { ReactNode } from 'react';
 export function SetLayout({ nav, label, id, children }: { nav: ReactNode; label: string; id: string; children: ReactNode }) {
   return (
     <div className="grid grid-cols-[184px_minmax(0,1fr)] items-start gap-20 *:min-w-0 max-tab:grid-cols-[minmax(0,1fr)] max-tab:gap-12">
-      <nav className="sticky top-[calc(var(--appbar-h)+14px)] grid gap-2 max-tab:static max-tab:grid-flow-col max-tab:overflow-x-auto max-tab:pb-4 max-tab:[scrollbar-width:none] max-tab:[&::-webkit-scrollbar]:hidden"
+      {/* 狭い画面では、区分を折り返して並べる（横に送ると、端の区分が隠れて気づけない） */}
+      <nav className="sticky top-[calc(var(--appbar-h)+14px)] grid gap-2 max-tab:static max-tab:flex max-tab:flex-wrap max-tab:gap-4"
         id={id} aria-label={label}>
         {nav}
       </nav>
