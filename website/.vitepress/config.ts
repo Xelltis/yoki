@@ -73,6 +73,7 @@ export default defineConfig({
             { text: '卓に参加する', link: '/guide/join' },
             { text: '日程調整に答える', link: '/guide/vote' },
             { text: '最新の状態にする', link: '/guide/sync' },
+            { text: 'カレンダーに出す', link: '/guide/calendar-sync' },
           ],
         },
         {
