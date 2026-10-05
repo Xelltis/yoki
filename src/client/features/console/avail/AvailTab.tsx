@@ -137,7 +137,8 @@ export function AvailTab() {
     });
   };
   const hotChip = (s: ConsoleSession, label: string) => (
-    <button type="button" className={'h-28 cursor-pointer rounded-full border px-10 py-0 font-inherit text-12 font-semibold ' + (target === s.name ? 'border-transparent bg-accent-strong text-accent-ink' : 'border-line bg-card text-fg hover:bg-hover')} data-hot={s.name} key={s.id} onClick={() => setF({ target: target === s.name ? '（なし）' : s.name })}>
+    // 卓の名前が長くても、札の中で折り返す（高さを決めると字が重なる）
+    <button type="button" className={'min-h-28 cursor-pointer rounded-[14px] border px-10 py-3 text-left font-inherit text-12 leading-[1.45] font-semibold ' + (target === s.name ? 'border-transparent bg-accent-strong text-accent-ink' : 'border-line bg-card text-fg hover:bg-hover')} data-hot={s.name} key={s.id} onClick={() => setF({ target: target === s.name ? '（なし）' : s.name })}>
       {s.name}<span className="hint">{' ' + label}</span>
     </button>
   );

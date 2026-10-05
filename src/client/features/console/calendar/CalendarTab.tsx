@@ -65,7 +65,7 @@ export function CalendarTab() {
               <button type="button" id="todayBtn" className="btn" onClick={() => ui.set((s) => ({ ...s, view: { y: t.getFullYear(), m: t.getMonth() } }))}><Icon name="today" size="sm" />今月</button>
             </div>
             <div className="ml-auto flex flex-wrap items-center gap-8 max-sm:ml-0 max-sm:w-full">
-              <label className="flex items-center gap-8 text-13 text-muted max-sm:min-w-0 max-sm:flex-1">都合を見る卓 <select className={'max-sm:min-w-0 max-sm:flex-1' + (target !== '全員' ? ' border-accent bg-accent-soft font-semibold text-accent-text' : '')} id="target" value={target} onChange={(ev) => setTarget(ev.target.value)}>{targets.map((n) => <option value={n} key={n}>{n}</option>)}</select></label>
+              <label className="flex items-center gap-8 text-13 text-muted max-sm:min-w-0 max-sm:flex-1">都合を見る卓 <select className={'max-w-[16em] max-sm:min-w-0 max-sm:max-w-none max-sm:flex-1' + (target !== '全員' ? ' border-accent bg-accent-soft font-semibold text-accent-text' : '')} id="target" value={target} onChange={(ev) => setTarget(ev.target.value)}>{targets.map((n) => <option value={n} key={n}>{n}</option>)}</select></label>
             </div>
             {/* 卓を登録・募集を始める・日程調整を始める。月と「都合を見る卓」の下に 1 段で並べる。スマホでは「卓を登録」を右下の丸いボタンにする */}
             <div className="flex basis-full flex-wrap gap-8 max-sm:w-full">

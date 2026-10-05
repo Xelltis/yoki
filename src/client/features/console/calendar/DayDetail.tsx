@@ -147,7 +147,7 @@ export function DayDetail({ d, target }: { d: ConsoleData; target: string }) {
         <div className="btns mt-10">
           <button type="button" className="btn small" id="newOnDay" onClick={() => openForm(ui, { date: selDay })}>この日に卓を登録</button>
           {sn.length > 0 && (
-            <select id="dayCont" className="small" title="シリーズを選ぶと、直前の回の GM・参加者を引き継いでこの日に登録する" value=""
+            <select id="dayCont" className="small max-w-[16em]" title="シリーズを選ぶと、直前の回の GM・参加者を引き継いでこの日に登録する" value=""
               onChange={(ev) => { const name = ev.target.value; if (name) openForm(ui, { series: name, date: selDay, status: '開催' }); }}>
               <option value="">この日に続きを登録…</option>
               {sn.map((x) => <option value={x} key={x}>{x}</option>)}
