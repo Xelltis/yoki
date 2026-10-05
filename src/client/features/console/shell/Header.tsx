@@ -105,8 +105,8 @@ export function Header({ tab }: { tab: Tab }) {
           <span className="max-sm:absolute max-sm:h-1 max-sm:w-1 max-sm:overflow-hidden max-sm:whitespace-nowrap max-sm:[clip:rect(0_0_0_0)]">あなた</span>
           <b className="max-w-[12em] truncate text-14 font-semibold text-chrome-text max-sm:max-w-[8.5em]" id="me">{d ? d.me.name : ''}</b>
         </span>
-        <button type="button" id="guideBtnM" className={hbtn(admin ? 'hidden' : 'hidden max-sm:inline-flex', true) + ' max-sm:border-chrome-field-line max-sm:aria-expanded:border-chrome-accent max-sm:aria-expanded:bg-chrome-active'} aria-label="はじめの 3 ステップ" {...guideProps}>
-          <Icon name="flag" size="sm" className={hbtnIcon + ' max-sm:text-chrome-accent' + (shown ? ' ' + filled : '')} />
+        <button type="button" id="guideBtnM" className={hbtn(admin ? 'hidden' : 'hidden max-sm:inline-flex', true) + ' max-sm:border-chrome-field-line max-sm:aria-expanded:border-chrome-active max-sm:aria-expanded:bg-chrome-active'} aria-label="はじめの 3 ステップ" {...guideProps}>
+          <Icon name="flag" size="sm" className={hbtnIcon + (shown ? ' text-chrome-active-ink ' + filled : ' max-sm:text-chrome-accent')} />
         </button>
         <a id="helpLinkM" className={hbtn(admin ? 'hidden' : 'hidden max-sm:inline-flex') + ' max-sm:gap-4 max-sm:border-chrome-field-line max-sm:px-10'} href={HELP_URL} target="_blank" rel="noopener" title="使い方のページを新しいタブで開く">
           <Icon name="help" size="sm" className={hbtnIcon + ' max-sm:text-chrome-accent'} />使い方
@@ -122,8 +122,8 @@ export function Header({ tab }: { tab: Tab }) {
         + 'max-sm:fixed max-sm:inset-x-0 max-sm:bottom-0 max-sm:z-(--z-appbar) max-sm:m-0 max-sm:grid max-sm:grid-cols-5 max-sm:gap-0 max-sm:overflow-visible max-sm:border-t max-sm:border-chrome-line max-sm:bg-chrome '
         + 'max-sm:pt-6 max-sm:pr-[max(4px,env(safe-area-inset-right))] max-sm:pb-[max(8px,env(safe-area-inset-bottom))] max-sm:pl-[max(4px,env(safe-area-inset-left))]'} aria-label="画面">
         {TABS.map(([key, icon, label]) => (
-          <button type="button" key={key} data-tab={key} className={tabBtn + (tab === key ? 'bg-chrome-active text-chrome-text max-sm:before:bg-chrome-active' : 'bg-transparent text-chrome-muted hover:bg-chrome-hover hover:text-chrome-text max-sm:before:bg-transparent')} aria-current={tab === key ? 'page' : undefined} onClick={() => goTab(key)}>
-            <Icon name={icon} className={'max-sm:relative max-sm:text-22 max-sm:align-[0]' + (tab === key ? ' text-chrome-accent ' + filled : '')} /><span className="max-sm:max-w-full max-sm:overflow-hidden max-sm:text-ellipsis">{label}</span>
+          <button type="button" key={key} data-tab={key} className={tabBtn + (tab === key ? 'bg-chrome-active text-chrome-active-ink max-sm:text-chrome-text max-sm:before:bg-chrome-active' : 'bg-transparent text-chrome-muted hover:bg-chrome-hover hover:text-chrome-text max-sm:before:bg-transparent')} aria-current={tab === key ? 'page' : undefined} onClick={() => goTab(key)}>
+            <Icon name={icon} className={'max-sm:relative max-sm:text-22 max-sm:align-[0]' + (tab === key ? ' text-chrome-active-ink ' + filled : '')} /><span className="max-sm:max-w-full max-sm:overflow-hidden max-sm:text-ellipsis">{label}</span>
             {key === 'recruit' && (
               <span className="h-18 min-w-18 rounded-[9px] bg-chrome-accent px-5 text-center text-11 leading-[18px] font-bold text-chrome-accent-ink empty:hidden max-sm:absolute max-sm:-top-2 max-sm:left-[calc(50%+8px)] max-sm:h-16 max-sm:min-w-16 max-sm:px-4 max-sm:text-10 max-sm:leading-[16px]" id="recruitCount">
                 {recruitCount ? String(recruitCount) : ''}
@@ -131,8 +131,8 @@ export function Header({ tab }: { tab: Tab }) {
             )}
           </button>
         ))}
-        <button type="button" id="guideBtn" className={tabHelp + 'relative flex-[0_0_auto] cursor-pointer bg-transparent font-inherit aria-expanded:border-chrome-accent aria-expanded:bg-chrome-active max-xl:px-11'} aria-label="はじめの 3 ステップ" {...guideProps}>
-          <Icon name="flag" className={'text-chrome-accent' + (shown ? ' ' + filled : '')} /><span className="max-xl:hidden">はじめの 3 ステップ</span>
+        <button type="button" id="guideBtn" className={tabHelp + 'relative flex-[0_0_auto] cursor-pointer bg-transparent font-inherit aria-expanded:border-chrome-active aria-expanded:bg-chrome-active aria-expanded:text-chrome-active-ink max-xl:px-11'} aria-label="はじめの 3 ステップ" {...guideProps}>
+          <Icon name="flag" className={shown ? 'text-chrome-active-ink ' + filled : 'text-chrome-accent'} /><span className="max-xl:hidden">はじめの 3 ステップ</span>
         </button>
         <Link id="adminLink" className={tabHelp} to="/g/$groupId/admin/" params={{ groupId }} hidden={!d || !d.isAdmin} title="グループの管理画面を開く（管理者だけ）">
           <Icon name="shield" className="text-chrome-accent" /><span>管理</span>

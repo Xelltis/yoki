@@ -10,10 +10,13 @@
   --text-10: 10px; --text-11: 11px; --text-12: 12px; --text-13: 13px; --text-14: 14px; --text-15: 15px;
   --text-16: 16px; --text-17: 17px; --text-18: 18px; --text-20: 20px; --text-22: 22px; --text-28: 28px;
   --font-weight-normal: 400; --font-weight-medium: 500; --font-weight-semibold: 600; --font-weight-bold: 700;
-  --font-sans: "Segoe UI Variable Text", "Segoe UI", "Hiragino Sans", "BIZ UDPGothic", "Noto Sans JP", "Yu Gothic UI", Meiryo, system-ui, sans-serif;
+  /* 文字は Noto Sans JP（index.html で Google Fonts から読む）。読めないあいだは端末の字 */
+  --font-sans: "Noto Sans JP", system-ui, -apple-system, "Hiragino Sans", "Yu Gothic UI", Meiryo, sans-serif;
   /* 入口の文字（グループの画面とは別。入口を作り直すときにそろえる） */
   --font-home: system-ui, -apple-system, 'Hiragino Sans', 'Noto Sans JP', sans-serif;
   --color-white: #fff; --color-black: #000;
+  /* サービスアイコンの色（明るい・ダークで変えない。飾りに使う） */
+  --color-brand: #2d2afe; --color-brand-light: #769ffc; --color-orange: #fe841c; --color-pink: #fb2c85; --color-yellow: #fdd21f; --color-cream: #fcf9f0;
   /* 動き（@keyframes は下） */
   --animate-fade-in: fade-in var(--dur) ease-out;
   --animate-spin: spin .9s linear infinite;
@@ -24,9 +27,9 @@
 @keyframes sheet-up { from { opacity: 0; transform: translateY(48px); } }
 @keyframes spin { to { transform: rotate(360deg); } }
 @keyframes pulse { 50% { opacity: .5; } }
-/* 古い CSS も var(--radius-…) で読むので、使っていなくても出す */
+/* 部品の CSS も var(--radius-…) で読むので、使っていなくても出す */
 @theme static {
-  --radius-sm: 6px; --radius-md: 10px; --radius-lg: 14px; --radius-xl: 18px;
+  --radius-sm: 8px; --radius-md: 12px; --radius-lg: 16px; --radius-xl: 20px;
 }
 /* 色と影は、明るい・ダークで変わる（下の :root の変数）。クラスは変数をそのまま読む（bg-card は var(--card)） */
 @theme inline {
@@ -34,7 +37,7 @@
   --color-accent-strong: var(--accent-strong); --color-accent-ink: var(--accent-ink); --color-accent-soft: var(--accent-soft);
   --color-accent-line: var(--accent-line); --color-accent-text: var(--accent-text); --color-chrome: var(--chrome);
   --color-chrome-line: var(--chrome-line); --color-chrome-text: var(--chrome-text); --color-chrome-muted: var(--chrome-muted);
-  --color-chrome-hover: var(--chrome-hover); --color-chrome-active: var(--chrome-active); --color-chrome-field: var(--chrome-field);
+  --color-chrome-hover: var(--chrome-hover); --color-chrome-active: var(--chrome-active); --color-chrome-active-ink: var(--chrome-active-ink); --color-chrome-field: var(--chrome-field);
   --color-chrome-field-line: var(--chrome-field-line); --color-chrome-accent: var(--chrome-accent);
   --color-chrome-accent-ink: var(--chrome-accent-ink); --color-chrome-accent-text: var(--chrome-accent-text); --color-live: var(--live);
   --color-live-off: var(--live-off); --color-live-err: var(--live-err); --color-head: var(--head); --color-today: var(--today);
@@ -55,60 +58,64 @@
   }
 }
 
-/* ---- 色。黒い帯（上のバーとスマホの下のタブ）に、水色（シアン）を差し色にする。暖色は使わず、状態の色はミント・ローズ・バイオレット。
- * ライトが基本。ダークはヘッダーの月・太陽のボタンか設定タブで切り替え、未設定なら OS に従う ---- */
+/* ---- 色。サービスアイコンの青（#2D2AFE）を帯と大事なボタンに大きく使い、オレンジ・ピンク・黄を差し色にする。
+ * ライトが基本。ダークは紺の地に、明るめの青。ヘッダーの月・太陽のボタンか設定タブで切り替え、未設定なら OS に従う。
+ * オレンジは白い地の小さな字には使わない（読みにくい）。字に使うときは濃いオレンジ（--violet。名前は前の紫のまま）にする ---- */
 @layer theme {
   :root {
     color-scheme: light;
-    --primary: #0b111b; --primary-ink: #ffffff;
-    --accent: #0891b2; --accent-strong: #0e7490; --accent-ink: #ffffff; --accent-soft: #e0f5f9; --accent-line: #a3dde9; --accent-text: #0e7490;
-    --chrome: #0b111b; --chrome-line: #1f2935; --chrome-text: #f1f5f9; --chrome-muted: #97a3b4; --chrome-hover: rgba(255, 255, 255, .07); --chrome-active: rgba(255, 255, 255, .12);
-    --chrome-field: rgba(255, 255, 255, .06); --chrome-field-line: rgba(255, 255, 255, .18); --chrome-accent: #22d3ee; --chrome-accent-ink: #042f37; --chrome-accent-text: #67e8f9;
-    --live: #34d399; --live-off: #52606f; --live-err: #fb7185;
-    --head: #f0f2f5; --today: #dff5fa; --session: #e3eaf8; --ok: #ccf0e0; --soft: #e9f7f1;
-    --out: #f6f8fa; --weekend: #f9fafb; --warn: #fde1e7; --soon: #eeeafd; --past: #eceff3; --violet: #6d28d9;
-    --text: #0b111b; --muted: #5a6474; --line: #e2e6ec; --line-strong: #c9d0da; --bg: #f2f4f7; --card: #ffffff; --hover: #edf1f6;
-    --sun: #d4163f; --sat: #0369a1; --ok-text: #046c4e; --err-text: #be123c;
-    --booked-text: #1e3a8a; --toast: #0b111b; --toast-text: #f1f5f9; --week-line: #9aa4b2; --scrim: rgba(5, 8, 12, .55); --home-bar: #0b111b;
-    --elev-sm: 0 1px 2px rgba(11, 17, 27, .06);
-    --elev-lg: 0 16px 40px rgba(11, 17, 27, .22), 0 2px 6px rgba(11, 17, 27, .08);
-    --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%235a6474' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
-    --select-arrow-chrome: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2397a3b4' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    --primary: #2d2afe; --primary-ink: #ffffff;
+    --accent: #2d2afe; --accent-strong: #2d2afe; --accent-ink: #ffffff; --accent-soft: #e8e9ff; --accent-line: #c2c5fd; --accent-text: #2421d6;
+    --chrome: #2d2afe; --chrome-line: #2d2afe; --chrome-text: #ffffff; --chrome-muted: rgba(255, 255, 255, .76); --chrome-hover: rgba(255, 255, 255, .14);
+    --chrome-active: #ffffff; --chrome-active-ink: #2d2afe; --chrome-field: rgba(255, 255, 255, .1); --chrome-field-line: rgba(255, 255, 255, .38);
+    --chrome-accent: #fdd21f; --chrome-accent-ink: #15163a; --chrome-accent-text: #fdd21f;
+    --live: #4ade80; --live-off: rgba(255, 255, 255, .45); --live-err: #ff8fb8;
+    --head: #eef0ff; --today: #e2e4ff; --session: #e8eaff; --ok: #dcf5e7; --soft: #eef9f3;
+    --out: #f6f7fd; --weekend: #f8f9ff; --warn: #ffe4ee; --soon: #fff0e3; --past: #eceef6; --violet: #c45200;
+    --text: #15163a; --muted: #5d608a; --line: #e1e3fa; --line-strong: #c7caee; --bg: #f3f4ff; --card: #ffffff; --hover: #eef0ff;
+    --sun: #e0115f; --sat: #2d2afe; --ok-text: #0a7a45; --err-text: #d1104d;
+    --booked-text: #2421d6; --toast: #15163a; --toast-text: #ffffff; --week-line: #a3a6d8; --scrim: rgba(12, 13, 41, .55); --home-bar: #2d2afe;
+    --elev-sm: 0 1px 2px rgba(21, 22, 58, .05), 0 6px 18px rgba(45, 42, 254, .06);
+    --elev-lg: 0 18px 44px rgba(21, 22, 58, .22), 0 2px 8px rgba(21, 22, 58, .08);
+    --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%235d608a' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    --select-arrow-chrome: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23c8c9ff' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
   }
   :root[data-theme="dark"] {
     color-scheme: dark;
-    --primary: #e6ebf2; --primary-ink: #0b0e13;
-    --accent: #22d3ee; --accent-strong: #22d3ee; --accent-ink: #042f37; --accent-soft: #0b2930; --accent-line: #155e6b; --accent-text: #67e8f9;
-    --chrome: #06080c; --chrome-line: #1a2029; --chrome-text: #f1f5f9; --chrome-muted: #8d98a8; --chrome-hover: rgba(255, 255, 255, .06); --chrome-active: rgba(255, 255, 255, .1);
-    --chrome-field: rgba(255, 255, 255, .05); --chrome-field-line: rgba(255, 255, 255, .16); --chrome-accent: #22d3ee; --chrome-accent-ink: #042f37; --chrome-accent-text: #67e8f9;
-    --live: #34d399; --live-off: #475569; --live-err: #fb7185;
-    --head: #171c24; --today: #0b2930; --session: #16213a; --ok: #0c3a2d; --soft: #10271f;
-    --out: #0d1015; --weekend: #0f1318; --warn: #3b141f; --soon: #231b3f; --past: #1a1f27; --violet: #a78bfa;
-    --text: #e6ebf2; --muted: #8d98a8; --line: #232a34; --line-strong: #343d49; --bg: #0b0e13; --card: #12161d; --hover: #1a2029;
-    --sun: #fb7185; --sat: #38bdf8; --ok-text: #34d399; --err-text: #fb7185;
-    --booked-text: #93c5fd; --toast: #e6ebf2; --toast-text: #0b0e13; --week-line: #4b5563; --scrim: rgba(0, 0, 0, .65); --home-bar: #05070a;
-    --elev-sm: 0 1px 2px rgba(0, 0, 0, .5);
-    --elev-lg: 0 16px 40px rgba(0, 0, 0, .7), 0 2px 6px rgba(0, 0, 0, .5);
-    --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%238d98a8' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
-    --select-arrow-chrome: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%238d98a8' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    --primary: #769ffc; --primary-ink: #0c0d29;
+    --accent: #8eaeff; --accent-strong: #769ffc; --accent-ink: #0c0d29; --accent-soft: #22256a; --accent-line: #3e45a8; --accent-text: #a8c0ff;
+    --chrome: #2422c9; --chrome-line: #2422c9; --chrome-text: #ffffff; --chrome-muted: rgba(255, 255, 255, .74); --chrome-hover: rgba(255, 255, 255, .12);
+    --chrome-active: #ffffff; --chrome-active-ink: #2422c9; --chrome-field: rgba(255, 255, 255, .08); --chrome-field-line: rgba(255, 255, 255, .32);
+    --chrome-accent: #fdd21f; --chrome-accent-ink: #15163a; --chrome-accent-text: #fdd21f;
+    --live: #4ade80; --live-off: rgba(255, 255, 255, .4); --live-err: #ff8fb8;
+    --head: #1c1e50; --today: #23266d; --session: #1d2058; --ok: #123b2c; --soft: #10271f;
+    --out: #0f1030; --weekend: #111234; --warn: #3d1630; --soon: #3a2412; --past: #1a1b3b; --violet: #ffa04d;
+    --text: #eceeff; --muted: #a2a5d4; --line: #2a2c66; --line-strong: #3c3f82; --bg: #0c0d29; --card: #16173e; --hover: #1f2150;
+    --sun: #ff6ea6; --sat: #a8c0ff; --ok-text: #4ade9c; --err-text: #ff7aa6;
+    --booked-text: #b9caff; --toast: #eceeff; --toast-text: #0c0d29; --week-line: #4b4f93; --scrim: rgba(0, 0, 0, .65); --home-bar: #2422c9;
+    --elev-sm: 0 1px 2px rgba(0, 0, 0, .4), 0 6px 18px rgba(0, 0, 0, .25);
+    --elev-lg: 0 18px 44px rgba(0, 0, 0, .6), 0 2px 8px rgba(0, 0, 0, .4);
+    --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23a2a5d4' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    --select-arrow-chrome: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23c8c9ff' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
       color-scheme: dark;
-      --primary: #e6ebf2; --primary-ink: #0b0e13;
-      --accent: #22d3ee; --accent-strong: #22d3ee; --accent-ink: #042f37; --accent-soft: #0b2930; --accent-line: #155e6b; --accent-text: #67e8f9;
-      --chrome: #06080c; --chrome-line: #1a2029; --chrome-text: #f1f5f9; --chrome-muted: #8d98a8; --chrome-hover: rgba(255, 255, 255, .06); --chrome-active: rgba(255, 255, 255, .1);
-      --chrome-field: rgba(255, 255, 255, .05); --chrome-field-line: rgba(255, 255, 255, .16); --chrome-accent: #22d3ee; --chrome-accent-ink: #042f37; --chrome-accent-text: #67e8f9;
-      --live: #34d399; --live-off: #475569; --live-err: #fb7185;
-      --head: #171c24; --today: #0b2930; --session: #16213a; --ok: #0c3a2d; --soft: #10271f;
-      --out: #0d1015; --weekend: #0f1318; --warn: #3b141f; --soon: #231b3f; --past: #1a1f27; --violet: #a78bfa;
-      --text: #e6ebf2; --muted: #8d98a8; --line: #232a34; --line-strong: #343d49; --bg: #0b0e13; --card: #12161d; --hover: #1a2029;
-      --sun: #fb7185; --sat: #38bdf8; --ok-text: #34d399; --err-text: #fb7185;
-      --booked-text: #93c5fd; --toast: #e6ebf2; --toast-text: #0b0e13; --week-line: #4b5563; --scrim: rgba(0, 0, 0, .65); --home-bar: #05070a;
-      --elev-sm: 0 1px 2px rgba(0, 0, 0, .5);
-      --elev-lg: 0 16px 40px rgba(0, 0, 0, .7), 0 2px 6px rgba(0, 0, 0, .5);
-      --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%238d98a8' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
-      --select-arrow-chrome: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%238d98a8' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+      --primary: #769ffc; --primary-ink: #0c0d29;
+      --accent: #8eaeff; --accent-strong: #769ffc; --accent-ink: #0c0d29; --accent-soft: #22256a; --accent-line: #3e45a8; --accent-text: #a8c0ff;
+      --chrome: #2422c9; --chrome-line: #2422c9; --chrome-text: #ffffff; --chrome-muted: rgba(255, 255, 255, .74); --chrome-hover: rgba(255, 255, 255, .12);
+      --chrome-active: #ffffff; --chrome-active-ink: #2422c9; --chrome-field: rgba(255, 255, 255, .08); --chrome-field-line: rgba(255, 255, 255, .32);
+      --chrome-accent: #fdd21f; --chrome-accent-ink: #15163a; --chrome-accent-text: #fdd21f;
+      --live: #4ade80; --live-off: rgba(255, 255, 255, .4); --live-err: #ff8fb8;
+      --head: #1c1e50; --today: #23266d; --session: #1d2058; --ok: #123b2c; --soft: #10271f;
+      --out: #0f1030; --weekend: #111234; --warn: #3d1630; --soon: #3a2412; --past: #1a1b3b; --violet: #ffa04d;
+      --text: #eceeff; --muted: #a2a5d4; --line: #2a2c66; --line-strong: #3c3f82; --bg: #0c0d29; --card: #16173e; --hover: #1f2150;
+      --sun: #ff6ea6; --sat: #a8c0ff; --ok-text: #4ade9c; --err-text: #ff7aa6;
+      --booked-text: #b9caff; --toast: #eceeff; --toast-text: #0c0d29; --week-line: #4b4f93; --scrim: rgba(0, 0, 0, .65); --home-bar: #2422c9;
+      --elev-sm: 0 1px 2px rgba(0, 0, 0, .4), 0 6px 18px rgba(0, 0, 0, .25);
+      --elev-lg: 0 18px 44px rgba(0, 0, 0, .6), 0 2px 8px rgba(0, 0, 0, .4);
+      --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23a2a5d4' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+      --select-arrow-chrome: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23c8c9ff' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
     }
   }
   /* ---- 寸法・重なり・動き。値はここだけで決める ---- */
