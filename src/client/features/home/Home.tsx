@@ -13,12 +13,19 @@ import { card, h2, hint } from './styles';
 
 type LoggedIn = Extract<MeResponse, { loggedIn: true }>;
 
-/** ?login=… と ?deleted=1 で出すお知らせ（ログインの戻り・グループを消したあと） */
-const NOTICE: Record<string, string> = {
-  cancelled: 'ログインをやめました。',
-  banned: 'このアカウントでは入れません（運営者が締め出しています）。',
-  deleted: 'グループを消しました。',
-  closed: '今は新しい登録を受け付けていません。すでに使っている人は、そのままログインできます。',
+/** ?login=… と ?deleted=1 で出すお知らせ（ログインの戻り・グループを消したあと）。[文, 色とアイコン] */
+const NOTICE: Record<string, [string, 'info' | 'ok' | 'warn' | 'bad']> = {
+  cancelled: ['ログインをやめました。', 'info'],
+  banned: ['このアカウントでは入れません（運営者が締め出しています）。', 'bad'],
+  deleted: ['グループを消しました。', 'ok'],
+  closed: ['今は新しい登録を受け付けていません。すでに使っている人は、そのままログインできます。', 'warn'],
+};
+/** お知らせの色（地と字の組）とアイコン */
+const TONE: Record<'info' | 'ok' | 'warn' | 'bad', [string, IconName]> = {
+  info: ['border-accent-line bg-accent-soft [&>.material-icons]:text-accent-text', 'notifications'],
+  ok: ['border-[color-mix(in_srgb,var(--ok-text)_35%,var(--line))] bg-ok [&>.material-icons]:text-ok-text', 'check'],
+  warn: ['border-[color-mix(in_srgb,var(--soon-text)_35%,var(--line))] bg-soon [&>.material-icons]:text-soon-text', 'warning'],
+  bad: ['border-[color-mix(in_srgb,var(--err-text)_35%,var(--line))] bg-warn [&>.material-icons]:text-err-text', 'block'],
 };
 
 /** できることの紹介（ログインの前）。[アイコン, 題, 一言, アイコンの色] */
@@ -40,7 +47,7 @@ export function Home() {
   const me = useQuery({ queryKey: ['me'], queryFn: fetchMe });
   useEffect(() => { document.title = '卓予定'; }, []);
   const q = new URLSearchParams(location.search);
-  const say = NOTICE[q.get('login') || ''] || (q.get('deleted') === '1' ? NOTICE.deleted : '');
+  const say = NOTICE[q.get('login') || ''] || (q.get('deleted') === '1' ? NOTICE.deleted : null);
   return (
     <>
       <header className="flex items-center justify-between gap-12 bg-chrome px-24 py-12 text-chrome-text max-sm:px-14 max-sm:py-10">
@@ -51,7 +58,7 @@ export function Home() {
         {me.data?.loggedIn && <Who me={me.data} />}
       </header>
       <main className="mx-auto max-w-720 px-20 pt-32 pb-48 max-sm:px-14 max-sm:pt-18">
-        {say && <p className="mt-0 mb-18 rounded-lg border border-accent-line bg-accent-soft px-16 py-12 text-fg" id="notice">{say}</p>}
+        {say && <p className={'mt-0 mb-18 flex items-start gap-8 rounded-lg border px-16 py-12 text-fg ' + TONE[say[1]][0]} id="notice"><Icon name={TONE[say[1]][1]} className="mt-1" />{say[0]}</p>}
         {me.isPending ? (
           <section className={card + ' text-muted'} id="loading">読み込んでいます…</section>
         ) : me.isError ? (
