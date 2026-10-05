@@ -157,7 +157,7 @@ export function AvailTab() {
   return (
     <section id="tab-avail">
       <PageHead
-        title={<>メンバーの予定 <Tip text="自分の列のマスをタップすると 空 → △ → × → 空 と変わります。空欄は「参加できる」扱いです。マスの右上の鉛筆で、その日のメモ（「21 時から」など）を書けます。ほかの人の列は見るだけです。スマホでは日ごとのリストになり、◯ △ × のボタンで選べます。" label="予定表の使い方" /></>}
+        title={<>メンバーの予定 <Tip text="自分の列のマスをタップすると 空 → △ → × → 空 と変わります。空欄は「参加できる」扱いです。マスの右上の鉛筆（マウスを載せると出ます）で、その日のメモ（「21 時から」など）を書けます。ほかの人の列は見るだけです。スマホでは日ごとのリストになり、◯ △ × のボタンで選べます。" label="予定表の使い方" /></>}
         lead="空欄は「参加できる」扱いです。都合の悪い日だけ、自分の印（△ か ×）を付けます。" />
       <UnknownWarn d={d} />
       <div id="availHot" className="mb-12 flex flex-wrap items-center gap-x-8 gap-y-6 rounded-lg border border-[color-mix(in_srgb,var(--soon-text)_35%,var(--line))] bg-soon px-10 py-8 text-13" hidden={!hotRec.length && !hotAdj.length}>
