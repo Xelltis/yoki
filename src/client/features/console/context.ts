@@ -11,7 +11,7 @@ export type Area = 'main' | 'admin';
 export type Tab = 'cal' | 'recruit' | 'avail' | 'settings' | 'admin';
 
 /**
- * 卓の登録の窓を開く頼み。id は変える卓、cont はその卓の設定を引き継いで翌日の卓を登録する、
+ * 卓の登録の窓・変更の窓を開く頼み。id があれば、その卓の変更の窓。cont はその卓の設定を引き継いで翌日の卓を登録する、
  * date・status・series は新しく登録するときの初めの値（series を選ぶと直前の回から引き継ぐ。status は変える卓にも当てる）。
  * focus は、開いたときに入る欄（無ければ卓の名前）
  */
@@ -29,7 +29,7 @@ export type ConsoleUi = {
   guideFocus: number;
   /** 都合を見る卓（カレンダーの色と日の内訳）。「全員」「（なし）」か卓の名前。この端末に控える */
   target: string;
-  /** 卓の登録の窓（開く頼みと、頼んだ回数。同じ頼みでも開き直す） */
+  /** 卓の登録の窓・変更の窓（開く頼みと、頼んだ回数。同じ頼みでも開き直す） */
   form: { seq: number; req: FormReq } | null;
   /** 候補日を選ぶ窓（日程調整を始める・選び直す卓） */
   poll: { seq: number; id: string } | null;

@@ -76,7 +76,8 @@ await withDevServer(async (base) => {
     await step('卓を登録できる', async () => {
       await page.click('#newSession');
       await page.fill('#name', 'e2e で登録した卓');
-      await page.selectOption('#status', '募集');
+      await page.click('#status label:has(input[value="募集"])');   // どんな卓かの札
+      assert.equal(await page.locator('#formModal #del').count(), 0);   // 登録の窓には、削除が無い
       await page.click('#f button[type=submit]');
       await until((d) => d.sessions.some((s) => s.name === 'e2e で登録した卓' && !String(s.id).startsWith('__tmp__')));
     });
@@ -85,9 +86,20 @@ await withDevServer(async (base) => {
       const s = (await D()).sessions.find((x) => x.name === '灰色の図書館');
       await page.evaluate((k) => window.yoki.selectDay(k), s.date);
       await page.click(`#dayBody button[data-edit="${s.id}"]`);
+      assert.match(await page.textContent('#formTitle'), /「灰色の図書館」を変更/);
       await page.fill('#name', '灰色の図書館（改）');
       await page.click('#f button[type=submit]');
       await until((d, id) => d.sessions.some((x) => x.id === id && x.name === '灰色の図書館（改）'), s.id);
+    });
+
+    await step('変更の窓から、続きの登録に移れる', async () => {
+      const s = (await D()).sessions.find((x) => x.name === '連れて帰る');
+      await page.evaluate((k) => window.yoki.selectDay(k), s.date);
+      await page.click(`#dayBody button[data-edit="${s.id}"]`);
+      await page.click('#cont');
+      await page.waitForFunction(() => document.getElementById('formTitle')?.textContent === '卓を登録');
+      assert.equal(await page.inputValue('#name'), '連れて帰る（続き）');
+      await page.click('#formClose');
     });
 
     await step('卓を削除できる（確かめる窓を通る）', async () => {
@@ -112,7 +124,7 @@ await withDevServer(async (base) => {
       await tab('cal');
       await page.click('#newSession');
       await page.fill('#name', 'e2e の日程調整');
-      await page.selectOption('#status', '調整中');
+      await page.click('#status label:has(input[value="調整中"])');
       await page.check('#membersBox input.m[value="ソラ"]');
       await page.fill('#winFrom', d.availDays[20]);
       await page.fill('#winTo', d.availDays[26]);
