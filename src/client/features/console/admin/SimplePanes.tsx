@@ -18,9 +18,9 @@ export function AdminsPane() {
   return (
     <div data-pane="admin">
       <div className="card">
-        <h3>管理者 <small className="hint">卓を消す・メンバーと設定を変える・日程調整の開催日を決める</small></h3>
-        <div id="admState" className={'inline-flex items-center gap-6 rounded-full px-12 py-4 text-13 ' + (d.isAdmin ? 'bg-ok font-semibold text-ok-text' : 'bg-head')}>{d.isAdmin ? 'あなたは管理者です' : 'あなたは管理者ではありません'}</div>
-        <p className="hint" id="admLead">{d.isAdmin ? '管理者は、卓を消す・メンバーと設定を変える・日程調整の開催日を決める、ができます。' : '管理者の操作が要るときは、管理者に頼んでください。'}</p>
+        {/* この区分を開けるのは管理者だけなので、「あなたは管理者です」は出さない */}
+        <h3>管理者</h3>
+        <p className="hint" id="admLead">管理者は、卓を消す・メンバーと設定を変える・日程調整の開催日を決める、ができます。</p>
         <div className="mt-10 mb-4 flex flex-wrap gap-8" id="admList">
           {!list.length && <span className="text-13 text-muted">名簿はまだ空です。</span>}
           {list.map((n) => (
