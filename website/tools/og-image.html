@@ -6,27 +6,32 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@500;600;700;800&family=Geist+Mono:wght@500;600&family=Noto+Sans+JP:wght@500;700;900&display=block">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,500,1,0&icon_names=add,bolt,campaign,casino,check,how_to_vote,login,notifications&display=block">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,500,1,0&icon_names=add,bolt,campaign,check,how_to_vote,login,notifications&display=block">
 <style>
-  /* サイトを SNS に貼ったときに出る画像（website/public/og.png）。卓予定の配色を下敷きにする。1600×900 で組み、npm run og-image で書き出す */
+  /* サイトを SNS に貼ったときに出る画像（website/public/og.png）。卓予定の配色（デザイン案 A: 青を大きく使う）を下敷きにする。1600×900 で組み、npm run og-image で書き出す */
   :root {
-    --bg: #06080c;
-    --ink: #f1f5f9;
-    --muted: #97a3b4;
-    --faint: #5d6878;
-    --line: rgba(255, 255, 255, .09);
-    --accent: #22d3ee;            /* 図形・光だけに使う */
-    --accent-text: #93dce8;       /* 文字に使う水色は彩度を落とす */
-    --green: #34d399;
-    --green-text: #8fdcbc;
-    --violet-text: #c4b5fd;
-    --blurple: #8b93f5;           /* Discord の色を落としたもの */
-    --blurple-text: #c9cdfb;
+    --blue: #2d2afe;              /* アイコンの青。地に使う */
+    --blue-light: #769ffc;
+    --orange: #fe841c;
+    --pink: #fb2c85;
+    --yellow: #fdd21f;            /* 青の上の差し色 */
+    --ink: #15163a;               /* 白いタイルの文字 */
+    --muted: #5d608a;
+    --line: #e1e3fa;
+    --accent-text: #2421d6;       /* 白地の文字に使う青 */
+    --accent-soft: #eef0ff;
+    --orange-text: #c45200;       /* オレンジは白地の文字に使わず、濃くしたものにする */
+    --orange-soft: #fff0e3;
+    --green-text: #157347;
+    --green-soft: #e3f6ec;
+    --blurple: #5865f2;           /* Discord の色 */
+    --blurple-text: #3b44b8;
+    --blurple-soft: #eceeff;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body { width: 1600px; height: 900px; overflow: hidden; background: var(--bg); }
+  html, body { width: 1600px; height: 900px; overflow: hidden; background: var(--blue); }
   body {
-    color: var(--ink);
+    color: #fff;
     font-family: "Noto Sans JP", "Yu Gothic UI", sans-serif;
     font-feature-settings: "palt";
     -webkit-font-smoothing: antialiased;
@@ -41,40 +46,38 @@
 
   .canvas { position: relative; width: 1600px; height: 900px; overflow: hidden; isolation: isolate; }
 
-  /* ---- 背景：光と点の格子 ---- */
-  .bg { position: absolute; inset: 0; z-index: -1; }
+  /* ---- 背景：青の地に、点の格子と差し色の光 ---- */
+  .bg { position: absolute; inset: 0; z-index: -1; background: linear-gradient(160deg, #3532ff 0%, #2d2afe 45%, #2320d8 100%); }
   .bg::before {
     content: ""; position: absolute; inset: 0;
-    background-image: radial-gradient(rgba(255, 255, 255, .075) 1.2px, transparent 1.6px);
+    background-image: radial-gradient(rgba(255, 255, 255, .16) 1.2px, transparent 1.6px);
     background-size: 30px 30px;
-    -webkit-mask-image: radial-gradient(ellipse 70% 80% at 72% 40%, #000 20%, transparent 75%);
-            mask-image: radial-gradient(ellipse 70% 80% at 72% 40%, #000 20%, transparent 75%);
+    -webkit-mask-image: radial-gradient(ellipse 60% 70% at 22% 30%, #000 10%, transparent 70%);
+            mask-image: radial-gradient(ellipse 60% 70% at 22% 30%, #000 10%, transparent 70%);
   }
-  .glow { position: absolute; border-radius: 50%; filter: blur(90px); }
-  .g1 { width: 760px; height: 560px; left: 900px; top: -160px; background: rgba(34, 211, 238, .20); }
-  .g2 { width: 560px; height: 440px; left: -160px; top: 620px; background: rgba(34, 211, 238, .10); }
-  .g3 { width: 560px; height: 420px; left: 1160px; top: 600px; background: rgba(88, 101, 242, .18); }
+  .glow { position: absolute; border-radius: 50%; filter: blur(100px); }
+  .g1 { width: 620px; height: 460px; left: 1120px; top: -220px; background: rgba(251, 44, 133, .38); }
+  .g2 { width: 620px; height: 420px; left: -220px; top: 640px; background: rgba(254, 132, 28, .2); }
+  .g3 { width: 520px; height: 420px; left: 1200px; top: 660px; background: rgba(118, 159, 252, .40); }
 
   /* ---- 左：名前と見出し ---- */
   .hero { position: absolute; left: 72px; top: 64px; width: 600px; height: 772px; }
   .brand { display: flex; align-items: center; gap: 14px; }
   .mark {
-    width: 52px; height: 52px; border-radius: 15px;
-    display: grid; place-items: center;
-    background: linear-gradient(145deg, #5fe3f5, #14b8d4);
-    color: #042f37; font-size: 32px;
-    box-shadow: 0 0 0 1px rgba(255, 255, 255, .18) inset, 0 10px 30px rgba(34, 211, 238, .35);
+    display: block; width: 56px; height: 56px; border-radius: 15px;
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, .92), 0 12px 30px rgba(8, 6, 90, .35);
   }
   .kind {
-    font-size: 25px; font-weight: 700; letter-spacing: .06em; color: var(--ink);
+    font-size: 25px; font-weight: 700; letter-spacing: .06em; color: #fff;
     padding: 9px 20px 10px; border-radius: 999px;
-    background: rgba(255, 255, 255, .05); border: 1px solid var(--line);
+    background: rgba(255, 255, 255, .12); border: 1px solid rgba(255, 255, 255, .28);
   }
   .word {
     margin-top: 34px; margin-left: -10px;
     font-size: 272px; line-height: .86; font-weight: 700; letter-spacing: -.055em;
-    color: var(--ink);
+    color: #fff;
     display: flex; align-items: flex-end;
+    text-shadow: 0 18px 50px rgba(8, 6, 90, .25);
   }
   .word .i { position: relative; }
   .word .dot {
@@ -82,17 +85,14 @@
     position: absolute; left: .0659em; top: .027em;
     width: .1495em; height: .1495em;
     border-radius: .036em;
-    background: linear-gradient(145deg, #6be6f7, #14b8d4);
-    box-shadow: 0 0 40px rgba(34, 211, 238, .55);
+    background: var(--yellow);
+    box-shadow: 0 0 40px rgba(253, 210, 31, .55);
   }
   .lead {
     margin-top: 52px;
     font-size: 84px; line-height: 1.16; font-weight: 900; letter-spacing: .01em;
   }
-  .lead .soft {
-    background: linear-gradient(95deg, #f1f5f9 10%, #9fdfea 95%);
-    -webkit-background-clip: text; background-clip: text; color: transparent;
-  }
+  .lead .soft { color: var(--yellow); }
 
   /* Discord でログイン・かんたん設定の札 */
   .perks { position: absolute; left: 0; bottom: 0; display: flex; gap: 12px; }
@@ -100,18 +100,18 @@
     display: flex; align-items: center; gap: 10px;
     padding: 14px 20px 15px 14px; border-radius: 999px;
     font-size: 30px; font-weight: 900; line-height: 1; white-space: nowrap;
-    background: rgba(255, 255, 255, .06); border: 1px solid rgba(255, 255, 255, .13);
-    box-shadow: 0 20px 50px rgba(0, 0, 0, .45), inset 0 1px 0 rgba(255, 255, 255, .07);
+    background: rgba(255, 255, 255, .12); border: 1px solid rgba(255, 255, 255, .3);
+    box-shadow: 0 20px 50px rgba(8, 6, 90, .30);
   }
-  .perk .ms { font-size: 32px; color: var(--accent-text); }
+  .perk .ms { font-size: 32px; color: var(--yellow); }
   .perk .en { font-weight: 800; letter-spacing: -.01em; }
   .perk.hot {
-    background: linear-gradient(145deg, #67e3f4, #1cc3dd); color: #042f37; border-color: transparent;
-    box-shadow: 0 20px 50px rgba(34, 211, 238, .30), inset 0 1px 0 rgba(255, 255, 255, .45);
+    background: #fff; color: var(--blue); border-color: transparent;
+    box-shadow: 0 20px 50px rgba(8, 6, 90, .35);
   }
-  .perk.hot .ms { color: #042f37; }
+  .perk.hot .ms { color: var(--blue); }
 
-  /* ---- 右：タイル ---- */
+  /* ---- 右：白いタイル ---- */
   .bento {
     position: absolute; left: 700px; top: 56px; width: 844px; height: 788px;
     display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 380px 1fr; gap: 22px;
@@ -119,11 +119,10 @@
   .tile {
     position: relative; overflow: hidden;
     border-radius: 30px; padding: 30px 34px;
-    background: linear-gradient(180deg, rgba(255, 255, 255, .06), rgba(255, 255, 255, .022));
-    border: 1px solid var(--line);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .07), 0 30px 70px rgba(0, 0, 0, .35);
+    background: #fff; color: var(--ink);
+    box-shadow: 0 30px 70px rgba(8, 6, 90, .30);
   }
-  .tag { font-size: 17px; font-weight: 600; letter-spacing: .16em; color: var(--muted); }
+  .tag { font-size: 17px; font-weight: 600; letter-spacing: .16em; color: var(--accent-text); }
   .ttl { font-weight: 900; letter-spacing: .01em; line-height: 1.18; }
 
   /* 3 ステップ */
@@ -132,39 +131,38 @@
   .t2 .big { display: flex; align-items: flex-end; gap: 10px; margin-top: 30px; }
   .t2 .num {
     font-size: 196px; line-height: .78; font-weight: 800; letter-spacing: -.06em;
-    background: linear-gradient(180deg, #f5fbfd 15%, #6fd2e2 100%);
+    background: linear-gradient(180deg, #769ffc 0%, #2d2afe 70%);
     -webkit-background-clip: text; background-clip: text; color: transparent;
-    filter: drop-shadow(0 10px 30px rgba(34, 211, 238, .25));
   }
   .t2 .ttl { font-size: 44px; padding-bottom: 2px; white-space: nowrap; }
   .t2 .ttl2 { font-size: 58px; margin-top: 16px; }
   .flow { flex: 1; position: relative; display: flex; flex-direction: column; justify-content: center; gap: 14px; }
   .flow::before {
     content: ""; position: absolute; left: 39px; top: 60px; bottom: 60px; width: 2px;
-    background: linear-gradient(180deg, rgba(34, 211, 238, .55), rgba(34, 211, 238, .15));
+    background: linear-gradient(180deg, rgba(45, 42, 254, .5), rgba(45, 42, 254, .15));
   }
   .st {
     position: relative; display: flex; align-items: center; gap: 18px;
     height: 88px; padding: 0 18px;
-    border-radius: 22px; background: rgba(255, 255, 255, .045); border: 1px solid var(--line);
+    border-radius: 22px; background: #f6f7ff; border: 1px solid var(--line);
   }
   .st .n {
     flex: none; width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center;
     font-family: "Geist Mono", monospace; font-size: 21px; font-weight: 600;
-    background: #0d2a31; color: var(--accent-text); box-shadow: 0 0 0 2px rgba(34, 211, 238, .45);
+    background: var(--blue); color: #fff;
   }
   .st b { font-size: 34px; font-weight: 900; white-space: nowrap; }
   .st .side { margin-left: auto; display: flex; align-items: center; }
   .pill {
     display: flex; align-items: center; gap: 6px; padding: 7px 14px 7px 10px; border-radius: 999px;
     font-size: 18px; font-weight: 600; white-space: nowrap;
-    background: rgba(88, 101, 242, .20); color: var(--blurple-text);
+    background: var(--blurple-soft); color: var(--blurple-text);
   }
   .pill .ms { font-size: 20px; }
   .plus {
     width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center;
-    background: linear-gradient(145deg, #67e3f4, #1cc3dd); color: #042f37; font-size: 28px;
-    box-shadow: 0 8px 24px rgba(34, 211, 238, .35);
+    background: var(--blue); color: #fff; font-size: 28px;
+    box-shadow: 0 8px 20px rgba(45, 42, 254, .35);
   }
   .plus .ms { font-variation-settings: "FILL" 1, "wght" 700, "GRAD" 0, "opsz" 24; }
 
@@ -172,24 +170,24 @@
   .av {
     width: 34px; height: 34px; border-radius: 50%; margin-left: -9px;
     display: grid; place-items: center; font-size: 15px; font-weight: 700;
-    border: 2px solid #171c24; color: #0b111b;
+    border: 2px solid #fff; color: #fff;
   }
-  .av:nth-child(1) { background: #f3c9a8; margin-left: 0; } .av:nth-child(2) { background: #a8d8f3; } .av:nth-child(3) { background: #c9b8f5; }
-  .av.more { background: rgba(255, 255, 255, .12); color: var(--ink); font-family: "Geist", sans-serif; font-weight: 600; }
+  .av:nth-child(1) { background: var(--orange); margin-left: 0; } .av:nth-child(2) { background: var(--pink); } .av:nth-child(3) { background: var(--blue-light); }
+  .av.more { background: var(--accent-soft); color: var(--accent-text); font-family: "Geist", sans-serif; font-weight: 600; }
 
   /* 募集・日程調整 */
   .t3 { display: flex; flex-direction: column; }
   .t3 .ttl { font-size: 42px; margin-top: 14px; }
-  .t3 .ttl .one { color: var(--accent-text); }
+  .t3 .ttl .one { color: var(--blue); }
   .rows { margin-top: auto; display: flex; flex-direction: column; gap: 10px; }
   .row {
     display: flex; align-items: center; gap: 12px;
     padding: 8px 12px; border-radius: 16px;
-    background: rgba(255, 255, 255, .04); border: 1px solid var(--line);
+    background: #f6f7ff; border: 1px solid var(--line);
   }
   .row .ic { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; font-size: 24px; flex: none; }
-  .row .ic.v { background: rgba(167, 139, 250, .16); color: var(--violet-text); }
-  .row .ic.c { background: rgba(34, 211, 238, .14); color: var(--accent-text); }
+  .row .ic.v { background: var(--orange-soft); color: var(--orange-text); }
+  .row .ic.c { background: var(--accent-soft); color: var(--accent-text); }
   .row b { font-size: 20px; font-weight: 700; white-space: nowrap; }
   .row .avs { margin-left: auto; }
   .row .av { width: 32px; height: 32px; font-size: 14px; margin-left: -8px; }
@@ -199,7 +197,7 @@
   .fix {
     display: flex; align-items: center; gap: 4px; margin-left: 6px;
     padding: 5px 12px 5px 8px; border-radius: 999px; white-space: nowrap;
-    background: rgba(52, 211, 153, .16); color: var(--green-text); font-size: 17px; font-weight: 700;
+    background: var(--green-soft); color: var(--green-text); font-size: 17px; font-weight: 700;
   }
   .fix .ms { font-size: 18px; }
 
@@ -210,22 +208,19 @@
   .msg {
     margin-top: auto; display: flex; gap: 12px;
     padding: 14px 16px 15px; border-radius: 18px;
-    background: rgba(88, 101, 242, .10); border: 1px solid rgba(139, 147, 245, .22);
+    background: #f6f7ff; border: 1px solid var(--line);
     box-shadow: inset 4px 0 0 var(--blurple);
   }
-  .msg .ava {
-    flex: none; width: 42px; height: 42px; border-radius: 12px; display: grid; place-items: center;
-    background: linear-gradient(145deg, #5fe3f5, #14b8d4); color: #042f37; font-size: 26px;
-  }
+  .msg .ava { flex: none; display: block; width: 42px; height: 42px; border-radius: 12px; }
   .msg .who { display: flex; align-items: baseline; gap: 8px; }
   .msg .who b { font-size: 19px; font-weight: 700; }
   .msg .who span { font-size: 14px; color: var(--muted); }
-  .msg .body { margin-top: 3px; font-size: 18px; line-height: 1.45; color: #dfe5ec; }
+  .msg .body { margin-top: 3px; font-size: 18px; line-height: 1.45; color: #2a2c55; }
   .msg .body .en { font-weight: 600; }
   .ment { display: flex; gap: 5px; margin-top: 6px; }
   .ment span {
     padding: 1px 7px 2px; border-radius: 5px; font-size: 16px; font-weight: 600;
-    background: rgba(88, 101, 242, .30); color: var(--blurple-text);
+    background: var(--blurple-soft); color: var(--blurple-text);
   }
 </style>
 </head>
@@ -235,7 +230,7 @@
 
   <section class="hero">
     <div class="brand">
-      <div class="mark"><span class="ms" aria-hidden="true">casino</span></div>
+      <img class="mark" src="../public/icon-192.png" alt="">
       <div class="kind">グループの予定管理ツール</div>
     </div>
     <h1 class="word en">Yok<span class="i">ı<span class="dot"></span></span></h1>
@@ -289,7 +284,7 @@
       <div class="tag mono">NOTIFY</div>
       <div class="ttl"><span class="en">Discord</span>に<br>自動で通知</div>
       <div class="msg">
-        <div class="ava"><span class="ms" aria-hidden="true">casino</span></div>
+        <img class="ava" src="../public/icon-192.png" alt="">
         <div>
           <div class="who"><b class="en">Yoki</b><span>今日 <span class="en">20:00</span></span></div>
           <div class="body">「星降る港の依頼」は<br>明日 <span class="en">21:00</span> からです</div>
