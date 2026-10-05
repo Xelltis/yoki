@@ -58,6 +58,7 @@ website/           サイト（VitePress。GitHub Pages に公開する）。紹
 docs/              作りの説明（architecture.md）
 wrangler.jsonc     Worker の設定（D1・cron）。公開する Cloudflare ごとの値は仮の値だけ
 vite.config.ts     開発サーバーと組み立て。公開のときに、Cloudflare ごとの値を組み立てた設定に入れる
+tools/icons.ts     アイコン（unplugin-icons）の決まり。使ってよい集まりとライセンス、SVG を React の部品にする変換（アプリとサイトで使う）
 vitest.config.ts   テスト
 lefthook.yml       Git のフック（コミットの前の確認）
 commitlint.config.js コミットの説明の決まり（Conventional Commits）
@@ -187,7 +188,7 @@ npm run site:build   組み立てる（website/.vitepress/dist/）
 ```
 
 - 使い方のページは `website/guide/` の Markdown。試せる例・スクリーンショット・ボタンの名前は、`website/.vitepress/theme/components/` の部品を本文から使う（`<AvailDemo />`、`<Shot name="pc-calendar" themed alt="…" />`、`<Ui icon="settings">設定</Ui>` など）
-- 本文や部品にアイコンを足したら、`website/.vitepress/config.ts` の `ICONS` にも足す（テストが確かめる）
+- 本文や部品のアイコンは `<Ms name="event" />`（ボタンの名前なら `<Ui icon="event">`）。足したら、`website/.vitepress/theme/icons.ts` の `ICONS` にも足す（テストが確かめる）。トップのページの特長のアイコンは `index.md` の `points` と `theme/components/HomeFeatures.vue`
 - アプリの見た目を変えたら、`npm run screenshots` で撮り直してコミットする（サイトの組み立てでは撮らない）
 - アプリを公開したら、`config.ts` の `APP_URL` に書く。上のナビに「アプリを開く」が出る
 - アプリの「使い方」のボタンは、サイト（`config.ts` の `SITE_URL`）を指す。サイトのアドレスを変えたら、アプリの側も直す（テストが確かめる）
@@ -215,7 +216,8 @@ npm run site:build   組み立てる（website/.vitepress/dist/）
 - **グループの画面のデータは、`ConsoleSync`（`src/client/features/console/api/sync.ts`）だけで読み書きする。** 部品は `useData()` で読み、書くのは `sync.write()`。押した瞬間に画面へ出すときは、`model/optimistic.ts` の、データを受けて新しいデータを返す関数を渡す（仮の ID は `__tmp__`）
 - **D1 の問い合わせの数を増やしすぎない。** 1 回の呼び出しで使える数に上限がある（無料のプランで 50）。卓の数だけ文を作らず、JSON（`json_each`）で 1 文にまとめる
 - **表を変えるときは、マイグレーションを足す。** `migrations/` に番号の続くファイルを足し、すでにあるファイルは書き換えない
-- **画面にアイコンを足したら**（`<Icon name>`）、`src/client/ui/icons.ts` の `ICON_NAMES` に、名前をアルファベット順で足す（無い名前は型の確認で止まる。`index.html` の読み込みには、組み立てのときに入る。使っていない名前が残っていたらテストが止まる）
+- **画面にアイコンを足したら**（`<Icon name>`）、`src/client/ui/icons.ts` に `~icons/material-symbols/<名前>-outline-rounded` の import と `ICONS` の行を、名前のアルファベット順で足す（無い名前は型の確認で止まる。使っていない名前が残っていたらテストが止まる）。アイコンは [unplugin-icons](https://github.com/unplugin/unplugin-icons) が組み立てのときに SVG にして JS に入れる。画像やフォント（Google Fonts の Material Symbols）では読まない
+- **アイコンの集まりは、ライセンスを確かめたものだけを使う。** 今は Material Symbols（Google。Apache License 2.0。`@iconify-json/material-symbols`）だけ。ほかの集まりを使うときは、ライセンスを確かめてから `tools/icons.ts` の `ALLOWED_ICON_SETS` に足す（テストが、集まりのライセンスと一覧を突き合わせる）
 - **見た目は Tailwind CSS のクラスで書く。** 色・寸法・文字の大きさは `src/client/styles/theme.css` のトークンを使い、色を直に書かない（`bg-card`・`text-muted`・`p-10` など。寸法は px で数える: `p-10` は 10px）。いくつもの画面でくり返す形は、`ui/` や `features/…/styles.ts` に Tailwind のクラスの組み合わせとして置く。クラスの名前を文字列のつなぎで組み立てない（Tailwind が見つけられず、CSS が出ない）。配色を変えるときは、Tailwind を通らないところ（Worker の知らせと規約のページ・サイト・SNS 用の画像・manifest と theme-color）も一緒に直す（[docs/architecture.md](docs/architecture.md) の「見た目」）
 - **e2e とスクリーンショットの道具が使う形を保つ。** 要素の ID・`data-*`・`window.yoki`（`D`・`selectDay`・`showTab`）を変えるときは、`test/e2e/smoke.js` と `website/tools/screenshots.js` も直す
 - メンバーは中では ID で持ち、画面とのやり取りでは名前を使う（`src/worker/domain/people.ts`）
@@ -223,3 +225,5 @@ npm run site:build   組み立てる（website/.vitepress/dist/）
 ## ライセンス
 
 [MIT](LICENSE)
+
+画面とサイトのアイコンは [Material Symbols](https://github.com/google/material-design-icons)（Google。[Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0)）を使っている。組み立てたアプリとサイトには、使ったアイコンの SVG だけが入る
