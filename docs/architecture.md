@@ -162,7 +162,7 @@ TypeScript と React 19 で書き、Vite が組み立てる。1 つの SPA で�
 - タブと区分の一覧は `src/shared/routes.ts` に置き、Worker（`routes/pages.ts`。知らない区分は 404）と画面の道の両方から読む。ログインのあとに戻る先も、この一覧で確かめる（`isReturnPath`）
 - 検索の文字（`?login=…` など）は `URLSearchParams` のまま読む（TanStack Router の既定は JSON として読むため）
 - JS は、入口・グループの画面の外枠・タブ・管理の区域・運営の管理画面ごとに分けて読む。公開で古い JS が消えていたら、1 度だけページを読み直す（`main.tsx`）
-- 入口・グループの画面・運営の管理画面のあいだも、読み直さずに移る。入口を出しているあいだだけ、html に `data-page="home"` を付ける（入口には、グループの画面の文字・欄・表の決まりを当てない。入口を作り直すときにそろえる）
+- 入口・グループの画面・運営の管理画面のあいだも、読み直さずに移る。どの画面も、同じ見た目の決まり（文字・欄・表）を使う
 
 **データ**（TanStack Query。既定では自動で読み直さない。`app/queryClient.ts`）。
 
@@ -200,9 +200,14 @@ TypeScript と React 19 で書き、Vite が組み立てる。1 つの SPA で�
 - 層の順は theme（トークン）→ base（要素の既定）→ components（部品）→ utilities（Tailwind のクラス）。ほとんどの見た目は、部品の JSX に Tailwind のクラスで書く
 - トークン（`styles/theme.css`）: Tailwind の既定のトークン（色の一覧・rem の寸法）は使わず、置いたものだけを使う。寸法は px で数える（`--spacing: 1px`。`p-10` は 10px）。文字の大きさは `text-13` など、幅の区切りは 401・601・701・761・901・1061px（`sm:` は 601px 以上、`max-sm:` は 600px 以下）
 - 色は、明るい・ダーク・OS のダークで値の変わる変数（`--card` など）に置き、`@theme inline` で Tailwind の色にする（`bg-card` は `var(--card)` を読む）。ダークの色は変数が変わるので、`dark:` はほとんど要らない。`dark:` は `data-theme="dark"` と、明るいを選んでいない OS のダークの両方に効く
-- 要素の既定（`styles/base.css`）: 文字・リンク・見出し・欄・表・フォームの中の名前・文字の大きさの設定（body の zoom）。Tailwind の preflight（要素の見た目を消す土台）は、まだ使わない（見た目を作り直すときに入れる）
+- 配色: サービスアイコンの青（`#2D2AFE`）を、上の帯と大事なボタンに大きく使う。オレンジ・ピンク・黄は差し色。明るいが基本で、ダークは紺の地に明るめの青
+  - アイコンの色は `brand`・`brand-light`・`orange`・`pink`・`yellow`・`cream` として、明るい・ダークで変えずに置く。飾り（グループの頭文字の札・入口の紹介など）に使う
+  - 字の色は、地の色と組になった変数を使う（`accent-text`・`ok-text`・`soon-text` など）。オレンジは白い地の小さな字には読みにくいので、字には濃いオレンジの `soon-text` を使う
+- 文字は Noto Sans JP（Google Fonts から読む。`index.html`・Worker のページ・サイトも同じ）。読めないあいだと、つながらないときは端末の字で出す
+- 要素の既定（`styles/base.css`）: 文字・リンク・見出し・欄・表・フォームの中の名前・文字の大きさの設定（body の zoom）。Tailwind の preflight（要素の見た目を消す土台）は使わない。入れると、ブラウザの既定に頼っている見た目（見出しや段落の余白・ボタンの字など）が多くの部品で変わるため
 - 部品（`styles/components.css`）: いくつもの画面で使う形だけを置く（アイコン・説明・カード・ボタン・ボタンの並び・欄の行・表の枠と行・窓の箱）。場面ごとの調整は、Tailwind のクラスで上書きする（クラスは部品に勝つ）
 - くり返すクラスの組み合わせは、TypeScript の定数にする（`ui/chrome.ts` の上の帯、`ui/fields.ts` の設定の欄、`features/console/styles.ts` の知らせの行や札など）。クラスの名前は文字列のつなぎで組み立てない（Tailwind はファイルの文字から名前を探すので、組み立てた名前の CSS は出ない）
+- Worker のページ（知らせと規約。`routes/html.ts`）・サイト（`website/.vitepress/theme/style.css`）・SNS 用の画像（`website/tools/og-image.html`）・`manifest.webmanifest` と `theme-color` は Tailwind を通らないので、同じ色を別に書いている。配色を変えるときは、`theme.css` と一緒に直す
 
 ## サイト（website/）
 

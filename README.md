@@ -46,7 +46,7 @@ migrations/        D1 の表の定義（wrangler d1 migrations）
 test/worker/       サーバーのテスト（Workers の実行環境と本物の D1 で動かす）
 test/client/       画面とサイトの約束（アイコン・リンク・依存など）と、書くときの決まり
 test/e2e/          ブラウザで通しで確かめる（npm run e2e）。開発サーバーを立てる小道具も
-brand/             サービスアイコンの元の絵（yoki.png。配らない。ファビコンなどは npm run icons で書き出す）
+brand/             サービスアイコンの元の絵（yoki.png。配らない。ファビコンなどは npm run icons で書き出す）と、配色を選んだときのデザイン案の控え（mocks/）
 website/           サイト（VitePress。GitHub Pages に公開する）。紹介と使い方
   guide/           使い方のページ（Markdown）
   .vitepress/      サイトの設定と見た目・試せる例の部品
@@ -197,7 +197,7 @@ npm run site:build   組み立てる（website/.vitepress/dist/）
 - **D1 の問い合わせの数を増やしすぎない。** 1 回の呼び出しで使える数に上限がある（無料のプランで 50）。卓の数だけ文を作らず、JSON（`json_each`）で 1 文にまとめる
 - **表を変えるときは、マイグレーションを足す。** `migrations/` に番号の続くファイルを足し、すでにあるファイルは書き換えない
 - **画面にアイコンを足したら**（`<Icon name>`）、`src/client/ui/icons.ts` の `ICON_NAMES` に、名前をアルファベット順で足す（無い名前は型の確認で止まる。`index.html` の読み込みには、組み立てのときに入る。使っていない名前が残っていたらテストが止まる）
-- **見た目は Tailwind CSS のクラスで書く。** 色・寸法・文字の大きさは `src/client/styles/theme.css` のトークンを使い、色を直に書かない（`bg-card`・`text-muted`・`p-10` など。寸法は px で数える: `p-10` は 10px）。いくつもの画面でくり返す形は、`ui/` や `features/…/styles.ts` に Tailwind のクラスの組み合わせとして置く。クラスの名前を文字列のつなぎで組み立てない（Tailwind が見つけられず、CSS が出ない）
+- **見た目は Tailwind CSS のクラスで書く。** 色・寸法・文字の大きさは `src/client/styles/theme.css` のトークンを使い、色を直に書かない（`bg-card`・`text-muted`・`p-10` など。寸法は px で数える: `p-10` は 10px）。いくつもの画面でくり返す形は、`ui/` や `features/…/styles.ts` に Tailwind のクラスの組み合わせとして置く。クラスの名前を文字列のつなぎで組み立てない（Tailwind が見つけられず、CSS が出ない）。配色を変えるときは、Tailwind を通らないところ（Worker の知らせと規約のページ・サイト・SNS 用の画像・manifest と theme-color）も一緒に直す（[docs/architecture.md](docs/architecture.md) の「見た目」）
 - **e2e とスクリーンショットの道具が使う形を保つ。** 要素の ID・`data-*`・`window.yoki`（`D`・`selectDay`・`showTab`）を変えるときは、`test/e2e/smoke.js` と `website/tools/screenshots.js` も直す
 - メンバーは中では ID で持ち、画面とのやり取りでは名前を使う（`src/worker/domain/people.ts`）
 
