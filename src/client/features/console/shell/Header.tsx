@@ -32,7 +32,7 @@ function LoadedAt({ d, v }: { d: ConsoleData | undefined; v: SyncView }) {
   const dot = v.failed ? 'before:bg-live-err' : v.autoMin ? 'before:bg-live before:shadow-[0_0_0_3px_color-mix(in_srgb,var(--live)_22%,transparent)]' : 'before:bg-live-off';
   return (
     <span className={loadedAt + dot} id="loadedAt" title={title}>
-      <span>{hhmm(d.loadedAt)}</span><span className={btxt}> 時点</span>
+      <span>{hhmm(d.loadedAt)}</span><span className={btxtRow}> 時点</span>
     </span>
   );
 }
@@ -45,6 +45,10 @@ const tabBtn = 'relative inline-flex flex-[0_0_auto] cursor-pointer items-center
   + 'max-sm:before:transition-[background-color] max-sm:before:duration-(--dur-fast) max-sm:before:ease-out ';
 /** 押してある（出している）ときのアイコン（塗りつぶす） */
 const filled = '[font-variation-settings:"FILL"_1]';
+/** 帯が 1 段になるうち、狭い幅（901〜1060px）では、右の操作の字を隠してアイコンだけにする（タブとグループの名前の場所を残す） */
+const btxtRow = btxt + ' lg:max-xl:hidden!';
+/** その幅で、字を隠したボタンを丸くする */
+const iconRow = ' lg:max-xl:w-(--h-control) lg:max-xl:p-0';
 
 /** ログアウト。この端末の控えを消し、サーバーのログインを消して、入口へ戻る（素の POST） */
 export function useLogout(): () => void {
@@ -58,7 +62,7 @@ export function useLogout(): () => void {
 }
 
 /** グループの名前のボタン（押すとグループのメニュー）。名前が長ければ切る */
-const brandBtn = 'min-w-0 max-w-full cursor-pointer rounded-full border-0 bg-transparent py-2 pr-8 pl-2 -ml-2 text-left font-inherit '
+const brandBtn = 'min-w-0 max-w-full cursor-pointer rounded-full border-0 bg-transparent py-2 pr-8 pl-2 text-left font-inherit '
   + 'transition-[background-color] duration-(--dur-fast) ease-out hover:bg-chrome-hover aria-expanded:bg-chrome-hover';
 
 export function Header({ tab }: { tab: Tab }) {
@@ -110,15 +114,15 @@ export function Header({ tab }: { tab: Tab }) {
         {/* スマホの管理画面は、グループ名と「管理」の札の場所を残すため、読み込んだ時刻の印とヘルプを出さない */}
         <span className="mr-4 inline-flex items-center gap-2 max-sm:mr-0">
           <span className={admin ? 'contents max-sm:hidden' : 'contents'}><LoadedAt d={d} v={v} /></span>
-          <button type="button" id="reload" className={hbtn() + ' max-sm:w-(--h-control) max-sm:p-0'} disabled={v.busy} aria-busy={v.busy ? 'true' : 'false'} aria-label="更新" title="最新の状態を読み込む" onClick={() => { void sync.refresh('manual'); }}>
-            <Icon name="refresh" size="sm" className={hbtnIcon + (v.busy ? ' animate-spin' : '')} /><span className={btxt}>更新</span>
+          <button type="button" id="reload" className={hbtn() + ' max-sm:w-(--h-control) max-sm:p-0' + iconRow} disabled={v.busy} aria-busy={v.busy ? 'true' : 'false'} aria-label="更新" title="最新の状態を読み込む" onClick={() => { void sync.refresh('manual'); }}>
+            <Icon name="refresh" size="sm" className={hbtnIcon + (v.busy ? ' animate-spin' : '')} /><span className={btxtRow}>更新</span>
           </button>
         </span>
         {/* 手引き: はじめの 3 ステップ・使い方。済んでいない準備があるあいだは、印を付ける */}
-        <Menu id="helpMenu" buttonId="helpBtn" className={'relative inline-flex' + (admin ? ' max-sm:hidden' : '')} buttonClass={hbtn() + ' relative max-sm:w-(--h-control) max-sm:p-0'}
+        <Menu id="helpMenu" buttonId="helpBtn" className={'relative inline-flex' + (admin ? ' max-sm:hidden' : '')} buttonClass={hbtn() + ' relative max-sm:w-(--h-control) max-sm:p-0' + iconRow}
           label={nudge ? 'ヘルプ（はじめの 3 ステップが残っています）' : 'ヘルプ'} title={nudge ? 'はじめの 3 ステップ・使い方（済んでいない準備があります）' : 'はじめの 3 ステップ・使い方'}
           button={<>
-            <Icon name="help" size="sm" className={hbtnIcon} /><span className={btxt}>ヘルプ</span>
+            <Icon name="help" size="sm" className={hbtnIcon} /><span className={btxtRow}>ヘルプ</span>
             <span className={'absolute top-4 right-4 h-8 w-8 rounded-full bg-chrome-accent ' + (nudge ? 'block' : 'hidden')} id="helpNudge" />
           </>}>
           <button type="button" role="menuitem" id="guideBtn" className={menuItem} hidden={!guideOk} aria-controls="setupGuide" onClick={toggleGuide}>
@@ -134,7 +138,7 @@ export function Header({ tab }: { tab: Tab }) {
           label={d ? 'あなた（' + d.me.name + '）のメニュー' : 'あなたのメニュー'} title="設定・見た目・ログアウト"
           button={<>
             <Icon name="person" size="sm" className={hbtnIcon + ' sm:hidden'} />
-            <span className="text-12 font-normal opacity-80 max-sm:hidden">あなた</span>
+            <span className="text-12 font-normal opacity-80 max-sm:hidden lg:max-xl:hidden">あなた</span>
             <b className="max-w-[12em] truncate text-14 font-semibold max-sm:max-w-[6em]" id="me" hidden={!d}>{d ? d.me.name : ''}</b>
             <Icon name="expand_more" size="sm" className={hbtnIcon + ' opacity-80 max-sm:hidden'} />
           </>}>
@@ -151,7 +155,7 @@ export function Header({ tab }: { tab: Tab }) {
         </Menu>
       </div>
       {/* tabs は e2e が探す印。管理画面と、グループが消された・ログインし直せなかったときは出さない */}
-      <nav className={'tabs -mx-6 min-w-0 items-center gap-2 overflow-x-auto px-6 [grid-area:tabs] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden '
+      <nav className={'tabs -mx-6 min-w-0 items-center gap-2 overflow-x-auto px-6 [grid-area:tabs] max-lg:mt-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden '
         + (admin || dead ? 'hidden! ' : 'flex ')
         + 'max-sm:fixed max-sm:inset-x-0 max-sm:bottom-0 max-sm:z-(--z-appbar) max-sm:m-0 max-sm:grid max-sm:grid-cols-3 max-sm:gap-0 max-sm:overflow-visible max-sm:border-t max-sm:border-chrome-line max-sm:bg-chrome '
         + 'max-sm:pt-6 max-sm:pr-[max(4px,env(safe-area-inset-right))] max-sm:pb-[max(8px,env(safe-area-inset-bottom))] max-sm:pl-[max(4px,env(safe-area-inset-left))]'} aria-label="画面">

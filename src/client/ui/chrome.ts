@@ -1,8 +1,10 @@
-// 上の帯（グループの画面と運営の管理画面）の見た目（Tailwind のクラス）。PC は 2 段（名前と操作／タブ）、スマホは 1 段でタブは下に固定
+// 上の帯（グループの画面と運営の管理画面）の見た目（Tailwind のクラス）。
+// 広い画面は 1 段（名前・タブ・操作）、タブレットは 2 段（名前と操作／タブ）、スマホは 1 段でタブは下に固定
 
-/** 帯そのもの。中の :focus-visible の枠は水色 */
-export const appbar = 'sticky top-0 z-(--z-appbar) grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-16 gap-y-6 border-b border-chrome-line bg-chrome pt-10 pb-8 '
-  + 'pr-[max(20px,env(safe-area-inset-right))] pl-[max(20px,env(safe-area-inset-left))] text-chrome-text [grid-template-areas:"brand_actions"_"tabs_tabs"] [&_:focus-visible]:outline-chrome-accent '
+/** 帯そのもの。中の :focus-visible の枠は水色。2 段のときの段のあいだはタブの側が空ける（タブの無い画面に空きを残さない） */
+export const appbar = 'sticky top-0 z-(--z-appbar) grid grid-cols-[minmax(0,max-content)_max-content_minmax(0,1fr)_auto] items-center gap-x-16 gap-y-0 border-b border-chrome-line bg-chrome pt-10 pb-8 '
+  + 'pr-[max(20px,env(safe-area-inset-right))] pl-[max(20px,env(safe-area-inset-left))] text-chrome-text [grid-template-areas:"brand_tabs_._actions"] [&_:focus-visible]:outline-chrome-accent '
+  + 'max-lg:grid-cols-[minmax(0,1fr)_auto] max-lg:[grid-template-areas:"brand_actions"_"tabs_tabs"] '
   + 'max-sm:min-h-56 max-sm:gap-8 max-sm:py-8 max-sm:pr-[max(12px,env(safe-area-inset-right))] max-sm:pl-[max(12px,env(safe-area-inset-left))] max-sm:[grid-template-areas:"brand_actions"]';
 /** 左の名前（ロゴと題） */
 export const brand = 'flex min-w-0 items-center gap-10 text-15 font-bold text-inherit no-underline [grid-area:brand]';
