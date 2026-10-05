@@ -162,7 +162,7 @@ export function RecruitTab() {
     <section id="tab-recruit">
       <PageHead title="募集・調整" lead="参加者を集めている卓と、開催日を選んでいる卓です。" />
       <div className={bar}>
-        <h2 className={barTitle}><Icon name="campaign" size="sm" />募集中<span className={count}>{list.length}</span></h2>
+        <h2 className={barTitle}><Icon name="campaign" size="sm" />募集中{list.length > 0 && <span className={count}>{list.length}</span>}</h2>
         <Tip className="ml-2" text="参加者を集めている卓です。カードの「参加希望」か「興味あり」を押します。押しても Discord には流れません。" label="募集中とは" />
         <button type="button" className="btn small primary" id="barRecruit" onClick={() => openForm(ui, { status: '募集' })}><Icon name="add" size="sm" />募集を始める</button>
       </div>
@@ -216,7 +216,7 @@ export function RecruitTab() {
         })}
       </div>
       <div className={bar}>
-        <h2 className={barTitle}><Icon name="edit_calendar" size="sm" />日程調整中<span className={count}>{adjList.length}</span></h2>
+        <h2 className={barTitle}><Icon name="edit_calendar" size="sm" />日程調整中{adjList.length > 0 && <span className={count}>{adjList.length}</span>}</h2>
         <Tip className="ml-2" text="開催日を選んでいる卓です。GM が候補日を出すと知らせが届き、候補日ごとに ◯ か × を押します。全員が答えると GM に知らせが届き、GM が選んだ日に決まって、状態は「開催」になります。" label="日程調整中とは" />
         <button type="button" className="btn small" id="barAdjust" onClick={() => openForm(ui, { status: '調整中' })}><Icon name="add" size="sm" />日程調整を始める</button>
       </div>

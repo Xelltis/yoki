@@ -102,7 +102,7 @@ export function OpsPane() {
           </table>
         </div>
         {/* 選んだ卓にすること。欄は中身の幅にして 1 行に並べる */}
-        <div className="mt-12 flex flex-wrap items-center gap-8 border-t border-line pt-12" id="bulkBar">
+        <div className="mt-12 flex flex-wrap items-center gap-8 border-t border-line pt-12" id="bulkBar" hidden={!rows.length}>
           <span className="text-13 font-semibold text-muted">選んだ卓を</span>
           <select className={bulkField} id="bulkAction" value={action} onChange={(ev) => setAction(ev.target.value as Action)}>
             {ACTIONS.map((x) => <option value={x[0]} key={x[0]}>{x[1]}</option>)}
