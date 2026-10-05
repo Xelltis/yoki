@@ -140,11 +140,12 @@ export function Header({ tab }: { tab: Tab }) {
         <button type="button" id="guideBtn" className={tabHelp + 'relative flex-[0_0_auto] cursor-pointer bg-transparent font-inherit aria-expanded:border-chrome-active aria-expanded:bg-chrome-active aria-expanded:text-chrome-active-ink max-xl:px-11'} aria-label="はじめの 3 ステップ" {...guideProps}>
           <Icon name="flag" className={shown ? 'text-chrome-active-ink ' + filled : 'text-chrome-accent'} /><span className={allDone ? 'hidden' : 'max-xl:hidden'}>はじめの 3 ステップ</span>
         </button>
-        <Link id="adminLink" className={tabHelp} to="/g/$groupId/admin/" params={{ groupId }} hidden={!d || !d.isAdmin} title="グループの管理画面を開く（管理者だけ）">
-          <Icon name="shield" className="text-chrome-accent" /><span>管理</span>
+        {/* タブの並びに入りきらない幅（タブレット）では、管理と使い方はアイコンだけにする */}
+        <Link id="adminLink" className={tabHelp + 'max-tab:px-11'} to="/g/$groupId/admin/" params={{ groupId }} hidden={!d || !d.isAdmin} title="グループの管理画面を開く（管理者だけ）" aria-label="管理">
+          <Icon name="shield" className="text-chrome-accent" /><span className="max-tab:hidden">管理</span>
         </Link>
-        <a id="helpLink" className={tabHelp} href={HELP_URL} target="_blank" rel="noopener" title="使い方のページを新しいタブで開く">
-          <Icon name="help" className="text-chrome-accent" /><span>使い方</span><Icon name="open_in_new" size="xs" className="text-chrome-muted" />
+        <a id="helpLink" className={tabHelp + 'max-tab:px-11'} href={HELP_URL} target="_blank" rel="noopener" title="使い方のページを新しいタブで開く" aria-label="使い方（新しいタブで開く）">
+          <Icon name="help" className="text-chrome-accent" /><span className="max-tab:hidden">使い方</span><Icon name="open_in_new" size="xs" className="text-chrome-muted max-tab:hidden" />
         </a>
       </nav>
     </header>
