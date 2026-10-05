@@ -26,7 +26,11 @@ const barTitle = 'm-0 inline-flex items-center gap-6';
 const cards = 'grid grid-cols-[repeat(auto-fill,minmax(min(100%,380px),1fr))] gap-14';
 /** 卓のカード */
 const rc = 'rounded-lg border border-line bg-card px-18 py-16 tabular-nums shadow-card';
-const rcTitle = 'mt-0 mb-2 text-16';
+/** 題の行（名前と、右に「編集」） */
+const rcHead = 'flex items-start gap-8';
+const rcTitle = 'mt-0 mb-2 min-w-0 flex-1 text-16';
+/** 区切りの見出しの横の数 */
+const count = 'inline-grid h-22 min-w-22 place-items-center rounded-full border border-line bg-card px-6 text-12 font-bold text-muted tabular-nums';
 const rcWhen = 'font-semibold text-accent-text';
 const rcRow = 'mt-6';
 /** 次にすること（水色の帯） */
@@ -158,7 +162,7 @@ export function RecruitTab() {
     <section id="tab-recruit">
       <PageHead title="募集・調整" lead="参加者を集めている卓と、開催日を選んでいる卓です。" />
       <div className={bar}>
-        <h2 className={barTitle}><Icon name="campaign" size="sm" />募集中</h2>
+        <h2 className={barTitle}><Icon name="campaign" size="sm" />募集中<span className={count}>{list.length}</span></h2>
         <Tip className="ml-2" text="参加者を集めている卓です。カードの「参加希望」か「興味あり」を押します。押しても Discord には流れません。" label="募集中とは" />
         <button type="button" className="btn small primary" id="barRecruit" onClick={() => openForm(ui, { status: '募集' })}><Icon name="add" size="sm" />募集を始める</button>
       </div>
@@ -176,7 +180,10 @@ export function RecruitTab() {
           const askTitle = !canAsk ? 'チャンネル未設定' : !s.interest.length ? '興味ありの人がいません' : '興味ありの人にメンションして、参加できるか Discord で聞く';
           return (
             <div className={rc} data-id={s.id} key={s.id}>
-              <h3 className={rcTitle}>{s.name}</h3>
+              <div className={rcHead}>
+                <h3 className={rcTitle}>{s.name}</h3>
+                <button type="button" className="btn small" data-edit={s.id} onClick={() => openForm(ui, { id: s.id })}><Icon name="edit" size="sm" />編集</button>
+              </div>
               <div className={rcWhen}>{periodOfSession(s)}</div>
               {s.series && <div className="hint">{'シリーズ: ' + s.series}</div>}
               <People d={d} s={s} none="GM・参加者 未定" />
@@ -195,7 +202,6 @@ export function RecruitTab() {
                     {level !== 'none' && <button type="button" className="btn small" data-level="none" data-id={s.id} onClick={() => setLevel(s, 'none')}>取り消す</button>}
                   </>
                 )}
-                <button type="button" className="btn small ml-auto" data-edit={s.id} onClick={() => openForm(ui, { id: s.id })}>編集</button>
                 <span className={res} data-rres={s.id}>{saving[s.id] ? '保存しています…' : ''}</span>
               </div>
               {/* GM 向け: 興味ありの人に Discord で聞く。返事は各自が募集タブの「参加希望」で */}
@@ -210,7 +216,7 @@ export function RecruitTab() {
         })}
       </div>
       <div className={bar}>
-        <h2 className={barTitle}><Icon name="edit_calendar" size="sm" />日程調整中</h2>
+        <h2 className={barTitle}><Icon name="edit_calendar" size="sm" />日程調整中<span className={count}>{adjList.length}</span></h2>
         <Tip className="ml-2" text="開催日を選んでいる卓です。GM が候補日を出すと知らせが届き、候補日ごとに ◯ か × を押します。全員が答えると GM に知らせが届き、GM が選んだ日に決まって、状態は「開催」になります。" label="日程調整中とは" />
         <button type="button" className="btn small" id="barAdjust" onClick={() => openForm(ui, { status: '調整中' })}><Icon name="add" size="sm" />日程調整を始める</button>
       </div>
@@ -231,7 +237,10 @@ export function RecruitTab() {
           const cant = peopleOf(s).filter((n) => voters.indexOf(n) < 0);
           return (
             <div className={rc} data-id={s.id} key={s.id}>
-              <h3 className={rcTitle}>{s.name}</h3>
+              <div className={rcHead}>
+                <h3 className={rcTitle}>{s.name}</h3>
+                <button type="button" className="btn small" data-edit={s.id} onClick={() => openForm(ui, { id: s.id })}><Icon name="edit" size="sm" />編集</button>
+              </div>
               <div className={rcWhen}>{s.windowLabel ? s.windowLabel + ' のどこか' : '候補の期間は未定'}</div>
               {s.series && <div className="hint">{'シリーズ: ' + s.series}</div>}
               <People d={d} s={s} none="GM・参加者 未定" />
@@ -239,16 +248,16 @@ export function RecruitTab() {
               {s.memo && <div className={rcRow + ' hint'}>{s.memo}</div>}
               {poll && (
                 <div className="mt-12 rounded-md bg-head px-12 py-10 tabular-nums">
-                  <div className="mb-4 flex flex-wrap items-center gap-6 font-semibold">
-                    <Icon name="how_to_vote" size="sm" />日程調整中
+                  <div className="flex flex-wrap items-center gap-6 font-semibold">
+                    <Icon name="how_to_vote" size="sm" />候補日
                     {(s.start || s.end) && <span className="font-normal">{timeRange(s)}</span>}
-                    <span className="hint font-normal">全員が答えたら、GM が開催日を選びます</span>
                     {isVoter && futureDays.length > 0 && (
                       <button type="button" className={'btn small ml-auto' + (allOk ? ' border-ok bg-ok text-ok-text' : '')} data-any={s.id} aria-pressed={allOk} title={allOk ? 'いまは「どの日でもいい」です。押すと回答を取り消します' : 'これからの候補日すべてに ◯ を付けます'} onClick={() => castAny(s, allOk)}>
                         <Icon name="check" size="sm" />どの日でもいい
                       </button>
                     )}
                   </div>
+                  <p className="hint mt-2 mb-4">全員が答えたら、GM が開催日を選びます</p>
                   {s.candidates.map((k) => {
                     const v = (s.votes || {})[k] || {}, past = k < d.today, dow = parseYmd(k).getDay(), hol = holidayName(k);
                     const ok = voters.filter((n) => v[n] === '◯'), ng = voters.filter((n) => v[n] === '×'), no = voters.filter((n) => !v[n]);
@@ -262,11 +271,10 @@ export function RecruitTab() {
                             <button type="button" className={vote + (my === '×' ? ' border-err-text bg-warn text-err-text' : '')} data-vote="×" data-id={s.id} data-day={k} aria-pressed={my === '×'} aria-label={fmtJa(k) + ' は ×'} onClick={() => castVote(s, k, '×')}>×</button>
                           </div>
                         )}
-                        <div className="hint col-[1/-1]">{[ok.length ? '◯ ' + ok.join('、') : '', ng.length ? '× ' + ng.join('、') : '', no.length ? '未回答 ' + no.join('、') : ''].filter(Boolean).join('　')}</div>
+                        <div className="hint m-0 self-center">{[ok.length ? '◯ ' + ok.join('、') : '', ng.length ? '× ' + ng.join('、') : '', no.length ? '未回答 ' + no.join('、') : ''].filter(Boolean).join('　')}</div>
+                        {/* 開催日を決めるボタンは、回答の横に（全員が ◯ なら青く） */}
                         {canDecide && !past && (
-                          <div className="col-[1/-1]">
-                            <button type="button" className={'btn small' + (ok.length === voters.length ? ' primary' : '')} data-decide={s.id} data-day={k} disabled={!!off['decide:' + s.id + ':' + k]} onClick={() => decide(s, k)}><Icon name="event_available" size="sm" />この日に決める</button>
-                          </div>
+                          <button type="button" className={'btn small justify-self-end' + (ok.length === voters.length ? ' primary' : '')} data-decide={s.id} data-day={k} disabled={!!off['decide:' + s.id + ':' + k]} onClick={() => decide(s, k)}><Icon name="event_available" size="sm" />この日に決める</button>
                         )}
                       </div>
                     );
@@ -281,11 +289,15 @@ export function RecruitTab() {
                 {poll ? (
                   <>
                     <button type="button" className="btn small" data-poll={s.id} onClick={() => openPoll(ui, s.id)}><Icon name="edit_calendar" size="sm" />候補日を選び直す</button>
-                    <button type="button" className="btn small danger ml-0" data-poll-cancel={s.id} disabled={!!off['cancel:' + s.id]} onClick={() => cancelPoll(s)}>調整をやめる</button>
+                    <button type="button" className="btn small" data-win={s.id} title="カレンダーの「都合を見る卓」をこの卓にして、候補の日に枠を付ける" onClick={() => showOnCalendar(s)}><Icon name="date_range" size="sm" />カレンダーで見る</button>
+                    <button type="button" className="btn small danger" data-poll-cancel={s.id} disabled={!!off['cancel:' + s.id]} onClick={() => cancelPoll(s)}>調整をやめる</button>
                   </>
-                ) : <button type="button" className="btn small primary" data-poll={s.id} onClick={() => openPoll(ui, s.id)}><Icon name="how_to_vote" size="sm" />日程を調整する</button>}
-                <button type="button" className="btn small" data-win={s.id} title="カレンダーの「都合を見る卓」をこの卓にして、候補の日に枠を付ける" onClick={() => showOnCalendar(s)}><Icon name="date_range" size="sm" />候補日をカレンダーで見る</button>
-                <button type="button" className="btn small ml-auto" data-edit={s.id} onClick={() => openForm(ui, { id: s.id })}>編集</button>
+                ) : (
+                  <>
+                    <button type="button" className="btn small primary" data-poll={s.id} onClick={() => openPoll(ui, s.id)}><Icon name="how_to_vote" size="sm" />日程を調整する</button>
+                    <button type="button" className="btn small" data-win={s.id} title="カレンダーの「都合を見る卓」をこの卓にして、候補の期間に枠を付ける" onClick={() => showOnCalendar(s)}><Icon name="date_range" size="sm" />カレンダーで見る</button>
+                  </>
+                )}
               </div>
             </div>
           );
