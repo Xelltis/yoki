@@ -107,14 +107,15 @@ export function Header({ tab }: { tab: Tab }) {
         <Link id="toMain" className={hbtn(admin ? 'inline-flex' : 'hidden')} to="/g/$groupId/" params={{ groupId }} title="カレンダーなどの、ふだんの画面へ戻る">
           <Icon name="arrow_back" size="sm" className={hbtnIcon} /><span className={btxt}>予定の画面へ</span>
         </Link>
+        {/* スマホの管理画面は、グループ名と「管理」の札の場所を残すため、読み込んだ時刻の印とヘルプを出さない */}
         <span className="mr-4 inline-flex items-center gap-2 max-sm:mr-0">
-          <LoadedAt d={d} v={v} />
+          <span className={admin ? 'contents max-sm:hidden' : 'contents'}><LoadedAt d={d} v={v} /></span>
           <button type="button" id="reload" className={hbtn() + ' max-sm:w-(--h-control) max-sm:p-0'} disabled={v.busy} aria-busy={v.busy ? 'true' : 'false'} aria-label="更新" title="最新の状態を読み込む" onClick={() => { void sync.refresh('manual'); }}>
             <Icon name="refresh" size="sm" className={hbtnIcon + (v.busy ? ' animate-spin' : '')} /><span className={btxt}>更新</span>
           </button>
         </span>
         {/* 手引き: はじめの 3 ステップ・使い方。済んでいない準備があるあいだは、印を付ける */}
-        <Menu id="helpMenu" buttonId="helpBtn" buttonClass={hbtn() + ' relative max-sm:w-(--h-control) max-sm:p-0'}
+        <Menu id="helpMenu" buttonId="helpBtn" className={'relative inline-flex' + (admin ? ' max-sm:hidden' : '')} buttonClass={hbtn() + ' relative max-sm:w-(--h-control) max-sm:p-0'}
           label={nudge ? 'ヘルプ（はじめの 3 ステップが残っています）' : 'ヘルプ'} title={nudge ? 'はじめの 3 ステップ・使い方（済んでいない準備があります）' : 'はじめの 3 ステップ・使い方'}
           button={<>
             <Icon name="help" size="sm" className={hbtnIcon} /><span className={btxt}>ヘルプ</span>
