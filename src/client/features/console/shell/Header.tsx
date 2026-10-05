@@ -1,10 +1,13 @@
-// 上の帯とタブ。左はグループの名前（グループの一覧へ戻る）、真ん中はふだんの 3 画面のタブ。
+// 上の帯とタブ。左はグループの名前（押すと、入れるグループに切り替えられる）、真ん中はふだんの 3 画面のタブ。
 // 右は、更新・ヘルプ（はじめの 3 ステップ・使い方）・管理（管理者だけ）・あなた（設定・見た目・ログアウト）
+import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import type { ConsoleData } from '../../../../shared/api';
 import { HELP_URL } from '../../../app/links';
+import { fetchMe, ME_KEY } from '../../../app/me';
 import { currentTheme, setTheme, themeStore } from '../../../app/theme';
-import { actions, appbar, areaBadge, brand, btxt, hbtn, hbtnIcon, logo, menuItem, menuSep } from '../../../ui/chrome';
+import { actions, appbar, areaBadge, brand, btxt, hbtn, hbtnIcon, logo, menuHead, menuItem, menuItemTall, menuSep } from '../../../ui/chrome';
+import { GroupTile } from '../../../ui/GroupTile';
 import { askConfirm } from '../../../ui/confirm';
 import { Icon } from '../../../ui/Icon';
 import type { IconName } from '../../../ui/icons';
@@ -61,6 +64,10 @@ export function useLogout(): () => void {
   });
 }
 
+/** グループの名前のボタン（押すとグループの切り替え）。名前が長ければ切る */
+const brandBtn = 'min-w-0 max-w-full cursor-pointer rounded-full border-0 bg-transparent py-2 pr-8 pl-2 text-left font-inherit '
+  + 'transition-[background-color] duration-(--dur-fast) ease-out hover:bg-chrome-hover aria-expanded:bg-chrome-hover';
+
 export function Header({ tab }: { tab: Tab }) {
   const { sync, ui, groupId, area } = useConsole();
   const admin = area === 'admin';
@@ -80,6 +87,9 @@ export function Header({ tab }: { tab: Tab }) {
   const allDone = !!d && d.members.length > 0 && d.sessions.some(isActive) && !!d.channelSet;
   const nudge = guideOk && !allDone;
   const recruitCount = d ? d.sessions.filter((s) => isRecruit(s) || isAdjusting(s)).length : 0;
+  /** 入れるグループ（入口と同じ控え）。メニューを開くたびに読み直す（ほかのタブで作ったグループも出す）。消えたグループは、切り替え先に出さない */
+  const me = useQuery({ queryKey: ME_KEY, queryFn: fetchMe, staleTime: 60_000 });
+  const groups = me.data && me.data.loggedIn ? me.data.groups : [];
   /* はじめの 3 ステップ。カレンダーで出ていれば閉じ、それ以外は出す（押すたびに切り替わる）。出したら、ページの頭まで戻す */
   const toggleGuide = () => {
     if (tab === 'cal' && shown) { ui.set((s) => ({ ...s, guide: 'closed' })); return; }
@@ -89,11 +99,31 @@ export function Header({ tab }: { tab: Tab }) {
   };
   return (
     <header className={appbar}>
-      <Link className={brand} to="/" title="グループの一覧へ">
-        <img className={logo} src="/icon-192.png" alt="" width={32} height={32} />
-        <span className="min-w-0 truncate max-sm:text-14" id="title">{d ? d.title : ''}</span>
-        <span className={areaBadge + (admin ? ' inline-block' : ' hidden')}>管理</span>
-      </Link>
+      {/* グループの名前。押すと、入れるグループが Discord のサーバーの一覧のように頭文字の札つきで並び、切り替えられる */}
+      <Menu id="groupMenu" buttonId="groupMenuBtn" className="relative flex min-w-0 [grid-area:brand]" buttonClass={brand + ' ' + brandBtn} align="start"
+        label={(d ? d.title : 'グループ') + '（グループを切り替える）'} title="グループを切り替える" onOpen={() => { void me.refetch(); }}
+        button={<>
+          <img className={logo} src="/icon-192.png" alt="" width={32} height={32} />
+          <span className="min-w-0 truncate max-sm:text-14" id="title">{d ? d.title : ''}</span>
+          <span className={areaBadge + (admin ? ' inline-block' : ' hidden')}>管理</span>
+          <Icon name="expand_more" size="sm" className="shrink-0 text-chrome-muted" />
+        </>}>
+        <p className={menuHead}>グループ</p>
+        {groups.map((g, i) => (dead && g.id === groupId) ? null : (
+          <Link key={g.id} role="menuitem" className={menuItemTall} data-group={g.id} to="/g/$groupId/" params={{ groupId: g.id }} aria-current={g.id === groupId ? 'page' : undefined}>
+            <GroupTile title={g.title} index={i} size="sm" />
+            <span className="min-w-0 flex-1">
+              <b className="block truncate">{g.title}</b>
+              <small className="block truncate text-12 font-normal text-muted">{g.guildName}</small>
+            </span>
+            {g.id === groupId && <Icon name="check" size="sm" className="text-accent-text" />}
+          </Link>
+        ))}
+        {me.isPending && <p className={menuHead}>読み込んでいます…</p>}
+        {me.isError && <p className={menuHead}>グループの一覧を読み込めませんでした。</p>}
+        <div className={menuSep} aria-hidden="true" />
+        <Link role="menuitem" id="toGroups" className={menuItem} to="/"><Icon name="group" size="sm" />グループの一覧・新しく作る</Link>
+      </Menu>
       <div className={actions}>
         <Link id="toMain" className={hbtn(admin ? 'inline-flex' : 'hidden')} to="/g/$groupId/" params={{ groupId }} title="カレンダーなどの、ふだんの画面へ戻る">
           <Icon name="arrow_back" size="sm" className={hbtnIcon} /><span className={btxt}>予定の画面へ</span>

@@ -280,6 +280,16 @@ await withDevServer(async (base) => {
         const r = await fetch('/api/groups', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ guildId: 'dev-guild', title: 'e2e の消すグループ' }) });
         return r.json();
       });
+      // 上の帯のグループの切り替えで、作ったグループへ移ると、読み込むデータも移ったグループのものになる
+      await page.click('#groupMenuBtn');
+      await page.click(`#groupMenu [data-group="${made.id}"]`);
+      await page.waitForURL(`**/g/${made.id}/`);
+      await until((d, t) => d && d.title === t, 'e2e の消すグループ');
+      await page.click('#groupMenuBtn');
+      assert.equal(await page.getAttribute(`#groupMenu [data-group="${made.id}"]`, 'aria-current'), 'page', '今のグループに印が付く');
+      await page.click('#groupMenu [data-group="sample"]');
+      await page.waitForURL('**/g/sample/');
+      await until((d, t) => d && d.title === t, 'e2e のグループ');
       const other = await context.newPage();
       await other.goto(base + made.url.slice(1));
       await other.waitForFunction(() => window.yoki && window.yoki.D, null, { timeout: 30000 });

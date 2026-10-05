@@ -9,7 +9,7 @@ function items(panel: HTMLElement): HTMLElement[] {
   return Array.from(panel.querySelectorAll<HTMLElement>('[role="menuitem"]')).filter((el) => !el.closest('[hidden]'));
 }
 
-export function Menu({ id, buttonId, buttonClass, label, title, align = 'end', active, className = 'relative inline-flex', children, button }: {
+export function Menu({ id, buttonId, buttonClass, label, title, align = 'end', active, className = 'relative inline-flex', onOpen, children, button }: {
   /** 一覧の ID */
   id: string;
   /** 開くボタンの ID */
@@ -24,6 +24,8 @@ export function Menu({ id, buttonId, buttonClass, label, title, align = 'end', a
   active?: boolean;
   /** ボタンと一覧を包む要素のクラス（一覧の位置の基準になるので relative を含める） */
   className?: string;
+  /** 開いたとき（中身を読み直すなど） */
+  onOpen?: () => void;
   /** 一覧の項目。押せるものには role="menuitem" を付ける */
   children: ReactNode;
   /** ボタンの中身 */
@@ -61,8 +63,8 @@ export function Menu({ id, buttonId, buttonClass, label, title, align = 'end', a
     <span className={className} ref={wrap}>
       <button type="button" id={buttonId} ref={btn} className={buttonClass} aria-haspopup="menu" aria-expanded={open} aria-controls={id} aria-label={label} title={title}
         data-active={active ? '' : undefined}
-        onClick={() => setOpen((o) => !o)}
-        onKeyDown={(ev) => { if (ev.key === 'ArrowDown' && !open) { ev.preventDefault(); setOpen(true); } }}>
+        onClick={() => { if (!open) onOpen?.(); setOpen(!open); }}
+        onKeyDown={(ev) => { if (ev.key === 'ArrowDown' && !open) { ev.preventDefault(); onOpen?.(); setOpen(true); } }}>
         {button}
       </button>
       {/* 項目を押したら閉じる（項目の動きはそれぞれの onClick・リンクが受け持つ） */}
