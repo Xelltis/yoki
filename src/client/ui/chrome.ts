@@ -28,9 +28,13 @@ export const btxt = 'max-sm:hidden!';
  * 帯のメニューの一覧（Menu）。青い帯の上に、カードの色で出す。左右の寄せは Menu が足す。
  * 中のフォーカスの枠は青（帯の黄色い枠は、白い地の上では見えにくいので、帯の決まりより強くする）
  */
-export const menuPanel = 'absolute top-[calc(100%+6px)] z-(--z-pop) flex min-w-220 animate-fade-in flex-col gap-2 rounded-md border border-line bg-card p-6 text-fg shadow-pop [&_:focus-visible]:outline-accent!';
+export const menuPanel = 'absolute top-[calc(100%+6px)] z-(--z-pop) flex max-h-[calc(100dvh-var(--appbar-h)-16px)] min-w-220 animate-fade-in flex-col gap-2 overflow-y-auto rounded-md border border-line bg-card p-6 text-fg shadow-pop [&_:focus-visible]:outline-accent!';
 /** メニューの項目 */
 export const menuItem = 'flex h-40 w-full cursor-pointer items-center gap-10 whitespace-nowrap rounded-sm border-0 bg-transparent px-10 text-left font-inherit text-14 font-semibold text-fg no-underline hover:bg-hover focus-visible:bg-hover';
+/** メニューの 2 行の項目（名前と小さな説明。グループの切り替え） */
+export const menuItemTall = 'flex min-h-48 w-full cursor-pointer items-center gap-10 rounded-sm border-0 bg-transparent px-10 py-6 text-left font-inherit text-14 font-semibold text-fg no-underline hover:bg-hover focus-visible:bg-hover aria-[current=page]:bg-accent-soft';
+/** メニューの中の小見出し */
+export const menuHead = 'm-0 px-10 pt-6 pb-2 text-12 font-semibold text-muted';
 /** メニューの区切り線 */
 export const menuSep = 'my-4 border-t border-line';
 /** 本文。開いたときに、中の区分をそっと出す。スマホでは下のタブの分を空ける（カレンダーは「卓を登録」の丸いボタンの分も） */

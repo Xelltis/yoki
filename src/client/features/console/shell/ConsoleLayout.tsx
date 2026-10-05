@@ -26,7 +26,13 @@ import { type MainTab, TAB_TO, tabOf } from './nav';
 /** 確かめとスクリーンショットのスクリプトが使う（React の中の値は、外から見えないため） */
 type YokiHook = { readonly D: ConsoleData | undefined; selectDay: (k: string) => void; showTab: (t: string) => void };
 
+/** グループの画面の外枠。上の帯でグループを切り替えたら、読み込み（ConsoleSync）と画面の状態ごと作り直す */
 export function ConsoleLayout() {
+  const { groupId } = useParams({ from: '/g/$groupId' });
+  return <ConsoleShell key={groupId} />;
+}
+
+function ConsoleShell() {
   const { groupId } = useParams({ from: '/g/$groupId' });
   const qc = useQueryClient();
   const navigate = useNavigate();
