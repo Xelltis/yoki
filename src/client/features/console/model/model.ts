@@ -57,6 +57,15 @@ export function pollPending(d: ConsoleData, s: ConsoleSession): string[] {
   const vs = s.votes || {}, fut = (s.candidates || []).filter((k) => k >= d.today);
   return pollVoters(d, s).filter((n) => fut.some((k) => !(vs[k] && vs[k][n])));
 }
+/** あなたの番の日程調整か（まだ答えていない候補日がある・全員が答えて、GM のあなたが開催日を選ぶ） */
+export function isMyTurn(d: ConsoleData, s: ConsoleSession): boolean {
+  const who = me(d);
+  if (!who || !hasPoll(s)) return false;
+  const pend = pollPending(d, s);
+  return pend.indexOf(who) >= 0 || (!pend.length && s.gm === who);
+}
+/** あなたの番の日程調整（「募集・調整」のタブの印の数） */
+export function myTurns(d: ConsoleData): ConsoleSession[] { return active(d).filter((s) => isMyTurn(d, s)); }
 /** 調整中の卓を日ごとに。日程調整中なら候補日、そうでなければ候補の期間。カレンダーと都合表の印に使う */
 export function windowByDay(d: ConsoleData): Record<string, ConsoleSession[]> {
   const out: Record<string, ConsoleSession[]> = {};

@@ -151,12 +151,21 @@ await withDevServer(async (base) => {
       await until((x) => (x.sessions.find((s) => s.name === 'e2e の日程調整')?.candidates || []).length === 2);
     });
 
-    await step('日程調整に回答できる', async () => {
+    await step('日程調整に回答できる。カレンダーの「回答待ち」から、その卓のカードへ移る。答え終えると「募集・調整」の印が減る', async () => {
       const maze = (await D()).sessions.find((s) => s.name === '迷宮の底へ');
-      const open = maze.candidates.find((k) => !(maze.votes[k] && maze.votes[k]['ひより']));
-      await tab('recruit');
-      await page.click(`button[data-vote="◯"][data-id="${maze.id}"][data-day="${open}"]`);
-      await until((d, k) => d.sessions.find((s) => s.name === '迷宮の底へ').votes[k]?.['ひより'] === '◯', open);
+      const badge = async () => +((await page.textContent('#recruitCount')).replace(/\D/g, '') || 0);
+      await tab('cal');
+      const before = await badge();
+      assert.ok(before > 0, '答えていない日程調整があれば、印に数が出る');
+      await page.click('#notices button[data-tab="recruit"]:has-text("迷宮の底へ")');
+      await page.waitForSelector(`#tab-recruit [data-card="${maze.id}"].ring-2`, { timeout: 15000 });
+      const today = (await D()).today;
+      const open = maze.candidates.filter((k) => k >= today && !(maze.votes[k] && maze.votes[k]['ひより']));
+      for (const k of open) {
+        await page.click(`button[data-vote="◯"][data-id="${maze.id}"][data-day="${k}"]`);
+        await until((d, a) => d.sessions.find((s) => s.id === a[0]).votes[a[1]]?.['ひより'] === '◯', [maze.id, k]);
+      }
+      await page.waitForFunction((n) => +(document.querySelector('#recruitCount').textContent.replace(/\D/g, '') || 0) === n, before - 1, { timeout: 15000 });
     });
 
     await step('管理者は候補日から開催日を決められる', async () => {

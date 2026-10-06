@@ -41,7 +41,7 @@ function ConsoleShell() {
     goLogin: () => { location.href = '/auth/login?return_to=' + encodeURIComponent(location.pathname); },
   }));
   const [ui] = useState(() => createStore<ConsoleUi>({
-    selDay: '', view: { y: 0, m: 0 }, guide: load(guideClosedKey(groupId)) === '1' ? 'closed' : '', guideFocus: 0, target: load('target') || '全員', form: null, poll: null,
+    selDay: '', view: { y: 0, m: 0 }, guide: load(guideClosedKey(groupId)) === '1' ? 'closed' : '', guideFocus: 0, focus: '', target: load('target') || '全員', form: null, poll: null,
   }));
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const tab = tabOf(pathname), area = tab === 'admin' ? 'admin' : 'main';

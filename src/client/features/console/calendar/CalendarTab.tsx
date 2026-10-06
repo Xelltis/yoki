@@ -7,7 +7,7 @@ import { openForm } from '../actions';
 import { useConsole, useData } from '../context';
 import { fmtJa, parseYmd } from '../model/dates';
 import { active } from '../model/model';
-import { useGoTab } from '../shell/nav';
+import { useGoRecruit } from '../shell/nav';
 import { DayDetail } from './DayDetail';
 import { MonthGrid } from './MonthGrid';
 import { Notices } from './Notices';
@@ -36,7 +36,7 @@ export function CalendarTab() {
   const d = useData();
   const { ui } = useConsole();
   const u = useStore(ui);
-  const goTab = useGoTab();
+  const goRecruit = useGoRecruit();
   const t = parseYmd(d.today);
   const view = u.view.y ? u.view : { y: t.getFullYear(), m: t.getMonth() };
   const targets = ['全員', ...active(d).map((s) => s.name), '（なし）'];
@@ -105,7 +105,7 @@ export function CalendarTab() {
           <DayDetail d={d} target={target} key={u.selDay} />
           <div className="card mb-0">
             <h3>グループの予定</h3>
-            <Notices d={d} onTab={goTab} onTarget={(n) => ui.set((s) => ({ ...s, target: n }))} onDay={(k) => { selectDay(k); requestAnimationFrame(revealDay); }} />
+            <Notices d={d} onRecruit={goRecruit} onTarget={(n) => ui.set((s) => ({ ...s, target: n }))} onDay={(k) => { selectDay(k); requestAnimationFrame(revealDay); }} />
           </div>
         </div>
       </div>

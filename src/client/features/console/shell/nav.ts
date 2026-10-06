@@ -23,6 +23,17 @@ export function useGoTab(): (t: MainTab) => void {
   return (t) => { void navigate({ to: TAB_TO[t], params: { groupId } }); };
 }
 
+/** 「募集・調整」のタブへ移る関数。卓の ID を渡すと、その卓のカードまで動かして目立たせる */
+export function useGoRecruit(): (id?: string) => void {
+  const navigate = useNavigate();
+  const { groupId, ui } = useConsole();
+  return (id) => {
+    if (id) ui.set((s) => ({ ...s, focus: id }));
+    // 卓のカードへ動かすときは、移ったときにページの頭へ戻さない（戻すと、動かしたあとに頭へ戻ってしまう）
+    void navigate({ to: TAB_TO.recruit, params: { groupId }, resetScroll: !id });
+  };
+}
+
 /** 管理の区分へ移る関数 */
 export function useGoPane(): (pane: AdminPane) => void {
   const navigate = useNavigate();
