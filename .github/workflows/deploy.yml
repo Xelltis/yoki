@@ -1,9 +1,10 @@
 # アプリ（Worker と D1）を Cloudflare に公開する。
 # main にアプリの変更が入ったときと、Actions の画面から手で動かしたときに動く。
 # 公開する Cloudflare ごとの値はリポジトリに置かず、GitHub の environment「production」に置く（書き方は README の「公開」）
-#   変数（vars）: CLOUDFLARE_ACCOUNT_ID・YOKI_D1_DATABASE_ID・YOKI_APP_URL・YOKI_DISCORD_CLIENT_ID・YOKI_GOOGLE_CLIENT_ID（任意）
-#   秘密（secrets）: CLOUDFLARE_API_TOKEN・DISCORD_CLIENT_SECRET・DISCORD_BOT_TOKEN・OPERATOR_IDS・GOOGLE_CLIENT_SECRET（任意）・GOOGLE_TOKEN_KEY（任意）
+#   変数（vars）: CLOUDFLARE_ACCOUNT_ID・YOKI_D1_DATABASE_ID・YOKI_APP_URL・YOKI_DISCORD_CLIENT_ID・YOKI_GOOGLE_CLIENT_ID（任意）・YOKI_UPSTREAM（任意）
+#   秘密（secrets）: CLOUDFLARE_API_TOKEN・DISCORD_CLIENT_SECRET・DISCORD_BOT_TOKEN・OPERATOR_IDS・GOOGLE_CLIENT_SECRET（任意）・GOOGLE_TOKEN_KEY（任意）・UPDATE_DISPATCH_TOKEN（任意）
 #   Google カレンダーとの連携を使うときだけ、YOKI_GOOGLE_CLIENT_ID・GOOGLE_CLIENT_SECRET・GOOGLE_TOKEN_KEY の 3 つを入れる
+#   運営の管理画面の「更新」のボタンで更新するときだけ、UPDATE_DISPATCH_TOKEN を入れる（README の「新しい版に上げる」）。更新のワークフロー（update.yml）も、このワークフローを動かす
 name: アプリを公開する
 
 on:
@@ -57,6 +58,8 @@ jobs:
           YOKI_APP_URL: ${{ vars.YOKI_APP_URL }}
           YOKI_DISCORD_CLIENT_ID: ${{ vars.YOKI_DISCORD_CLIENT_ID }}
           YOKI_GOOGLE_CLIENT_ID: ${{ vars.YOKI_GOOGLE_CLIENT_ID }}
+          YOKI_REPOSITORY: ${{ github.repository }}
+          YOKI_UPSTREAM: ${{ vars.YOKI_UPSTREAM }}
 
       - name: 本番の D1 に表の変更を当てる
         run: npx wrangler d1 migrations apply DB --remote --config dist/yoki/wrangler.json
@@ -69,6 +72,7 @@ jobs:
           OPERATOR_IDS: ${{ secrets.OPERATOR_IDS }}
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
           GOOGLE_TOKEN_KEY: ${{ secrets.GOOGLE_TOKEN_KEY }}
+          UPDATE_DISPATCH_TOKEN: ${{ secrets.UPDATE_DISPATCH_TOKEN }}
         run: |
           test -n "$CLOUDFLARE_API_TOKEN" || { echo '::error::secret の CLOUDFLARE_API_TOKEN がありません'; exit 1; }
           test -n "$DISCORD_CLIENT_SECRET" || { echo '::error::secret の DISCORD_CLIENT_SECRET がありません'; exit 1; }
@@ -80,6 +84,7 @@ jobs:
             if (process.env.OPERATOR_IDS) s.OPERATOR_IDS = process.env.OPERATOR_IDS;
             if (process.env.GOOGLE_CLIENT_SECRET) s.GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
             if (process.env.GOOGLE_TOKEN_KEY) s.GOOGLE_TOKEN_KEY = process.env.GOOGLE_TOKEN_KEY;
+            if (process.env.UPDATE_DISPATCH_TOKEN) s.UPDATE_DISPATCH_TOKEN = process.env.UPDATE_DISPATCH_TOKEN;
             require('fs').writeFileSync(process.argv[1], JSON.stringify(s), { mode: 0o600 });
           " "$secrets"
           npx wrangler deploy --config dist/yoki/wrangler.json --secrets-file "$secrets"
