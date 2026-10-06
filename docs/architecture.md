@@ -259,7 +259,7 @@ Discordサーバーを付け替えると、新しいサーバーの人は、控�
 
 **版**: いちばん近い版のタグ（`vX.Y.Z`）。`vite.config.ts` が組み立てのときに `git describe` で読み、`__APP_VERSION__` としてWorkerに入れる（`src/worker/version.ts`。タグが無ければ0.0.0）。元のリポジトリでは、公開のワークフローの中でsemantic-release（`.releaserc.json`）がConventional Commitsから次の版を決め、タグとGitHubのReleaseを作ってから公開する（`package.json` を書き戻すコミットは作らない。署名の無いコミットと二度目の公開を避けるため）。フォークでは、更新のワークフローが取り込んだタグを自分のリポジトリにも置き、公開のワークフローは履歴とタグを全部取ってから組み立てる。
 
-**新しい版を知る**（`domain/update.ts`）: 元のリポジトリ（`UPSTREAM_REPOSITORY`。無ければ `update/config.ts` の既定）の最新のReleaseをGitHubのAPIで読み、今の版と比べる。新しければ、2つのタグのあいだに変わったファイル（compare）に `migrations/` があるかで、表の変更を含むかを出す。読んだ結果は `meta` の `update_check` に控え、1時間は読み直さない（GitHubのAPIは、トークンなしでは1時間に60回まで）。読めなければ理由を出し、前に読めた最新の版は残す。
+**新しい版を知る**（`domain/update.ts`）: 元のリポジトリ（`UPSTREAM_REPOSITORY`。無ければ `update/config.ts` の既定）の最新のReleaseをGitHubのAPIで読み、今の版と比べる。新しければ、2つのタグのあいだに変わったファイル（compare）に `migrations/` があるかで、表の変更を含むかを出す。読んだ結果は `meta` の `update_check` に控え、1時間は読み直さない（GitHubのAPIは、トークンなしでは1時間に60回まで）。Releaseが404なら、リポジトリそのものも読む。リポジトリも見えなければ（非公開・名前の誤り）、「版がまだ無い」とは言わずに理由を出す。読めなければ理由を出し、前に読めた最新の版は残す。
 
 **更新する**（`.github/workflows/update.yml`。各地のリポジトリで動く）: 元のリポジトリのタグをfetchしてmainにマージし、公開のワークフローを動かす。ぶつかったらmainを変えずに `update/vX.Y.Z` のブランチとPRを作って止まる。版の形（`vX.Y.Z`）を確かめてから使い、入力は式の中に直に書かない（スクリプトの差し込みを防ぐ）。
 

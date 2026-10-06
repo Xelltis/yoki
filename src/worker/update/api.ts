@@ -35,7 +35,13 @@ export function realGitHub(): UpdateApi {
   return {
     async latestRelease(repo) {
       const res = await gh('/repos/' + repo + '/releases/latest');
-      if (res.status === 404) return null;
+      if (res.status === 404) {
+        // Releaseがまだ無いのか、リポジトリが見えない（非公開・名前の誤り）のかを分ける。見えないまま「版が無い」とは言わない
+        const home = await gh('/repos/' + repo);
+        if (home.status === 404) throw new Error('GitHubで元のリポジトリ「' + repo + '」が見えません。公開されているか、名前が合っているかを確かめてください');
+        if (!home.ok) throw refused(home.status);
+        return null;
+      }
       if (!res.ok) throw refused(res.status);
       const r = (await res.json()) as { tag_name: string; name: string | null; html_url: string; published_at: string | null; body: string | null };
       return { tag: r.tag_name, name: r.name || r.tag_name, url: r.html_url, publishedAt: r.published_at ?? '', body: r.body ?? '' };

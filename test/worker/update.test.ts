@@ -22,14 +22,15 @@ beforeEach(() => {
 });
 afterEach(() => vi.restoreAllMocks());
 
-/** GitHubのAPIの返事を差し替える。routesは「道の頭 → 返事」。呼ばれた道・方法・ヘッダー・本文を控える */
+/** GitHubのAPIの返事を差し替える。routesは「道 → 返事」（/で終わる道は、その下の全部）。呼ばれた道・方法・ヘッダー・本文を控える */
 function mockGitHub(routes: Record<string, () => Response>) {
   const calls: { url: string; method: string; auth: string; body: string }[] = [];
   vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
     const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
     const headers = new Headers(init?.headers);
     calls.push({ url, method: init?.method ?? 'GET', auth: headers.get('Authorization') ?? '', body: String(init?.body ?? '') });
-    const key = Object.keys(routes).find((k) => url.startsWith('https://api.github.com' + k));
+    const path = url.slice('https://api.github.com'.length).split('?')[0]!;
+    const key = Object.keys(routes).find((k) => (k.endsWith('/') ? path.startsWith(k) : path === k));
     return key ? routes[key]!() : new Response('not found', { status: 404 });
   });
   return calls;
@@ -85,14 +86,26 @@ describe('新しい版を確かめる（本物のGitHub。fetchを差し替え�
   });
 
   test('Releaseがまだ無い・今と同じ版なら、新しい版は無い（表の変更は調べない）。トークンが無ければ実行は読まない', async () => {
-    const calls = mockGitHub({});
+    const calls = mockGitHub({ '/repos/o/u': () => Response.json({ full_name: 'o/u' }) });
     const none = await updateStatus(env.DB, deps({ token: '' }), new Date(), true);
     expect(none).toMatchObject({ latest: null, available: false, migrations: null, error: '', canDispatch: false, runs: [] });
     vi.restoreAllMocks();
     const calls2 = mockGitHub({ '/repos/o/u/releases/latest': release('v' + APP_VERSION, { name: null, published_at: null, body: null }) });
     const same = await updateStatus(env.DB, deps({ repo: '' }), new Date(), true);
     expect(same).toMatchObject({ available: false, migrations: null, workflowUrl: '', canDispatch: false, latest: { version: APP_VERSION, name: 'v' + APP_VERSION, publishedAt: '', notes: '' } });
-    expect(calls.length + calls2.length).toBe(2);
+    // Releaseが無いときだけ、リポジトリがあるかを確かめる
+    expect(calls.map((c) => c.url)).toEqual(['https://api.github.com/repos/o/u/releases/latest', 'https://api.github.com/repos/o/u']);
+    expect(calls2.length).toBe(1);
+  });
+
+  test('元のリポジトリが見えなければ（非公開・名前の誤り）、版が無いとは言わず、そう出す', async () => {
+    mockGitHub({});
+    expect(await updateStatus(env.DB, deps({ token: '' }), new Date(), true)).toMatchObject({
+      latest: null, available: false, error: '新しい版を確かめられませんでした（GitHubで元のリポジトリ「o/u」が見えません。公開されているか、名前が合っているかを確かめてください）',
+    });
+    vi.restoreAllMocks();
+    mockGitHub({ '/repos/o/u': () => new Response('slow down', { status: 403 }) });
+    expect((await updateStatus(env.DB, deps({ token: '' }), new Date(), true)).error).toBe('新しい版を確かめられませんでした（GitHubが403を返しました。トークンの権限と、リポジトリの名前を確かめてください）');
   });
 
   test('読めなければ理由を出し、前に読めた最新の版は残す。表の変更を比べられなければ、分からないまま', async () => {
