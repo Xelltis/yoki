@@ -10,4 +10,9 @@ export type Bindings = Env & {
   GOOGLE_CLIENT_SECRET?: string;
   /** Google の refresh token を D1 に置くときに暗号化する鍵（32 バイトを base64 にしたもの）。無ければ Google 連携は使えない */
   GOOGLE_TOKEN_KEY?: string;
+  /**
+   * 運営の管理画面の「更新」のボタンで、公開しているリポジトリの更新のワークフローを動かすトークン（GitHub の fine-grained token。
+   * そのリポジトリの Actions を読み書きする権限だけ）。無ければ、GitHub の Actions の画面から動かす。画面・ログ・API には出さない
+   */
+  UPDATE_DISPATCH_TOKEN?: string;
 };

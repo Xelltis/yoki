@@ -26,6 +26,7 @@ export const ADMIN_READS = {
   groups: { queryKey: ['admin', 'groups'], path: '/api/admin/groups' },
   users: { queryKey: ['admin', 'users'], path: '/api/admin/users' },
   legal: { queryKey: ['admin', 'legal'], path: '/api/admin/legal' },
+  update: { queryKey: ['admin', 'update'], path: '/api/admin/update' },
 } as const;
 
 export function adminQuery<T>(queryKey: QueryKey, path: string) {

@@ -112,5 +112,37 @@ export type LegalDoc = {
 /** 利用規約とプライバシーポリシーの設定（GET /api/admin/legal）。POST は { operator?, contact?, terms?, privacy? }（省いたものは変えない） */
 export type AdminLegal = { operator: string; contact: string; terms: LegalDoc; privacy: LegalDoc };
 
+/** 更新のワークフローの実行（新しい順）。status は queued・in_progress・completed など、conclusion は success・failure など（GitHub の値） */
+export type AdminUpdateRun = { id: number; status: string; conclusion: string; createdAt: string; url: string };
+
+/**
+ * 卓予定の版と更新（GET /api/admin/update。?refresh=1 なら GitHub を読み直す）。POST は最新の版への更新を始める（本文は要らない）。
+ * 新しい版は、元のリポジトリの GitHub の Release から読む（1 時間に 1 回まで）
+ */
+export type AdminUpdate = {
+  /** 動いている版（例 1.2.0） */
+  current: string;
+  /** 元のリポジトリ（owner/name） */
+  upstream: string;
+  /** 元のリポジトリの最新の Release。まだ無い・読めなければ null。notes は Release の本文（Markdown） */
+  latest: { version: string; name: string; url: string; publishedAt: string; notes: string } | null;
+  /** 今の版より新しい版があるか */
+  available: boolean;
+  /** 今の版から最新の版までに、表（D1）の変更があるか。分からなければ null */
+  migrations: boolean | null;
+  /** 読めなかったときの理由（読めたら空） */
+  error: string;
+  /** GitHub を最後に読んだ時刻 */
+  checkedAt: string;
+  /** 公開しているリポジトリ（owner/name）。分からなければ空 */
+  repo: string;
+  /** 更新のワークフローの GitHub の画面（「Run workflow」で動かせる）。repo が分からなければ空 */
+  workflowUrl: string;
+  /** 管理画面のボタンで更新を始められるか（ワークフローを動かすトークンがある） */
+  canDispatch: boolean;
+  /** 更新のワークフローの最近の実行（トークンがあるときだけ） */
+  runs: AdminUpdateRun[];
+};
+
 /** 変える操作の返事 */
 export type AdminResult = { ok: true; message: string };
