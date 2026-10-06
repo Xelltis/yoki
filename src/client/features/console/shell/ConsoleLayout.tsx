@@ -21,7 +21,7 @@ import { FormModal } from '../form/FormModal';
 import { PollModal } from '../recruit/PollModal';
 import { Header } from './Header';
 import { Loading } from './Loading';
-import { type MainTab, TAB_TO, tabOf } from './nav';
+import { guideClosedKey, type MainTab, TAB_TO, tabOf } from './nav';
 
 /** 確かめとスクリーンショットのスクリプトが使う（React の中の値は、外から見えないため） */
 type YokiHook = { readonly D: ConsoleData | undefined; selectDay: (k: string) => void; showTab: (t: string) => void };
@@ -40,7 +40,9 @@ function ConsoleShell() {
     rpc, toast, blocked: domBlocked,
     goLogin: () => { location.href = '/auth/login?return_to=' + encodeURIComponent(location.pathname); },
   }));
-  const [ui] = useState(() => createStore<ConsoleUi>({ selDay: '', view: { y: 0, m: 0 }, guide: '', guideFocus: 0, target: load('target') || '全員', form: null, poll: null }));
+  const [ui] = useState(() => createStore<ConsoleUi>({
+    selDay: '', view: { y: 0, m: 0 }, guide: load(guideClosedKey(groupId)) === '1' ? 'closed' : '', guideFocus: 0, target: load('target') || '全員', form: null, poll: null,
+  }));
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const tab = tabOf(pathname), area = tab === 'admin' ? 'admin' : 'main';
   const ctx = useMemo<ConsoleCtx>(() => ({ groupId, area, sync, ui }), [groupId, area, sync, ui]);

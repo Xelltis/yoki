@@ -335,6 +335,17 @@ await withDevServer(async (base) => {
       await page.click(`#groupMenu [data-group="${made.id}"]`);
       await page.waitForURL(`**/g/${made.id}/`);
       await until((d, t) => d && d.title === t, 'e2e の消すグループ');
+      // 作ったばかりのグループには、はじめの 3 ステップが出る。今の段は「仲間を招く」だけで、Discord は任意。閉じると、開き直しても出ない
+      await page.waitForSelector('#setupGuide:not([hidden]) [data-step="1"][data-state="now"]');
+      assert.equal(await page.locator('#setupGuide [data-state="now"]').count(), 1, '今の段は 1 つだけ');
+      assert.equal(await page.isVisible('#setupGuide [data-go="copy"]'), true, 'グループの URL を写せる');
+      assert.equal(await page.isVisible('#helpNudge'), true, '準備が済むまでは、ヘルプに印が付く');
+      await page.click('#setupGuide [data-go="close"]');
+      await page.waitForSelector('#setupGuide', { state: 'hidden' });
+      assert.equal(await page.isVisible('#helpNudge'), false, '閉じたら、ヘルプの印も消す');
+      await page.reload();
+      await page.waitForFunction((t) => window.yoki && window.yoki.D && window.yoki.D.title === t, 'e2e の消すグループ', { timeout: 30000 });
+      assert.equal(await page.isVisible('#setupGuide'), false, '閉じたことを覚えている');
       // チャンネルを決めていないグループの「知らせ」では、チャンネルを表より先に開いて出す
       await page.click('#adminLink');
       await page.click('#setNav button[data-set="notify"]');

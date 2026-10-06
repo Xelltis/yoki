@@ -16,8 +16,8 @@ import { useStore } from '../../../ui/store';
 import type { SyncView } from '../api/sync';
 import { type Tab, useConsole, useMaybeData } from '../context';
 import { hhmm } from '../model/dates';
-import { isActive, isAdjusting, isRecruit } from '../model/model';
-import { guideShown, type MainTab, useGoTab } from './nav';
+import { isAdjusting, isRecruit } from '../model/model';
+import { closeGuide, guideShown, type MainTab, setupDone, useGoTab } from './nav';
 
 const TABS: [MainTab, IconName, string][] = [
   ['cal', 'calendar_month', 'カレンダー'],
@@ -81,9 +81,8 @@ export function Header({ tab }: { tab: Tab }) {
   const dead = v.phase === 'gone' || v.phase === 'relogin';
   /** はじめの 3 ステップを出せるのは、ふだんの区域でグループが読めているときだけ */
   const guideOk = !!d && !admin && !dead;
-  /** 3 つとも済むまでは、？に印を付けて、はじめの 3 ステップがあることを知らせる */
-  const allDone = !!d && d.members.length > 0 && d.sessions.some(isActive) && !!d.channelSet;
-  const nudge = guideOk && !allDone;
+  /** 要る準備（仲間・卓）が済むまでは、？に印を付けて、はじめの 3 ステップがあることを知らせる。閉じたら付けない（Discord は任意なので待たない） */
+  const nudge = guideOk && !setupDone(d) && guide !== 'closed';
   const recruitCount = d ? d.sessions.filter((s) => isRecruit(s) || isAdjusting(s)).length : 0;
   /** 入れるグループ（入口と同じ控え）。メニューを開くたびに読み直す（ほかのタブで作ったグループも出す）。消えたグループは、切り替え先に出さない */
   const me = useQuery({ queryKey: ME_KEY, queryFn: fetchMe, staleTime: 60_000 });
@@ -92,7 +91,7 @@ export function Header({ tab }: { tab: Tab }) {
   const operator = !!me.data && me.data.loggedIn && me.data.operator;
   /* はじめの 3 ステップ。カレンダーで出ていれば閉じ、それ以外は出す（押すたびに切り替わる）。出したら、ページの頭まで戻す */
   const toggleGuide = () => {
-    if (tab === 'cal' && shown) { ui.set((s) => ({ ...s, guide: 'closed' })); return; }
+    if (tab === 'cal' && shown) { closeGuide(ui, groupId); return; }
     ui.set((s) => ({ ...s, guide: 'open', guideFocus: s.guideFocus + 1 }));
     goTab('cal');
     window.scrollTo(0, 0);
