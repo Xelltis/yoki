@@ -72,6 +72,8 @@ jobs:
             echo "::error::$TAG の取り込みでぶつかりました。$branch を PR にしたので、GitHub の画面で直してマージしてください"
             exit 1
           fi
+          # 公開のワークフローは、アプリに入れる版をタグから読む。main より先に、取り込んだタグをこのリポジトリにも置く
+          git push origin "refs/tags/$TAG"
           if ! git push origin HEAD:main; then
             echo '::error::main に書き込めませんでした。元のリポジトリがワークフローのファイル（.github/workflows/）を変えた版は、Actions の secret に UPDATE_PUSH_TOKEN が要ります（README の「新しい版に上げる」）'
             exit 1

@@ -1,0 +1,11 @@
+{
+  "name": "micromatch",
+  "version": "4.0.8-yoki.0",
+  "private": true,
+  "description": "semantic-release が使う micromatch の差し替え（braces を使わず picomatch で照合する）",
+  "license": "MIT",
+  "main": "index.cjs",
+  "dependencies": {
+    "picomatch": "^4.0.7"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "name": "@semantic-release/npm",
+  "version": "13.2.0-yoki.0",
+  "private": true,
+  "description": "semantic-release の npm プラグインの差し替え（npm には公開しないので、何もしない）",
+  "license": "MIT",
+  "type": "module",
+  "main": "index.js"
+}

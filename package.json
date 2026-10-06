@@ -1,6 +1,6 @@
 {
   "name": "yoki",
-  "version": "1.1.0",
+  "version": "0.0.0-development",
   "private": true,
   "license": "MIT",
   "description": "卓予定（TRPG の卓の予定を管理する。Cloudflare Workers + D1 + Discord ログイン）",
@@ -36,17 +36,21 @@
     "@commitlint/cli": "^21.2.3",
     "@commitlint/config-conventional": "^21.2.3",
     "@iconify-json/material-symbols": "^1.2.94",
+    "@semantic-release/npm": "file:tools/shims/semantic-release-npm",
     "@tailwindcss/vite": "^4.3.3",
     "@types/node": "^26.6.4",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.1",
     "@vitest/coverage-istanbul": "^4.1.11",
+    "conventional-changelog-conventionalcommits": "^9.3.1",
     "lefthook": "^2.1.16",
+    "micromatch": "file:tools/shims/micromatch",
     "oxlint": "^1.86.0",
     "pixelmatch": "^7.2.0",
     "playwright": "^1.63.0",
     "pngjs": "^7.0.0",
+    "semantic-release": "^25.0.9",
     "tailwindcss": "^4.3.3",
     "typescript": "^7.0.2",
     "unplugin-icons": "^24.0.0",
@@ -71,6 +75,10 @@
     "@cloudflare/vitest-pool-workers": {
       "wrangler": "$wrangler",
       "miniflare": "5.20261001.0-alpha"
+    },
+    "semantic-release": {
+      "micromatch": "$micromatch",
+      "@semantic-release/npm": "$@semantic-release/npm"
     }
   }
 }

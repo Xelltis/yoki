@@ -20,7 +20,7 @@ const clean = (t: string) => t
   .replace(/\*\*([^*]+)\*\*/g, '$1')
   .trim();
 
-/** Release の本文（release-please の Markdown）を、見出しと箇条書きに分ける */
+/** Release の本文（semantic-release が Conventional Commits から書く Markdown）を、見出しと箇条書きに分ける */
 export function parseNotes(md: string): Section[] {
   const out: Section[] = [];
   for (const line of md.split('\n')) {
