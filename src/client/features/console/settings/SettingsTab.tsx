@@ -48,12 +48,15 @@ export function SettingsTab() {
   };
   return (
     <section id="tab-settings" className="max-w-1120">
-      <PageHead title="設定" lead="あなたの名前・カレンダー連携・この端末の見た目です。どれも、あなただけの設定です。グループの設定（知らせ・メンバー・管理者）は、管理者が管理画面で変えます。" />
-      <div className="card border-accent-line" id="adminEntry" hidden={!d.isAdmin}>
-        <h3><Icon name="shield" size="sm" />グループの管理画面</h3>
-        <p className="hint">メンバーの登録・卓をまとめて変える・知らせ（Discord）・管理者・送信の記録・グループを消す、は管理画面にあります。あなたは管理者なので開けます。</p>
-        <div className="btns"><Link className="btn primary" to="/g/$groupId/admin/" params={{ groupId }}><Icon name="shield" size="sm" />管理画面を開く</Link></div>
-      </div>
+      <PageHead title="設定" lead="あなたの名前・ログインの方法・カレンダー連携・この端末の見た目です。どれも、あなただけの設定です。グループの設定（メンバー・知らせ・管理者）は、管理者が管理画面で変えます。" />
+      {/* 管理者には、グループの設定の入口を 1 行で出す（あなたの設定の邪魔をしない） */}
+      {d.isAdmin && (
+        <div className="card flex flex-wrap items-center gap-x-12 gap-y-8 border-accent-line py-12" id="adminEntry">
+          <Icon name="shield" size="sm" className="text-accent-text" />
+          <span className="min-w-0 flex-1 text-13">グループの設定（メンバー・知らせ・管理者・グループを消す）は、管理画面にあります。</span>
+          <Link className="btn small" to="/g/$groupId/admin/" params={{ groupId }}>管理画面を開く</Link>
+        </div>
+      )}
       <form className="card" id="meCard" onSubmit={(ev) => { ev.preventDefault(); saveMe(); }}>
         <h3><Icon name="person" size="sm" />あなたの名前と備考</h3>
         <p className="hint">予定表の列と、卓の参加者に出る名前です。グループの中で同じ名前は使えません。</p>
