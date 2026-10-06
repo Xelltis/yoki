@@ -99,8 +99,26 @@ export function NotifyPane() {
   // 送り先の札。種類ごとのチャンネルを決めていれば、そちらを出す
   const destR = d.remindChannelSet ? '開催前のチャンネル' : '基本のチャンネル', destC = d.recruitChannelSet ? '募集のチャンネル' : '基本のチャンネル';
   const sl = d.seriesNotify || [];
+  /** チャンネルをまだ決めていなければ、チャンネル（Bot を招く・基本のチャンネル）を表より先に開いて出す。開いたときだけ決める（保存しても動かさない） */
+  const [setupFirst] = useState(() => !d.channelSet);
+  const channels = (
+    <details className={foldCard} id="chFold" open={setupFirst}>
+      <summary className={foldSummary}><Icon name="notifications" size="sm" />チャンネル<span className="hint font-normal" id="chSum">{d.channelSet ? '基本' + (d.remindChannelSet ? '・開催前' : '') + (d.recruitChannelSet ? '・募集' : '') : 'まだ決めていません'}</span></summary>
+      <div className={foldBody}>
+        <BotCard />
+        <BaseChannel />
+        <div className={foldInner(false)} id="kwCard">
+          <h3>種類ごとのチャンネル</h3>
+          <p className="hint">開催前の知らせと募集の知らせを、別のチャンネルに送れます。「基本のチャンネルと同じ」なら基本へ。シリーズ専用のチャンネルがあれば、そちらが先です。</p>
+          <KindChannel kind="remind" label="開催前の知らせ" note="期間前の催促と、開始直前の知らせもここへ" first />
+          <KindChannel kind="recruit" label="募集" note="募集の卓の登録・変更・削除・案内と、興味ありの人への参加確認" />
+        </div>
+      </div>
+    </details>
+  );
   return (
     <div data-pane="notify">
+      {setupFirst && channels}
       <div className="card">
         <h3>知らせ <small className="hint">何を・どこへ・いつ送るか</small></h3>
         <div className="wrap">
@@ -149,19 +167,7 @@ export function NotifyPane() {
         <p className="hint">開催前の知らせは、0 日前なら当日、1 日前なら前日です。開始直前の知らせを ON にすると見回りが 5 分ごとになり、指定した時刻を過ぎた最初の見回りで届きます。送り先は下の「チャンネル」で決めます。</p>
       </div>
 
-      <details className={foldCard} id="chFold">
-        <summary className={foldSummary}><Icon name="notifications" size="sm" />チャンネル<span className="hint font-normal" id="chSum">{d.channelSet ? '基本' + (d.remindChannelSet ? '・開催前' : '') + (d.recruitChannelSet ? '・募集' : '') : 'まだ決めていません'}</span></summary>
-        <div className={foldBody}>
-          <BotCard />
-          <BaseChannel />
-          <div className={foldInner(false)} id="kwCard">
-            <h3>種類ごとのチャンネル</h3>
-            <p className="hint">開催前の知らせと募集の知らせを、別のチャンネルに送れます。「基本のチャンネルと同じ」なら基本へ。シリーズ専用のチャンネルがあれば、そちらが先です。</p>
-            <KindChannel kind="remind" label="開催前の知らせ" note="期間前の催促と、開始直前の知らせもここへ" first />
-            <KindChannel kind="recruit" label="募集" note="募集の卓の登録・変更・削除・案内と、興味ありの人への参加確認" />
-          </div>
-        </div>
-      </details>
+      {!setupFirst && channels}
 
       <details className={foldCard} id="snFold">
         <summary className={foldSummary}><Icon name="date_range" size="sm" />シリーズごとの上書き<span className="hint font-normal" id="snSum">{sl.length ? sl.length + ' 件' : 'なし'}</span></summary>

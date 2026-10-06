@@ -335,6 +335,12 @@ await withDevServer(async (base) => {
       await page.click(`#groupMenu [data-group="${made.id}"]`);
       await page.waitForURL(`**/g/${made.id}/`);
       await until((d, t) => d && d.title === t, 'e2e の消すグループ');
+      // チャンネルを決めていないグループの「知らせ」では、チャンネルを表より先に開いて出す
+      await page.click('#adminLink');
+      await page.click('#setNav button[data-set="notify"]');
+      await page.waitForSelector('[data-pane="notify"] > #chFold[open]:first-child');
+      await page.click('#toMain');
+      await page.waitForURL(`**/g/${made.id}/`);
       await page.click('#groupMenuBtn');
       assert.equal(await page.getAttribute(`#groupMenu [data-group="${made.id}"]`, 'aria-current'), 'page', '今のグループに印が付く');
       await page.click('#groupMenu [data-group="sample"]');
