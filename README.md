@@ -210,13 +210,15 @@ Cloudflare は無料のプランで動く。グループが増えて、知らせ
 
 ## 版を出す（元のリポジトリ）
 
-版（`package.json` の `version`）と変わったことの一覧（`CHANGELOG.md`）は、[release-please](https://github.com/googleapis/release-please)（`.github/workflows/release.yml`）が作る。フォークでは動かない。
+版は [semantic-release](https://github.com/semantic-release/semantic-release)（設定は `.releaserc.json`）が、main にアプリの変更が入ったときに、公開のワークフロー（`.github/workflows/deploy.yml`）の中で出す。PR は使わない。コミットを main に入れる（PR をマージする）だけで、版を出すところまで進む。フォークでは動かない。
 
-- main に入ったコミット（Conventional Commits）から、release-please が「chore: 卓予定 vX.Y.Z を出す」の PR を作り、コミットが増えるたびに書き直す。`feat` は小さい版（1.1.0）、`fix` と `perf` はいちばん小さい版（1.0.1）、`!` 付き（互換を壊す変更）は大きい版（2.0.0）を上げる
-- その PR をマージすると、版と `CHANGELOG.md` が上がり、タグ `vX.Y.Z` と GitHub の Release ができる。各地の卓予定の「更新」に、変わったこととして出る（`feat`・`fix`・`perf`・`revert` だけ。`docs` などは出さない）
-- 版と `CHANGELOG.md` は手で書き換えない。コミットの type が版の上げ方を決めるので、type を正しく付ける
-- 各地の卓予定は、版を飛ばして上げることがある。表の変更（`migrations/`）は、前の版から順に当たれば動くように書く
-- 初めの 1 回: Settings → Actions → General で「Allow GitHub Actions to create and approve pull requests」を入れる。今の版（`v1.0.0`）のタグと Release は、手で作る（`gh release create v1.0.0 --title v1.0.0 --notes "最初の版"`）
+- 公開のワークフローは、確かめる（型・lint・テスト）→ 版を出す → 公開する、の順に進む。確かめが通らなければ、版も出さない
+- 前の版のタグから後のコミット（Conventional Commits）を見て、`feat` は小さい版（1.1.0 → 1.2.0）、`fix`・`perf`・`revert` はいちばん小さい版（1.1.0 → 1.1.1）、`!` 付き（互換を壊す変更）は大きい版（2.0.0）を上げる。`docs`・`ci` などだけなら、版は出さない
+- 版を出すと、タグ `vX.Y.Z` と GitHub の Release（変わったことの一覧。`feat`・`fix`・`perf`・`revert` だけ）ができる。各地の卓予定の「更新」に、変わったこととして出る
+- アプリに入れる版は、いちばん近い版のタグから読む（`vite.config.ts`）。`package.json` の `version` は使わない（`0.0.0-development` のまま）。変わったことの一覧は、ファイルに書かず GitHub の Releases に置く
+- コミットの type が版の上げ方を決めるので、type を正しく付ける。各地の卓予定は、版を飛ばして上げることがある。表の変更（`migrations/`）は、前の版から順に当たれば動くように書く
+- `semantic-release` と、見出しを日本語にする `conventional-changelog-conventionalcommits` は開発用の依存に入れる。手元で `GITHUB_TOKEN=$(gh auth token) npx semantic-release --dry-run --no-ci` とすると、次の版と変わったことの一覧を、何も作らずに確かめられる。`conventional-changelog-conventionalcommits` は、semantic-release が使う書き出しの部品と同じ世代（今は 9）にそろえる（10 は semantic-release 25 では動かない）
+- npm audit は 0 件に保つ。semantic-release が抱える 2 つは、`tools/shims/` の差し替えに替えている（`package.json` の `overrides`）。`micromatch` は直った版の無い `braces` に頼るので、同じ呼び方を `picomatch` で動かすものに替える。`@semantic-release/npm` は npm 本体を同梱し、その中の部品が指摘されるので、何もしないものに替える（npm には公開しない。`.releaserc.json` でプラグインを決めているので、ふだんは読み込まれない）。semantic-release を上げたら、`npm audit` と `--dry-run` で確かめる
 
 ## サイト（GitHub Pages）
 

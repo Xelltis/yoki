@@ -192,7 +192,7 @@ Worker 1 つで、次の 3 つを受け持つ。
 
 卓予定は OSS として、ほかの人がフォークして自分の Cloudflare に公開する。元のリポジトリが出す版に、各地の卓予定が運営の管理画面から追いつけるようにする（WordPress の更新と同じ役目）。Worker は自分のコードを書き換えない。取り込みと公開は、各地のリポジトリの GitHub Actions がする。
 
-- **版**: `package.json` の `version`。`vite.config.ts` が組み立てのときに `__APP_VERSION__` として Worker に入れる（`src/worker/version.ts`）。版と `CHANGELOG.md` は、元のリポジトリの release-please（`.github/workflows/release.yml`）が Conventional Commits から上げ、タグ `vX.Y.Z` と GitHub の Release を作る
+- **版**: いちばん近い版のタグ（`vX.Y.Z`）。`vite.config.ts` が組み立てのときに `git describe` で読み、`__APP_VERSION__` として Worker に入れる（`src/worker/version.ts`。タグが無ければ 0.0.0）。元のリポジトリでは、公開のワークフローの中で semantic-release（`.releaserc.json`）が Conventional Commits から次の版を決め、タグと GitHub の Release を作ってから公開する（`package.json` を書き戻すコミットは作らない。署名の無いコミットと二度目の公開を避けるため）。フォークでは、更新のワークフローが取り込んだタグを自分のリポジトリにも置き、公開のワークフローは履歴とタグを全部取ってから組み立てる
 - **新しい版を知る**（`domain/update.ts`）: 元のリポジトリ（`UPSTREAM_REPOSITORY`。無ければ `update/config.ts` の既定）の最新の Release を GitHub の API で読み、今の版と比べる。新しければ、2 つのタグのあいだに変わったファイル（compare）に `migrations/` があるかで、表の変更を含むかを出す。読んだ結果は `meta` の `update_check` に控え、1 時間は読み直さない（GitHub の API は、トークンなしでは 1 時間に 60 回まで）。読めなければ理由を出し、前に読めた最新の版は残す
 - **更新する**（`.github/workflows/update.yml`。各地のリポジトリで動く）: 元のリポジトリのタグを fetch して main にマージし、公開のワークフローを動かす。ぶつかったら main を変えずに `update/vX.Y.Z` のブランチと PR を作って止まる。版の形（`vX.Y.Z`）を確かめてから使い、入力は式の中に直に書かない（スクリプトの差し込みを防ぐ）
 - **2 つのトークン**: 管理画面のボタンは、Worker の secret の `UPDATE_DISPATCH_TOKEN`（そのリポジトリの Actions を動かすだけの権限）で、更新のワークフローを `workflow_dispatch` で動かし、その実行の一覧を読む。運営者の Discord のアカウントを取られても、コードは書き換えられない。main への書き込みは、更新のワークフローが Actions の secret の `UPDATE_PUSH_TOKEN`（Contents と Workflows）で行う。既定の `GITHUB_TOKEN` は `.github/workflows/` を書き換えられず、書き込んだ push では公開のワークフローも動かないので、そのときは更新のワークフローが公開のワークフローを動かす

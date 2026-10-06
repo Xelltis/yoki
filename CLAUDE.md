@@ -53,7 +53,8 @@ README の「書くときの決まり」に加えて、次を守る。
 - ログインした人の Discord のトークン（OAuth）は保存しない。知らせに使う Bot のトークンは Worker の secret（`DISCORD_BOT_TOKEN`）に置き、画面にもログにも出さない。秘密の値（`.dev.vars`）はコミットしない
 - Google カレンダーと連携した人の refresh token だけは持つ（本人がいないときにも卓を書き直し、予定を読むため）。`GOOGLE_TOKEN_KEY` で暗号にして `google_links` に置き、画面・ログ・運営者の API には出さない。連携を外すときと利用者を消すときは、書き込んだ予定を消して Google の許可を取り消してから消す（`forgetGoogle`）。Google から受け取る欄は、要るものだけにする（予定の名前や中身は受け取らない）
 - 利用者そのものは Discord のアカウント（`users.id`）のままにする。Google でのログインは、結びつけた入り口（`google_logins`）として扱い、Google のアカウントだけではグループに入れない。グループに入れるかの確かめ直しは、Bot がいるサーバーでは Bot で、いなければ Discord で行う（`auth/guard.ts`）
-- 版（`package.json` の `version`）と `CHANGELOG.md` は release-please が上げる。手で書き換えない。コミットの type が版の上げ方と変わったことの一覧を決めるので、type を正しく付ける（`feat`・`fix`・`perf` は各地の運営の管理画面に出る）
+- 版は、main に入ったコミットから semantic-release が決め、タグ `vX.Y.Z` と GitHub の Release を作る（公開のワークフローの中。設定は `.releaserc.json`）。タグを手で付けない。`package.json` の `version` は使わない。コミットの type が版の上げ方と変わったことの一覧を決めるので、type を正しく付ける（`feat`・`fix`・`perf` は各地の運営の管理画面に出る）
+- npm audit は 0 件に保つ。出たら、依存の版をそろえる（`overrides`）。直った版が無く、使わない・使い方が狭い部品は、`tools/shims/` に差し替えを置いて `overrides` で替える（今は semantic-release の `micromatch` と `@semantic-release/npm`。README の「版を出す」）
 - 各地の卓予定は、版を飛ばして更新する。表の変更（`migrations/`）は、前の版から順に当たれば動くように書く
 - 更新のボタンのトークン（`UPDATE_DISPATCH_TOKEN`）は Worker の secret に置き、画面・ログ・運営者の API には出さない。権限は、そのリポジトリの Actions を動かすだけにする（Worker からコードを書き換えられないように）
 - 購読 URL（`/cal/<token>.ics`）は、知っていればだれでも読める。token は推測できない長さのランダムにし、作り直しと止めるができるようにする
