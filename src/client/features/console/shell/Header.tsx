@@ -1,4 +1,4 @@
-// 上の帯とタブ。左はグループの名前（押すと、入れるグループに切り替えられる）、真ん中はふだんの 3 画面のタブ。
+// 上の帯とタブ。左はグループの名前（押すと、入れるグループに切り替えられる。グループの一覧と、運営者には運営の管理画面へも移れる）、真ん中はふだんの 3 画面のタブ。
 // 右は、更新・ヘルプ（はじめの 3 ステップ・使い方）・管理（管理者だけ）・あなた（設定・見た目・ログアウト）
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
@@ -88,6 +88,8 @@ export function Header({ tab }: { tab: Tab }) {
   /** 入れるグループ（入口と同じ控え）。メニューを開くたびに読み直す（ほかのタブで作ったグループも出す）。消えたグループは、切り替え先に出さない */
   const me = useQuery({ queryKey: ME_KEY, queryFn: fetchMe, staleTime: 60_000 });
   const groups = me.data && me.data.loggedIn ? me.data.groups : [];
+  /** 運営者か（グループの中からも、運営の管理画面へ移れるようにする） */
+  const operator = !!me.data && me.data.loggedIn && me.data.operator;
   /* はじめの 3 ステップ。カレンダーで出ていれば閉じ、それ以外は出す（押すたびに切り替わる）。出したら、ページの頭まで戻す */
   const toggleGuide = () => {
     if (tab === 'cal' && shown) { ui.set((s) => ({ ...s, guide: 'closed' })); return; }
@@ -122,6 +124,7 @@ export function Header({ tab }: { tab: Tab }) {
         {me.isError && <p className={menuHead}>グループの一覧を読み込めませんでした。</p>}
         <div className={menuSep} aria-hidden="true" />
         <Link role="menuitem" id="toGroups" className={menuItem} to="/"><Icon name="group" size="sm" />グループの一覧・新しく作る</Link>
+        {operator && <Link role="menuitem" id="toOperator" className={menuItem} to="/admin/"><Icon name="shield" size="sm" />運営の管理画面</Link>}
       </Menu>
       <div className={actions}>
         <Link id="toMain" className={hbtn(admin ? 'inline-flex' : 'hidden')} to="/g/$groupId/" params={{ groupId }} title="カレンダーなどの、ふだんの画面へ戻る">

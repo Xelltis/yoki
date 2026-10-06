@@ -365,6 +365,11 @@ await withDevServer(async (base) => {
       assert.equal((await sora.goto(base + 'g/sample/admin/')).status(), 403);
       await sora.goto(base + 'g/sample/');
       await sora.waitForFunction(() => window.yoki && window.yoki.D, null, { timeout: 30000 });
+      // 運営者でなければ、グループの切り替えに運営の管理画面は出ない（一覧を読み終えてから確かめる）
+      await sora.click('#groupMenuBtn');
+      await sora.waitForSelector('#groupMenu [data-group="sample"]');
+      assert.equal(await sora.locator('#toOperator').count(), 0);
+      await sora.keyboard.press('Escape');
       await sora.click('#meBtn');
       await sora.click('#toSettings');
       assert.equal(await sora.isVisible('#adminEntry'), false);
@@ -374,7 +379,13 @@ await withDevServer(async (base) => {
       await ctx.close();
     });
 
-    await step('運営の管理画面: 様子・グループ・利用者が見え、ログインを切って締め出し、戻し、消せる。新規登録の受付を止めて戻せる', async () => {
+    await step('運営の管理画面: グループの画面からも開ける。様子・グループ・利用者が見え、ログインを切って締め出し、戻し、消せる。新規登録の受付を止めて戻せる', async () => {
+      // グループの画面では、上の帯のグループの切り替えから開く
+      await page.goto(base + 'g/sample/');
+      await page.waitForFunction(() => window.yoki && window.yoki.D, null, { timeout: 30000 });
+      await page.click('#groupMenuBtn');
+      await Promise.all([page.waitForURL('**/admin/**'), page.click('#toOperator')]);
+      await page.waitForSelector('#opCounts .op-count', { timeout: 15000 });
       await page.goto(base);
       await page.waitForSelector('#opLink:not([hidden])', { timeout: 15000 });
       await page.click('#opLink');

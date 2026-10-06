@@ -18,7 +18,7 @@ npm run dev
 `http://localhost:5173/` を開き、「開発用ログイン」でサンプルのグループに入る。Discord も Cloudflare のアカウントも要らない。データは手元の D1（`.wrangler/state/`）に入る。
 
 - ひよりは管理者、ほかの人はただのメンバーとして入れる（権限の違いを確かめられる）
-- ひよりは、手元（localhost）から開いたときだけ運営者にもなる。入口の「運営の管理画面」から `/admin/` を開ける
+- ひよりは、手元（localhost）から開いたときだけ運営者にもなる。入口の「運営の管理画面」か、グループの画面のグループの切り替えから `/admin/` を開ける
 - サンプルのグループは、初めて入ったときに作られる。作り直すときは `curl -X POST http://localhost:5173/dev/reset -H 'Origin: http://localhost:5173'`
 - 本物の Discord でログインを試すときは、`.dev.vars.example` を `.dev.vars` に写して、Discord アプリの値を入れる（Discord アプリの作り方は、下の「公開」の 2）
 - Google でのログインと Google カレンダーとの連携は、Google の値（`GOOGLE_CLIENT_ID` など）が空なら、開発用の偽の Google で試せる。偽の Google のアカウントは 1 つだけで、初めて「Google でログイン」を押すと、続けて開発用ログインで選んだ人に結びつく。同意の画面は出さずに連携したことにし、書き込んだ予定は `http://localhost:5173/dev/google/state` で見られる。予定ありの時間は `POST /dev/google/busy`（`{ "busy": [{ "start": "…", "end": "…" }] }`）で入れる。`/dev/reset` で、開発用の人の連携・Google でのログインと、偽の Google の中身も消える
