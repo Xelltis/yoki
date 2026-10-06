@@ -12,6 +12,8 @@ import { call, loginAs, makeGroup, mockDiscord, ok, ORIGIN, setCookies, setupGro
 afterEach(() => vi.restoreAllMocks());
 
 const SORA = '400000000000000011';
+/** 控えの cookie（https では __Host- が付く） */
+const GLINK = '__Host-yoki_glink';
 const cookieOf = (res: Response, name: string) => setCookies(res).find((c) => c.startsWith(name + '='))?.split(';')[0]!.slice(name.length + 1);
 const loginRow = (userId: string) => env.DB.prepare('SELECT google_sub, email, last_login_at FROM google_logins WHERE user_id = ?').bind(userId).first<Record<string, string | null>>();
 
@@ -50,21 +52,22 @@ describe('Google でログインする', () => {
     const s = await start('?return_to=' + encodeURIComponent('/g/grp/'));
     const r = await back('code=x&state=' + s.state, [s.cookie]);
     expect(r.headers.get('Location')).toBe('/?login=google-new&return_to=' + encodeURIComponent('/g/grp/'));
-    const pending = cookieOf(r, 'yoki_glink')!;
+    const pending = cookieOf(r, GLINK)!;
+    expect(setCookies(r).find((c) => c.startsWith(GLINK + '='))).toMatch(/HttpOnly.*Secure|Secure.*HttpOnly/i);
     expect(pending).toMatch(/^v1\./);
     expect(decodeURIComponent(pending)).not.toContain(DEV_GOOGLE_SUB);
     // 入口へ戻るときは、戻り先を付けない
     const s2 = await start();
     expect((await back('code=x&state=' + s2.state, [s2.cookie])).headers.get('Location')).toBe('/?login=google-new');
 
-    // Discord でログインする（控えを持って）
+    // Discord でログインする（結びつけるために押した印を付けて、控えを持って）
     mockDiscord({ user: { id: SORA, username: 'sora', global_name: 'ソラ' }, guilds: [{ id: 'guild-t', name: 'T', permissions: '0' }] });
-    const dl = await call('/auth/login');
+    const dl = await call('/auth/login?link_google=1');
     const oauth = cookieOf(dl, 'yoki_oauth')!;
     const state = new URL(dl.headers.get('Location')!).searchParams.get('state')!;
-    const cb = await call('/auth/callback?code=c&state=' + state, { headers: { Cookie: 'yoki_oauth=' + oauth + '; yoki_glink=' + pending } });
+    const cb = await call('/auth/callback?code=c&state=' + state, { headers: { Cookie: 'yoki_oauth=' + oauth + '; ' + GLINK + '=' + pending } });
     expect(cb.headers.get('Location')).toBe('/?login=google-linked');
-    expect(setCookies(cb).some((c) => c.startsWith('yoki_glink=;'))).toBe(true);
+    expect(setCookies(cb).some((c) => c.startsWith(GLINK + '=;'))).toBe(true);
     expect(await loginRow(SORA)).toMatchObject({ google_sub: DEV_GOOGLE_SUB, email: 'dev@example.com', last_login_at: null });
     vi.restoreAllMocks();
 
@@ -83,11 +86,37 @@ describe('Google でログインする', () => {
     const key = (await googleDeps(env as unknown as Bindings, ORIGIN))!.key;
     const pending = await seal(key, JSON.stringify({ sub: 'g-1', email: 'a@example.com', at: new Date().toISOString() }));
     mockDiscord({ user: { id: SORA, username: 'sora' }, guilds: [] });
-    const dl = await call('/auth/login?return_to=' + encodeURIComponent('/g/grp/'));
+    const dl = await call('/auth/login?link_google=1&return_to=' + encodeURIComponent('/g/grp/'));
     const state = new URL(dl.headers.get('Location')!).searchParams.get('state')!;
-    const cb = await call('/auth/callback?code=c&state=' + state, { headers: { Cookie: 'yoki_oauth=' + cookieOf(dl, 'yoki_oauth') + '; yoki_glink=' + encodeURIComponent(pending) } });
+    const cb = await call('/auth/callback?code=c&state=' + state, { headers: { Cookie: 'yoki_oauth=' + cookieOf(dl, 'yoki_oauth') + '; ' + GLINK + '=' + encodeURIComponent(pending) } });
     expect(cb.headers.get('Location')).toBe('/g/grp/');
     expect((await loginRow(SORA))!.google_sub).toBe('g-1');
+  });
+
+  test('結びつけるために押したのでない Discord のログイン（黙って行う聞き直しなど）では、控えを使わない', async () => {
+    const key = (await googleDeps(env as unknown as Bindings, ORIGIN))!.key;
+    const pending = await seal(key, JSON.stringify({ sub: 'g-2', email: 'b@example.com', at: new Date().toISOString() }));
+    mockDiscord({ user: { id: SORA, username: 'sora' }, guilds: [] });
+    const dl = await call('/auth/login?return_to=' + encodeURIComponent('/g/grp/'));
+    const state = new URL(dl.headers.get('Location')!).searchParams.get('state')!;
+    const cb = await call('/auth/callback?code=c&state=' + state, { headers: { Cookie: 'yoki_oauth=' + cookieOf(dl, 'yoki_oauth') + '; ' + GLINK + '=' + encodeURIComponent(pending) } });
+    expect(cb.headers.get('Location')).toBe('/g/grp/');
+    expect(await loginRow(SORA)).toBeNull();
+    expect(setCookies(cb).some((c) => c.startsWith(GLINK + '='))).toBe(false);
+  });
+
+  test('Discord が prompt=none を断ってやり直すときも、結びつけるための印を保つ', async () => {
+    const dl = await call('/auth/login?link_google=1&return_to=' + encodeURIComponent('/g/grp/'));
+    const state = new URL(dl.headers.get('Location')!).searchParams.get('state')!;
+    const r = await call('/auth/callback?error=consent_required&state=' + state, { headers: { Cookie: 'yoki_oauth=' + cookieOf(dl, 'yoki_oauth') } });
+    expect(r.headers.get('Location')).toBe('/auth/login?consent=1&link_google=1&return_to=%2Fg%2Fgrp%2F');
+  });
+
+  test('ログアウトすると、結びつけを待っている控えも消す', async () => {
+    const sid = await loginAs({ id: SORA, name: 'ソラ' }, []);
+    const res = await call('/auth/logout', { method: 'POST', sid, headers: { Origin: ORIGIN, Cookie: GLINK + '=x' } });
+    expect(res.status).toBe(303);
+    expect(setCookies(res).some((c) => c.startsWith(GLINK + '=;'))).toBe(true);
   });
 
   test('締め出された人は Google でも入れない。断られたら入口へ。code が無ければやり直し', async () => {
@@ -144,7 +173,7 @@ describe('Google でログインする', () => {
     const now = new Date();
     const sealed = (p: object) => seal(key, JSON.stringify(p));
     const tryWith = async (cookie: string | null, e: Partial<Bindings> = {}) => {
-      const headers: Record<string, string> = cookie === null ? {} : { Cookie: 'yoki_glink=' + encodeURIComponent(cookie) };
+      const headers: Record<string, string> = cookie === null ? {} : { Cookie: GLINK + '=' + encodeURIComponent(cookie) };
       const c = { req: { url: ORIGIN + '/', raw: new Request(ORIGIN + '/', { headers }), header: (n: string) => headers[n] }, env: { ...env, ...e }, header: () => {} };
       return consumeGoogleLink(c as never, SORA, now);
     };

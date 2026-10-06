@@ -54,13 +54,17 @@ describe('開発用ログイン', () => {
 });
 
 describe('開発用ログインと Google でのログイン', () => {
-  test('初めての Google のアカウントを控えていれば、開発用ログインの人に結びつけ、入口で知らせる', async () => {
+  test('初めての Google のアカウントを控えていれば、結びつけるために押した開発用ログインの人に結びつけ、入口で知らせる', async () => {
     const key = (await googleDeps(env as unknown as Bindings, LOCAL))!.key;
     const pending = await seal(key, JSON.stringify({ sub: 'g-dev', email: 'dev@example.com', at: new Date().toISOString() }));
-    const res = await SELF.fetch(LOCAL + '/dev/login', {
-      method: 'POST', redirect: 'manual', body: 'as=ひより',
+    const devLogin = (body: string) => SELF.fetch(LOCAL + '/dev/login', {
+      method: 'POST', redirect: 'manual', body,
       headers: { 'Content-Type': 'application/x-www-form-urlencoded', Origin: LOCAL, Cookie: 'yoki_glink=' + encodeURIComponent(pending) },
     });
+    // 印が無ければ、控えがあっても結びつけない
+    expect((await devLogin('as=ひより')).headers.get('Location')).toBe('/g/sample/');
+    expect(await env.DB.prepare("SELECT user_id FROM google_logins WHERE google_sub = 'g-dev'").first('user_id')).toBeNull();
+    const res = await devLogin('as=ひより&link_google=1');
     expect(res.headers.get('Location')).toBe('/?login=google-linked');
     expect(await env.DB.prepare("SELECT user_id FROM google_logins WHERE google_sub = 'g-dev'").first('user_id')).toBe('400000000000000010');
   });

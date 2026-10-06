@@ -3,7 +3,7 @@ import { Hono } from 'hono';
 import { isReturnPath } from '../../shared/routes';
 import { deleteCookie, getCookie, setCookie } from 'hono/cookie';
 import type { AppEnv } from '../app';
-import { consumeGoogleLink } from '../auth/google-login';
+import { consumeGoogleLink, forgetGoogleLink } from '../auth/google-login';
 import { authorizeUrl, fetchDiscordProfile, saveProfile } from '../auth/oauth';
 import { isOperator } from '../auth/operator';
 import { appOrigin } from '../auth/origin';
@@ -29,8 +29,10 @@ authRoutes.get('/auth/login', (c) => {
   const returnTo = isReturnPath(want) ? want : '/';
   // 初めは prompt=none（許可済みなら画面を出さずに戻る）。Discord が断ったら一度だけ consent でやり直す
   const consent = c.req.query('consent') === '1';
+  // 初めての Google のアカウントを結びつけるために押したか（入口の「Discord でログイン」が付ける）。mode の後ろに g を付けて控える
+  const linkGoogle = c.req.query('link_google') === '1';
   const state = randomToken();
-  setCookie(c, STATE_COOKIE, [state, consent ? 'c' : 'n', returnTo].join('|'), {
+  setCookie(c, STATE_COOKIE, [state, (consent ? 'c' : 'n') + (linkGoogle ? 'g' : ''), returnTo].join('|'), {
     httpOnly: true,
     secure: !isLocalHttp(url),
     sameSite: 'Lax',
@@ -47,10 +49,11 @@ authRoutes.get('/auth/callback', async (c) => {
   const retry = { href: '/auth/login', label: 'ログインをやり直す' };
   if (!saved) return c.html(noticePage('ログインをやり直してください', 'ログインの途中の情報が見つかりませんでした（時間が経ちすぎたか、別のタブで開いた可能性があります）。', retry), 400);
   // split は少なくとも 1 つを返す。途中の情報が欠けていたら、戻り先は入口
-  const [state, mode, returnTo = '/'] = saved.split('|') as [string, string?, string?];
+  const [state, mode = '', returnTo = '/'] = saved.split('|') as [string, string?, string?];
+  const linkGoogle = mode.endsWith('g');
   const error = c.req.query('error');
   if (error) {
-    if (mode === 'n' && error !== 'access_denied') return c.redirect('/auth/login?consent=1&return_to=' + encodeURIComponent(returnTo));
+    if (mode.startsWith('n') && error !== 'access_denied') return c.redirect('/auth/login?consent=1' + (linkGoogle ? '&link_google=1' : '') + '&return_to=' + encodeURIComponent(returnTo));
     return c.redirect('/?login=cancelled');
   }
   const code = c.req.query('code');
@@ -64,12 +67,14 @@ authRoutes.get('/auth/callback', async (c) => {
   await saveProfile(c.env.DB, user, guilds);
   await startSession(c, user.id);
   const back = isReturnPath(returnTo) ? returnTo : '/';
-  // 初めての Google のアカウントで来ていたら、この人に結びつける（入口へ戻るなら、そのことを知らせる）
-  if ((await consumeGoogleLink(c, user.id)) && back === '/') return c.redirect('/?login=google-linked');
+  // 初めての Google のアカウントを結びつけるために来ていたら、この人に結びつける（入口へ戻るなら、そのことを知らせる）
+  if (linkGoogle && (await consumeGoogleLink(c, user.id)) && back === '/') return c.redirect('/?login=google-linked');
   return c.redirect(back);
 });
 
 authRoutes.post('/auth/logout', async (c) => {
   await endSession(c);
+  // 結びつけを待っている Google のアカウントの控えも消す（共用の端末で、次の人に結びつかないように）
+  forgetGoogleLink(c);
   return c.redirect('/', 303);
 });

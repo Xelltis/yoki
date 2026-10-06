@@ -35,8 +35,8 @@ export function registerDevRoutes(app: Hono<AppEnv>): void {
       { id: DEV_GUILD.id, name: DEV_GUILD.name, owner: who.manager, permissions: '0' },
     ]);
     await startSession(c, who.id);
-    // 開発用ログインも Discord でのログインの代わりなので、初めての Google のアカウントで来ていたら結びつける
-    if (await consumeGoogleLink(c, who.id)) return c.redirect('/?login=google-linked', 303);
+    // 開発用ログインも Discord でのログインの代わりなので、初めての Google のアカウントを結びつけるために押したら結びつける
+    if (form.link_google === '1' && (await consumeGoogleLink(c, who.id))) return c.redirect('/?login=google-linked', 303);
     return c.redirect('/g/' + SAMPLE_GROUP_ID + '/', 303);
   });
 

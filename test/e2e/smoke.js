@@ -460,9 +460,11 @@ await withDevServer(async (base) => {
       await Promise.all([g.waitForURL('**/?login=google-new'), g.click('#googleLoginBtn')]);
       assert.match(await g.textContent('#notice'), /初めての Google アカウント/);
       assert.equal(await g.locator('#googleLoginBtn').count(), 0, '結びつけを待つあいだは、Google のボタンを出さない');
+      assert.equal(await g.locator('#devForm input[name=link_google]').count(), 1, '結びつけるためのログインに印を付ける');
       await g.selectOption('#devAs', 'ひより');
       await Promise.all([g.waitForURL('**/?login=google-linked'), g.click('#devForm button')]);
       await Promise.all([g.waitForURL(base), g.click('form[action="/auth/logout"] button')]);
+      assert.equal(await g.locator('#devForm input[name=link_google]').count(), 0, 'ふだんのログインには印を付けない');
       await Promise.all([g.waitForURL((u) => u.pathname === '/' && !u.search), g.click('#googleLoginBtn')]);
       await g.waitForSelector('#groups');
       await g.goto(base + 'g/sample/settings/');
