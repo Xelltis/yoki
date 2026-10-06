@@ -53,6 +53,9 @@ README の「書くときの決まり」に加えて、次を守る。
 - ログインした人の Discord のトークン（OAuth）は保存しない。知らせに使う Bot のトークンは Worker の secret（`DISCORD_BOT_TOKEN`）に置き、画面にもログにも出さない。秘密の値（`.dev.vars`）はコミットしない
 - Google カレンダーと連携した人の refresh token だけは持つ（本人がいないときにも卓を書き直し、予定を読むため）。`GOOGLE_TOKEN_KEY` で暗号にして `google_links` に置き、画面・ログ・運営者の API には出さない。連携を外すときと利用者を消すときは、書き込んだ予定を消して Google の許可を取り消してから消す（`forgetGoogle`）。Google から受け取る欄は、要るものだけにする（予定の名前や中身は受け取らない）
 - 利用者そのものは Discord のアカウント（`users.id`）のままにする。Google でのログインは、結びつけた入り口（`google_logins`）として扱い、Google のアカウントだけではグループに入れない。グループに入れるかの確かめ直しは、Bot がいるサーバーでは Bot で、いなければ Discord で行う（`auth/guard.ts`）
+- 版（`package.json` の `version`）と `CHANGELOG.md` は release-please が上げる。手で書き換えない。コミットの type が版の上げ方と変わったことの一覧を決めるので、type を正しく付ける（`feat`・`fix`・`perf` は各地の運営の管理画面に出る）
+- 各地の卓予定は、版を飛ばして更新する。表の変更（`migrations/`）は、前の版から順に当たれば動くように書く
+- 更新のボタンのトークン（`UPDATE_DISPATCH_TOKEN`）は Worker の secret に置き、画面・ログ・運営者の API には出さない。権限は、そのリポジトリの Actions を動かすだけにする（Worker からコードを書き換えられないように）
 - 購読 URL（`/cal/<token>.ics`）は、知っていればだれでも読める。token は推測できない長さのランダムにし、作り直しと止めるができるようにする
 - 公開する Cloudflare ごとの値（D1 の ID・アプリのアドレス・Discord アプリの値と Bot のトークン・運営者の ID・Google の値・API トークン）は、リポジトリに書かない。GitHub の environment「production」に置き、`wrangler.jsonc` には仮の値だけを置く（README の「公開」）
 - アイコンは unplugin-icons で SVG にして入れ、画像やフォント（Google Fonts の Material Symbols）では読まない。集まりは、ライセンスを確かめたもの（`tools/icons.ts` の `ALLOWED_ICON_SETS`。今は Material Symbols の Apache-2.0）だけを使う。足したら一覧にも足す（画面は `src/client/ui/icons.ts` の `ICONS`、サイトは `website/.vitepress/theme/icons.ts` の `ICONS`。型の確認とテストが確かめる）

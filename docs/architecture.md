@@ -176,6 +176,7 @@ Worker 1 つで、次の 3 つを受け持つ。
 | `POST /api/admin/users/:id/delete` | 利用者を消す（本人から頼まれたとき）。users の行（ログインとサーバーの控えは表の決まりで一緒に消える）と、どのグループでもその人のメンバーの行（`user_id` か `discord_id` が同じもの）を消し、グループの `created_by` を空にする。メンバーの行の消し方はグループの管理者がメンバーを消すときと同じ（予定とメモは消え、卓と回答はゲストの名前になる）。運営者と、締め出している人（消すと印も消える）は断る。Google カレンダーと連携していれば、書き込んだ予定を消し、Google の許可を取り消してから消す |
 | `POST /api/admin/registration` | 新規登録を受け付ける・止める（`{open}`） |
 | `GET /api/admin/legal` `POST /api/admin/legal` | 利用規約とプライバシーポリシーの、運営者の名前・問い合わせ先・本文を読む・保存する（`{operator?, contact?, terms?, privacy?}`。省いたものは変えない） |
+| `GET /api/admin/update` `POST /api/admin/update` | 動いている版と、元のリポジトリの最新の版を比べる（`?refresh=1` で GitHub を読み直す）・最新の版への更新を始める（下の「版と更新」） |
 
 - どの道も、ログインしていなければ `AUTH:` の 401、運営者でなければ 403。返事は `Cache-Control: no-store`
 - 読むものは GET、変えるものは POST（JSON）。CSRF の確かめは `/api` のほかの道と同じ
@@ -186,6 +187,18 @@ Worker 1 つで、次の 3 つを受け持つ。
 - 新規登録の受付（`domain/registration.ts`）。止めると、グループを作る道（`POST /api/groups`）と、初めての人のログイン（`/auth/callback`・開発用ログイン。users に行が無い人）を断る。もう使っている人と運営者は通す。運営者が自分を締め出さないように、運営者はいつでも入れて、グループも作れる。画面には `/api/me` の `registration` で知らせる
 - 利用規約とプライバシーポリシー（`domain/legal.ts`）。既定の文（`domain/legal-text.ts`）は、このリポジトリのままの卓予定に合わせて書いてあり、アプリの作りが変わってずれたら直す。運営者が本文を直すと `meta` に保存し、直していなければ既定の文を出す（既定の文を直せば、直していない公開先にもそのまま出る）。本文を空か既定の文と同じにして保存すると、既定の文に戻る。本文の書き方は見出し・箇条書き・段落・リンクだけで、HTML はそのまま文字で出す（`lib/markup.ts`）
 - Discord サーバーを付け替えると、新しいサーバーの人は、控えが 5 分より古くなったときに黙って読み直して入れるようになり、古いサーバーの人は入れなくなる
+
+## 版と更新
+
+卓予定は OSS として、ほかの人がフォークして自分の Cloudflare に公開する。元のリポジトリが出す版に、各地の卓予定が運営の管理画面から追いつけるようにする（WordPress の更新と同じ役目）。Worker は自分のコードを書き換えない。取り込みと公開は、各地のリポジトリの GitHub Actions がする。
+
+- **版**: `package.json` の `version`。`vite.config.ts` が組み立てのときに `__APP_VERSION__` として Worker に入れる（`src/worker/version.ts`）。版と `CHANGELOG.md` は、元のリポジトリの release-please（`.github/workflows/release.yml`）が Conventional Commits から上げ、タグ `vX.Y.Z` と GitHub の Release を作る
+- **新しい版を知る**（`domain/update.ts`）: 元のリポジトリ（`UPSTREAM_REPOSITORY`。無ければ `update/config.ts` の既定）の最新の Release を GitHub の API で読み、今の版と比べる。新しければ、2 つのタグのあいだに変わったファイル（compare）に `migrations/` があるかで、表の変更を含むかを出す。読んだ結果は `meta` の `update_check` に控え、1 時間は読み直さない（GitHub の API は、トークンなしでは 1 時間に 60 回まで）。読めなければ理由を出し、前に読めた最新の版は残す
+- **更新する**（`.github/workflows/update.yml`。各地のリポジトリで動く）: 元のリポジトリのタグを fetch して main にマージし、公開のワークフローを動かす。ぶつかったら main を変えずに `update/vX.Y.Z` のブランチと PR を作って止まる。版の形（`vX.Y.Z`）を確かめてから使い、入力は式の中に直に書かない（スクリプトの差し込みを防ぐ）
+- **2 つのトークン**: 管理画面のボタンは、Worker の secret の `UPDATE_DISPATCH_TOKEN`（そのリポジトリの Actions を動かすだけの権限）で、更新のワークフローを `workflow_dispatch` で動かし、その実行の一覧を読む。運営者の Discord のアカウントを取られても、コードは書き換えられない。main への書き込みは、更新のワークフローが Actions の secret の `UPDATE_PUSH_TOKEN`（Contents と Workflows）で行う。既定の `GITHUB_TOKEN` は `.github/workflows/` を書き換えられず、書き込んだ push では公開のワークフローも動かないので、そのときは更新のワークフローが公開のワークフローを動かす
+- **表の変更**: 公開のワークフローが、当てる前に D1 の Time Travel の地点（bookmark）を Summary に控える。表の変更は戻せないので、困ったら Worker を前の版に戻し、D1 をその地点に戻す
+- `APP_REPOSITORY`（公開しているリポジトリ）は、公開のワークフローが `github.repository` を組み立てに渡して入れる。`owner/name` の形でなければ使わない（API の道に入れるため）
+- 開発サーバーでは `APP_REPOSITORY` が空なので、開発用の偽の GitHub（`update/dev.ts`。最新はいつも今の小さい版を 1 つ上げたもの）を使う。偽物を選ぶ道は `import.meta.env.DEV` のときだけ
 
 ## 日本時間
 
@@ -281,7 +294,7 @@ TypeScript と React 19 で書き、Vite が組み立てる。1 つの SPA で�
 アプリは GitHub Actions（`.github/workflows/deploy.yml`）が、main にアプリの変更が入ったときに公開する。
 
 - OSS として、公開する Cloudflare ごとに違う値はリポジトリに置かない。`wrangler.jsonc` には仮の値（D1 の ID は 0 が並んだもの、APP_URL と DISCORD_CLIENT_ID は空）だけを置き、手元の開発とテストはそのまま動く
-- 本番の値は GitHub の environment「production」に置く。組み立てのとき、`vite.config.ts` が環境変数（`YOKI_D1_DATABASE_ID`・`YOKI_APP_URL`・`YOKI_DISCORD_CLIENT_ID`）を、組み立てた設定（`dist/yoki/wrangler.json`）に入れる。`YOKI_DEPLOY=1` のときに欠けていたら、組み立てを止める（仮の値のまま公開しないように）
+- 本番の値は GitHub の environment「production」に置く。組み立てのとき、`vite.config.ts` が環境変数（`YOKI_D1_DATABASE_ID`・`YOKI_APP_URL`・`YOKI_DISCORD_CLIENT_ID`。あれば `YOKI_GOOGLE_CLIENT_ID`・`YOKI_REPOSITORY`・`YOKI_UPSTREAM`）を、組み立てた設定（`dist/yoki/wrangler.json`）に入れる。`YOKI_DEPLOY=1` のときに欠けていたら、組み立てを止める（仮の値のまま公開しないように）
 - 秘密の値（`DISCORD_CLIENT_SECRET`・`DISCORD_BOT_TOKEN`）と運営者の ID（`OPERATOR_IDS`）は vars に置かず、Worker の secret にする。公開のたびに `wrangler deploy --secrets-file` で版と一緒に送る。vars は公開のログに出るため（公開のリポジトリでは、Actions のログはだれでも読める）
 - マイグレーションと公開は、どちらも組み立てた設定（`--config dist/yoki/wrangler.json`）で行う
 - wrangler には D1 の ID を省くと自動で作る機能もあるが、試験中で、マイグレーションとの順番も合わないので使わない
