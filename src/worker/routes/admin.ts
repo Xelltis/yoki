@@ -11,7 +11,10 @@ import { readForm, str } from '../domain/form';
 import { deleteGroupById } from '../domain/groups';
 import { readLegal, saveLegal } from '../domain/legal';
 import { setRegistrationOpen } from '../domain/registration';
+import { startUpdate, updateStatus } from '../domain/update';
 import { googleDeps } from '../google/config';
+import { updateDeps } from '../update/config';
+import { APP_VERSION } from '../version';
 
 export const adminRoutes = new Hono<AppEnv>();
 
@@ -50,6 +53,18 @@ adminRoutes.post('/api/admin/legal', async (c) => {
   const { changed } = await saveLegal(c.env.DB, form, new Date());
   audit(op, 'setLegal', 'legal', { operator: form.operator ?? null, contact: form.contact ?? null, changed });
   return c.json(done('利用規約とプライバシーポリシーの設定を保存しました。'));
+});
+
+adminRoutes.get('/api/admin/update', async (c) => {
+  await requireOperator(c);
+  return c.json(await updateStatus(c.env.DB, updateDeps(c.env), new Date(), c.req.query('refresh') === '1'));
+});
+
+adminRoutes.post('/api/admin/update', async (c) => {
+  const op = await requireOperator(c);
+  const version = await startUpdate(c.env.DB, updateDeps(c.env));
+  audit(op, 'update', 'v' + version, { from: 'v' + APP_VERSION });
+  return c.json(done('v' + version + ' への更新を始めました。GitHub の Actions が取り込んで公開します（数分かかります）。'));
 });
 
 adminRoutes.get('/api/admin/groups', async (c) => {

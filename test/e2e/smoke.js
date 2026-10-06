@@ -499,6 +499,19 @@ await withDevServer(async (base) => {
       assert.equal(await page.isVisible('#tab-settings a[href="/privacy"]'), true, '設定の画面にリンクがある');
     });
 
+    await step('運営の管理画面: 新しい版があれば「様子」で知らせ、「更新」で変わったことを見て更新を始められる（開発用の偽の GitHub）', async () => {
+      await page.goto(base + 'admin/overview/');
+      await page.waitForSelector('#opUpdateNotice', { timeout: 15000 });
+      await Promise.all([page.waitForURL('**/admin/update/'), page.click('#opUpdateNotice')]);
+      await page.waitForSelector('#opNotes li', { timeout: 15000 });
+      assert.match(await page.textContent('#opUpdateState'), /新しい版 v\d+\.\d+\.\d+ があります/);
+      assert.equal(await page.isVisible('#opMigrations'), true, '表の変更を含むと知らせる');
+      await page.click('#opUpdateStart');
+      await confirm();
+      await page.waitForSelector('#opRuns li', { timeout: 15000 });
+      await main();
+    });
+
     await step('Google でログイン: 初めては Discord（開発用ログイン）と結びつけ、次からは Google だけで入れる。設定で外せる', async () => {
       const ctx = await browser.newContext({ viewport: { width: 1280, height: 860 } });
       const g = await ctx.newPage();

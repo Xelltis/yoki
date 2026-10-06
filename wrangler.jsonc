@@ -31,7 +31,10 @@
     // 秘密の値（DISCORD_CLIENT_SECRET・DISCORD_BOT_TOKEN）と運営者の ID（OPERATOR_IDS）は vars に置かず、Worker の secret にする（src/worker/env.ts）
     "APP_URL": "",
     "DISCORD_CLIENT_ID": "",
-    "GOOGLE_CLIENT_ID": ""
+    "GOOGLE_CLIENT_ID": "",
+    // 公開しているリポジトリ（owner/name）と、新しい版を見に行く元のリポジトリ。公開のときに入れる（運営の管理画面の「更新」）
+    "APP_REPOSITORY": "",
+    "UPSTREAM_REPOSITORY": ""
   },
   "observability": { "enabled": true }
 }

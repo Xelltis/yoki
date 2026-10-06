@@ -31,6 +31,10 @@ function deployValues(config: WorkerConfig): void {
   if (env.YOKI_DISCORD_CLIENT_ID) config.vars.DISCORD_CLIENT_ID = env.YOKI_DISCORD_CLIENT_ID;
   // Google カレンダーとの連携は、無くても動くので DEPLOY_VALUES（欠けたら止まる一覧）には入れない
   if (env.YOKI_GOOGLE_CLIENT_ID) config.vars.GOOGLE_CLIENT_ID = env.YOKI_GOOGLE_CLIENT_ID;
+  // 公開しているリポジトリ（owner/name。deploy.yml が github.repository を渡す）。運営の管理画面の「更新」が、更新のワークフローを呼ぶ先
+  if (env.YOKI_REPOSITORY) config.vars.APP_REPOSITORY = env.YOKI_REPOSITORY;
+  // 新しい版を見に行く元のリポジトリ（無ければ src/worker/update/config.ts の既定）。フォークのフォークで使う
+  if (env.YOKI_UPSTREAM) config.vars.UPSTREAM_REPOSITORY = env.YOKI_UPSTREAM;
 }
 
 const root = path.join(import.meta.dirname, 'src/client');
@@ -41,6 +45,11 @@ const root = path.join(import.meta.dirname, 'src/client');
  */
 function apiShape(): string {
   return createHash('sha256').update(readFileSync(path.join(import.meta.dirname, 'src/shared/api.ts'))).digest('hex').slice(0, 12);
+}
+
+/** 卓予定の版（package.json の version。release-please が上げる）。Worker に __APP_VERSION__ として入れ、運営の管理画面の「更新」で新しい版と比べる */
+export function appVersion(): string {
+  return (JSON.parse(readFileSync(path.join(import.meta.dirname, 'package.json'), 'utf8')) as { version: string }).version;
 }
 
 /**
@@ -69,7 +78,7 @@ function noDevLogin(): Plugin {
 
 export default defineConfig(({ command }) => ({
   root,
-  define: { __API_SHAPE__: JSON.stringify(apiShape()) },
+  define: { __API_SHAPE__: JSON.stringify(apiShape()), __APP_VERSION__: JSON.stringify(appVersion()) },
   plugins: [
     // 画面の React（JSX と、開発サーバーで直すとすぐ反映される Fast Refresh）
     react(),

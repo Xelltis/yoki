@@ -6,6 +6,7 @@
 import path from 'node:path';
 import { cloudflareTest, readD1Migrations } from '@cloudflare/vitest-pool-workers';
 import { defineConfig, type ViteUserConfig } from 'vitest/config';
+import { appVersion } from './vite.config';
 
 export default defineConfig(async (): Promise<ViteUserConfig> => {
   const migrations = await readD1Migrations(path.join(import.meta.dirname, 'migrations'));
@@ -45,6 +46,8 @@ export default defineConfig(async (): Promise<ViteUserConfig> => {
               },
             }),
           ],
+          // Worker が使う、組み立てのときに入れる値（vite.config.ts）
+          define: { __APP_VERSION__: JSON.stringify(appVersion()) },
           test: { name: 'worker', include: ['test/worker/**/*.test.ts'], setupFiles: ['test/worker/setup.ts'] },
         },
         {

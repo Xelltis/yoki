@@ -6,7 +6,7 @@ export const TAB_PATHS = ['recruit', 'avail', 'settings'] as const;
 /** グループの管理の区域の区分（/g/:id/admin/ は、前に開いていた区分か members へ移る） */
 export const ADMIN_PANES = ['members', 'ops', 'notify', 'table', 'admins', 'log', 'danger'] as const;
 /** 運営の管理画面の区分（/admin/ は、前に開いていた区分か overview へ移る） */
-export const OPERATOR_PANES = ['overview', 'groups', 'users', 'legal'] as const;
+export const OPERATOR_PANES = ['overview', 'groups', 'users', 'legal', 'update'] as const;
 
 export type TabPath = (typeof TAB_PATHS)[number];
 export type AdminPane = (typeof ADMIN_PANES)[number];

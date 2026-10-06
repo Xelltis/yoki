@@ -49,6 +49,7 @@ import ISync from '~icons/material-symbols/sync-outline-rounded';
 import ITaskAlt from '~icons/material-symbols/task-alt-outline-rounded';
 import IToday from '~icons/material-symbols/today-outline-rounded';
 import IUndo from '~icons/material-symbols/undo-outline-rounded';
+import IUpgrade from '~icons/material-symbols/upgrade-outline-rounded';
 import IWarning from '~icons/material-symbols/warning-outline-rounded';
 import ICalendarMonthFilled from '~icons/material-symbols/calendar-month-rounded';
 import ICampaignFilled from '~icons/material-symbols/campaign-rounded';
@@ -104,6 +105,7 @@ export const ICONS = {
   task_alt: ITaskAlt,
   today: IToday,
   undo: IUndo,
+  upgrade: IUpgrade,
   warning: IWarning,
 } satisfies Record<string, IconComponent>;
 

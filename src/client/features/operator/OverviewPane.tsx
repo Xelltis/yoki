@@ -1,6 +1,6 @@
-// 運営者の管理画面の「様子」。数・新規登録の受付・知らせの見回り（cron）・Discord への送信の失敗
+// 運営者の管理画面の「様子」。新しい版の知らせ・数・新規登録の受付・知らせの見回り（cron）・Discord への送信の失敗
 import { Link } from '@tanstack/react-router';
-import type { AdminOverview } from '../../../shared/admin';
+import type { AdminOverview, AdminUpdate } from '../../../shared/admin';
 import { askConfirm } from '../../ui/confirm';
 import { Icon } from '../../ui/Icon';
 import { ADMIN_READS, useAct, useAdmin } from './api';
@@ -21,6 +21,7 @@ function Count({ n, label, sub }: { n: number; label: string; sub?: string }) {
 
 export function OverviewPane() {
   const o = useAdmin<AdminOverview>(ADMIN_READS.overview.queryKey, ADMIN_READS.overview.path).data;
+  const up = useAdmin<AdminUpdate>(ADMIN_READS.update.queryKey, ADMIN_READS.update.path).data;
   const act = useAct();
   if (!o) {
     return (
@@ -46,6 +47,13 @@ export function OverviewPane() {
   };
   return (
     <div data-pane="overview">
+      {/* 新しい版があれば、いちばん上で知らせる。押すと「更新」の区分へ */}
+      {up && up.available && up.latest && (
+        <Link className={stateCls('warn') + ' mt-0 mb-14 flex items-center gap-8 no-underline hover:underline'} id="opUpdateNotice" to="/admin/$pane/" params={{ pane: 'update' }}>
+          <Icon name="upgrade" size="sm" />{'新しい版 v' + up.latest.version + ' があります（いまは v' + up.current + '）。更新の区分で、変わったことを見て更新できます'}
+          <Icon name="chevron_right" size="sm" className="ml-auto" />
+        </Link>
+      )}
       <div className={counts} id="opCounts">
         <Count n={c.groups} label="グループ" />
         <Count n={c.users} label="利用者" sub={c.bannedUsers ? '締め出し ' + c.bannedUsers + ' 人' : ''} />

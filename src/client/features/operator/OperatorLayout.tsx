@@ -14,7 +14,7 @@ import { ModalManager } from '../../ui/Modal';
 import { Toast, toast } from '../../ui/toast';
 import { ADMIN_READS, adminQuery } from './api';
 
-const PANES: [OperatorPane, string][] = [['overview', '様子'], ['groups', 'グループ'], ['users', '利用者'], ['legal', '規約']];
+const PANES: [OperatorPane, string][] = [['overview', '様子'], ['groups', 'グループ'], ['users', '利用者'], ['legal', '規約'], ['update', '更新']];
 
 export function OperatorLayout() {
   const qc = useQueryClient();
