@@ -19,6 +19,9 @@ website/.vitepress/cache/
 # ログ
 *.log
 
+# Pythonの控え（yomiyasuの検査。tools/lint-ja.mjsは書かないようにしている）
+__pycache__/
+
 # OS とエディタ
 .DS_Store
 Thumbs.db

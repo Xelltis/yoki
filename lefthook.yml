@@ -1,8 +1,8 @@
-# Git のフック（lefthook）。npm install のときに入る。入っていなければ npx lefthook install
-# 一度だけ止めたいときは LEFTHOOK=0 git commit …
+# Gitのフック（lefthook）。npm installのときに入る。入っていなければnpx lefthook install
+# 一度だけ止めたいときはLEFTHOOK=0 git commit …
 # 書き方: https://lefthook.dev/configuration/
 
-# コミットの前: 型の確認・lint・テスト。関係するファイル（依存を変えたときの package-lock.json も）をコミットするときだけ回す
+# コミットの前: 型の確認・lint・テスト。関係するファイル（依存を変えたときのpackage-lock.jsonも）をコミットするときだけ回す
 pre-commit:
   parallel: true
   jobs:
@@ -23,6 +23,12 @@ pre-commit:
         - ".oxlintrc.json"
       run: npm run lint
 
+    - name: 日本語の検査
+      glob:
+        - "*.md"
+        - "**/*.md"
+      run: node tools/lint-ja.mjs {staged_files}
+
     - name: テスト
       glob:
         - "src/**"
@@ -34,8 +40,8 @@ pre-commit:
         - "package-lock.json"
       run: npm test
 
-# コミットの説明: Conventional Commits の形か（commitlint。決まりは commitlint.config.js と CLAUDE.md の「コミット」）。
-# Git が作る説明（Merge・Revert・fixup! など）は commitlint がそのまま通す
+# コミットの説明: Conventional Commitsの形か（commitlint。決まりはcommitlint.config.jsとCLAUDE.mdの「コミット」）。
+# Gitが作る説明（Merge・Revert・fixup! など）はcommitlintがそのまま通す
 commit-msg:
   jobs:
     - name: commitlint

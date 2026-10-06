@@ -3,7 +3,7 @@
   "version": "0.0.0-development",
   "private": true,
   "license": "MIT",
-  "description": "卓予定（TRPG の卓の予定を管理する。Cloudflare Workers + D1 + Discord ログイン）",
+  "description": "卓予定（TRPGの卓の予定を管理する。Cloudflare Workers + D1 + Discordログイン）",
   "type": "module",
   "engines": {
     "node": "^22.12.0 || >=24.0.0"
@@ -17,7 +17,8 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "typecheck": "tsc -p tsconfig.json && tsc -p src/client/tsconfig.json && tsc -p tsconfig.node.json && tsc -p website/tsconfig.json",
-    "lint": "oxlint --deny-warnings",
+    "lint": "oxlint --deny-warnings && npm run lint:ja",
+    "lint:ja": "node tools/lint-ja.mjs",
     "e2e": "node test/e2e/smoke.js",
     "types": "wrangler types --strict-vars=false",
     "db:migrate:local": "wrangler d1 migrations apply DB --local",
