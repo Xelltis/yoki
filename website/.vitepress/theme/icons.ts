@@ -16,6 +16,7 @@ import IFlag from '~icons/material-symbols/flag-outline-rounded';
 import IGroup from '~icons/material-symbols/group-outline-rounded';
 import IHelp from '~icons/material-symbols/help-outline-rounded';
 import IHowToVote from '~icons/material-symbols/how-to-vote-outline-rounded';
+import ILink from '~icons/material-symbols/link-rounded';
 import ILogin from '~icons/material-symbols/login-outline-rounded';
 import ILogout from '~icons/material-symbols/logout-outline-rounded';
 import INotifications from '~icons/material-symbols/notifications-outline-rounded';
@@ -48,6 +49,7 @@ export const ICONS = {
   group: IGroup,
   help: IHelp,
   how_to_vote: IHowToVote,
+  link: ILink,
   login: ILogin,
   logout: ILogout,
   notifications: INotifications,

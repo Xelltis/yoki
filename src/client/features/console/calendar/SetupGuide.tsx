@@ -1,4 +1,5 @@
-// はじめの 3 ステップ。メンバーと卓がそろうまで、カレンダーの上に出す。「使い方」の隣のボタンで、いつでも出し直せる
+// はじめの 3 ステップ。仲間が入って卓ができるまで、カレンダーの上に出す。閉じたら次からも出さない（ヘルプのメニューから、いつでも出し直せる）。
+// 1. 仲間を招く（URL を Discord に貼る） 2. 卓を登録する 3. Discord に知らせる（無くても使えるので「任意」。管理者がする）
 import { useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
 import type { ConsoleData } from '../../../../shared/api';
@@ -8,53 +9,70 @@ import { toast } from '../../../ui/toast';
 import { openForm } from '../actions';
 import { useConsole } from '../context';
 import { isActive } from '../model/model';
-import { guideShown, useGoPane } from '../shell/nav';
+import { closeGuide, guideShown, useGoPane } from '../shell/nav';
 
-function Step({ n, state, title, text, children }: { n: number; state: string; title: string; text: string; children: ReactNode }) {
-  // 番号の丸。いまの段は水色、済んだ段は緑
+type StepState = 'done' | 'now' | '';
+
+function Step({ n, state, title, optional = false, text, children }: { n: number; state: StepState; title: string; optional?: boolean; text: string; children: ReactNode }) {
+  // 番号の丸。いまの段は青、済んだ段は緑
   const num = state === 'now' ? 'bg-accent-strong text-accent-ink' : state === 'done' ? 'bg-ok text-ok-text' : 'bg-head text-muted';
   return (
-    <li className="grid grid-cols-[30px_minmax(0,1fr)] items-start gap-10">
+    <li className="grid grid-cols-[30px_minmax(0,1fr)] items-start gap-10" data-step={n} data-state={state || 'later'}>
       <span className={'inline-flex h-30 w-30 items-center justify-center rounded-[50%] text-14 font-bold ' + num}>{state === 'done' ? <Icon name="check" size="sm" /> : n}</span>
-      <div><b className="text-15">{title}</b><p className="hint mt-2 mb-8">{text}</p>{children}</div>
+      <div>
+        <b className="text-15">{title}</b>
+        {optional && <span className="ml-6 inline-block rounded-full border border-line px-6 text-11 leading-[18px] font-semibold text-muted align-[1px]">任意</span>}
+        <p className="hint mt-2 mb-8">{text}</p>
+        {children}
+      </div>
     </li>
   );
 }
 
+/** グループの URL を写す。写せない端末では、URL を吹き出しに出す */
+function copyUrl(url: string): void {
+  void navigator.clipboard.writeText(url).then(
+    () => toast('グループの URL を写しました。Discord のチャンネルに貼ってください'),
+    () => toast('写せませんでした。この URL を貼ってください: ' + url),
+  );
+}
+
 export function SetupGuide({ d }: { d: ConsoleData }) {
-  const { ui } = useConsole();
+  const { ui, groupId } = useConsole();
   const { guide, guideFocus, selDay } = useStore(ui);
   const goPane = useGoPane();
   const ref = useRef<HTMLDivElement>(null);
   // 上の帯のボタンで出し直したら、ここへフォーカスを移す
   useEffect(() => { if (guideFocus) ref.current?.focus({ preventScroll: true }); }, [guideFocus]);
-  const hasMembers = d.members.length > 0, hasSession = d.sessions.some(isActive), hasDiscord = !!d.channelSet;
   if (!guideShown(d, guide)) return <div className="card border-accent-line" id="setupGuide" hidden />;
-  // メンバーの登録と Discord の設定は、管理者が管理画面でする。管理者でない人には、頼むように出す
-  const ask = <span className="hint">管理者に頼んでください</span>;
-  const admin = (pane: 'members' | 'notify') => { if (!d.isAdmin) { toast('メンバーの登録と Discord の設定は、管理者が管理画面でします'); return; } goPane(pane); };
-  const nActive = d.sessions.filter(isActive).length;
+  const others = d.members.length - 1, nActive = d.sessions.filter(isActive).length, hasDiscord = !!d.channelSet;
+  // いまの段は、まだ済んでいない最初の段だけ
+  const done = [others > 0, nActive > 0, hasDiscord];
+  const now = done.indexOf(false);
+  const state = (i: number): StepState => (done[i] ? 'done' : i === now ? 'now' : '');
   return (
     <div className="card border-accent-line" id="setupGuide" ref={ref} tabIndex={guideFocus ? -1 : undefined}>
       <h3 className="flex items-center gap-6">
         <Icon name="flag" size="sm" />はじめの 3 ステップ
-        <button type="button" className="btn icon ml-auto" data-go="close" aria-label="はじめの 3 ステップを閉じる" onClick={() => ui.set((s) => ({ ...s, guide: 'closed' }))}><Icon name="close" /></button>
+        <button type="button" className="btn icon ml-auto" data-go="close" aria-label="はじめの 3 ステップを閉じる" title="閉じる（ヘルプのメニューから、また出せます）" onClick={() => closeGuide(ui, groupId)}><Icon name="close" /></button>
       </h3>
       <ol className="m-0 grid list-none grid-cols-3 gap-x-24 gap-y-16 p-0 max-md:grid-cols-[minmax(0,1fr)]">
-        <Step n={1} state={hasMembers ? 'done' : 'now'} title="メンバーを登録する" text="卓に出る人の名前を入れます。ここで入れた名前が、予定表の列と参加者の候補になります。">
-          {hasMembers
-            ? <><span className="hint">{d.members.length} 人を登録しています</span>{d.isAdmin && <>{' '}<button type="button" className="btn small mt-2" data-go="members" onClick={() => admin('members')}>開く</button></>}</>
-            : d.isAdmin ? <button type="button" className="btn primary mt-2" data-go="members" onClick={() => admin('members')}><Icon name="person_add" size="sm" />メンバーを登録</button> : ask}
+        <Step n={1} state={state(0)} title="仲間を招く" text="グループの URL を、Discord サーバーのチャンネルに貼ります。開いてログインした人は、自動でメンバーになります（入れるのは、サーバーにいる人だけ）。">
+          {others > 0 && <span className="hint mr-6">{'あなたのほかに ' + others + ' 人がいます'}</span>}
+          <div className="btns mt-2 gap-6">
+            <button type="button" className={'btn ' + (others > 0 ? 'small' : 'primary')} data-go="copy" onClick={() => copyUrl(d.appUrl)}><Icon name="link" size="sm" />URL を写す</button>
+            {d.isAdmin && <button type="button" className="btn small" data-go="members" title="まだ開いていない人を、名前と Discord の ID で先に足す" onClick={() => goPane('members')}>メンバーを先に足す</button>}
+          </div>
         </Step>
-        <Step n={2} state={hasDiscord ? 'done' : hasMembers ? 'now' : ''} title="Discord を登録する" text="管理画面の「知らせ」で卓予定の Bot を Discord サーバーに招き、知らせのチャンネルを選ぶと、卓の案内と開催前の知らせがそのチャンネルに届きます。知らせが要らないなら飛ばせます。">
-          {hasDiscord
-            ? <><span className="hint">登録してあります</span>{d.isAdmin && <>{' '}<button type="button" className="btn small mt-2" data-go="discord" onClick={() => admin('notify')}>開く</button></>}</>
-            : d.isAdmin ? <button type="button" className="btn mt-2" data-go="discord" onClick={() => admin('notify')}><Icon name="notifications" size="sm" />Discord を登録</button> : ask}
+        <Step n={2} state={state(1)} title="卓を登録する" text="カレンダーで日を選んで「卓を登録」を押します。日が決まっていなければ、「募集を始める」か「日程調整を始める」から。">
+          {nActive > 0 && <span className="hint mr-6">{nActive + ' 件の卓があります'}</span>}
+          <button type="button" className={'btn mt-2 ' + (nActive > 0 ? 'small' : now === 1 ? 'primary' : '')} data-go="new" onClick={() => openForm(ui, { date: selDay || undefined })}><Icon name="add" size="sm" />卓を登録</button>
         </Step>
-        <Step n={3} state={!hasMembers ? '' : hasSession ? 'done' : 'now'} title="予定を登録する" text="カレンダーで日を選んで「卓を登録」を押します。日が決まっていなければ、状態を「募集」か「調整中」にします。">
-          {hasMembers
-            ? <>{hasSession && <><span className="hint">{nActive} 件の卓があります</span>{' '}</>}<button type="button" className={'btn mt-2 ' + (hasSession ? 'small' : 'primary')} data-go="new" onClick={() => openForm(ui, { date: selDay || undefined })}><Icon name="add" size="sm" />卓を登録</button></>
-            : <span className="hint">先にメンバーを登録します</span>}
+        <Step n={3} state={state(2)} title="Discord に知らせる" optional text="卓予定の Bot を Discord サーバーに招き、知らせのチャンネルを選ぶと、卓の案内と開催前の知らせが届きます。無くても使えます。">
+          {hasDiscord && <span className="hint mr-6">設定してあります</span>}
+          {d.isAdmin
+            ? <button type="button" className={'btn mt-2 ' + (hasDiscord ? 'small' : now === 2 ? 'primary' : '')} data-go="discord" onClick={() => goPane('notify')}><Icon name="notifications" size="sm" />{hasDiscord ? '開く' : 'Discord を設定'}</button>
+            : !hasDiscord && <span className="hint">管理者が、管理画面の「知らせ」で設定します</span>}
         </Step>
       </ol>
     </div>
