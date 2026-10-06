@@ -29,7 +29,7 @@ import IHelp from '~icons/material-symbols/help-outline-rounded';
 import IHistory from '~icons/material-symbols/history-outline-rounded';
 import IHowToVote from '~icons/material-symbols/how-to-vote-outline-rounded';
 import ILightMode from '~icons/material-symbols/light-mode-outline-rounded';
-import ILink from '~icons/material-symbols/link-rounded';
+import ILink from '~icons/material-symbols/link-outline-rounded';
 import ILinkOff from '~icons/material-symbols/link-off-outline-rounded';
 import ILogin from '~icons/material-symbols/login-outline-rounded';
 import ILogout from '~icons/material-symbols/logout-outline-rounded';
