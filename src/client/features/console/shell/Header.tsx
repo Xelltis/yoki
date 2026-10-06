@@ -54,7 +54,7 @@ const iconRow = ' lg:max-2xl:w-(--h-control) lg:max-2xl:p-0';
 /** ログアウト。この端末の控えを消し、サーバーのログインを消して、入口へ戻る（素の POST） */
 export function useLogout(): () => void {
   const { sync } = useConsole();
-  return () => askConfirm({ title: 'ログアウトしますか？', message: 'このブラウザのログインを消します。次に開くときは、また Discord でログインします。', ok: 'ログアウト', danger: true }, () => {
+  return () => askConfirm({ title: 'ログアウトしますか？', message: 'このブラウザのログインを消します。次に開くときは、もう一度ログインします。', ok: 'ログアウト', danger: true }, () => {
     sync.forget();
     const f = document.createElement('form');
     f.method = 'post'; f.action = '/auth/logout';
