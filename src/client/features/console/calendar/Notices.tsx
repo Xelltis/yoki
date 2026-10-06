@@ -4,22 +4,24 @@ import type { ConsoleData, ConsoleSession } from '../../../../shared/api';
 import { store } from '../../../app/storage';
 import { Icon } from '../../../ui/Icon';
 import { daysBetween, fmtJa, timeRange } from '../model/dates';
-import { active, hasPoll, isAdjusting, isDated, isRecruit, me, pollPending, sortedActive, sortSessions } from '../model/model';
+import { active, hasPoll, isAdjusting, isDated, isMyTurn, isRecruit, pollPending, sortedActive, sortSessions } from '../model/model';
 import { notifyState } from '../model/notify';
 import { notice, noticeSub } from '../styles';
 
-type Item = { cls: string; body: ReactNode; day?: string; tab?: 'recruit'; target?: string };
+/** 押したときに移る先。day はその日を選ぶ、recruit は「募集・調整」のタブ（卓の ID があればその卓のカードへ）、target は都合を見る卓 */
+type Item = { cls: string; body: ReactNode; day?: string; recruit?: { id?: string }; target?: string };
 
-export function Notices({ d, onDay, onTab, onTarget }: {
+export function Notices({ d, onDay, onRecruit, onTarget }: {
   d: ConsoleData;
   /** その日を選ぶ */
   onDay: (day: string) => void;
-  onTab: (tab: 'recruit') => void;
+  /** 「募集・調整」のタブへ（卓の ID があれば、その卓のカードへ） */
+  onRecruit: (id?: string) => void;
   /** 都合を見る卓を変える */
   onTarget: (name: string) => void;
 }) {
   const items: Item[] = [];
-  const add = (cls: string, body: ReactNode, day?: string, tab?: 'recruit', target?: string) => { items.push({ cls, body, day, tab, target }); };
+  const add = (cls: string, body: ReactNode, day?: string, recruit?: { id?: string }, target?: string) => { items.push({ cls, body, day, recruit, target }); };
   const planned = sortedActive(d).filter((s) => isDated(s) && s.date);
   const line = (s: ConsoleSession, head: ReactNode) => (
     <>{head}<b>{s.name}</b><span className={noticeSub}>{timeRange(s) + '　GM: ' + (s.gm || '未定') + '　参加: ' + (s.members.join('、') || '未定')}</span></>
@@ -40,19 +42,19 @@ export function Notices({ d, onDay, onTab, onTarget }: {
         {rec.length > 3 && <span className="block text-12 font-semibold text-muted">{'ほか ' + (rec.length - 2) + ' 件'}</span>}
         <span className={noticeSub}>参加希望は「募集・調整」タブで出せます</span>
       </>
-    ), '', 'recruit');
+    ), '', {});
   }
   const adj = sortSessions(active(d).filter(isAdjusting));
   adj.forEach((s) => {
     if (hasPoll(s)) {
-      const pend = pollPending(d, s), who = me(d), waitMe = !!who && pend.indexOf(who) >= 0, gmTurn = !pend.length && !!who && who === s.gm;
-      add('adjust hot' + (waitMe || gmTurn ? ' mine' : ''), (
+      const pend = pollPending(d, s), turn = isMyTurn(d, s), waitMe = turn && pend.length > 0;
+      add('adjust hot' + (turn ? ' mine' : ''), (
         <>
           <Icon name="how_to_vote" />{pend.length ? '日程調整の回答待ち: ' : '日程調整の回答がそろいました: '}<b>{s.name}</b>
           <span className={noticeSub}>{'候補 ' + s.candidates.length + ' 日　' + (pend.length ? '未回答: ' + pend.join('、') : '全員が回答済み。GM が開催日を選びます')}</span>
-          {(waitMe || gmTurn) && <span className="block text-12 font-semibold text-soon-text">{waitMe ? 'あなたの回答を待っています' : '開催日を選んでください'}</span>}
+          {turn && <span className="block text-12 font-semibold text-soon-text">{waitMe ? 'あなたの回答を待っています' : '開催日を選んでください'}</span>}
         </>
-      ), '', 'recruit');
+      ), '', { id: s.id });
       return;
     }
     add('adjust hot', (
@@ -79,7 +81,7 @@ export function Notices({ d, onDay, onTab, onTarget }: {
   });
 
   const press = (it: Item) => {
-    if (it.tab) { onTab(it.tab); return; }
+    if (it.recruit) { onRecruit(it.recruit.id); return; }
     if (it.target) { store('target', it.target); onTarget(it.target); }
     if (it.day) onDay(it.day);
   };
@@ -89,9 +91,9 @@ export function Notices({ d, onDay, onTab, onTarget }: {
         // 募集中・調整中（hot）のあとは、少し離す
         const gap = i > 0 && items[i - 1]!.cls.indexOf('hot') >= 0 && it.cls.indexOf('hot') < 0 ? ' mt-10' : '';
         // 押せる行は、右に印を付ける（日を選ぶ・タブへ移る・都合を見る卓を変える）
-        return it.day || it.tab || it.target
+        return it.day || it.recruit || it.target
           ? (
-            <button type="button" key={i} className={notice(it.cls, true) + gap} data-day={it.day || undefined} data-tab={it.tab} data-target={it.target} onClick={() => press(it)}>
+            <button type="button" key={i} className={notice(it.cls, true) + gap} data-day={it.day || undefined} data-tab={it.recruit ? 'recruit' : undefined} data-target={it.target} onClick={() => press(it)}>
               {it.body}<Icon name="chevron_right" size="sm" className="absolute top-1/2 right-6 -translate-y-1/2 text-muted" />
             </button>
           )

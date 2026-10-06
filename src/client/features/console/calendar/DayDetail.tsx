@@ -12,7 +12,7 @@ import { googleAddUrl } from '../model/calendar';
 import { daysBetween, fmtJa, timeRange } from '../model/dates';
 import { hasPoll, isActive, isAdjusting, isDated, me, peopleOf, pollOk, pollVoters, seriesNames, sortSessions, targetPeople, windowByDay } from '../model/model';
 import { hookFor, kindOf, notifyState } from '../model/notify';
-import { useGoTab } from '../shell/nav';
+import { useGoRecruit } from '../shell/nav';
 import { Place } from '../Place';
 import { people as peopleRow, personChip, res, row2 } from '../styles';
 
@@ -28,7 +28,7 @@ const dayNoteDraft: Record<string, string> = {};
 export function DayDetail({ d, target }: { d: ConsoleData; target: string }) {
   const { ui, sync } = useConsole();
   const { selDay } = useStore(ui);
-  const goTab = useGoTab();
+  const goRecruit = useGoRecruit();
   const [, redraw] = useReducer((n: number) => n + 1, 0);
   const [notifying, setNotifying] = useState<Record<string, boolean>>({});
   const [note, setNote] = useState({ saving: false, msg: '' });
@@ -110,7 +110,7 @@ export function DayDetail({ d, target }: { d: ConsoleData; target: string }) {
               <div className="btns mt-10 gap-6">
                 {/* 調整中の卓は、日程の操作をいちばん先に */}
                 {isAdjusting(s) && (hasPoll(s)
-                  ? <button type="button" className="btn small primary" data-goto-recruit onClick={() => goTab('recruit')}><Icon name="how_to_vote" size="sm" />回答する</button>
+                  ? <button type="button" className="btn small primary" data-goto-recruit onClick={() => goRecruit(s.id)}><Icon name="how_to_vote" size="sm" />回答する</button>
                   : <button type="button" className="btn small primary" data-poll={s.id} onClick={() => openPoll(ui, s.id)}><Icon name="how_to_vote" size="sm" />日程を調整する</button>)}
                 <button type="button" className="btn small" data-edit={s.id} onClick={() => openForm(ui, { id: s.id })}><Icon name="edit" size="sm" />編集</button>
                 <button type="button" className="btn small" data-cont={s.id} title="設定を引き継いで翌日の卓を登録" onClick={() => openForm(ui, { cont: s.id })}><Icon name="add" size="sm" />続きを登録</button>

@@ -1,11 +1,12 @@
 // 募集・調整のタブ。募集中の卓（参加希望・興味あり・興味ありの人に聞く）と、日程調整中の卓（候補日への回答・開催日を決める）
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { ConsoleData, ConsoleSession, RpcResult } from '../../../../shared/api';
-import { store } from '../../../app/storage';
+import { reducedMotion, store } from '../../../app/storage';
 import { askConfirm } from '../../../ui/confirm';
 import { Icon } from '../../../ui/Icon';
 import { Modal } from '../../../ui/Modal';
 import { PageHead } from '../../../ui/PageHead';
+import { useStore } from '../../../ui/store';
 import { Tip } from '../../../ui/Tip';
 import { toast } from '../../../ui/toast';
 import { openForm, openPoll } from '../actions';
@@ -26,7 +27,9 @@ const barTitle = 'm-0 inline-flex items-center gap-6';
 /** 卓のカードを並べる（幅に合わせて列の数が変わる） */
 const cards = 'grid grid-cols-[repeat(auto-fill,minmax(min(100%,380px),1fr))] gap-14';
 /** 卓のカード */
-const rc = 'rounded-lg border border-line bg-card px-18 py-16 tabular-nums shadow-card';
+const rc = 'rounded-lg border border-line bg-card px-18 py-16 tabular-nums shadow-card transition-[box-shadow] duration-(--dur-fast) ease-out';
+/** カレンダーから移ってきた卓のカードに、少しのあいだ付ける枠 */
+const LIT = ['ring-2', 'ring-accent'];
 /** 題の行（名前と、右に「編集」） */
 const rcHead = 'flex items-start gap-8';
 const rcTitle = 'mt-0 mb-2 min-w-0 flex-1 text-16';
@@ -68,6 +71,17 @@ export function RecruitTab() {
   const { ui, sync } = useConsole();
   const goTab = useGoTab();
   const mine = me(d);
+  /* カレンダーの「回答する」などから来たら、その卓のカードまで動かし、少しのあいだ枠を付けて目立たせる */
+  const { focus } = useStore(ui);
+  useEffect(() => {
+    if (!focus) return;
+    ui.set((s) => ({ ...s, focus: '' }));
+    const el = document.querySelector<HTMLElement>('[data-card="' + CSS.escape(focus) + '"]');
+    if (!el) return;
+    el.scrollIntoView({ block: 'center', behavior: reducedMotion() ? 'auto' : 'smooth' });
+    el.classList.add(...LIT);
+    window.setTimeout(() => el.classList.remove(...LIT), 2400);
+  }, [focus, ui]);
   /** 参加希望を付けた卓（返事が来るまで「保存しています…」）・Discord に聞いている卓の進み具合・押せなくしているボタン */
   const [saving, setSaving] = useState<Record<string, boolean>>({});
   const [askRes, setAskRes] = useState<Record<string, string>>({});
@@ -180,7 +194,7 @@ export function RecruitTab() {
           const canAsk = hookFor(d, s.series, 'recruit');
           const askTitle = !canAsk ? 'チャンネル未設定' : !s.interest.length ? '興味ありの人がいません' : '興味ありの人にメンションして、参加できるか Discord で聞く';
           return (
-            <div className={rc} data-id={s.id} key={s.id}>
+            <div className={rc} data-id={s.id} data-card={s.id} key={s.id}>
               <div className={rcHead}>
                 <h3 className={rcTitle}>{s.name}</h3>
                 <button type="button" className="btn small" data-edit={s.id} onClick={() => openForm(ui, { id: s.id })}><Icon name="edit" size="sm" />編集</button>
@@ -237,7 +251,7 @@ export function RecruitTab() {
           // 回答は本人だけが入れる。ゲストと、Discord の ID の無いメンバーは答えられないので数えない
           const cant = peopleOf(s).filter((n) => voters.indexOf(n) < 0);
           return (
-            <div className={rc} data-id={s.id} key={s.id}>
+            <div className={rc} data-id={s.id} data-card={s.id} key={s.id}>
               <div className={rcHead}>
                 <h3 className={rcTitle}>{s.name}</h3>
                 <button type="button" className="btn small" data-edit={s.id} onClick={() => openForm(ui, { id: s.id })}><Icon name="edit" size="sm" />編集</button>

@@ -16,7 +16,7 @@ import { useStore } from '../../../ui/store';
 import type { SyncView } from '../api/sync';
 import { type Tab, useConsole, useMaybeData } from '../context';
 import { hhmm } from '../model/dates';
-import { isAdjusting, isRecruit } from '../model/model';
+import { myTurns } from '../model/model';
 import { closeGuide, guideShown, type MainTab, setupDone, useGoTab } from './nav';
 
 const TABS: [MainTab, IconName, string][] = [
@@ -83,7 +83,8 @@ export function Header({ tab }: { tab: Tab }) {
   const guideOk = !!d && !admin && !dead;
   /** 要る準備（仲間・卓）が済むまでは、？に印を付けて、はじめの 3 ステップがあることを知らせる。閉じたら付けない（Discord は任意なので待たない） */
   const nudge = guideOk && !setupDone(d) && guide !== 'closed';
-  const recruitCount = d ? d.sessions.filter((s) => isRecruit(s) || isAdjusting(s)).length : 0;
+  /** 「募集・調整」の印は、あなたの番の日程調整の数（答える・開催日を選ぶ）。済んだら消える */
+  const turns = d ? myTurns(d).length : 0;
   /** 入れるグループ（入口と同じ控え）。メニューを開くたびに読み直す（ほかのタブで作ったグループも出す）。消えたグループは、切り替え先に出さない */
   const me = useQuery({ queryKey: ME_KEY, queryFn: fetchMe, staleTime: 60_000 });
   const groups = me.data && me.data.loggedIn ? me.data.groups : [];
@@ -188,8 +189,8 @@ export function Header({ tab }: { tab: Tab }) {
           <button type="button" key={key} data-tab={key} className={tabBtn + (tab === key ? 'bg-chrome-active text-chrome-active-ink max-sm:text-chrome-text max-sm:before:bg-chrome-active' : 'bg-transparent text-chrome-muted hover:bg-chrome-hover hover:text-chrome-text max-sm:before:bg-transparent')} aria-current={tab === key ? 'page' : undefined} onClick={() => goTab(key)}>
             <Icon name={icon} filled={tab === key} className={'max-sm:relative max-sm:text-22 max-sm:align-[0]' + (tab === key ? ' text-chrome-active-ink' : '')} /><span className="max-sm:max-w-full max-sm:overflow-hidden max-sm:text-ellipsis">{label}</span>
             {key === 'recruit' && (
-              <span className="h-18 min-w-18 rounded-[9px] bg-chrome-accent px-5 text-center text-11 leading-[18px] font-bold text-chrome-accent-ink empty:hidden max-sm:absolute max-sm:-top-2 max-sm:left-[calc(50%+8px)] max-sm:h-16 max-sm:min-w-16 max-sm:px-4 max-sm:text-10 max-sm:leading-[16px]" id="recruitCount">
-                {recruitCount ? String(recruitCount) : ''}
+              <span className="h-18 min-w-18 rounded-[9px] bg-chrome-accent px-5 text-center text-11 leading-[18px] font-bold text-chrome-accent-ink empty:hidden max-sm:absolute max-sm:-top-2 max-sm:left-[calc(50%+8px)] max-sm:h-16 max-sm:min-w-16 max-sm:px-4 max-sm:text-10 max-sm:leading-[16px]" id="recruitCount" title="あなたの番の日程調整（答える・開催日を選ぶ）">
+                {turns > 0 && <><span className="sr-only">あなたの番が </span>{turns}<span className="sr-only"> 件</span></>}
               </span>
             )}
           </button>
