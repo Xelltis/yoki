@@ -25,13 +25,15 @@ export type Viewer = {
   guildsCheckedAt: string;
 };
 
+/** ログインを始める。このブラウザに前のログインがあれば消す（聞き直しや結びつけで入り直すたびに、使えない控えが増えないように） */
 export async function startSession(c: Context, userId: string, now = new Date()): Promise<void> {
+  const url = new URL(c.req.url);
+  const old = getCookie(c, cookieName(url));
   const token = randomToken();
   const expires = new Date(now.getTime() + SESSION_DAYS * 86400_000);
-  await c.env.DB.prepare('INSERT INTO auth_sessions (id_hash, user_id, created_at, expires_at) VALUES (?, ?, ?, ?)')
-    .bind(await sha256Hex(token), userId, now.toISOString(), expires.toISOString())
-    .run();
-  const url = new URL(c.req.url);
+  const insert = c.env.DB.prepare('INSERT INTO auth_sessions (id_hash, user_id, created_at, expires_at) VALUES (?, ?, ?, ?)')
+    .bind(await sha256Hex(token), userId, now.toISOString(), expires.toISOString());
+  await c.env.DB.batch(old ? [c.env.DB.prepare('DELETE FROM auth_sessions WHERE id_hash = ?').bind(await sha256Hex(old)), insert] : [insert]);
   setCookie(c, cookieName(url), token, {
     httpOnly: true,
     secure: !isLocalHttp(url),

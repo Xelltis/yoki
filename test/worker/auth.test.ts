@@ -1,7 +1,7 @@
 // Discordでログイン・ログアウト・/api/me
 import { env, SELF } from 'cloudflare:test';
 import { afterEach, describe, expect, test, vi } from 'vitest';
-import { call, loginAs, makeGroup, mockDiscord, ORIGIN, postJson, setCookies } from './helpers';
+import { call, loginAs, makeGroup, mockDiscord, ORIGIN, postJson, setCookies, SID } from './helpers';
 
 afterEach(() => vi.restoreAllMocks());
 
@@ -69,6 +69,20 @@ describe('/auth/callback', () => {
       { guild_id: 'g-mine', can_manage: 1 },
     ]);
     expect(await env.DB.prepare('SELECT global_name FROM users WHERE id = ?').bind('100').first('global_name')).toBe('アリス');
+  });
+
+  test('ログインし直すと（聞き直し・結びつけ）、このブラウザの前のログインは消す。ほかのブラウザのログインは残す', async () => {
+    mockDiscord({ user: { id: '100', username: 'alice' }, guilds: [] });
+    const here = await loginAs({ id: '100', name: 'アリス' }, []);
+    const there = await loginAs({ id: '100', name: 'アリス' }, []);
+    const { state, cookie } = await startLogin();
+    const res = await call('/auth/callback?code=c&state=' + state, { headers: { Cookie: cookie + '; ' + SID + '=' + here } });
+    const fresh = setCookies(res).find((c) => c.startsWith(SID + '='))!.split(';')[0]!.slice(SID.length + 1);
+    const loggedIn = async (sid: string) => (await (await call('/api/me', { sid })).json<{ loggedIn: boolean }>()).loggedIn;
+    expect(await loggedIn(here)).toBe(false);
+    expect(await loggedIn(there)).toBe(true);
+    expect(await loggedIn(fresh)).toBe(true);
+    expect(await env.DB.prepare("SELECT count(*) AS n FROM auth_sessions WHERE user_id = '100'").first('n')).toBe(2);
   });
 
   test('prompt=noneをDiscordが断ったら、consentでやり直す。やめたら入口へ', async () => {

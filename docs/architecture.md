@@ -44,7 +44,7 @@ Worker 1つで、次の3つを受け持つ。
 
 **控えるサーバー**。参加しているサーバーのうち、卓予定のグループがあるサーバーと、本人が管理できる（オーナー・管理者・サーバー管理の権限がある）サーバーだけを `user_guilds` に控える。ほかのサーバーは覚えない。
 
-**ログインの続き**（`auth/session.ts`）。ランダムな32バイトをcookie（`__Host-yoki_sid`、HttpOnly・Secure・SameSite=Lax）に入れ、D1にはそのSHA-256だけを置く。期限は30日。手元（http://localhost）ではSecureを付けられないので、名前を `yoki_sid` にする。
+**ログインの続き**（`auth/session.ts`）。ランダムな32バイトをcookie（`__Host-yoki_sid`、HttpOnly・Secure・SameSite=Lax）に入れ、D1にはそのSHA-256だけを置く。期限は30日。ログインし直すとき（聞き直し・Googleとの結びつけ）は、そのブラウザの前の控えを消してから作る。使えない控えが残り、ログインの数が増えないようにするため。手元（http://localhost）ではSecureを付けられないので、名前を `yoki_sid` にする。
 
 **Googleでログイン**（`auth/google-login.ts`・`routes/google.ts`）。利用者そのものはDiscordのアカウント（`users`）のままで、Googleのアカウントは結びつけたもう1つの入り口（`google_logins`。人ごとに1つ、Googleのアカウントごとに1人）。
 
