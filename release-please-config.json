@@ -1,0 +1,26 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "bootstrap-sha": "534ee9779b4989fdd978a84e89d0a66c207ba5cd",
+  "include-component-in-tag": false,
+  "pull-request-title-pattern": "chore: 卓予定 v${version} を出す",
+  "packages": {
+    ".": {
+      "release-type": "node",
+      "package-name": "yoki",
+      "changelog-path": "CHANGELOG.md",
+      "changelog-sections": [
+        { "type": "feat", "section": "足したこと・変えたこと" },
+        { "type": "fix", "section": "直したこと" },
+        { "type": "perf", "section": "速くしたこと" },
+        { "type": "revert", "section": "取り消したこと" },
+        { "type": "docs", "section": "文書", "hidden": true },
+        { "type": "style", "section": "見た目の整え", "hidden": true },
+        { "type": "refactor", "section": "コードの整理", "hidden": true },
+        { "type": "test", "section": "テスト", "hidden": true },
+        { "type": "build", "section": "組み立て", "hidden": true },
+        { "type": "ci", "section": "Actions", "hidden": true },
+        { "type": "chore", "section": "そのほか", "hidden": true }
+      ]
+    }
+  }
+}
