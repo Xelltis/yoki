@@ -1,7 +1,7 @@
-// 2 つのフォルダのスクリーンショットを、画素で見比べる（画面を作り直したときに、見た目が変わっていないかを確かめる）。
+// 2つのフォルダのスクリーンショットを、画素で見比べる（画面を作り直したときに、見た目が変わっていないかを確かめる）。
 //   npm run compare-shots -- <前のフォルダ> <後のフォルダ>
-// 同じ名前の PNG を比べ、違う画素の数を出す。違いがあれば、違うところを赤く描いた画像を <後のフォルダ>/diff/ に書き、1 で終わる。
-// 撮るのは npm run screenshots -- --out <フォルダ>（読み込んだ時刻など、撮るたびに変わるものは写さない）。
+// 同じ名前のPNGを比べ、違う画素の数を出す。違いがあれば、違うところを赤く描いた画像を <後のフォルダ>/diff/ に書き、1で終わる。
+// 撮るのはnpm run screenshots -- --out <フォルダ>（読み込んだ時刻など、撮るたびに変わるものは写さない）。
 // サンプルの日付は今日から数えるので、前と後は同じ日に撮る
 import fs from 'node:fs';
 import path from 'node:path';
@@ -24,7 +24,7 @@ for (const name of new Set([...pngs(before), ...pngs(after)])) {
   const a = read(fa), b = read(fb);
   if (a.width !== b.width || a.height !== b.height) { console.log('大きさ違い', name, `${a.width}x${a.height} → ${b.width}x${b.height}`); bad++; continue; }
   const diff = new PNG({ width: a.width, height: a.height });
-  // threshold は色の違いをどこまで同じとみるか（文字の縁のにじみを違いに数えないくらい）
+  // thresholdは色の違いをどこまで同じとみるか（文字の縁のにじみを違いに数えないくらい）
   const n = pixelmatch(a.data, b.data, diff.data, a.width, a.height, { threshold: 0.1 });
   if (!n) { console.log('同じ      ', name); continue; }
   fs.mkdirSync(diffDir, { recursive: true });

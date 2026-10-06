@@ -1,12 +1,12 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
-  // lint（npm run lint）。正しさの決まりと、React の hooks の決まり・アクセシビリティ（jsx-a11y）を、どれも error で見る
+  // lint（npm run lint）。正しさの決まりと、Reactのhooksの決まり・アクセシビリティ（jsx-a11y）を、どれもerrorで見る
   "plugins": ["typescript", "unicorn", "oxc", "react", "jsx-a11y"],
   "categories": { "correctness": "error" },
   "rules": {
     "react-hooks/rules-of-hooks": "error",
     "react-hooks/exhaustive-deps": "error",
-    // 知らせ（#toast）と読み込み中（#loading）は role="status" の div のまま（見た目と e2e が、その形に頼っている）
+    // 知らせ（#toast）と読み込み中（#loading）はrole="status" のdivのまま（見た目とe2eが、その形に頼っている）
     "jsx-a11y/prefer-tag-over-role": "off"
   },
   "ignorePatterns": ["dist/**", "coverage/**", "website/.vitepress/dist/**", "website/.vitepress/cache/**", "worker-configuration.d.ts"]

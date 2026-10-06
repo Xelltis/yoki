@@ -1,12 +1,12 @@
-// アプリとサイトのアイコン（ファビコン・ホーム画面のアイコン・上の帯のロゴ）を、元の絵 brand/yoki.png から書き出す。
+// アプリとサイトのアイコン（ファビコン・ホーム画面のアイコン・上の帯のロゴ）を、元の絵brand/yoki.pngから書き出す。
 //   npm run icons
-// 元の絵を変えたら回して、出したファイルをコミットする。縮めるのはブラウザ（Playwright の chromium）の canvas。
+// 元の絵を変えたら回して、出したファイルをコミットする。縮めるのはブラウザ（Playwrightのchromium）のcanvas。
 // 出すもの
 //   favicon.ico             16・32・48px（透明）                      アプリ・サイト
 //   icon-192.png            ホーム画面と上の帯のロゴ（透明）          アプリ・サイト
 //   icon-512.png            manifest（透明）                          アプリ
-//   icon-maskable-512.png   Android のアイコン（青で塗り、形を切り抜かれても欠けないように絵を小さく置く）  アプリ
-//   apple-touch-icon.png    iPhone のホーム画面（180px、青で塗る。角は iPhone が丸める）  アプリ・サイト
+//   icon-maskable-512.png   Androidのアイコン（青で塗り、形を切り抜かれても欠けないように絵を小さく置く）  アプリ
+//   apple-touch-icon.png    iPhoneのホーム画面（180px、青で塗る。角はiPhoneが丸める）  アプリ・サイト
 // 初めて使う前に、ブラウザを入れておく: npx playwright install chromium
 import fs from 'node:fs';
 import path from 'node:path';
@@ -20,10 +20,10 @@ const APP = path.join(root, 'src/client/public');
 const SITE = path.join(root, 'website/public');
 /** 塗りの青（元の絵の地の色） */
 const BLUE = '#2D2AFE';
-/** maskable の絵の大きさ（全体に対して）。Android は真ん中の 80% の円の外を切ることがある */
+/** maskableの絵の大きさ（全体に対して）。Androidは真ん中の80% の円の外を切ることがある */
 const MASKABLE_SCALE = 0.72;
 
-/** 出す PNG: 名前・大きさ・塗るか・絵の大きさ・置く先 */
+/** 出すPNG: 名前・大きさ・塗るか・絵の大きさ・置く先 */
 const PNGS = [
   { name: 'icon-192.png', size: 192, to: [APP, SITE] },
   { name: 'icon-512.png', size: 512, to: [APP] },
@@ -86,7 +86,7 @@ const shots = await page.evaluate(async ({ src, pngs, icoSizes, blue }) => {
 }, { src, pngs: PNGS.map(({ size, fill, scale }) => ({ size, fill, scale })), icoSizes: ICO_SIZES, blue: BLUE });
 await browser.close();
 
-/** PNG を詰めた ICO（Windows のアイコン）。頭 6 バイト、1 枚ごとに 16 バイト、そのあとに PNG を並べる */
+/** PNGを詰めたICO（Windowsのアイコン）。頭6バイト、1枚ごとに16バイト、そのあとにPNGを並べる */
 function ico(images) {
   const head = Buffer.alloc(6 + images.length * 16);
   head.writeUInt16LE(0, 0); head.writeUInt16LE(1, 2); head.writeUInt16LE(images.length, 4);

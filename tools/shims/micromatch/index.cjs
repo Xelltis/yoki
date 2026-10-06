@@ -1,7 +1,7 @@
-// micromatch の差し替え。semantic-release（とその commit-analyzer）が使う 2 つの呼び方だけを、picomatch で同じように動かす。
-// 本物の micromatch は braces に頼り、braces には直った版の無い npm audit の指摘があるため（package.json の overrides で入れる）。
-//   micromatch(list, patterns) … list のうち、patterns に合うものを返す（semantic-release の branches の照合）
-//   micromatch.isMatch(str, patterns) … str が patterns に合うか（commit-analyzer の releaseRules の照合）
+// micromatchの差し替え。semantic-release（とそのcommit-analyzer）が使う2つの呼び方だけを、picomatchで同じように動かす。
+// 本物のmicromatchはbracesに頼り、bracesには直った版の無いnpm auditの指摘があるため（package.jsonのoverridesで入れる）。
+//   micromatch(list, patterns) … listのうち、patternsに合うものを返す（semantic-releaseのbranchesの照合）
+//   micromatch.isMatch(str, patterns) … strがpatternsに合うか（commit-analyzerのreleaseRulesの照合）
 const picomatch = require('picomatch');
 
 function micromatch(list, patterns, options) {
