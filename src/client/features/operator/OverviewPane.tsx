@@ -57,7 +57,7 @@ export function OverviewPane() {
       <div className={counts} id="opCounts">
         <Count n={c.groups} label="グループ" />
         <Count n={c.users} label="利用者" sub={c.bannedUsers ? '締め出し' + c.bannedUsers + '人' : ''} />
-        <Count n={c.logins} label="有効なログイン" />
+        <Count n={c.logins} label="有効なログイン" sub="ブラウザ・端末ごとに数える" />
         <Count n={c.activeSessions} label="動いている卓" sub="募集・調整中・開催" />
       </div>
       <div className="card" id="opReg">
