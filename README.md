@@ -121,6 +121,7 @@ Workers のテスト用の道具（`@cloudflare/vitest-pool-workers`）は、古
    | 変数（任意） | `YOKI_GOOGLE_CLIENT_ID` | Google カレンダーとの連携を使うときだけ。下の「Google カレンダーと連携する」 |
    | 秘密（任意） | `GOOGLE_CLIENT_SECRET` | 同じく。Google の OAuth クライアントのシークレット |
    | 秘密（任意） | `GOOGLE_TOKEN_KEY` | 同じく。Google の refresh token を暗号にする鍵 |
+   | 秘密（任意） | `UPDATE_DISPATCH_TOKEN` | 運営の管理画面のボタンで更新するときだけ。下の「新しい版に上げる」 |
 
    - Discord のユーザー ID は、Discord の設定の「詳細設定」で開発者モードを ON にし、自分のアイコンを右クリックして「ユーザー ID をコピー」で取れる
    - 運営者の ID は、公開のログに出さないように秘密に置く（公開のリポジトリでは、Actions のログはだれでも読める）
@@ -149,6 +150,27 @@ Google でのログインと、Google カレンダーとの連携は、同じ OA
 - Google でのログインが求める `openid`・`email` は、機密性の高いスコープではない。ただし同意画面が「テスト」のあいだは、テストユーザーしかログインできない。だれでも Google でログインできるようにするには、同意画面の公開ステータスを「本番環境」にする（`calendar.events.owned` の審査が済むまでは、カレンダーの連携に「確認されていないアプリ」の注意が出る）
 - Google でログインした人がグループに入れるかは、Discord のサーバーの一覧の控えで決める。控えが 24 時間より古くなったら、そのサーバーに知らせの Bot がいれば Bot で確かめ（Discord のログインの画面は出ない）、いなければ Discord に聞き直す
 
+### 新しい版に上げる（更新）
+
+元のリポジトリ（[Xelltis/yoki](https://github.com/Xelltis/yoki)）は、版（`v1.2.0` など）を GitHub の Release として出す（下の「版を出す」）。フォークして公開している卓予定は、運営の管理画面の「更新」で新しい版と変わったことを見て、ボタンか GitHub の画面で取り込む。コードを触らずに追いつける。
+
+- **新しい版を知る**: 運営の管理画面の「様子」のいちばん上と、「更新」の区分に出る。元のリポジトリの Release を、1 時間に 1 回まで読む（トークンは要らない）。表（D1）の変更を含む版は、そう出る
+- **更新する**: 「更新」の区分のボタンか、GitHub の Actions の「卓予定を更新する」（`.github/workflows/update.yml`）の「Run workflow」。ワークフローが元のリポジトリのタグを main に取り込み、公開のワークフローを動かす。公開のワークフローは、表を変える前の D1 の地点（bookmark）を Summary に控えてから、表の変更を当てて公開する
+- **取り込みでぶつかったら**: フォークでコードを直していると、ぶつかることがある。そのときは main を変えずに `update/v1.2.0` のブランチと PR を作って止まる。GitHub の画面で直してマージすると公開される。サーバーごとの値は environment に、規約の文は D1 にあるので、コードを直さずに使っていればぶつからない
+
+初めの 1 回だけ、次を準備する。
+
+1. **フォークで Actions を使えるようにする**。フォークでは、Actions は初めは止まっている（Actions の画面で使うと決める）。Settings → Actions → General の「Workflow permissions」を「Read and write permissions」にし、「Allow GitHub Actions to create and approve pull requests」を入れる（ぶつかったときの PR のため）
+2. **main に書き込むトークン**（おすすめ）。元のリポジトリが `.github/workflows/` を変えた版は、Actions の既定のトークンでは main に書き込めない。GitHub の Settings → Developer settings → Fine-grained tokens で、このリポジトリだけに「Contents」と「Workflows」の Read and write を付けたトークンを作り、リポジトリの Settings → Secrets and variables → Actions の Repository secrets に `UPDATE_PUSH_TOKEN` として入れる（environment ではなく、リポジトリの secret）
+3. **管理画面のボタンで更新する**（任意）。このリポジトリだけに「Actions」の Read and write を付けたトークンを作り、environment「production」の秘密 `UPDATE_DISPATCH_TOKEN` に入れて公開し直す。Worker はこのトークンで更新のワークフローを動かし、その記録を読む。コードは書き換えられない権限にとどめる。無ければ、「更新」の区分に GitHub の画面を開くボタンが出る
+4. **元のリポジトリを変える**（任意。フォークのフォークなど）。リポジトリの Settings → Secrets and variables → Actions の Repository variables に `YOKI_UPSTREAM`（`owner/name`）を入れる
+
+困ったときは、次の順に戻す。
+
+- Worker: Cloudflare の画面の Workers → `yoki` → Deployments で、前の版に戻す（`npx wrangler rollback` でもよい）
+- D1: 表を変えた版なら、公開のワークフローの Summary に出た bookmark へ `npx wrangler d1 time-travel restore yoki --bookmark=<bookmark>` で戻す。その地点より後に書かれたもの（予定・回答など）は消える
+- コード: main の取り込みのコミットを revert する（そのままだと、次の公開でまた新しい版が出る）
+
 ### 独自のドメインで公開する（Route 53 と CloudFront）
 
 Workers に独自のドメインを直接付けるには、そのドメインの DNS を Cloudflare に移す必要がある（DNS を別のところに残す形は、Cloudflare の有料のプランが要る）。ドメインの DNS を Route 53 に残したまま公開するときは、前に AWS CloudFront を置き、CloudFront から workers.dev のアドレスへ渡す。
@@ -176,14 +198,25 @@ Cloudflare は無料のプランで動く。グループが増えて、知らせ
 管理画面は 2 つある。
 
 - **グループの管理画面**（`/g/:id/admin/`）: そのグループの管理者が使う。メンバーの登録・卓をまとめて変える・Discord の知らせ・管理者・送信の記録・グループを消す、をまとめてある。上の帯の右の「管理」のボタンか、あなたのメニューの「設定」から開く。管理者でなければ開けない。区分ごとに URL がある（`/g/:id/admin/notify/` など。`/g/:id/admin/` は前に開いていた区分へ移る）
-- **運営の管理画面**（`/admin/`）: 公開した人（運営者。秘密の `OPERATOR_IDS` に書いた人）が使う。入口の画面に「運営の管理画面」のリンクが出る。区分ごとに URL がある（`/admin/users/` など）
+- **運営の管理画面**（`/admin/`）: 公開した人（運営者。秘密の `OPERATOR_IDS` に書いた人）が使う。入口の画面と、グループの画面のグループの切り替えに「運営の管理画面」のリンクが出る。区分ごとに URL がある（`/admin/users/` など）
   - **様子**: グループ・利用者・有効なログイン・動いている卓の数、知らせの見回り（cron）が動いているか、Discord への送信の失敗
   - **新規登録の受付**（様子の中）: 止めると、新しいグループの作成と、初めての人のログインを断る。もう使っている人と今あるグループは、そのまま使える。運営者は、止めていてもログインでき、グループも作れる。初めは受け付けている
   - **グループ**: 一覧と中身（Discord サーバー・メンバー・卓の数・最後に使われた日）。管理者の付け替え、Discord サーバーの付け替え、グループを消す（名前を打ち込んで確かめる。中身も消え、戻せない）
   - **利用者**: ログインを切る、締め出す・戻す、消す。締め出した人は Discord でログインできなくなり、残っていたログインも効かなくなる。Discord のアカウントで止めるので、別のアカウントを作られると止められない。運営者は締め出せない
     - 消すのは、本人から消してほしいと頼まれたとき（プライバシーポリシーの「消し方」）。その人の情報（ログイン・Discord の名前・入っているサーバーの控え）と、どのグループのメンバーの行も消える。予定とメモは消え、卓と回答には名前だけが残る。元に戻せない。Discord サーバーにいれば、次に開いたときにまた入れる。運営者と、締め出している人は消せない（締め出しの印も消えてしまうため）。Google カレンダーと連携していれば、書き込んだ予定を消し、Google の許可を取り消してから消す
+  - **更新**: 動いている版と、元のリポジトリの最新の版・変わったこと・表の変更があるか。新しい版があれば、ボタンか GitHub の画面で更新する（上の「新しい版に上げる」）。新しい版があることは、「様子」のいちばん上にも出る
   - **規約**: 利用規約（`/terms`）とプライバシーポリシー（`/privacy`）の、運営者の名前・問い合わせ先・本文を直す。直していなければ既定の文が出る。本文を空にして保存すると、既定の文に戻る。2 つのページは、ログインしていない人も読める。入口の画面と、グループの画面の設定からリンクしている
   - 運営者は、グループの中身（卓・予定）は見ない。運営者がした操作は、Cloudflare の Workers のログ（Observability）に 1 行ずつ残る（`"audit"` で探せる）
+
+## 版を出す（元のリポジトリ）
+
+版（`package.json` の `version`）と変わったことの一覧（`CHANGELOG.md`）は、[release-please](https://github.com/googleapis/release-please)（`.github/workflows/release.yml`）が作る。フォークでは動かない。
+
+- main に入ったコミット（Conventional Commits）から、release-please が「chore: 卓予定 vX.Y.Z を出す」の PR を作り、コミットが増えるたびに書き直す。`feat` は小さい版（1.1.0）、`fix` と `perf` はいちばん小さい版（1.0.1）、`!` 付き（互換を壊す変更）は大きい版（2.0.0）を上げる
+- その PR をマージすると、版と `CHANGELOG.md` が上がり、タグ `vX.Y.Z` と GitHub の Release ができる。各地の卓予定の「更新」に、変わったこととして出る（`feat`・`fix`・`perf`・`revert` だけ。`docs` などは出さない）
+- 版と `CHANGELOG.md` は手で書き換えない。コミットの type が版の上げ方を決めるので、type を正しく付ける
+- 各地の卓予定は、版を飛ばして上げることがある。表の変更（`migrations/`）は、前の版から順に当たれば動くように書く
+- 初めの 1 回: Settings → Actions → General で「Allow GitHub Actions to create and approve pull requests」を入れる。今の版（`v1.0.0`）のタグと Release は、手で作る（`gh release create v1.0.0 --title v1.0.0 --notes "最初の版"`）
 
 ## サイト（GitHub Pages）
 
