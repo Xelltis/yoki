@@ -33,6 +33,8 @@ jobs:
           node-version-file: .node-version
           cache: npm
       - run: npm ci
+      # サイトの本文の日本語の検査（yomiyasu。tools/lint-ja.mjs）
+      - run: npm run lint:ja
       - run: npm run site:build
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v5
