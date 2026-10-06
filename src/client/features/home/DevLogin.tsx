@@ -6,9 +6,11 @@ import { heroBtn, heroField } from './styles';
  * 入口の青い枠の中、Discord でログインと同じ場所に並べる。Discord でログインもあるときは、枠線だけのボタンにして見分ける。
  * Home が import.meta.env.DEV のときだけ描くので、本番の組み立てには入らない
  */
-export function DevLogin({ users, ghost = false }: { users: string[]; ghost?: boolean }) {
+export function DevLogin({ users, ghost = false, linkGoogle = false }: { users: string[]; ghost?: boolean; linkGoogle?: boolean }) {
   return (
     <form className="flex flex-wrap items-center gap-8" id="devForm" method="post" action="/dev/login">
+      {/* 初めての Google のアカウントを、この人に結びつける（Discord でログインの ?link_google=1 と同じ） */}
+      {linkGoogle && <input type="hidden" name="link_google" value="1" />}
       <select className={heroField} name="as" id="devAs" aria-label="入るメンバー">
         {users.map((n) => <option key={n}>{n}</option>)}
       </select>

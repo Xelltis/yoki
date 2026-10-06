@@ -43,7 +43,8 @@ Worker 1 つで、次の 3 つを受け持つ。
 
 **Google でログイン**（`auth/google-login.ts`・`routes/google.ts`）。利用者そのものは Discord のアカウント（`users`）のままで、Google のアカウントは結びつけたもう 1 つの入り口（`google_logins`。人ごとに 1 つ、Google のアカウントごとに 1 人）。
 - `/auth/google/login` から Google の OAuth2（scope は `openid email`、`prompt=select_account`）。戻ってくる先はカレンダーの連携と同じ `/auth/google/callback` で、state の cookie（`yoki_glogin`）で見分ける。id_token は Google のトークンの窓口から直接受け取るので署名は確かめず、`aud` が自分のクライアント ID かを確かめて、`sub`（Google のアカウントの ID）を使う
-- 結びついている `sub` なら、その人でログインする（締め出された人は断る）。初めての `sub` は、`sub` とメールを暗号にした cookie（`yoki_glink`。10 分）に控えて入口へ戻し、続けて Discord でログイン（開発用ログインも）したあとに結びつける。cookie は `GOOGLE_TOKEN_KEY` の AES-GCM なので、書き換えて人の Google のアカウントを結びつけることはできない
+- 結びついている `sub` なら、その人でログインする（締め出された人は断る）。初めての `sub` は、`sub` とメールを暗号にした cookie（`__Host-yoki_glink`。10 分）に控えて入口へ戻し、続けて Discord でログイン（開発用ログインも）したあとに結びつける。cookie は `GOOGLE_TOKEN_KEY` の AES-GCM なので、書き換えて人の Google のアカウントを結びつけることはできない。`__Host-` なので、ほかのサブドメインから差し込むこともできない
+- 控えを使うのは、結びつけるために押したログインだけ（入口が `/auth/login?link_google=1` と、開発用ログインの `link_google` を付ける。Discord のログインでは state の cookie に控える）。黙って行う聞き直しのログインでは使わず、ログアウトでは控えも消す。共用の端末で、前の人の Google のアカウントが次の人に結びつかないように
 - ログインしている人は、設定の画面の「ログインの方法」から結びつけ（`?link=1`。始めた人と戻ってきた人が同じか確かめる）、外せる（`unlinkGoogleLogin`）。ほかの人に結びついている Google のアカウントは断る
 
 **グループに入れるか**（`auth/guard.ts`）。グループに結びつけた Discord サーバーが、控えにあれば入れる。

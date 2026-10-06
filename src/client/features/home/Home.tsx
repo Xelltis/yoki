@@ -103,9 +103,10 @@ function Who({ me }: { me: LoggedIn }) {
 function Guest({ me, back }: { me: MeResponse; back: string | null }) {
   // ログインのあとに戻れる道（src/shared/routes.ts の一覧にある画面だけ）。入口（/）へは、付けなくても戻る
   const ret = back && back !== '/' && isReturnPath(back) ? '?return_to=' + encodeURIComponent(back) : '';
-  const login = '/auth/login' + ret, googleLogin = '/auth/google/login' + ret;
   /** 初めての Google アカウントで戻ってきて、Discord との結びつけを待っている */
   const linking = new URLSearchParams(location.search).get('login') === 'google-new';
+  // 結びつけを待っているときだけ、Discord でログインに印（link_google）を付ける。印の無いログインでは結びつけない
+  const login = '/auth/login' + (linking ? (ret ? ret + '&' : '?') + 'link_google=1' : ret), googleLogin = '/auth/google/login' + ret;
   return (
     <section id="guest">
       {/* 大きな青い枠。右上にアイコンを大きく薄く置く */}
@@ -129,7 +130,7 @@ function Guest({ me, back }: { me: MeResponse; back: string | null }) {
             </a>
           )}
           {/* 本番の組み立てでは import.meta.env.DEV が偽になり、開発用ログインごと消える（vite.config.ts の noDevLogin が確かめる） */}
-          {import.meta.env.DEV && me.dev && <DevLogin users={me.dev.users} ghost={me.discord} />}
+          {import.meta.env.DEV && me.dev && <DevLogin users={me.dev.users} ghost={me.discord} linkGoogle={linking} />}
         </div>
         {me.google && !linking && <p className="relative mt-12 mb-0 text-13 text-white/80">Google でのログインは、初めてのときだけ Discord のアカウントと結びつけます（グループに入れるかは、Discord のサーバーで決まるため）。</p>}
         <p className="relative mt-14 mb-0 text-13 text-white/80">
