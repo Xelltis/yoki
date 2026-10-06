@@ -47,15 +47,18 @@ export function sigOf(d: ConsoleData): string {
   return JSON.stringify(rest);
 }
 
-/* この端末の控え（グループごと） */
+/*
+ * この端末の控え（グループごと）。画面とサーバーの約束（src/shared/api.ts）の形の印と一緒に置き、印が違えば使わない。
+ * 公開で画面のデータに欄が増えたあと、古い形の控えで先に描くと、増えた欄が無くて画面が落ちるため（印は vite.config.ts が入れる）
+ */
 const cacheKey = (groupId: string) => 'taku.cache:' + groupId;
+type Cached = { shape: string; d: ConsoleData };
 export function readCache(groupId: string): ConsoleData | null {
-  let d: ConsoleData | null = null;
-  try { d = JSON.parse(localStorage.getItem(cacheKey(groupId)) || 'null') as ConsoleData | null; } catch { d = null; }
-  // 古い形の控え（知らせを Bot に替える前のもの。bot が無い）は使わない
-  return d && d.sessions && d.members && d.bot ? d : null;
+  let c: Cached | null = null;
+  try { c = JSON.parse(localStorage.getItem(cacheKey(groupId)) || 'null') as Cached | null; } catch { c = null; }
+  return c && c.shape === __API_SHAPE__ && c.d ? c.d : null;
 }
-function saveCache(groupId: string, d: ConsoleData): void { try { localStorage.setItem(cacheKey(groupId), JSON.stringify(d)); } catch { /* 使えない端末 */ } }
+function saveCache(groupId: string, d: ConsoleData): void { try { localStorage.setItem(cacheKey(groupId), JSON.stringify({ shape: __API_SHAPE__, d } satisfies Cached)); } catch { /* 使えない端末 */ } }
 export function clearCache(groupId: string): void { try { localStorage.removeItem(cacheKey(groupId)); } catch { /* 使えない端末 */ } }
 
 /** 自動更新の間隔（分）。このブラウザだけの設定。未設定なら 3 分、0 はしない */

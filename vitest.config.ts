@@ -48,6 +48,8 @@ export default defineConfig(async (): Promise<ViteUserConfig> => {
           test: { name: 'worker', include: ['test/worker/**/*.test.ts'], setupFiles: ['test/worker/setup.ts'] },
         },
         {
+          // 画面の JS が使う、組み立てのときに入れる値（vite.config.ts）
+          define: { __API_SHAPE__: JSON.stringify('test') },
           test: { name: 'client', include: ['test/client/**/*.test.{js,ts}'], environment: 'node' },
         },
       ],

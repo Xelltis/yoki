@@ -26,6 +26,25 @@ function NotFound() {
   );
 }
 
+/**
+ * 画面の部品が落ちたとき（どの道でも）。グループの画面の中で落ちたときは上の帯が残るので、カードだけを出す。
+ * 公開の直後などは、読み込み直すと直ることが多い
+ */
+function Crashed() {
+  return (
+    <main className="mx-auto max-w-560 px-20 pt-48 pb-48 max-sm:px-14 max-sm:pt-24" id="crashed">
+      <div className="card px-26 py-28 text-center">
+        <h1 className="m-0 text-22">画面を出せませんでした</h1>
+        <p className="hint mx-auto mt-8 mb-18 text-13">読み込み直すと直ることがあります。続くときは、入口から開き直してください。</p>
+        <div className="btns justify-center">
+          <button type="button" className="btn primary xl" onClick={() => location.reload()}><Icon name="refresh" />読み込み直す</button>
+          <Link className="btn xl" to="/">入口へ</Link>
+        </div>
+      </div>
+    </main>
+  );
+}
+
 const rootRoute = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   component: Outlet,
   notFoundComponent: NotFound,
@@ -133,6 +152,7 @@ export const router = createRouter({
   context: { queryClient },
   trailingSlash: 'always',
   defaultPreload: 'intent',
+  defaultErrorComponent: Crashed,
   parseSearch,
   stringifySearch,
 });

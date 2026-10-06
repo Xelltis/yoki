@@ -3,6 +3,8 @@
 //   npm run build   dist/ に組み立てる（GitHub Actions の deploy.yml が使う）。開発用ログインが残っていたら止まる
 // 組み立てると、プラグインが wrangler deploy の行き先（.wrangler/deploy/config.json）を root（src/client）の下に書く。
 // リポジトリの直下で動かす wrangler からは見えないので、deploy.yml は組み立てた dist/yoki/wrangler.json を直接渡す
+import { createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { cloudflare, type WorkerConfig } from '@cloudflare/vite-plugin';
 import tailwindcss from '@tailwindcss/vite';
@@ -34,6 +36,14 @@ function deployValues(config: WorkerConfig): void {
 const root = path.join(import.meta.dirname, 'src/client');
 
 /**
+ * 画面とサーバーの約束（src/shared/api.ts）の形の印。画面の JS に __API_SHAPE__ として入れる。
+ * 端末に控えたグループのデータ（features/console/api/sync.ts）は、印が違えば使わない（公開で欄が増えたあと、古い形のデータで描いて画面が落ちないように）
+ */
+function apiShape(): string {
+  return createHash('sha256').update(readFileSync(path.join(import.meta.dirname, 'src/shared/api.ts'))).digest('hex').slice(0, 12);
+}
+
+/**
  * index.html の %APP_ORIGIN% を、公開するアドレス（YOKI_APP_URL。deploy.yml が渡す）にする。リンクを貼ったときの画像（og:image）は、
  * アドレスを省かない形で書く必要があるため。値が無い（手元）ときは空にして、/og.png のような形にする
  */
@@ -59,6 +69,7 @@ function noDevLogin(): Plugin {
 
 export default defineConfig(({ command }) => ({
   root,
+  define: { __API_SHAPE__: JSON.stringify(apiShape()) },
   plugins: [
     // 画面の React（JSX と、開発サーバーで直すとすぐ反映される Fast Refresh）
     react(),
