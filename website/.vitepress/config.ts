@@ -4,7 +4,7 @@
 import Icons from 'unplugin-icons/vite';
 import { defineConfig, postcssIsolateStyles } from 'vitepress';
 
-/** サイトを公開するアドレス（GitHub Pages）。base と、SNS に貼ったときの画像・URL に使う */
+/** サイトを公開するアドレス（GitHub Pages）。baseと、SNSに貼ったときの画像・URLに使う */
 const SITE_URL = 'https://xelltis.github.io/yoki/';
 /** アプリを公開したアドレス（例: https://yoki.example.workers.dev/）。書くと、上のナビに「アプリを開く」が出る */
 const APP_URL = '';
@@ -14,34 +14,34 @@ const base = new URL(SITE_URL).pathname;
 export default defineConfig({
   lang: 'ja',
   title: '卓予定',
-  description: 'TRPG の卓の予定を、Discord サーバーの仲間と決める Web アプリ。',
+  description: 'TRPGの卓の予定を、Discordサーバーの仲間と決めるWebアプリ。',
   base,
   cleanUrls: true,
   vite: {
-    // 開発サーバーは 5174 番（アプリの開発サーバーの 5173 番と並べて動かせる）
+    // 開発サーバーは5174番（アプリの開発サーバーの5173番と並べて動かせる）
     server: { port: 5174 },
-    // vp-raw を付けた部品（試せる例など）には、本文の見た目（表の罫線など）を当てない
+    // vp-rawを付けた部品（試せる例など）には、本文の見た目（表の罫線など）を当てない
     css: { postcss: { plugins: [postcssIsolateStyles({ includeFiles: [/vp-doc\.css/] })] } },
-    // アイコン（~icons/<集まり>/<名前> を import すると、SVG の Vue の部品になる。使う名前は theme/icons.ts）。大きさは 1em
+    // アイコン（~icons/<集まり>/<名前> をimportすると、SVGのVueの部品になる。使う名前はtheme/icons.ts）。大きさは1em
     plugins: [Icons({ compiler: 'vue3', scale: 1 })],
   },
   sitemap: { hostname: SITE_URL },
   head: [
-    // アイコンは npm run icons が brand/yoki.png から書き出す（アプリと同じ絵）
+    // アイコンはnpm run iconsがbrand/yoki.pngから書き出す（アプリと同じ絵）
     ['link', { rel: 'icon', href: base + 'favicon.ico', sizes: '32x32' }],
     ['link', { rel: 'icon', type: 'image/png', href: base + 'icon-192.png', sizes: '192x192' }],
     ['link', { rel: 'apple-touch-icon', href: base + 'apple-touch-icon.png' }],
     ['meta', { name: 'theme-color', content: '#2d2afe' }],
     ['link', { rel: 'preconnect', href: 'https://fonts.googleapis.com' }],
     ['link', { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' }],
-    // 文字はアプリと同じ Noto Sans JP（アイコンは SVG で JS に入っている。theme/icons.ts）
+    // 文字はアプリと同じNoto Sans JP（アイコンはSVGでJSに入っている。theme/icons.ts）
     ['link', { rel: 'stylesheet', href: 'https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400..700&display=swap' }],
     ['meta', { property: 'og:type', content: 'website' }],
     ['meta', { property: 'og:site_name', content: '卓予定' }],
     ['meta', { property: 'og:image', content: SITE_URL + 'og.png' }],
     ['meta', { name: 'twitter:card', content: 'summary_large_image' }],
   ],
-  // SNS に貼ったときの題名・説明・URL を、ページごとに出す
+  // SNSに貼ったときの題名・説明・URLを、ページごとに出す
   transformHead({ pageData, title, description }) {
     const path = pageData.relativePath.replace(/(^|\/)index\.md$/, '$1').replace(/\.md$/, '');
     return [
@@ -76,7 +76,7 @@ export default defineConfig({
           items: [
             { text: '卓を登録する', link: '/guide/register' },
             { text: '日程を決める', link: '/guide/decide' },
-            { text: 'Discord に知らせる', link: '/guide/discord' },
+            { text: 'Discordに知らせる', link: '/guide/discord' },
           ],
         },
         {
@@ -97,7 +97,7 @@ export default defineConfig({
     sidebarMenuLabel: 'メニュー',
     returnToTopLabel: '上に戻る',
     skipToContentLabel: '本文へ',
-    notFound: { title: 'ページが見つかりません', quote: 'URL が変わったか、ページが無くなったようです。', linkLabel: 'トップへ', linkText: 'トップへ戻る' },
+    notFound: { title: 'ページが見つかりません', quote: 'URLが変わったか、ページが無くなったようです。', linkLabel: 'トップへ', linkText: 'トップへ戻る' },
     search: {
       provider: 'local',
       options: {

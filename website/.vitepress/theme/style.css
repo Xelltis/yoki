@@ -1,5 +1,5 @@
 /* ---- 色。アプリと同じ組み立て: サービスアイコンの青（#2D2AFE）を大きく使い、オレンジ・ピンク・黄を差し色にする。
- * 例の部品（--y-*）はアプリの画面の色（src/client/styles/theme.css と同じ） ---- */
+ * 例の部品（--y-*）はアプリの画面の色（src/client/styles/theme.cssと同じ） ---- */
 :root {
   --vp-c-brand-1: #2421d6;
   --vp-c-brand-2: #2d2afe;
@@ -19,7 +19,7 @@
   --vp-home-hero-name-background: linear-gradient(110deg, #2d2afe 30%, #fb2c85 72%, #fe841c);
   --vp-font-family-base: "Noto Sans JP", "Hiragino Sans", "Yu Gothic UI", Meiryo, system-ui, sans-serif;
 
-  /* 例の部品の色（アプリの画面の色）。ink はアプリの青い帯 */
+  /* 例の部品の色（アプリの画面の色）。inkはアプリの青い帯 */
   --y-ink: #2d2afe; --y-ink-line: #2d2afe; --y-on-ink: #ffffff; --y-on-ink-muted: rgba(255, 255, 255, .76); --y-ice: #fdd21f; --y-ice-ink: #15163a;
   --y-ink-cell: rgba(255, 255, 255, .1); --y-ink-cell-line: rgba(255, 255, 255, .18); --y-ink-me-line: rgba(253, 210, 31, .75);
   --y-ink-soft-bg: rgba(52, 211, 153, .28); --y-ink-soft-text: #c3f8df; --y-ink-ng-bg: rgba(251, 44, 133, .34); --y-ink-ng-text: #ffd6e7;
@@ -61,7 +61,7 @@
   --y-shadow: 0 1px 2px rgba(0, 0, 0, .5), 0 16px 40px rgba(0, 0, 0, .35);
 }
 
-/* アイコン（SVG。<Ms name>。使う名前は theme/icons.ts）。大きさは文字の大きさ（1em）、色は文字の色 */
+/* アイコン（SVG。<Ms name>。使う名前はtheme/icons.ts）。大きさは文字の大きさ（1em）、色は文字の色 */
 .ms { display: inline-block; width: 1em; height: 1em; font-size: 20px; flex-shrink: 0; vertical-align: -4px; user-select: none; }
 .vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .mono { font-family: var(--y-font-mono); font-variant-numeric: tabular-nums; }

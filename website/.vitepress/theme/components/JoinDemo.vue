@@ -8,8 +8,8 @@ const said = ref('');
 const want = computed(() => (join.value === 'want' ? ['ダン', 'あなた'] : ['ダン']));
 const SAY = {
   want: '<b>参加希望にしました。</b>状態が「開催」になると、そのまま参加者に入ります。',
-  interest: '<b>興味ありにしました。</b>GM から声がかかったら、参加希望に切り替えれば返事になります。',
-  '': '取り消しました。Discord には何も流れていません。',
+  interest: '<b>興味ありにしました。</b>GMから声がかかったら、参加希望に切り替えれば返事になります。',
+  '': '取り消しました。Discordには何も流れていません。',
 };
 function set(v: '' | 'want' | 'interest') {
   join.value = join.value === v ? '' : v;

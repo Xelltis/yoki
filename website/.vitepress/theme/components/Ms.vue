@@ -1,4 +1,4 @@
-<!-- アイコン 1 つ（SVG。theme/icons.ts）。飾りなので読み上げない。大きさは文字の大きさ（1em）、色は文字の色。fill は塗りつぶした形 -->
+<!-- アイコン1つ（SVG。theme/icons.ts）。飾りなので読み上げない。大きさは文字の大きさ（1em）、色は文字の色。fillは塗りつぶした形 -->
 <script setup lang="ts">
 import { FILLED, ICONS, type IconName } from '../icons';
 

@@ -1,4 +1,4 @@
-<!-- 試せる例: 日程調整に ◯ か × で答える。全員が答えると、GM に知らせが届く -->
+<!-- 試せる例: 日程調整に ◯ か × で答える。全員が答えると、GMに知らせが届く -->
 <script setup lang="ts">
 import Ms from './Ms.vue';
 import { computed, ref } from 'vue';
@@ -18,7 +18,7 @@ const rows = computed(() => cands.value.map((d, i) => {
   const ok = VOTERS.filter((n) => v[n] === '◯'), ng = VOTERS.filter((n) => v[n] === '×'), no = VOTERS.filter((n) => !v[n]);
   return {
     d, i, ok, my: v['あなた'] ?? '',
-    names: [ok.length ? '◯ ' + ok.join('、') : '', ng.length ? '× ' + ng.join('、') : '', no.length ? '未回答 ' + no.join('、') : ''].filter(Boolean).join('　'),
+    names: [ok.length ? '◯ ' + ok.join('、') : '', ng.length ? '× ' + ng.join('、') : '', no.length ? '未回答' + no.join('、') : ''].filter(Boolean).join('　'),
   };
 }));
 
@@ -27,8 +27,8 @@ function vote(i: number, v: Vote) {
   const row = votes.value[i];
   if (row['あなた'] === v) delete row['あなた'];
   else row['あなた'] = v;
-  say.value = complete.value && !was ? 'あなたの回答で全員がそろいました。GM に Discord で知らせが届きます。'
-    : row['あなた'] ? mdw(cands.value[i]) + ' を ' + row['あなた'] + ' にしました。' : mdw(cands.value[i]) + ' の回答を取り消しました。';
+  say.value = complete.value && !was ? 'あなたの回答で全員がそろいました。GMにDiscordで知らせが届きます。'
+    : row['あなた'] ? mdw(cands.value[i]) + 'を' + row['あなた'] + 'にしました。' : mdw(cands.value[i]) + 'の回答を取り消しました。';
 }
 function reset() {
   votes.value = first();
@@ -45,13 +45,13 @@ function reset() {
       <div v-for="r in rows" :key="r.i" class="poll-row" :class="{ all: r.ok.length === VOTERS.length }">
         <span class="poll-date">{{ mdw(r.d) }}<span class="cnt">◯ {{ r.ok.length }}/{{ VOTERS.length }}</span></span>
         <span class="row-btns tight">
-          <button type="button" class="pill-btn vote" :class="{ 'on-ok': r.my === '◯' }" :aria-pressed="r.my === '◯'" :aria-label="mdw(r.d) + ' は ◯'" @click="vote(r.i, '◯')">◯</button>
-          <button type="button" class="pill-btn vote" :class="{ 'on-ng': r.my === '×' }" :aria-pressed="r.my === '×'" :aria-label="mdw(r.d) + ' は ×'" @click="vote(r.i, '×')">×</button>
+          <button type="button" class="pill-btn vote" :class="{ 'on-ok': r.my === '◯' }" :aria-pressed="r.my === '◯'" :aria-label="mdw(r.d) + 'は ◯'" @click="vote(r.i, '◯')">◯</button>
+          <button type="button" class="pill-btn vote" :class="{ 'on-ng': r.my === '×' }" :aria-pressed="r.my === '×'" :aria-label="mdw(r.d) + 'は ×'" @click="vote(r.i, '×')">×</button>
         </span>
         <span class="poll-names">{{ r.names }}</span>
       </div>
     </div>
-    <div v-if="complete" class="decided"><Ms name="check_circle" fill />全員の回答がそろいました。GM のダンに知らせが届き、ダンが開催日を選びます</div>
+    <div v-if="complete" class="decided"><Ms name="check_circle" fill />全員の回答がそろいました。GMのダンに知らせが届き、ダンが開催日を選びます</div>
     <div class="row-btns"><button type="button" class="pill-btn" @click="reset"><Ms name="restart_alt" />最初から</button></div>
     <p class="say" aria-live="polite">{{ say }}</p>
   </figure>

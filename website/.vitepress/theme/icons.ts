@@ -1,4 +1,4 @@
-// サイトで使うアイコン。Material Symbols Rounded（Google。Apache License 2.0）の線の形を、unplugin-icons が組み立てのときに SVG の Vue の部品にする
+// サイトで使うアイコン。Material Symbols Rounded（Google。Apache License 2.0）の線の形を、unplugin-iconsが組み立てのときにSVGのVueの部品にする
 // （config.ts。画像やフォントは読まない）。本文と部品からは <Ms name="…" /> か <Ui icon="…"> で使う。使う名前だけをここに足す（名前のアルファベット順。テストが確かめる）
 import type { FunctionalComponent, SVGAttributes } from 'vue';
 import IAdd from '~icons/material-symbols/add-outline-rounded';

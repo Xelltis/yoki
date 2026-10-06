@@ -1,5 +1,5 @@
-<!-- トップのページの特長。中身は index.md の points（icon・title・details）。VitePress の特長の並び（VPFeatures）で出す。
-     特長のアイコンは HTML の文字で渡すので、SVG の文字（~icons/…?raw。unplugin-icons）にする -->
+<!-- トップのページの特長。中身はindex.mdのpoints（icon・title・details）。VitePressの特長の並び（VPFeatures）で出す。
+     特長のアイコンはHTMLの文字で渡すので、SVGの文字（~icons/…?raw。unplugin-icons）にする -->
 <script setup lang="ts">
 import { useData } from 'vitepress';
 import { VPFeatures } from 'vitepress/theme';

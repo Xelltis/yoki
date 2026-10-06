@@ -47,7 +47,7 @@ const markClass = (m: Mark) => (m === '△' ? 'm-soft' : m === '×' ? 'm-ng' : '
             <tr v-for="p in people" :key="p.name" :class="{ me: p.me }">
               <th scope="row" class="name">{{ p.name }}</th>
               <td v-for="(m, i) in p.marks" :key="i" :class="markClass(m)">
-                <button v-if="p.me" type="button" class="mk" :aria-label="mdw(days[i]) + ' あなたの予定は' + WORD[m] + '。押すと' + WORD[NEXT[m]]" @click="toggle(p, i)">
+                <button v-if="p.me" type="button" class="mk" :aria-label="mdw(days[i]) + 'あなたの予定は' + WORD[m] + '。押すと' + WORD[NEXT[m]]" @click="toggle(p, i)">
                   <template v-if="m">{{ m }}</template><span v-else class="hint">·</span>
                 </button>
                 <template v-else>{{ m }}</template>

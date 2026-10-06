@@ -15,11 +15,11 @@ const ymd = (d: Date) => d.getFullYear() + '/' + String(d.getMonth() + 1).padSta
 function pick(i: number) {
   sel.value = sel.value === i ? -1 : i;
   opened.value = false;
-  say.value = picked.value ? mdw(picked.value) + ' を選びました。ボタンの名前が変わりました。' : '選択を外しました。';
+  say.value = picked.value ? mdw(picked.value) + 'を選びました。ボタンの名前が変わりました。' : '選択を外しました。';
 }
 function open() {
   opened.value = true;
-  say.value = picked.value ? '登録の窓が開き、開催日に ' + mdw(picked.value) + ' が入りました。' : '日を選ばずに押したので、開催日は空のまま開きました。';
+  say.value = picked.value ? '登録の窓が開き、開催日に' + mdw(picked.value) + 'が入りました。' : '日を選ばずに押したので、開催日は空のまま開きました。';
 }
 </script>
 
@@ -32,7 +32,7 @@ function open() {
       </button>
     </div>
     <div class="row-btns">
-      <button type="button" class="pill-btn primary" @click="open"><Ms name="add" />{{ picked ? md(picked) + ' に卓を登録' : '卓を登録' }}</button>
+      <button type="button" class="pill-btn primary" @click="open"><Ms name="add" />{{ picked ? md(picked) + 'に卓を登録' : '卓を登録' }}</button>
     </div>
     <div v-if="opened" class="form-peek">
       <div class="t">卓を登録</div>

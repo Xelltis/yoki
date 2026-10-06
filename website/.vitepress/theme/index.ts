@@ -1,4 +1,4 @@
-// サイトの見た目。VitePress の既定のテーマに、アプリの色と、本文で使う部品を足す
+// サイトの見た目。VitePressの既定のテーマに、アプリの色と、本文で使う部品を足す
 import type { Theme } from 'vitepress';
 import DefaultTheme from 'vitepress/theme';
 import { h } from 'vue';

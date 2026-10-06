@@ -1,5 +1,5 @@
-<!-- アプリのスクリーンショット（public/screenshots/。npm run screenshots で撮る）。
-     themed を付けると、サイトの見た目（ライト／ダーク）に合わせて -light・-dark を出し分ける -->
+<!-- アプリのスクリーンショット（public/screenshots/。npm run screenshotsで撮る）。
+     themedを付けると、サイトの見た目（ライト／ダーク）に合わせて -light・-darkを出し分ける -->
 <script setup lang="ts">
 import { withBase } from 'vitepress';
 
