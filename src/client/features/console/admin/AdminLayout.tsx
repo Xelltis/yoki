@@ -1,4 +1,4 @@
-// グループの管理画面（/g/:id/admin/<区分>/）の外枠。左の区分（e2e は #setNav の data-set を押す）と、区分の中身
+// グループの管理画面（/g/:id/admin/<区分>/）の外枠。左の区分（e2eは #setNavのdata-setを押す）と、区分の中身
 import { Outlet, useRouterState } from '@tanstack/react-router';
 import { useEffect } from 'react';
 import { ADMIN_PANES, type AdminPane } from '../../../../shared/routes';
@@ -8,7 +8,7 @@ import { SetLayout, setNavBtn, setNavDanger } from '../../../ui/SetNav';
 import { useData } from '../context';
 import { useGoPane } from '../shell/nav';
 
-/** 区分の名前。data-set は前の画面と同じ（管理者の区分は admin。道は /admin/admin/ を避けて admins） */
+/** 区分の名前。data-setは前の画面と同じ（管理者の区分はadmin。道は /admin/admin/ を避けてadmins） */
 const PANES: [AdminPane, string, string][] = [
   ['members', 'members', 'メンバー'],
   ['ops', 'ops', '卓をまとめて変える'],

@@ -10,7 +10,7 @@ afterEach(() => vi.restoreAllMocks());
 const ban = (id: string) =>
   env.DB.prepare("UPDATE users SET banned_at = ?, banned_reason = 'テスト' WHERE id = ?").bind(new Date().toISOString(), id).run();
 
-/** /auth/login を呼び、Discord へ渡す state と、戻ってくるときの cookie を返す */
+/** /auth/loginを呼び、Discordへ渡すstateと、戻ってくるときのcookieを返す */
 async function startLogin(returnTo = '/') {
   const res = await call('/auth/login?return_to=' + encodeURIComponent(returnTo));
   const to = new URL(res.headers.get('Location') ?? '');
@@ -19,13 +19,13 @@ async function startLogin(returnTo = '/') {
 }
 
 describe('運営者', () => {
-  test('OPERATOR_IDS はカンマと空白で区切る', () => {
+  test('OPERATOR_IDSはカンマと空白で区切る', () => {
     expect(parseOperatorIds('1, 2,3  4')).toEqual(['1', '2', '3', '4']);
     expect(parseOperatorIds('')).toEqual([]);
     expect(parseOperatorIds(undefined)).toEqual([]);
   });
 
-  test('設定に書いた ID の人が運営者。開発用の管理者（ひより）は、開発サーバーを手元から開いたときだけ', () => {
+  test('設定に書いたIDの人が運営者。開発用の管理者（ひより）は、開発サーバーを手元から開いたときだけ', () => {
     const prod = new URL('https://yoki.test/'), local = new URL('http://localhost:5173/');
     expect(isOperator(env, '400000000000000098', prod)).toBe(true);
     expect(isOperator(env, '400000000000000099', prod)).toBe(true);
@@ -43,7 +43,7 @@ describe('締め出し', () => {
     expect(((await (await call('/api/me', { sid })).json()) as { loggedIn: boolean }).loggedIn).toBe(false);
   });
 
-  test('締め出された人は Discord でログインし直しても入れず、ログインの記録も残らない', async () => {
+  test('締め出された人はDiscordでログインし直しても入れず、ログインの記録も残らない', async () => {
     await loginAs({ id: '201', name: 'キャロル' }, []);
     await env.DB.prepare("UPDATE users SET last_login_at = '2026-01-01T00:00:00.000Z' WHERE id = '201'").run();
     await ban('201');

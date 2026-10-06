@@ -1,5 +1,5 @@
 // 運営者の管理画面の「更新」。動いている卓予定の版と、元のリポジトリの最新の版・変わったこと・表の変更があるかを出す。
-// 更新は、公開しているリポジトリの更新のワークフロー（GitHub の Actions）がする。トークンがあればボタンで動かし、無ければ GitHub の画面を開く
+// 更新は、公開しているリポジトリの更新のワークフロー（GitHubのActions）がする。トークンがあればボタンで動かし、無ければGitHubの画面を開く
 import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import type { AdminUpdate, AdminUpdateRun } from '../../../shared/admin';
@@ -12,7 +12,7 @@ import { dd, dl, dt, state as stateCls } from './styles';
 
 type Section = { title: string; items: string[] };
 
-/** 箇条書きの 1 行を文字だけにする（範囲の印 **client:**・末尾のコミットの印・リンクを外す） */
+/** 箇条書きの1行を文字だけにする（範囲の印 **client:**・末尾のコミットの印・リンクを外す） */
 const clean = (t: string) => t
   .replace(/^\*\*[^*]+:\*\*\s*/, '')
   .replace(/\s*\(\[[0-9a-f]{7,40}\]\([^)]*\)\)\s*$/, '')
@@ -20,7 +20,7 @@ const clean = (t: string) => t
   .replace(/\*\*([^*]+)\*\*/g, '$1')
   .trim();
 
-/** Release の本文（semantic-release が Conventional Commits から書く Markdown）を、見出しと箇条書きに分ける */
+/** Releaseの本文（semantic-releaseがConventional Commitsから書くMarkdown）を、見出しと箇条書きに分ける */
 export function parseNotes(md: string): Section[] {
   const out: Section[] = [];
   for (const line of md.split('\n')) {
@@ -34,12 +34,12 @@ export function parseNotes(md: string): Section[] {
   return out.filter((s) => s.items.length);
 }
 
-/** 実行の様子（GitHub の status・conclusion を言葉に） */
+/** 実行の様子（GitHubのstatus・conclusionを言葉に） */
 function runState(r: AdminUpdateRun): [string, string] {
   if (r.status !== 'completed') return ['warn', r.status === 'queued' || r.status === 'waiting' || r.status === 'pending' ? '待っています' : '進んでいます'];
   if (r.conclusion === 'success') return ['ok', '済み'];
   if (r.conclusion === 'cancelled' || r.conclusion === 'skipped') return ['warn', '取り消し'];
-  return ['bad', '失敗（取り込みでぶつかったときは、PR ができています）'];
+  return ['bad', '失敗（取り込みでぶつかったときは、PRができています）'];
 }
 
 export function UpdatePane() {
@@ -50,19 +50,19 @@ export function UpdatePane() {
   const recheck = () => {
     setBusy(true);
     adminCall<AdminUpdate>(ADMIN_READS.update.path + '?refresh=1').then(
-      (r) => { qc.setQueryData(ADMIN_READS.update.queryKey, r); setBusy(false); toast(r.error || (r.available ? '新しい版 v' + r.latest!.version + ' があります' : '最新です')); },
+      (r) => { qc.setQueryData(ADMIN_READS.update.queryKey, r); setBusy(false); toast(r.error || (r.available ? '新しい版v' + r.latest!.version + 'があります' : '最新です')); },
       (e: Error) => { setBusy(false); toast(e.message); },
     );
   };
   if (!u) return <div data-pane="update"><div className="card" id="opUpdate" /></div>;
   const latest = u.latest, notes = latest ? parseNotes(latest.notes) : [];
   const start = () => askConfirm({
-    title: 'v' + latest!.version + ' に更新しますか？',
-    message: 'GitHub の Actions が、元のリポジトリの v' + latest!.version + ' を取り込んで公開します。数分かかります。'
+    title: 'v' + latest!.version + 'に更新しますか？',
+    message: 'GitHubのActionsが、元のリポジトリのv' + latest!.version + 'を取り込んで公開します。数分かかります。'
       + (u.migrations ? '表（D1）の変更を含みます。変える前の地点を控えるので、戻すときはそこへ戻せます。' : ''),
     ok: '更新する',
   }, () => { setBusy(true); void act('/api/admin/update', {}).then(() => setBusy(false)); });
-  const [tone, say] = u.available ? ['warn', '新しい版 v' + latest!.version + ' があります']
+  const [tone, say] = u.available ? ['warn', '新しい版v' + latest!.version + 'があります']
     : latest ? ['ok', '最新です'] : u.error ? ['bad', '新しい版を確かめられませんでした'] : ['ok', 'まだ版が出ていません'];
   return (
     <div data-pane="update">
@@ -88,29 +88,29 @@ export function UpdatePane() {
         )}
         {u.available && !notes.length && latest!.notes && <p className="mt-14 text-13 whitespace-pre-wrap">{latest!.notes}</p>}
         {u.available && u.migrations && (
-          <p className={stateCls('warn') + ' text-13'} id="opMigrations">表（D1）の変更を含みます。公開のときに、変える前の地点（D1 の Time Travel）を控えます。戻すときは、その地点へ戻します。</p>
+          <p className={stateCls('warn') + ' text-13'} id="opMigrations">表（D1）の変更を含みます。公開のときに、変える前の地点（D1のTime Travel）を控えます。戻すときは、その地点へ戻します。</p>
         )}
         <div className="btns mt-12">
           {u.available && u.canDispatch && (
-            <button type="button" className="btn primary" id="opUpdateStart" disabled={busy} onClick={start}><Icon name="upgrade" size="sm" />{'v' + latest!.version + ' に更新する'}</button>
+            <button type="button" className="btn primary" id="opUpdateStart" disabled={busy} onClick={start}><Icon name="upgrade" size="sm" />{'v' + latest!.version + 'に更新する'}</button>
           )}
           {u.available && !u.canDispatch && u.workflowUrl && (
-            <a className="btn primary" id="opUpdateGitHub" href={u.workflowUrl} target="_blank" rel="noopener"><Icon name="open_in_new" size="sm" />GitHub で更新する</a>
+            <a className="btn primary" id="opUpdateGitHub" href={u.workflowUrl} target="_blank" rel="noopener"><Icon name="open_in_new" size="sm" />GitHubで更新する</a>
           )}
-          {latest && <a className="btn" href={latest.url} target="_blank" rel="noopener"><Icon name="open_in_new" size="sm" />Release を見る</a>}
+          {latest && <a className="btn" href={latest.url} target="_blank" rel="noopener"><Icon name="open_in_new" size="sm" />Releaseを見る</a>}
           <button type="button" className="btn" id="opUpdateCheck" disabled={busy} onClick={recheck}><Icon name="refresh" size="sm" />確かめ直す</button>
         </div>
         {u.available && !u.canDispatch && (
           <p className="hint">
-            {u.workflowUrl ? 'GitHub の画面で「Run workflow」を押すと、最新の版を取り込んで公開します。' : '公開しているリポジトリが分かりません（公開のワークフローで入ります）。'}
-            Worker の secret に UPDATE_DISPATCH_TOKEN を入れると、ここのボタンで更新できます（README の「新しい版に上げる」）。
+            {u.workflowUrl ? 'GitHubの画面で「Run workflow」を押すと、最新の版を取り込んで公開します。' : '公開しているリポジトリが分かりません（公開のワークフローで入ります）。'}
+            WorkerのsecretにUPDATE_DISPATCH_TOKENを入れると、ここのボタンで更新できます（READMEの「新しい版に上げる」）。
           </p>
         )}
-        <p className="hint">更新は、公開しているリポジトリの GitHub の Actions（更新のワークフロー）が、元のリポジトリの版を取り込んで公開します。コードを直しているときなど、取り込みでぶつかったら、main を変えずに PR を作って止まります。</p>
+        <p className="hint">更新は、公開しているリポジトリのGitHubのActions（更新のワークフロー）が、元のリポジトリの版を取り込んで公開します。コードを直しているときなど、取り込みでぶつかったら、mainを変えずにPRを作って止まります。</p>
       </div>
       {u.canDispatch && (
         <div className="card" id="opRuns">
-          <h3><Icon name="history" size="sm" />更新の記録 <small className="hint">新しい順 5 件</small></h3>
+          <h3><Icon name="history" size="sm" />更新の記録 <small className="hint">新しい順5件</small></h3>
           {u.runs.length ? (
             <ul className="m-0 list-none p-0">
               {u.runs.map((r) => {
@@ -119,7 +119,7 @@ export function UpdatePane() {
                   <li key={r.id} className="flex flex-wrap items-center gap-x-12 gap-y-4 border-t border-line py-8 text-13 first:border-t-0">
                     <span className="tabular-nums">{fmt(r.createdAt)}</span>
                     <span className={stateCls(t) + ' my-0 px-8 py-2 text-12'}>{s}</span>
-                    <a className="ml-auto" href={r.url} target="_blank" rel="noopener">GitHub で見る</a>
+                    <a className="ml-auto" href={r.url} target="_blank" rel="noopener">GitHubで見る</a>
                   </li>
                 );
               })}

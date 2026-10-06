@@ -1,4 +1,4 @@
-// 日程調整: 候補日を選ぶ窓。各日の右に GM・参加者の予定を出す。送ったら、Discord でみんなに聞く
+// 日程調整: 候補日を選ぶ窓。各日の右にGM・参加者の予定を出す。送ったら、Discordでみんなに聞く
 import { useState } from 'react';
 import type { ConsoleData, ConsoleSession, RpcResult } from '../../../../shared/api';
 import { Icon } from '../../../ui/Icon';
@@ -25,7 +25,7 @@ function pollRange(d: ConsoleData, s: ConsoleSession, sel: string[], extra: stri
 const avChip = 'rounded-full px-8 ';
 const AV_BG: Record<string, string> = { soft: 'bg-soft', ng: 'bg-warn', bk: 'bg-session' };
 
-/** その日の GM・参加者の予定。空欄は参加できる扱い */
+/** その日のGM・参加者の予定。空欄は参加できる扱い */
 function dayAvail(d: ConsoleData, s: ConsoleSession, k: string): { free: boolean; items: { c: string; text: string }[] | null } {
   if (d.availDays.indexOf(k) < 0) return { free: false, items: null };
   const marks = d.avail[k] || {}, bk = d.booked[k] || {}, items: { c: string; text: string }[] = [];
@@ -64,7 +64,7 @@ export function PollModal() {
   const submit = () => {
     if (!s) return;
     const dates = st.sel.slice().sort();
-    if (!dates.length) { setSt((x) => ({ ...x, msg: '候補日を 1 日以上選んでください。' })); return; }
+    if (!dates.length) { setSt((x) => ({ ...x, msg: '候補日を1日以上選んでください。' })); return; }
     const wantNotify = st.notify && hookFor(d, s.series);
     setSt((x) => ({ ...x, sending: true, msg: '' }));
     sync.write<RpcResult>('startPoll', { id: s.id, dates, start: st.start, end: st.end, me: me(d) }).then((res) => {
@@ -72,7 +72,7 @@ export function PollModal() {
       close();
       toast(res.message);
       if (!wantNotify) return;
-      void discordSend(sync, { kind: 'poll', id: res.id, me: me(d) }, () => {}).then(({ ok, r }) => { toast(res.message + (ok ? '　Discord に送りました。' : '　' + failToast(r))); });
+      void discordSend(sync, { kind: 'poll', id: res.id, me: me(d) }, () => {}).then(({ ok, r }) => { toast(res.message + (ok ? '　Discordに送りました。' : '　' + failToast(r))); });
     }, (e: Error) => { setSt((x) => ({ ...x, sending: false, msg: e.message })); });
   };
   return (
@@ -82,13 +82,13 @@ export function PollModal() {
           <h2 className={wideBarTitle} id="pollTitle">{s ? '「' + s.name + '」の日程を調整する' : '日程を調整する'}</h2>
           <button type="button" className="btn small ml-auto" id="pollClose" onClick={close}><Icon name="close" size="sm" />閉じる</button>
         </div>
-        <p className="hint" id="pollWho">{s ? '候補日を選んでください。各日の右に、' + peopleOf(s).join('、') + ' の予定が出ます。' + '全員が答えると GM に知らせが届き、GM が選んだ日が開催日になります。' : ''}</p>
+        <p className="hint" id="pollWho">{s ? '候補日を選んでください。各日の右に、' + peopleOf(s).join('、') + 'の予定が出ます。' + '全員が答えるとGMに知らせが届き、GMが選んだ日が開催日になります。' : ''}</p>
         <div className="row">
           <div className="narrow"><label htmlFor="pollStart">開始</label><input type="time" id="pollStart" step="300" value={st.start} onChange={(ev) => setSt((x) => ({ ...x, start: ev.target.value }))} /></div>
           <div className="narrow"><label htmlFor="pollEnd">終了</label><input type="time" id="pollEnd" step="300" value={st.end} onChange={(ev) => setSt((x) => ({ ...x, end: ev.target.value }))} /></div>
         </div>
         <div className="mt-14 mb-8 flex flex-wrap items-center justify-between gap-8">
-          <span className="font-semibold">候補日 <small className="hint" id="pollCount">{st.sel.length ? st.sel.length + ' 日を選んでいます' : ''}</small></span>
+          <span className="font-semibold">候補日 <small className="hint" id="pollCount">{st.sel.length ? st.sel.length + '日を選んでいます' : ''}</small></span>
           <label className="chk"><input type="checkbox" id="pollOkOnly" checked={st.okOnly} onChange={(ev) => setSt((x) => ({ ...x, okOnly: ev.target.checked }))} /> 全員空きの日だけ</label>
         </div>
         <div id="pollDays" className="max-h-[calc(46dvh/var(--zoom,1))] overflow-auto rounded-md border border-line">
@@ -117,7 +117,7 @@ export function PollModal() {
         </div>
         <div className={formActions}>
           <div className="btns mt-0">
-            <label><input type="checkbox" id="pollNotify" disabled={!canPoll} checked={st.notify && canPoll} onChange={(ev) => setSt((x) => ({ ...x, notify: ev.target.checked }))} /> Discord で知らせる <span className="hint" id="pollNotifyHint">{canPoll ? '' : '（チャンネル未設定）'}</span></label>
+            <label><input type="checkbox" id="pollNotify" disabled={!canPoll} checked={st.notify && canPoll} onChange={(ev) => setSt((x) => ({ ...x, notify: ev.target.checked }))} /> Discordで知らせる <span className="hint" id="pollNotifyHint">{canPoll ? '' : '（チャンネル未設定）'}</span></label>
             <button type="submit" className="btn primary ml-auto" id="pollSend" disabled={!st.sel.length || st.sending}>{s && hasPoll(s) ? 'この候補日に変える' : 'この候補日で聞く'}</button>
           </div>
           <div className="mt-6 text-err-text empty:hidden" id="pollMsg" role="alert">{st.msg}</div>

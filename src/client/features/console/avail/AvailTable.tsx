@@ -12,7 +12,7 @@ const cell = 'border-0 border-r border-line ';
 const clip = 'bg-clip-padding ';
 /** 下の線。土曜の行は太い線で週を区切る。最後の行には引かない */
 const bottom = (sat: boolean, last: boolean) => (sat ? 'border-b-2 border-b-week-line ' : last ? '' : 'border-b ');
-/** 左に固定する 3 列（日付・曜・その日の卓）。left と幅は決め打ちにする（ずれると、横に送ったときに重なる） */
+/** 左に固定する3列（日付・曜・その日の卓）。leftと幅は決め打ちにする（ずれると、横に送ったときに重なる） */
 const COL = {
   c1: 'left-0 w-62 min-w-62 ',
   c2: 'left-62 w-52 min-w-52 text-center ',
@@ -45,7 +45,7 @@ function Pen({ day, onPen, list }: { day: string; onPen: (day: string) => void; 
     ? 'grid h-38 w-34 cursor-pointer place-items-center rounded-sm border border-line bg-card p-0 text-muted focus-visible:outline-offset-1'
     : 'absolute top-1 right-1 cursor-pointer rounded-[4px] border-0 bg-transparent p-2 leading-none text-muted opacity-60 hover:bg-hover hover:text-fg '
       + 'pointer-fine:opacity-0 pointer-fine:group-hover/cell:opacity-100 focus-visible:opacity-100';
-  return <button type="button" className={cls} data-pen={day} title="この日のメモを書く" aria-label={fmtJa(day) + ' のメモを書く'} onClick={() => onPen(day)}><Icon name="edit" size="xs" /></button>;
+  return <button type="button" className={cls} data-pen={day} title="この日のメモを書く" aria-label={fmtJa(day) + 'のメモを書く'} onClick={() => onPen(day)}><Icon name="edit" size="xs" /></button>;
 }
 
 type Props = { d: ConsoleData; names: string[]; mine: string; rows: Row[]; onMark: (day: string, next: Mark) => void; onPen: (day: string) => void };
@@ -63,7 +63,7 @@ export function AvailTable({ d, names, mine, rows, onMark, onPen }: Props) {
             const gmN = act.filter((s) => s.gm === n).length, plN = act.filter((s) => s.gm !== n && s.members.indexOf(n) >= 0).length, mineCol = n === mine;
             return (
               <th className={cell + 'sticky top-0 z-(--z-cell-head) min-w-84 max-w-136 border-b px-8 py-6 whitespace-normal wrap-anywhere ' + (mineCol ? 'bg-accent-strong text-accent-ink' : clip + 'text-fg')} key={n}>
-                {n}<small className={'block text-10 leading-[1.2] font-normal ' + (mineCol ? 'text-inherit opacity-85' : 'text-muted')} title="いま動いている卓で GM をしている数と参加している数">{'GM ' + gmN + '・PL ' + plN}</small>
+                {n}<small className={'block text-10 leading-[1.2] font-normal ' + (mineCol ? 'text-inherit opacity-85' : 'text-muted')} title="いま動いている卓でGMをしている数と参加している数">{'GM ' + gmN + '・PL ' + plN}</small>
               </th>
             );
           })}
@@ -71,7 +71,7 @@ export function AvailTable({ d, names, mine, rows, onMark, onPen }: Props) {
         {rows.map((r, ri) => {
           const key = r.key, sat = r.dow === 6, last = ri === rows.length - 1 && !!d.members.length;
           const line = bottom(sat, last);
-          // 左の 3 列の色。今日・土日と祝日の順。その日の卓の列は、卓のある日・全員空きの日にも色を付ける
+          // 左の3列の色。今日・土日と祝日の順。その日の卓の列は、卓のある日・全員空きの日にも色を付ける
           const dBg = key === d.today ? 'bg-today ' : r.wk || r.hol ? 'bg-weekend ' : '';
           const c3Bg = dBg || (r.list.length ? 'bg-session ' : r.free ? 'bg-soft ' : '');
           const dCell = cell + line + 'sticky z-(--z-cell) px-8 py-6 ' + (r.dow === 0 || r.hol ? 'text-sun ' : sat ? 'text-sat ' : '');
@@ -120,17 +120,17 @@ export function AvailTable({ d, names, mine, rows, onMark, onPen }: Props) {
   );
 }
 
-/** Google カレンダーの予定から入った印の札（印の右肩の小さな G） */
+/** Googleカレンダーの予定から入った印の札（印の右肩の小さなG） */
 const gSup = 'ml-1 align-super text-[9px] leading-none font-bold text-muted';
-const G_TITLE = 'Google カレンダーの予定から入った印';
-/** その日のその人の印が、Google カレンダーの予定から入ったものか */
+const G_TITLE = 'Googleカレンダーの予定から入った印';
+/** その日のその人の印が、Googleカレンダーの予定から入ったものか */
 const fromGoogle = (d: Props['d'], key: string, name: string) => (d.availGoogle[key] || []).includes(name);
 
-/** 日ごとのリストは、狭い画面だけに出す（pk は e2e が探す印） */
+/** 日ごとのリストは、狭い画面だけに出す（pkはe2eが探す印） */
 const list = 'hidden max-tab:block';
 const pick = 'pk h-38 w-38 cursor-pointer rounded-sm border font-inherit text-14 font-bold focus-visible:outline-offset-1 ';
 
-/** 日ごとのリスト（狭い画面）。1 日 1 行で、ほかの人の × と △ を名前で並べ、自分の印は ◯ △ × のボタンで打つ */
+/** 日ごとのリスト（狭い画面）。1日1行で、ほかの人の × と △ を名前で並べ、自分の印は ◯ △ × のボタンで打つ */
 export function AvailList({ d, names, mine, rows, onMark, onPen }: Props) {
   if (!d.members.length) return <div className={list} id="availList"><p className="hint">メンバーが登録されていません。</p></div>;
   if (!rows.length) return <div className={list} id="availList"><p className="hint">条件に合う日がありません。</p></div>;

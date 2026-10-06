@@ -78,7 +78,7 @@ export function EditSessionForm({ req, onClose, reopen }: { req: FormReq; onClos
         <PeopleFields f={f} set={set} />
         <div className="mt-12 rounded-md bg-soon px-12 py-8 text-13" id="wantInfo" hidden={!wantInfo}>{wantInfo && <>{wantInfo.text}{wantInfo.promote && <><br />{'状態を「' + st + '」にして保存すると、参加希望の人が参加者に加わります。'}</>}</>}</div>
         <PlaceMemo f={f} set={set} />
-        <NotifyCheck f={f} set={set} label="Discord に知らせる" />
+        <NotifyCheck f={f} set={set} label="Discordに知らせる" />
         <div className={formActions}>
           <div className="btns mt-0">
             <button type="button" className="btn danger" id="del" disabled={!s} onClick={() => remove(collect(d, f, ''), fail)}><Icon name="delete" size="sm" />この卓を削除</button>

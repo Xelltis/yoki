@@ -1,5 +1,5 @@
-// 開発用ログイン（npm run dev のときだけ）。Discord を使わずに、サンプルのグループのメンバーとして入る。
-// app.ts が import.meta.env.DEV のときだけ登録するので、本番のビルド（vite build）には入らない
+// 開発用ログイン（npm run devのときだけ）。Discordを使わずに、サンプルのグループのメンバーとして入る。
+// app.tsがimport.meta.env.DEVのときだけ登録するので、本番のビルド（vite build）には入らない
 import type { Hono } from 'hono';
 import type { AppEnv } from '../app';
 import { mayLogIn } from '../domain/registration';
@@ -35,12 +35,12 @@ export function registerDevRoutes(app: Hono<AppEnv>): void {
       { id: DEV_GUILD.id, name: DEV_GUILD.name, owner: who.manager, permissions: '0' },
     ]);
     await startSession(c, who.id);
-    // 開発用ログインも Discord でのログインの代わりなので、初めての Google のアカウントを結びつけるために押したら結びつける
+    // 開発用ログインもDiscordでのログインの代わりなので、初めてのGoogleのアカウントを結びつけるために押したら結びつける
     if (form.link_google === '1' && (await consumeGoogleLink(c, who.id))) return c.redirect('/?login=google-linked', 303);
     return c.redirect('/g/' + SAMPLE_GROUP_ID + '/', 303);
   });
 
-  // サンプルのグループを作り直す（開いた日から数え直す）。開発用の人の Google 連携・Google でのログインと、偽の Google・偽の GitHub の中身も消す（前の回の連携や更新が残らないように）
+  // サンプルのグループを作り直す（開いた日から数え直す）。開発用の人のGoogle連携・Googleでのログインと、偽のGoogle・偽のGitHubの中身も消す（前の回の連携や更新が残らないように）
   app.post('/dev/reset', async (c) => {
     const url = new URL(c.req.url);
     if (!isLocalHttp(url)) return c.notFound();

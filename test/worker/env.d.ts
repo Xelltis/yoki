@@ -1,4 +1,4 @@
-// テストだけで使う binding（vitest.config.ts が渡す）。本番では secret の OPERATOR_IDS と DISCORD_BOT_TOKEN も、テストでは binding で渡す
+// テストだけで使うbinding（vitest.config.tsが渡す）。本番ではsecretのOPERATOR_IDSとDISCORD_BOT_TOKENも、テストではbindingで渡す
 declare namespace Cloudflare {
   interface Env {
     TEST_MIGRATIONS: import('cloudflare:test').D1Migration[];

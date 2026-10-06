@@ -1,9 +1,9 @@
-// Google カレンダーとの同期。人ごとに、入っているグループすべての卓と予定を見る。
-//   書き込み … GM か参加者として入っている開催の卓を、本人のカレンダーに書く。変われば書き直し、外れたら（中止・日程の取り消し・
-//             参加者から外れた・卓を消した）消す。開催日から WRITE_PAST_DAYS 日より前の卓は、もう触らない
+// Googleカレンダーとの同期。人ごとに、入っているグループすべての卓と予定を見る。
+//   書き込み … GMか参加者として入っている開催の卓を、本人のカレンダーに書く。変われば書き直し、外れたら（中止・日程の取り消し・
+//             参加者から外れた・卓を消した）消す。開催日からWRITE_PAST_DAYS日より前の卓は、もう触らない
 //   読み込み … 本人の予定から、決めた時間帯が埋まっていれば ×、一部なら △ を、予定表に入れる。本人が入れた印・本人が消した日・
 //             卓に入っている日には入れない。卓予定が書いた予定は数えない
-// Google を呼ぶ回数は budget で数え、使い切ったらやめる（残りは次の回。どちらも、あるべき形に合わせ直す作りなので、途中でやめてよい）
+// Googleを呼ぶ回数はbudgetで数え、使い切ったらやめる（残りは次の回。どちらも、あるべき形に合わせ直す作りなので、途中でやめてよい）
 import { SYSTEM_ACTOR } from '../auth/guard';
 import { calendarItem, calendarSessions } from '../domain/calendar';
 import { loadGroup } from '../domain/load';
@@ -18,14 +18,14 @@ import type { GoogleDeps } from './config';
 
 /** 書き込む卓の、過ぎた日数（これより前の卓は書き込まない・書き直さない・消さない） */
 export const WRITE_PAST_DAYS = 7;
-/** 1 回の同期で Google を呼ぶ回数の上限（Workers の 1 回の要求で外へ出せる数に収める） */
+/** 1回の同期でGoogleを呼ぶ回数の上限（Workersの1回の要求で外へ出せる数に収める） */
 export const CALL_BUDGET = 40;
 /** 予定を読み直す間隔 */
 export const BUSY_EVERY_MS = 3600_000;
-/** 見回り 1 回で回る人の数 */
+/** 見回り1回で回る人の数 */
 export const PATROL_USERS = 5;
 
-export const REVOKED_MESSAGE = 'Google の許可が取り消されたか、期限が切れました。もう一度「Google と連携する」を押してください。';
+export const REVOKED_MESSAGE = 'Googleの許可が取り消されたか、期限が切れました。もう一度「Googleと連携する」を押してください。';
 
 export type Budget = { left: number };
 
@@ -34,7 +34,7 @@ type MappingRow = { session_id: number; event_id: string; hash: string; date: st
 /** 本人が入っているグループ（読み込んだデータと、本人のメンバーの行） */
 type Joined = { ctx: Ctx; memberId: number; name: string };
 
-/** 卓を Google カレンダーの予定にする */
+/** 卓をGoogleカレンダーの予定にする */
 export function eventBody(ctx: Ctx, s: Session & { date: string }): GoogleEventBody {
   const item = calendarItem(ctx, s);
   const span = item.span;
@@ -91,8 +91,8 @@ async function joinedGroups(db: D1Database, deps: GoogleDeps, userId: string, no
 }
 
 /**
- * 卓を書き込む。あるべき予定と、書いた予定（google_events）を比べ、足りない・変わった・要らなくなったものだけ Google を呼ぶ。
- * 全部終われば true、budget を使い切って途中でやめたら false
+ * 卓を書き込む。あるべき予定と、書いた予定（google_events）を比べ、足りない・変わった・要らなくなったものだけGoogleを呼ぶ。
+ * 全部終わればtrue、budgetを使い切って途中でやめたらfalse
  */
 async function writeEvents(db: D1Database, deps: GoogleDeps, at: string, userId: string, groups: Joined[], now: Date, budget: Budget): Promise<boolean> {
   const today = jst(now).ymd;
@@ -117,7 +117,7 @@ async function writeEvents(db: D1Database, deps: GoogleDeps, at: string, userId:
 
   for (const h of have) {
     if (want.has(h.session_id)) continue;
-    // 過ぎた卓は、Google の予定を残したまま覚えるのをやめる（終わった卓の記録として残す）
+    // 過ぎた卓は、Googleの予定を残したまま覚えるのをやめる（終わった卓の記録として残す）
     if (h.date < old) {
       await drop(h.session_id);
       continue;
@@ -133,7 +133,7 @@ async function writeEvents(db: D1Database, deps: GoogleDeps, at: string, userId:
     if (h && h.hash === w.hash) continue;
     if (budget.left <= 0) return false;
     budget.left--;
-    // Google 側で消されていたら、書き足す（卓が変わったので、新しい中身を届ける）
+    // Google側で消されていたら、書き足す（卓が変わったので、新しい中身を届ける）
     if (h && (await deps.api.updateEvent(at, h.event_id, w.body)) === 'ok') {
       await put(sessionId, h.event_id, w);
       continue;
@@ -165,7 +165,7 @@ async function importBusy(db: D1Database, deps: GoogleDeps, at: string, link: Li
     }
     const json = JSON.stringify(marks);
     stmts.push(
-      // 本人が入れた印（source が空）は上書きしない。本人が消した日には入れない
+      // 本人が入れた印（sourceが空）は上書きしない。本人が消した日には入れない
       db
         .prepare(
           `INSERT INTO availability (member_id, date, mark, source)
@@ -174,7 +174,7 @@ async function importBusy(db: D1Database, deps: GoogleDeps, at: string, link: Li
            ON CONFLICT (member_id, date) DO UPDATE SET mark = excluded.mark WHERE availability.source = 'google'`,
         )
         .bind(g.memberId, json),
-      // 予定が無くなった日の、Google から入れた印を消す
+      // 予定が無くなった日の、Googleから入れた印を消す
       db
         .prepare(
           `DELETE FROM availability WHERE member_id = ?1 AND source = 'google' AND date >= ?3 AND date < ?4
@@ -187,20 +187,20 @@ async function importBusy(db: D1Database, deps: GoogleDeps, at: string, link: Li
 }
 
 export type SyncOptions = {
-  /** 卓を書き込むか（連携の設定でオフなら、こちらが true でも書かない） */
+  /** 卓を書き込むか（連携の設定でオフなら、こちらがtrueでも書かない） */
   write?: boolean;
-  /** 予定を読むか。'due' は、前に読んでから BUSY_EVERY_MS 経っていれば */
+  /** 予定を読むか。'due' は、前に読んでからBUSY_EVERY_MS経っていれば */
   busy?: boolean | 'due';
   budget?: Budget;
 };
 
-/** 1 人ぶんの同期。結果の message は画面に出す（何もしなかったときは空） */
+/** 1人ぶんの同期。結果のmessageは画面に出す（何もしなかったときは空） */
 export async function syncUser(db: D1Database, deps: GoogleDeps, userId: string, now: Date, opts: SyncOptions = {}): Promise<{ ok: boolean; message: string }> {
   const link = await db
     .prepare('SELECT user_id, refresh_token, write_events, read_busy, busy_from, busy_to, busy_at FROM google_links WHERE user_id = ?')
     .bind(userId)
     .first<LinkRow>();
-  if (!link) return { ok: false, message: 'Google と連携していません。' };
+  if (!link) return { ok: false, message: 'Googleと連携していません。' };
   const budget = opts.budget ?? { left: CALL_BUDGET };
   const write = (opts.write ?? true) && link.write_events === 1;
   const due = !link.busy_at || now.getTime() - Date.parse(link.busy_at) >= BUSY_EVERY_MS;
@@ -223,7 +223,7 @@ export async function syncUser(db: D1Database, deps: GoogleDeps, userId: string,
       )
       .bind(userId, t, done ? 1 : 0, busy ? 1 : 0)
       .run();
-    return { ok: true, message: write && !done ? '卓が多いので、残りは少し後に書き込みます。' : 'Google カレンダーと同期しました。' };
+    return { ok: true, message: write && !done ? '卓が多いので、残りは少し後に書き込みます。' : 'Googleカレンダーと同期しました。' };
   } catch (e) {
     const message = e instanceof GoogleRevoked ? REVOKED_MESSAGE : errorText(e);
     await setError(db, userId, message, now);
@@ -233,7 +233,7 @@ export async function syncUser(db: D1Database, deps: GoogleDeps, userId: string,
 
 const WRITERS = 'FROM google_links l JOIN members m ON m.user_id = l.user_id WHERE m.group_id = ? AND l.write_events = 1';
 
-/** グループに、卓を Google に書き込んでいる人がいるか */
+/** グループに、卓をGoogleに書き込んでいる人がいるか */
 export async function hasGoogleWriters(db: D1Database, groupId: string): Promise<boolean> {
   return !!(await db.prepare('SELECT 1 ' + WRITERS + ' LIMIT 1').bind(groupId).first());
 }
@@ -253,7 +253,7 @@ export async function syncGroupWrites(db: D1Database, deps: GoogleDeps, groupId:
   }
 }
 
-/** 見回り（5 分おき）。長く回っていない人から順に、書き込みと（1 時間おきの）予定の読み込み */
+/** 見回り（5分おき）。長く回っていない人から順に、書き込みと（1時間おきの）予定の読み込み */
 export async function patrolGoogle(db: D1Database, deps: GoogleDeps, now: Date): Promise<void> {
   const users = (await db.prepare('SELECT user_id FROM google_links ORDER BY checked_at IS NOT NULL, checked_at LIMIT ?').bind(PATROL_USERS).all<{ user_id: string }>()).results;
   const budget = { left: CALL_BUDGET };
@@ -263,7 +263,7 @@ export async function patrolGoogle(db: D1Database, deps: GoogleDeps, now: Date):
   }
 }
 
-/** 書き込んだ予定を消す（連携を外す・書き込みをやめるとき）。消せなかったぶん（budget を超えた・失敗した）は残す。消した数を返す */
+/** 書き込んだ予定を消す（連携を外す・書き込みをやめるとき）。消せなかったぶん（budgetを超えた・失敗した）は残す。消した数を返す */
 export async function removeEvents(db: D1Database, deps: GoogleDeps, at: string | null, userId: string, budget: Budget): Promise<number> {
   const have = (await db.prepare('SELECT session_id, event_id FROM google_events WHERE user_id = ?').bind(userId).all<{ session_id: number; event_id: string }>()).results;
   let n = 0;
@@ -275,7 +275,7 @@ export async function removeEvents(db: D1Database, deps: GoogleDeps, at: string 
         await deps.api.deleteEvent(at, h.event_id);
         n++;
       } catch {
-        // 消せなかった予定は Google に残る（本人が消せる）
+        // 消せなかった予定はGoogleに残る（本人が消せる）
       }
     }
   }
@@ -283,7 +283,7 @@ export async function removeEvents(db: D1Database, deps: GoogleDeps, at: string 
   return n;
 }
 
-/** Google から入れた印と、本人が消した日の記録を消す（連携を外す・読み込みをやめるとき） */
+/** Googleから入れた印と、本人が消した日の記録を消す（連携を外す・読み込みをやめるとき） */
 export function removeBusyMarks(db: D1Database, userId: string): D1PreparedStatement[] {
   return [
     db.prepare("DELETE FROM availability WHERE source = 'google' AND member_id IN (SELECT id FROM members WHERE user_id = ?)").bind(userId),
@@ -291,7 +291,7 @@ export function removeBusyMarks(db: D1Database, userId: string): D1PreparedState
   ];
 }
 
-/** access token を取る。取れなければ null（取り消されていれば、連携の印に残す） */
+/** access tokenを取る。取れなければnull（取り消されていれば、連携の印に残す） */
 export async function tryAccessToken(db: D1Database, deps: GoogleDeps, userId: string, sealed: string, now: Date): Promise<string | null> {
   try {
     return await deps.api.accessToken(await open(deps.key, sealed));

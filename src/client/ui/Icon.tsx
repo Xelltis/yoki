@@ -1,8 +1,8 @@
 import { FILLED, ICONS, type IconName } from './icons';
 
 /**
- * アイコン 1 つ（SVG。icons.ts）。飾りなので読み上げない。名前は icons.ts の ICONS にあるものだけ。
- * 大きさは size（sm・xs）か、className の文字の大きさ（text-22 など。アイコンは 1em）。色は文字の色。filled は塗りつぶした形
+ * アイコン1つ（SVG。icons.ts）。飾りなので読み上げない。名前はicons.tsのICONSにあるものだけ。
+ * 大きさはsize（sm・xs）か、classNameの文字の大きさ（text-22など。アイコンは1em）。色は文字の色。filledは塗りつぶした形
  */
 export function Icon({ name, size, filled, className }: { name: IconName; size?: 'sm' | 'xs'; filled?: boolean; className?: string }) {
   const Svg = (filled && FILLED[name]) || ICONS[name];

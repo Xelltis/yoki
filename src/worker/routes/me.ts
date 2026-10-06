@@ -1,4 +1,4 @@
-// 入口の画面が使う API: ログインしている人・入れるグループ・作れるサーバー、グループを作る
+// 入口の画面が使うAPI: ログインしている人・入れるグループ・作れるサーバー、グループを作る
 import { Hono } from 'hono';
 import type { AppEnv } from '../app';
 import { SNAPSHOT_HOURS, snapshotAgeMs } from '../auth/guard';
@@ -54,7 +54,7 @@ meRoutes.post('/api/groups', async (c) => {
   if (!isOperator(c.env, viewer.id, new URL(c.req.url)) && !(await registrationOpen(c.env.DB))) throw new AppError(403, '今は新しいグループの受付を止めています。');
   const body = await readForm(c.req);
   const guildId = str(body.guildId);
-  if (!guildId) throw badRequest('Discord サーバーを選んでください。');
+  if (!guildId) throw badRequest('Discordサーバーを選んでください。');
   const g = await c.env.DB.prepare('SELECT name, icon FROM user_guilds WHERE user_id = ? AND guild_id = ? AND can_manage = 1')
     .bind(viewer.id, guildId)
     .first<{ name: string; icon: string | null }>();

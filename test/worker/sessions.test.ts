@@ -1,4 +1,4 @@
-// 卓の登録・変更・削除・参加希望（GAS 版 scheduler.test.js の §6・10・24・29・33・38・43・45）
+// 卓の登録・変更・削除・参加希望（GAS版scheduler.test.jsの §6・10・24・29・33・38・43・45）
 import { env } from 'cloudflare:test';
 import { beforeEach, describe, expect, test } from 'vitest';
 import { addDays, stampText } from '../../src/worker/lib/jst';
@@ -14,7 +14,7 @@ beforeEach(async () => {
 const sessionOf = (body: any, id: string) => body.data.sessions.find((s: any) => s.id === id);
 
 describe('登録と更新', () => {
-  test('新規は S001 から。参加者に、メンバーに無い人（ゲスト）も入れられる。登録者はログインした人', async () => {
+  test('新規はS001から。参加者に、メンバーに無い人（ゲスト）も入れられる。登録者はログインした人', async () => {
     const r = await ok(G.sora, G.id, 'saveSession', { name: 'テスト卓', gm: 'ひより', members: ['ソラ'], extra: 'ゲスト太郎、こまち', date: T(3), start: '21', status: '開催' });
     expect(r.id).toBe('S001');
     expect(r.message).toBe('登録しました: テスト卓（S001）');
@@ -30,7 +30,7 @@ describe('登録と更新', () => {
     expect((await fail(G.sora, G.id, 'saveSession', { name: '', status: '募集' })).error).toContain('卓の名前');
   });
 
-  test('更新しても ID は変わらない。開催日を変えると開催前の知らせの印が消え、変えなければ残る', async () => {
+  test('更新してもIDは変わらない。開催日を変えると開催前の知らせの印が消え、変えなければ残る', async () => {
     await ok(G.sora, G.id, 'saveSession', { name: 'A', gm: 'ひより', date: T(3), status: '開催' });
     await env.DB.prepare("UPDATE sessions SET notified_at = '2026-01-01T00:00:00Z', soon_at = '2026-01-01T00:00:00Z'").run();
     const same = await ok(G.sora, G.id, 'saveSession', { id: 'S001', name: 'A（改）', gm: 'ひより', date: T(3), status: '開催' });
@@ -80,7 +80,7 @@ describe('登録と更新', () => {
     expect(sessionOf(r, 'S001')).toMatchObject({ series: '港', seriesEnd: T(60) });
   });
 
-  test('番号は S999 の次が S1000（S000 に戻らない）', async () => {
+  test('番号はS999の次がS1000（S000に戻らない）', async () => {
     await env.DB.prepare('UPDATE groups SET next_session_seq = 999').run();
     expect((await ok(G.sora, G.id, 'saveSession', { name: 'a', status: '募集' })).id).toBe('S999');
     expect((await ok(G.sora, G.id, 'saveSession', { name: 'b', status: '募集' })).id).toBe('S1000');
@@ -115,7 +115,7 @@ describe('登録と更新', () => {
     expect((await fail(G.sora, G.id, 'saveSession', { name: 'x', status: '予定' })).error).toContain('開催日を入れてください');
   });
 
-  test('まとめての登録は、GM がいなくてもよい。参加者は全部の回に入る（空の名前は飛ばす）', async () => {
+  test('まとめての登録は、GMがいなくてもよい。参加者は全部の回に入る（空の名前は飛ばす）', async () => {
     const r = await ok(G.sora, G.id, 'saveSession', { name: '練習会', members: ['ソラ', null, ''], extra: 'こまち', dates: [T(10), T(3), T(3)], status: '開催' });
     expect(r.count).toBe(2);
     expect(r.data.sessions.map((s: any) => [s.name, s.date, s.gm, s.members])).toEqual([
@@ -126,7 +126,7 @@ describe('登録と更新', () => {
 });
 
 describe('参加希望・興味あり', () => {
-  test('自分のぶんは誰でも。ほかの人のぶんは、管理者も付けられない。GM や参加者は付けられない', async () => {
+  test('自分のぶんは誰でも。ほかの人のぶんは、管理者も付けられない。GMや参加者は付けられない', async () => {
     await ok(G.admin, G.id, 'saveSession', { name: '募集', gm: 'ひより', members: ['こまち'], status: '募集' });
     const r = await ok(G.sora, G.id, 'setInterest', { id: 'S001', name: 'ソラ', level: 'want' });
     expect(sessionOf(r, 'S001').want).toEqual(['ソラ']);
@@ -142,7 +142,7 @@ describe('参加希望・興味あり', () => {
     expect((await fail(G.sora, G.id, 'setInterest', { id: 'S001', name: 'ソラ', level: 'want' })).error).toContain('募集中ではありません');
   });
 
-  test('GM のいない卓にも付けられる。操作を省くと取り消し', async () => {
+  test('GMのいない卓にも付けられる。操作を省くと取り消し', async () => {
     await ok(G.admin, G.id, 'saveSession', { name: '募集', status: '募集' });
     let r = await ok(G.sora, G.id, 'setInterest', { id: 'S001', name: 'ソラ', level: 'interest' });
     expect(r.message).toBe('「募集」に興味ありを付けました: ソラ');

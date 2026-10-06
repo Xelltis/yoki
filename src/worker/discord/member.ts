@@ -1,19 +1,19 @@
-// その人がサーバーにいるかを、Bot に聞く（グループに入れるかの確かめ直し。auth/guard.ts）。
-// ログインした人の Discord のトークンは持たないので、サーバーの一覧の控えが古くなったら、Bot がいるサーバーでは Bot で確かめる。
-// 1 人ずつ読むだけなので、Gateway の特別な権限（サーバーのメンバーの一覧）は要らない
+// その人がサーバーにいるかを、Botに聞く（グループに入れるかの確かめ直し。auth/guard.ts）。
+// ログインした人のDiscordのトークンは持たないので、サーバーの一覧の控えが古くなったら、BotがいるサーバーではBotで確かめる。
+// 1人ずつ読むだけなので、Gatewayの特別な権限（サーバーのメンバーの一覧）は要らない
 import { botGet } from './channel';
 
-/** サーバー管理の権限（管理者 8・サーバー管理 32） */
+/** サーバー管理の権限（管理者8・サーバー管理32） */
 const MANAGE = 0x8n | 0x20n;
-/** Discord の「メンバーが見つからない」 */
+/** Discordの「メンバーが見つからない」 */
 const UNKNOWN_MEMBER = 10007;
 
 type ApiMember = { roles: string[] };
 type ApiGuild = { owner_id: string; roles: { id: string; permissions: string }[] };
 
 /**
- * その人がサーバーにいるか。いれば、サーバーを管理できるか（オーナーか、管理者・サーバー管理の権限）も返す（読めなければ null）。
- * Bot がサーバーにいない・Discord が答えない、のように Bot では分からないときは null（呼ぶ側が、ほかの方法で確かめる）
+ * その人がサーバーにいるか。いれば、サーバーを管理できるか（オーナーか、管理者・サーバー管理の権限）も返す（読めなければnull）。
+ * Botがサーバーにいない・Discordが答えない、のようにBotでは分からないときはnull（呼ぶ側が、ほかの方法で確かめる）
  */
 export async function guildMembership(token: string, guildId: string, userId: string): Promise<{ member: false } | { member: true; canManage: boolean | null } | null> {
   try {

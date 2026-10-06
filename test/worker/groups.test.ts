@@ -24,13 +24,13 @@ describe('グループを作る', () => {
     expect(res.status).toBe(403);
   });
 
-  test('ログインしていなければ AUTH:', async () => {
+  test('ログインしていなければAUTH:', async () => {
     const res = await postJson('/api/groups', { guildId: 'g1' });
     expect(res.status).toBe(401);
     expect((await res.json<{ error: string }>()).error).toMatch(/^AUTH:/);
   });
 
-  test('CSRF: 別のサイトからと、JSON でない送信は断る', async () => {
+  test('CSRF: 別のサイトからと、JSONでない送信は断る', async () => {
     const sid = await loginAs({ id: '12', name: 'こまち' }, [{ id: 'g3', name: 'K', canManage: true }]);
     expect((await postJson('/api/groups', { guildId: 'g3' }, sid, { Origin: 'https://evil.example' })).status).toBe(403);
     const form = await call('/api/groups', { method: 'POST', sid, headers: { Origin: ORIGIN, 'Content-Type': 'application/x-www-form-urlencoded' }, body: 'guildId=g3' });
@@ -46,7 +46,7 @@ describe('グループのページ（/g/:id/）', () => {
     expect(res.headers.get('Location')).toBe('/auth/login?return_to=%2Fg%2Fp1%2F');
   });
 
-  test('リンクの中身を読みに来たもの（Discord など）には、ログインへ送らずに、卓予定の見た目（OGP）の骨組みを返す。グループの名前は出さない', async () => {
+  test('リンクの中身を読みに来たもの（Discordなど）には、ログインへ送らずに、卓予定の見た目（OGP）の骨組みを返す。グループの名前は出さない', async () => {
     await makeGroup('p9', 'gz');
     const res = await call('/g/p9/', { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Discordbot/2.0; +https://discordapp.com)' } });
     expect(res.status).toBe(200);
@@ -54,7 +54,7 @@ describe('グループのページ（/g/:id/）', () => {
     expect(html).toContain('<meta property="og:title" content="卓予定のグループ">');
     expect(html).toContain('<meta property="og:url" content="https://yoki.test/g/p9/">');
     expect(html).toContain('<meta property="og:image" content="https://yoki.test/og.png">');
-    // 骨組みにあった OGP のタグは、置き換えて 1 つずつにする
+    // 骨組みにあったOGPのタグは、置き換えて1つずつにする
     expect(html.match(/og:title/g)).toHaveLength(1);
     expect(html.match(/twitter:card/g)).toHaveLength(1);
     expect(html).toContain('<div id="root"></div>');
@@ -63,7 +63,7 @@ describe('グループのページ（/g/:id/）', () => {
     expect((await call('/g/p9/', { headers: { 'User-Agent': 'Mozilla/5.0 Chrome/140' } })).status).toBe(302);
   });
 
-  test('サーバーのメンバーなら画面を返し、メンバーを自動で作る（Discord ID 付き）', async () => {
+  test('サーバーのメンバーなら画面を返し、メンバーを自動で作る（Discord ID付き）', async () => {
     await makeGroup('p2', 'gq');
     const sid = await loginAs({ id: '20', name: 'レン' }, [{ id: 'gq', name: 'Q' }]);
     const res = await call('/g/p2/', { sid });
@@ -72,7 +72,7 @@ describe('グループのページ（/g/:id/）', () => {
     expect(await member('p2', '20')).toEqual({ name: 'レン', is_admin: 0, discord_id: '20' });
   });
 
-  test('同じ名前のメンバーがいれば「 (2)」を付け、管理者が先に登録した Discord ID の行には結びつく', async () => {
+  test('同じ名前のメンバーがいれば「 (2)」を付け、管理者が先に登録したDiscord IDの行には結びつく', async () => {
     await makeGroup('p3', 'gr');
     const at = new Date().toISOString();
     await env.DB.batch([
@@ -91,11 +91,11 @@ describe('グループのページ（/g/:id/）', () => {
     await makeGroup('p4', 'gs');
     const sid = await loginAs({ id: '40', name: 'GM' }, [{ id: 'gs', name: 'S', canManage: true }]);
     await call('/g/p4/', { sid });
-    // members.is_admin は 0 のまま（サーバーの権限で管理者になる）
+    // members.is_adminは0のまま（サーバーの権限で管理者になる）
     expect((await member('p4', '40'))?.is_admin).toBe(0);
   });
 
-  test('サーバーにいない人は 403（控えが新しいとき）。控えが古ければ聞き直しに送る（Bot がサーバーにいないとき）', async () => {
+  test('サーバーにいない人は403（控えが新しいとき）。控えが古ければ聞き直しに送る（Botがサーバーにいないとき）', async () => {
     const bot = mockBotGuilds();
     await makeGroup('p5', 'gt');
     const fresh = await loginAs({ id: '50', name: 'X' }, [{ id: 'other', name: 'O' }]);
@@ -107,7 +107,7 @@ describe('グループのページ（/g/:id/）', () => {
     bot.restore();
   });
 
-  test('無いグループは 404。末尾の / が無ければ付ける', async () => {
+  test('無いグループは404。末尾の / が無ければ付ける', async () => {
     expect((await call('/g/nope/')).status).toBe(404);
     const res = await call('/g/abc');
     expect(res.status).toBe(301);
@@ -137,7 +137,7 @@ describe('開発用ログイン', () => {
 });
 
 describe('グループの管理画面（/g/:id/admin/）', () => {
-  test('管理者には画面を返す。管理者でない人には 403 の案内（予定の画面へのリンク付き）', async () => {
+  test('管理者には画面を返す。管理者でない人には403の案内（予定の画面へのリンク付き）', async () => {
     const { admin, sora } = await setupGroup();
     const ok = await call('/g/grp/admin/', { sid: admin });
     expect(ok.status).toBe(200);
@@ -157,7 +157,7 @@ describe('グループの管理画面（/g/:id/admin/）', () => {
 });
 
 describe('運営者の管理画面（/admin/）', () => {
-  test('運営者だけ。ログインしていなければログインへ、運営者でなければ 403', async () => {
+  test('運営者だけ。ログインしていなければログインへ、運営者でなければ403', async () => {
     expect((await call('/admin/')).headers.get('Location')).toBe('/auth/login?return_to=%2Fadmin%2F');
     const user = await loginAs({ id: '300', name: 'ふつうの人' }, []);
     expect((await call('/admin/', { sid: user })).status).toBe(403);
@@ -171,10 +171,10 @@ describe('運営者の管理画面（/admin/）', () => {
 });
 
 describe('タブ・区分の道', () => {
-  /** 画面の骨組み（1 つの SPA）か */
+  /** 画面の骨組み（1つのSPA）か */
   const isSpa = async (res: Response) => (await res.text()).includes('<div id="root">');
 
-  test('グループの画面: タブの道でも同じ骨組みを返す。末尾の / が無ければ付ける。知らないタブは 404', async () => {
+  test('グループの画面: タブの道でも同じ骨組みを返す。末尾の / が無ければ付ける。知らないタブは404', async () => {
     const { sora } = await setupGroup();
     expect(await isSpa(await call('/g/grp/', { sid: sora }))).toBe(true);
     const tab = await call('/g/grp/recruit/', { sid: sora });
@@ -186,7 +186,7 @@ describe('タブ・区分の道', () => {
     expect((await call('/g/grp/calendar/', { sid: sora })).status).toBe(404);
   });
 
-  test('グループの管理の区分: 管理者だけ。管理者でない人には 403。ログインしていなければ、その区分へ戻るログインへ', async () => {
+  test('グループの管理の区分: 管理者だけ。管理者でない人には403。ログインしていなければ、その区分へ戻るログインへ', async () => {
     const { admin, sora } = await setupGroup();
     const ok = await call('/g/grp/admin/danger/', { sid: admin });
     expect(ok.status).toBe(200);
@@ -232,7 +232,7 @@ describe('グループを消す（deleteGroup）', () => {
 });
 
 describe('最後に使われた日時', () => {
-  test('画面から呼ばれたら書き換える。10 分以内なら書き換えない', async () => {
+  test('画面から呼ばれたら書き換える。10分以内なら書き換えない', async () => {
     const { sora } = await setupGroup();
     const used = () => env.DB.prepare("SELECT last_used_at FROM groups WHERE id = 'grp'").first<string>('last_used_at');
     await env.DB.prepare("UPDATE groups SET last_used_at = '2026-01-01T00:00:00.000Z' WHERE id = 'grp'").run();
@@ -247,7 +247,7 @@ describe('最後に使われた日時', () => {
 });
 
 describe('参加しているサーバーの控え', () => {
-  test('控えにグループのサーバーが無く、控えが 5 分より古ければ、Discord に聞き直しに行く。新しければ 403（Bot がサーバーにいないとき）', async () => {
+  test('控えにグループのサーバーが無く、控えが5分より古ければ、Discordに聞き直しに行く。新しければ403（Botがサーバーにいないとき）', async () => {
     const bot = mockBotGuilds();
     await makeGroup('p1', 'gp');
     const old = await loginAs({ id: '700', name: 'ゆき' }, [], { checkedAt: new Date(Date.now() - 10 * 60_000) });
@@ -260,13 +260,13 @@ describe('参加しているサーバーの控え', () => {
   });
 });
 
-describe('送られた JSON が壊れているとき', () => {
-  test('グループを作る道は、500 にせず「サーバーを選んでください」と断る（null・配列・壊れた JSON）', async () => {
+describe('送られたJSONが壊れているとき', () => {
+  test('グループを作る道は、500にせず「サーバーを選んでください」と断る（null・配列・壊れたJSON）', async () => {
     const sid = await loginAs({ id: '12', name: 'こまち' }, [{ id: 'g3', name: 'K', canManage: true }]);
     for (const body of ['{', 'null', '[]', '42']) {
       const res = await call('/api/groups', { method: 'POST', sid, headers: { Origin: ORIGIN, 'Content-Type': 'application/json' }, body });
       expect(res.status).toBe(400);
-      expect((await res.json<{ error: string }>()).error).toBe('Discord サーバーを選んでください。');
+      expect((await res.json<{ error: string }>()).error).toBe('Discordサーバーを選んでください。');
     }
   });
 });

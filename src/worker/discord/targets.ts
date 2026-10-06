@@ -1,11 +1,11 @@
-// 送り先の選び方（GAS 版 discordTargets_・kindBase_・sessionTargets_）。
+// 送り先の選び方（GAS版discordTargets_・kindBase_・sessionTargets_）。
 // シリーズに専用のチャンネルがあればそこへ（「基本のチャンネルにも送る」なら基本にも）。
 // 無ければ知らせの種類のチャンネル（remind: 開催前の知らせ・開始直前、recruit: 募集）、それも無ければ基本のチャンネル
 import { STATUS } from '../domain/constants';
 import type { Ctx, Session } from '../domain/types';
 
 export type Kind = 'remind' | 'recruit' | '';
-/** 送り先。channelId は Discord のチャンネルの ID。label は送信記録と画面に出す名前 */
+/** 送り先。channelIdはDiscordのチャンネルのID。labelは送信記録と画面に出す名前 */
 export type Target = { channelId: string; label: string; series: string; kind?: Kind };
 
 const KIND_LABEL: Record<'remind' | 'recruit', string> = { remind: '開催前の知らせのチャンネル', recruit: '募集のチャンネル' };
@@ -36,7 +36,7 @@ export function sessionTargets(ctx: Pick<Ctx, 'group' | 'seriesNotify'>, s: Sess
   return discordTargets(ctx, s.series, kind === undefined ? sessionKind(s) : kind);
 }
 
-/** いくつかの卓の送り先を合わせる（同じチャンネルは 1 つに） */
+/** いくつかの卓の送り先を合わせる（同じチャンネルは1つに） */
 export function unionTargets(lists: Target[][]): Target[] {
   const seen = new Set<string>();
   const out: Target[] = [];

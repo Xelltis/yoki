@@ -1,4 +1,4 @@
-// メンバーの追加・変更・削除と、管理者の付け外し（GAS 版 Members.js・Auth.js の removeAdmin）。
+// メンバーの追加・変更・削除と、管理者の付け外し（GAS版Members.js・Auth.jsのremoveAdmin）。
 // ログインした人は、グループに初めて入ったときに自動でメンバーになる（auth/guard.ts）。ここは管理者が手で直すとき
 import { AppError, badRequest, notFound } from '../lib/errors';
 import { NAME_SEPARATORS, RESERVED_NAMES } from '../lib/text';
@@ -17,12 +17,12 @@ export async function saveMember(ctx: Ctx, form: Form) {
   if (!ctx.actor.isAdmin && target?.id !== ctx.actor.memberId) throw new AppError(403, 'ADMIN: メンバーの追加や、ほかの人の変更ができるのは管理者だけです。');
   const clash = ctx.memberByName.get(name);
   if (clash && clash.id !== target?.id) throw badRequest('同じ名前のメンバーがいます: ' + name);
-  // ログインした人の Discord ID は、ログインから自動で入るので変えられない
+  // ログインした人のDiscord IDは、ログインから自動で入るので変えられない
   let discordId = str(form.discordId).replace(/[<@!>\s]/g, '');
   if (target?.userId) discordId = target.discordId;
   // 管理者のほかは、上で自分の行（target）だけに絞ってある
   else if (!ctx.actor.isAdmin) discordId = target!.discordId;
-  if (discordId && !/^\d{5,}$/.test(discordId)) throw badRequest('Discord ユーザーID は数字だけです（例: 123456789012345678）。');
+  if (discordId && !/^\d{5,}$/.test(discordId)) throw badRequest('DiscordユーザーIDは数字だけです（例: 123456789012345678）。');
   const note = str(form.note);
   if (target) {
     await ctx.db.prepare('UPDATE members SET name = ?, discord_id = ?, note = ? WHERE id = ?').bind(name, discordId, note, target.id).run();
@@ -33,8 +33,8 @@ export async function saveMember(ctx: Ctx, form: Form) {
 }
 
 /**
- * メンバーを消す。卓の GM・参加者・回答に残っている名前はそのまま（メンバーに無い人として残る）。予定とメモは消える。
- * Discord サーバーにいる人は、次に開いたときにまたメンバーになる（締め出すなら Discord サーバーから外す）
+ * メンバーを消す。卓のGM・参加者・回答に残っている名前はそのまま（メンバーに無い人として残る）。予定とメモは消える。
+ * Discordサーバーにいる人は、次に開いたときにまたメンバーになる（締め出すならDiscordサーバーから外す）
  */
 export async function deleteMember(ctx: Ctx, form: Form) {
   const name = str(form.name);
@@ -49,14 +49,14 @@ export async function deleteMember(ctx: Ctx, form: Form) {
   return { ok: true, message: '削除しました: ' + name };
 }
 
-/** 管理者にする・外す。form: { name, admin }。管理者が 1 人もいなくなる外し方はできない */
+/** 管理者にする・外す。form: { name, admin }。管理者が1人もいなくなる外し方はできない */
 export async function setAdmin(ctx: Ctx, form: Form) {
   const name = str(form.name);
   const m = ctx.memberByName.get(name);
   if (!m) throw notFound('メンバーに「' + name + '」はいません。');
   const admin = !!form.admin;
   if (!admin && m.isAdmin && ctx.members.filter((x) => x.isAdmin).length <= 1) {
-    throw badRequest('管理者が 1 人だけのときは外せません。先にもう 1 人足してください。');
+    throw badRequest('管理者が1人だけのときは外せません。先にもう1人足してください。');
   }
   await ctx.db.prepare('UPDATE members SET is_admin = ? WHERE id = ?').bind(admin ? 1 : 0, m.id).run();
   return { ok: true, message: admin ? '「' + name + '」を管理者にしました。' : '「' + name + '」を管理者から外しました。' };

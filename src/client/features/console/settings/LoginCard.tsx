@@ -1,5 +1,5 @@
-// 設定の画面の「ログインの方法」。Discord（いつも）と、結びつけた Google アカウント（もう 1 つの入り口）。
-// 運営者が Google の値を設定していなければ、出さない
+// 設定の画面の「ログインの方法」。Discord（いつも）と、結びつけたGoogleアカウント（もう1つの入り口）。
+// 運営者がGoogleの値を設定していなければ、出さない
 import { useState } from 'react';
 import type { RpcResult } from '../../../../shared/api';
 import { askConfirm } from '../../../ui/confirm';
@@ -16,7 +16,7 @@ export function LoginCard() {
   const g = d.googleLogin;
   if (!g.ready) return null;
   const unlink = () => askConfirm(
-    { title: 'Google でのログインを外しますか？', message: 'Google（' + g.email + '）ではログインできなくなります。Discord では、今までどおりログインできます。', ok: '外す', danger: true },
+    { title: 'Googleでのログインを外しますか？', message: 'Google（' + g.email + '）ではログインできなくなります。Discordでは、今までどおりログインできます。', ok: '外す', danger: true },
     () => {
       setBusy(true);
       sync.write<RpcResult>('unlinkGoogleLogin').then((res) => { setBusy(false); toast(res.message); }, (e: Error) => { setBusy(false); toast(e.message); });
@@ -25,11 +25,11 @@ export function LoginCard() {
   return (
     <div className="card" id="loginCard">
       <h3><Icon name="login" size="sm" />ログインの方法</h3>
-      <p className="hint">卓予定の利用者は、Discord のアカウントで決まります。Google のアカウントを結びつけると、Google でもログインできます。</p>
+      <p className="hint">卓予定の利用者は、Discordのアカウントで決まります。Googleのアカウントを結びつけると、Googleでもログインできます。</p>
       <div>
         <div className={row}>
           <b className="min-w-[6em]">Discord</b>
-          <span className="flex-1 text-13 text-muted">{d.me.name + ' のアカウント（いつも使えます）'}</span>
+          <span className="flex-1 text-13 text-muted">{d.me.name + 'のアカウント（いつも使えます）'}</span>
         </div>
         <div className={row}>
           <b className="min-w-[6em]">Google</b>
@@ -42,13 +42,13 @@ export function LoginCard() {
             <>
               <span className="flex-1 text-13 text-muted">結びつけていません</span>
               <a className="btn small primary" id="googleLoginLink" href={'/auth/google/login?link=1&return_to=' + encodeURIComponent('/g/' + groupId + '/settings/')}>
-                <Icon name="add" size="sm" />Google でもログインできるようにする
+                <Icon name="add" size="sm" />Googleでもログインできるようにする
               </a>
             </>
           )}
         </div>
       </div>
-      <p className="hint">カレンダー連携の Google アカウントとは別に決められます（同じアカウントでもかまいません）。</p>
+      <p className="hint">カレンダー連携のGoogleアカウントとは別に決められます（同じアカウントでもかまいません）。</p>
     </div>
   );
 }

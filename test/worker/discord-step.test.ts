@@ -1,4 +1,4 @@
-// 画面から 1 回ずつ送る Discord（sendDiscordStep）。知らせの種類ごとの文と送り先、断るとき
+// 画面から1回ずつ送るDiscord（sendDiscordStep）。知らせの種類ごとの文と送り先、断るとき
 import { env } from 'cloudflare:test';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { addDays, fmtDateJa } from '../../src/worker/lib/jst';
@@ -10,8 +10,8 @@ const ID = { ひより: '<@400000000000000010>', ソラ: '<@400000000000000011>'
 type Call = { method: string; url: string; auth: string | null; body: Record<string, any> | null };
 
 /**
- * Discord の API（Bot）の返事を差し替える。チャンネルを読むと、このグループのサーバーのテキストチャンネルとして返す。
- * メッセージを送ると、いつも 200。呼んだ先・Authorization・本文を記録する
+ * DiscordのAPI（Bot）の返事を差し替える。チャンネルを読むと、このグループのサーバーのテキストチャンネルとして返す。
+ * メッセージを送ると、いつも200。呼んだ先・Authorization・本文を記録する
  */
 function mockBot() {
   const calls: Call[] = [];
@@ -48,7 +48,7 @@ const send = (sid: string, form: Record<string, unknown>) => ok(sid, G.id, 'send
 const refuse = async (form: Record<string, unknown>) => (await fail(G.admin, G.id, 'sendDiscordStep', form)).error;
 
 describe('接続テスト', () => {
-  test('基本のチャンネルへ、卓予定の Bot で送る。メンションは人だけにする', async () => {
+  test('基本のチャンネルへ、卓予定のBotで送る。メンションは人だけにする', async () => {
     const r = await send(G.sora, { kind: 'test', attempt: 1 });
     expect(r).toMatchObject({ ok: true, code: 200, result: 'OK (200)', to: 0, targetCount: 1, targetLabel: '基本のチャンネル' });
     expect(bot.calls.at(-1)).toEqual({
@@ -88,13 +88,13 @@ describe('接続テスト', () => {
     expect(await refuse({ kind: 'test' })).toBe('送り先のチャンネルが決まっていません。管理画面の「知らせ」でチャンネルを選んでから送ってください。');
   });
 
-  test('送り先が 2 か所なら、to で 1 か所ずつ送る。範囲の外の to は端に寄せる', async () => {
+  test('送り先が2か所なら、toで1か所ずつ送る。範囲の外のtoは端に寄せる', async () => {
     await ok(G.admin, G.id, 'saveSeriesNotify', { series: '港', channelId: CH(3), alsoBase: true });
     await ok(G.admin, G.id, 'saveSession', { name: '港 #1', series: '港', gm: 'ひより', date: T(3), status: '開催' });
     const r0 = await send(G.admin, { kind: 'announce', id: 'S001', to: 0 });
     expect(r0).toMatchObject({ to: 0, targetCount: 2, targetLabel: 'シリーズ「港」のチャンネル' });
     const r1 = await send(G.admin, { kind: 'announce', id: 'S001', to: 9, attempt: 2 });
-    expect(r1).toMatchObject({ to: 1, targetCount: 2, targetLabel: '基本のチャンネル', attempt: 2, result: 'OK (200)（2 回目）' });
+    expect(r1).toMatchObject({ to: 1, targetCount: 2, targetLabel: '基本のチャンネル', attempt: 2, result: 'OK (200)（2回目）' });
     expect((await send(G.admin, { kind: 'announce', id: 'S001', to: -1 })).to).toBe(0);
     expect(bot.posts().map((p) => p.channel)).toEqual([CH(3), CH(1), CH(3)]);
   });
@@ -119,12 +119,12 @@ describe('卓の知らせ', () => {
     expect(bot.posts().slice(1).map((p) => p.channel)).toEqual([CH(3), CH(1)]);
   });
 
-  test('参加確認は、募集中の卓に、500 文字までの一言でだけ送る', async () => {
+  test('参加確認は、募集中の卓に、500文字までの一言でだけ送る', async () => {
     await ok(G.admin, G.id, 'saveSession', { name: '港', gm: 'ひより', date: T(3), status: '開催' });
     await ok(G.admin, G.id, 'saveSession', { name: '古城', gm: 'こまち', status: '募集' });
     await ok(G.sora, G.id, 'setInterest', { id: 'S002', name: 'ソラ', level: 'interest' });
     expect(await refuse({ kind: 'ask', id: 'S001' })).toBe('「港」は募集中ではありません（開催）。');
-    expect(await refuse({ kind: 'ask', id: 'S002', message: 'あ'.repeat(501) })).toBe('添える一言は 500 文字までです。');
+    expect(await refuse({ kind: 'ask', id: 'S002', message: 'あ'.repeat(501) })).toBe('添える一言は500文字までです。');
   });
 });
 
@@ -139,14 +139,14 @@ describe('日程調整の知らせ', () => {
     expect(await refuse({ kind: 'pollReady', id: 'S002' })).toBe('「港」は日程調整をしていません。');
   });
 
-  test('始めた知らせは GM と参加者を呼ぶ。回答がそろった知らせは GM だけを呼ぶ', async () => {
-    // 出した GM（ひより）の候補日には ◯ が付く
+  test('始めた知らせはGMと参加者を呼ぶ。回答がそろった知らせはGMだけを呼ぶ', async () => {
+    // 出したGM（ひより）の候補日には ◯ が付く
     await ok(G.admin, G.id, 'startPoll', { id: 'S001', dates: [T(5), T(6)], start: '20:00', end: '23:00' });
     await send(G.admin, { kind: 'poll', id: 'S001' });
     expect(bot.posts()[0]!.content).toBe(
       '🗓️ 「迷宮」の日程を決めます。' + ID.ひより + ' ' + ID.ソラ + '\n' +
       '候補日: ' + fmtDateJa(T(5)) + '、' + fmtDateJa(T(6)) + '　20:00〜23:00\n' +
-      '卓予定の「募集・調整」タブで、候補日ごとに ◯ か × を押してください。全員の回答がそろったら、GM が開催日を選びます。　by ひより\nhttps://yoki.test/g/grp/',
+      '卓予定の「募集・調整」タブで、候補日ごとに ◯ か × を押してください。全員の回答がそろったら、GMが開催日を選びます。　by ひより\nhttps://yoki.test/g/grp/',
     );
     expect(await lastLog()).toMatchObject({ kind: '日程調整', target: '迷宮' });
 
@@ -176,7 +176,7 @@ describe('日程調整の知らせ', () => {
 });
 
 describe('まとめての変更', () => {
-  test('複数日の登録は、その回の GM と参加者をメンションする。同じ送り先は 1 つにまとめる', async () => {
+  test('複数日の登録は、その回のGMと参加者をメンションする。同じ送り先は1つにまとめる', async () => {
     await ok(G.admin, G.id, 'saveSession', { name: '港 #1', gm: 'ひより', members: ['ソラ'], date: T(3), status: '開催' });
     await ok(G.admin, G.id, 'saveSession', { name: '港 #2', gm: 'こまち', date: T(10), status: '開催' });
     const r = await send(G.admin, { kind: 'bulk', names: ['港 #1', '港 #2'], ids: ['S001', 'S002'], label: '登録' });

@@ -1,4 +1,4 @@
-// 卓の状態と、知らせの決まり（GAS 版 Config.js）
+// 卓の状態と、知らせの決まり（GAS版Config.js）
 import { STATUS, type Status } from '../../shared/api';
 
 // 卓の状態（の名前と順番）は、画面と共有する（src/shared/api.ts）

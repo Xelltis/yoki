@@ -1,4 +1,4 @@
-// Discord の OAuth2（認可コード）。scope は identify（誰か）と guilds（どのサーバーにいるか）。
+// DiscordのOAuth2（認可コード）。scopeはidentify（誰か）とguilds（どのサーバーにいるか）。
 // 受け取ったトークンは、プロフィールとサーバーの一覧を読んだら捨てる（保存しない）
 import type { Bindings } from '../env';
 import { canManageGuild } from './perms';
@@ -21,7 +21,7 @@ export function authorizeUrl(env: Bindings, redirectUri: string, state: string, 
 }
 
 async function discordJson<T>(res: Response, what: string): Promise<T> {
-  if (!res.ok) throw new Error(what + ' が失敗しました（HTTP ' + res.status + '）');
+  if (!res.ok) throw new Error(what + 'が失敗しました（HTTP ' + res.status + '）');
   return (await res.json()) as T;
 }
 
@@ -51,7 +51,7 @@ export async function fetchDiscordProfile(env: Bindings, code: string, redirectU
 
 /**
  * ログインした人と、控えるサーバーを書く。控えるのは、卓予定のグループがあるサーバーと、本人が管理できるサーバーだけ
- * （ほかのサーバーは覚えない）。問い合わせはサーバーの数によらず 4 回
+ * （ほかのサーバーは覚えない）。問い合わせはサーバーの数によらず4回
  */
 export async function saveProfile(db: D1Database, user: DiscordUser, guilds: DiscordGuild[], now = new Date()): Promise<void> {
   const at = now.toISOString();

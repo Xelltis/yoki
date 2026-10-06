@@ -1,6 +1,6 @@
 // ブラウザで通しで確かめる（npm run e2e）。開発サーバーを立て、開発用ログインでサンプルのグループに入り、
 // 画面の主な操作（タブ・カレンダー・卓の登録と変更・募集・日程調整・予定・グループの管理画面）をして、
-// データに入ったことと、画面にエラーが出ないことを見る。npm test には入れない（ブラウザが要るため）
+// データに入ったことと、画面にエラーが出ないことを見る。npm testには入れない（ブラウザが要るため）
 import assert from 'node:assert/strict';
 import { chromium } from 'playwright';
 import { devLogin, withDevServer } from './dev-server.js';
@@ -14,7 +14,7 @@ await withDevServer(async (base) => {
   page.on('pageerror', (e) => errors.push(e.message));
   page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
   const D = () => page.evaluate(() => window.yoki.D);
-  /** 画面のデータが条件を満たすまで待つ（fn はブラウザの中で D と arg を受け取る） */
+  /** 画面のデータが条件を満たすまで待つ（fnはブラウザの中でDとargを受け取る） */
   const until = (fn, arg) => page.waitForFunction(`(${fn})(window.yoki.D, ${JSON.stringify(arg ?? null)})`, null, { timeout: 15000 });
   /** タブを押して、タブの中身が出るのを待つ（中身はあとから読み込んで描くことがある）。設定はタブでなく、あなたのメニューから開く */
   const tab = async (name) => {
@@ -32,8 +32,8 @@ await withDevServer(async (base) => {
   const step = async (name, fn) => { await fn(); console.log('ok - ' + name); };
   const SORA = '400000000000000011';
   /**
-   * ソラの締め出し・新規登録の受付・規約を戻す（印は users と meta に残り、サンプルの作り直しでは消えないため、最初と最後に戻す）。
-   * ソラは e2e の中で消すので、いて締め出されているときだけ戻す（いない人を戻そうとすると 404 がブラウザのエラーに出る）
+   * ソラの締め出し・新規登録の受付・規約を戻す（印はusersとmetaに残り、サンプルの作り直しでは消えないため、最初と最後に戻す）。
+   * ソラはe2eの中で消すので、いて締め出されているときだけ戻す（いない人を戻そうとすると404がブラウザのエラーに出る）
    */
   const restoreOperator = () => page.evaluate(async (id) => {
     const post = (path, body) => fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
@@ -46,7 +46,7 @@ await withDevServer(async (base) => {
     await step('開発用ログインでサンプルのグループに入れる', async () => {
       await devLogin(page, base);
       await restoreOperator();
-      assert.equal((await D()).sessions.length, 11, 'サンプルの卓は 11 件');
+      assert.equal((await D()).sessions.length, 11, 'サンプルの卓は11件');
     });
 
     await step('タブと見た目（ライト・ダーク）を切り替えられる', async () => {
@@ -63,7 +63,7 @@ await withDevServer(async (base) => {
       await page.click('#theme');
       await page.click('#meBtn');
       await page.keyboard.press('Escape');
-      assert.equal(await page.isVisible('#meMenu'), false, 'Esc でメニューが閉じる');
+      assert.equal(await page.isVisible('#meMenu'), false, 'Escでメニューが閉じる');
       await page.click('#helpBtn');
       assert.equal(await page.isVisible('#helpLink'), true, 'ヘルプのメニューに使い方がある');
       await page.click('#guideBtn');
@@ -99,11 +99,11 @@ await withDevServer(async (base) => {
 
     await step('卓を登録できる', async () => {
       await page.click('#newSession');
-      await page.fill('#name', 'e2e で登録した卓');
+      await page.fill('#name', 'e2eで登録した卓');
       await page.click('#status label:has(input[value="募集"])');   // どんな卓かの札
       assert.equal(await page.locator('#formModal #del').count(), 0);   // 登録の窓には、削除が無い
       await page.click('#f button[type=submit]');
-      await until((d) => d.sessions.some((s) => s.name === 'e2e で登録した卓' && !String(s.id).startsWith('__tmp__')));
+      await until((d) => d.sessions.some((s) => s.name === 'e2eで登録した卓' && !String(s.id).startsWith('__tmp__')));
     });
 
     await step('卓を変更できる（内訳の「編集」から）', async () => {
@@ -127,7 +127,7 @@ await withDevServer(async (base) => {
     });
 
     await step('卓を削除できる（確かめる窓を通る）', async () => {
-      const s = (await D()).sessions.find((x) => x.name === 'e2e で登録した卓');
+      const s = (await D()).sessions.find((x) => x.name === 'e2eで登録した卓');
       await tab('recruit');
       await page.click(`#recruitList button[data-edit="${s.id}"]`);
       await page.click('#del');
@@ -147,7 +147,7 @@ await withDevServer(async (base) => {
       const d = await D();
       await tab('cal');
       await page.click('#newSession');
-      await page.fill('#name', 'e2e の日程調整');
+      await page.fill('#name', 'e2eの日程調整');
       await page.click('#status label:has(input[value="調整中"])');
       await page.check('#membersBox input.m[value="ソラ"]');
       await page.fill('#winFrom', d.availDays[20]);
@@ -158,7 +158,7 @@ await withDevServer(async (base) => {
       await days.nth(0).check();
       await days.nth(2).check();
       await page.click('#pollSend');
-      await until((x) => (x.sessions.find((s) => s.name === 'e2e の日程調整')?.candidates || []).length === 2);
+      await until((x) => (x.sessions.find((s) => s.name === 'e2eの日程調整')?.candidates || []).length === 2);
     });
 
     await step('日程調整に回答できる。カレンダーの「回答待ち」から、その卓のカードへ移る。答え終えると「募集・調整」の印が減る', async () => {
@@ -179,7 +179,7 @@ await withDevServer(async (base) => {
     });
 
     await step('管理者は候補日から開催日を決められる', async () => {
-      const s = (await D()).sessions.find((x) => x.name === 'e2e の日程調整');
+      const s = (await D()).sessions.find((x) => x.name === 'e2eの日程調整');
       const day = s.candidates[0];
       await page.click(`#adjustList button[data-decide="${s.id}"][data-day="${day}"]`);
       await confirm();
@@ -190,31 +190,31 @@ await withDevServer(async (base) => {
       const day = (await D()).availDays[3];
       await tab('cal');
       await page.evaluate((k) => window.yoki.selectDay(k), day);
-      await page.fill('#dayNote', 'e2e のメモ');
+      await page.fill('#dayNote', 'e2eのメモ');
       await page.click('#dayNoteSave');
-      await until((d, k) => d.notes[k]?.text === 'e2e のメモ', day);
+      await until((d, k) => d.notes[k]?.text === 'e2eのメモ', day);
     });
 
-    await step('カレンダー連携: 購読 URL を作って読め、作り直すと前の URL は読めない。止められる', async () => {
+    await step('カレンダー連携: 購読URLを作って読め、作り直すと前のURLは読めない。止められる', async () => {
       await tab('settings');
       await page.selectOption('#feedScope', 'all');
       await page.click('#feedCreate');
       await until((d) => d.calendar.feed?.scope === 'all');
       const url = await page.inputValue('#feedUrl');
-      // 購読 URL はログインせずに読むものなので、ブラウザの外から読む（前の URL の 404 が、画面のエラーに数えられないように）
+      // 購読URLはログインせずに読むものなので、ブラウザの外から読む（前のURLの404が、画面のエラーに数えられないように）
       const ics = await (await fetch(url)).text();
       assert.match(ics, /^BEGIN:VCALENDAR/);
       assert.match(ics, /SUMMARY:連れて帰る/);
       await page.click('#feedRenew');
       await confirm();
       await until((d, u) => d.calendar.feed && d.calendar.feed.url !== u, url);
-      assert.equal((await fetch(url)).status, 404, '作り直す前の URL は読めない');
+      assert.equal((await fetch(url)).status, 404, '作り直す前のURLは読めない');
       await page.click('#feedStop');
       await confirm();
       await until((d) => d.calendar.feed === null);
     });
 
-    await step('カレンダー連携: 偽の Google と連携すると卓が書き込まれ、予定から × が入る。消した印は戻らない。外すと片付く', async () => {
+    await step('カレンダー連携: 偽のGoogleと連携すると卓が書き込まれ、予定から × が入る。消した印は戻らない。外すと片付く', async () => {
       const fake = () => page.evaluate(() => fetch('/dev/google/state').then((r) => r.json()));
       await page.click('#googleLink');
       await page.waitForSelector('#googleForm', { timeout: 15000 });
@@ -222,7 +222,7 @@ await withDevServer(async (base) => {
       // 連携したら、返事のあとで卓を書き込む
       for (let i = 0; i < 30 && !Object.keys((await fake()).events).length; i++) await page.waitForTimeout(300);
       assert.ok(Object.values((await fake()).events).some((e) => e.summary === '連れて帰る'), 'ひよりの卓が書き込まれる');
-      // 卓も印も無い日に、時間帯（19:00〜23:00）を埋める予定を入れて同期すると、× が Google の印として入る
+      // 卓も印も無い日に、時間帯（19:00〜23:00）を埋める予定を入れて同期すると、× がGoogleの印として入る
       const d0 = await D();
       const day = d0.availDays.find((k) => !d0.booked[k]?.['ひより'] && !d0.avail[k]?.['ひより']);
       await page.evaluate(async (k) => {
@@ -270,9 +270,9 @@ await withDevServer(async (base) => {
       const pen = page.locator('#availTable button[data-pen]').nth(4);
       const day = await pen.getAttribute('data-pen');
       await pen.click();
-      await page.fill('#memoText', 'e2e の予定メモ');
+      await page.fill('#memoText', 'e2eの予定メモ');
       await page.click('#memoSave');
-      await until((d, k) => d.availNotes[k]?.['ひより']?.text === 'e2e の予定メモ', day);
+      await until((d, k) => d.availNotes[k]?.['ひより']?.text === 'e2eの予定メモ', day);
     });
 
     await step('予定をまとめて入れられる', async () => {
@@ -286,22 +286,22 @@ await withDevServer(async (base) => {
     await step('管理画面: メンバーを足し、名前を変え、外せる', async () => {
       await admin('members');
       await page.click('#mclear');
-      await page.fill('#mname', 'e2e メンバー');
+      await page.fill('#mname', 'e2eメンバー');
       await page.click('#msave');
-      await until((d) => d.members.some((m) => m.name === 'e2e メンバー'));
-      await page.click('#memberTable tr[data-name="e2e メンバー"]');
-      await page.fill('#mname', 'e2e メンバー（改）');
+      await until((d) => d.members.some((m) => m.name === 'e2eメンバー'));
+      await page.click('#memberTable tr[data-name="e2eメンバー"]');
+      await page.fill('#mname', 'e2eメンバー（改）');
       await page.click('#msave');
-      await until((d) => d.members.some((m) => m.name === 'e2e メンバー（改）'));
+      await until((d) => d.members.some((m) => m.name === 'e2eメンバー（改）'));
       await page.click('#mdel');
       await confirm();
-      await until((d) => !d.members.some((m) => m.name.startsWith('e2e メンバー')));
+      await until((d) => !d.members.some((m) => m.name.startsWith('e2eメンバー')));
     });
 
-    await step('管理画面: 知らせのつまみ・接続テスト・グループの名前の変更ができる。Bot が無ければそう出る', async () => {
+    await step('管理画面: 知らせのつまみ・接続テスト・グループの名前の変更ができる。Botが無ければそう出る', async () => {
       await admin('notify');
-      // 手元には Bot のトークンが無いので、チャンネルは選べず、そのことを知らせる（サンプルのチャンネルへの接続テストはできる）
-      assert.match(await page.textContent('#botState'), /Bot をまだ設定していません/);
+      // 手元にはBotのトークンが無いので、チャンネルは選べず、そのことを知らせる（サンプルのチャンネルへの接続テストはできる）
+      assert.match(await page.textContent('#botState'), /Botをまだ設定していません/);
       assert.equal(await page.isDisabled('#stChannel'), true);
       const urge = (await D()).settings.urge;
       await page.locator('#stUrge').dispatchEvent('click');
@@ -310,10 +310,10 @@ await withDevServer(async (base) => {
       await page.locator('#stTest').dispatchEvent('click');
       await until((d, n) => d.log.length > n, logs);
       await page.click('#setNav button[data-set="table"]');
-      await page.fill('#stName', 'e2e のグループ');
+      await page.fill('#stName', 'e2eのグループ');
       await page.click('#stNameSave');
       await confirm();
-      await until((d) => d.title === 'e2e のグループ');
+      await until((d) => d.title === 'e2eのグループ');
     });
 
     await step('管理画面: 卓をまとめて変えられる', async () => {
@@ -346,24 +346,24 @@ await withDevServer(async (base) => {
 
     await step('グループを消せる。開いていたほかのタブには「見つかりません」と出る', async () => {
       const made = await page.evaluate(async () => {
-        const r = await fetch('/api/groups', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ guildId: 'dev-guild', title: 'e2e の消すグループ' }) });
+        const r = await fetch('/api/groups', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ guildId: 'dev-guild', title: 'e2eの消すグループ' }) });
         return r.json();
       });
       // 上の帯のグループの切り替えで、作ったグループへ移ると、読み込むデータも移ったグループのものになる
       await page.click('#groupMenuBtn');
       await page.click(`#groupMenu [data-group="${made.id}"]`);
       await page.waitForURL(`**/g/${made.id}/`);
-      await until((d, t) => d && d.title === t, 'e2e の消すグループ');
-      // 作ったばかりのグループには、はじめの 3 ステップが出る。今の段は「仲間を招く」だけで、Discord は任意。閉じると、開き直しても出ない
+      await until((d, t) => d && d.title === t, 'e2eの消すグループ');
+      // 作ったばかりのグループには、はじめの3ステップが出る。今の段は「仲間を招く」だけで、Discordは任意。閉じると、開き直しても出ない
       await page.waitForSelector('#setupGuide:not([hidden]) [data-step="1"][data-state="now"]');
-      assert.equal(await page.locator('#setupGuide [data-state="now"]').count(), 1, '今の段は 1 つだけ');
-      assert.equal(await page.isVisible('#setupGuide [data-go="copy"]'), true, 'グループの URL を写せる');
+      assert.equal(await page.locator('#setupGuide [data-state="now"]').count(), 1, '今の段は1つだけ');
+      assert.equal(await page.isVisible('#setupGuide [data-go="copy"]'), true, 'グループのURLを写せる');
       assert.equal(await page.isVisible('#helpNudge'), true, '準備が済むまでは、ヘルプに印が付く');
       await page.click('#setupGuide [data-go="close"]');
       await page.waitForSelector('#setupGuide', { state: 'hidden' });
       assert.equal(await page.isVisible('#helpNudge'), false, '閉じたら、ヘルプの印も消す');
       await page.reload();
-      await page.waitForFunction((t) => window.yoki && window.yoki.D && window.yoki.D.title === t, 'e2e の消すグループ', { timeout: 30000 });
+      await page.waitForFunction((t) => window.yoki && window.yoki.D && window.yoki.D.title === t, 'e2eの消すグループ', { timeout: 30000 });
       assert.equal(await page.isVisible('#setupGuide'), false, '閉じたことを覚えている');
       // チャンネルを決めていないグループの「知らせ」では、チャンネルを表より先に開いて出す
       await page.click('#adminLink');
@@ -375,14 +375,14 @@ await withDevServer(async (base) => {
       assert.equal(await page.getAttribute(`#groupMenu [data-group="${made.id}"]`, 'aria-current'), 'page', '今のグループに印が付く');
       await page.click('#groupMenu [data-group="sample"]');
       await page.waitForURL('**/g/sample/');
-      await until((d, t) => d && d.title === t, 'e2e のグループ');
+      await until((d, t) => d && d.title === t, 'e2eのグループ');
       const other = await context.newPage();
       await other.goto(base + made.url.slice(1));
       await other.waitForFunction(() => window.yoki && window.yoki.D, null, { timeout: 30000 });
       await page.goto(base + made.url.slice(1) + 'admin/#danger');
       await page.waitForFunction(() => window.yoki && window.yoki.D, null, { timeout: 30000 });
       assert.equal(await page.isDisabled('#delGroup'), true, '名前を打つまでは押せない');
-      await page.fill('#delConfirm', 'e2e の消すグループ');
+      await page.fill('#delConfirm', 'e2eの消すグループ');
       await page.click('#delGroup');
       await confirm();
       await page.waitForURL('**/?deleted=1');
@@ -392,7 +392,7 @@ await withDevServer(async (base) => {
       await main();
     });
 
-    await step('管理者でない人（ソラ）: 管理画面は 403、入口も出ない。自分の名前と備考は直せる', async () => {
+    await step('管理者でない人（ソラ）: 管理画面は403、入口も出ない。自分の名前と備考は直せる', async () => {
       const ctx = await browser.newContext({ viewport: { width: 1280, height: 860 } });
       const sora = await ctx.newPage();
       sora.on('pageerror', (e) => errors.push(e.message));
@@ -409,9 +409,9 @@ await withDevServer(async (base) => {
       await sora.click('#meBtn');
       await sora.click('#toSettings');
       assert.equal(await sora.isVisible('#adminEntry'), false);
-      await sora.fill('#meNote', 'e2e の備考');
+      await sora.fill('#meNote', 'e2eの備考');
       await sora.click('#meSave');
-      await sora.waitForFunction(() => window.yoki.D.members.find((m) => m.name === 'ソラ')?.note === 'e2e の備考', null, { timeout: 15000 });
+      await sora.waitForFunction(() => window.yoki.D.members.find((m) => m.name === 'ソラ')?.note === 'e2eの備考', null, { timeout: 15000 });
       await ctx.close();
     });
 
@@ -451,7 +451,7 @@ await withDevServer(async (base) => {
       await ctx.close();
       await page.click(`#opUsers button[data-unban="${SORA}"]`);
       await page.waitForSelector(`#opUsers button[data-ban="${SORA}"]`, { timeout: 15000 });
-      // 消す。利用者の一覧から消え、サンプルのグループのメンバーからも外れる（次の e2e は、作り直したサンプルとログインで戻る）
+      // 消す。利用者の一覧から消え、サンプルのグループのメンバーからも外れる（次のe2eは、作り直したサンプルとログインで戻る）
       await page.click(`#opUsers button[data-del="${SORA}"]`);
       await confirm();
       await page.waitForSelector(`#opUsers button[data-ban="${SORA}"]`, { state: 'detached', timeout: 15000 });
@@ -468,22 +468,22 @@ await withDevServer(async (base) => {
       await until((d) => !d.members.some((m) => m.name === 'ソラ'));
     });
 
-    await step('運営の管理画面: 規約の運営者・問い合わせ先・本文を直すと、/terms に出る。入口と設定の画面から開ける', async () => {
+    await step('運営の管理画面: 規約の運営者・問い合わせ先・本文を直すと、/termsに出る。入口と設定の画面から開ける', async () => {
       await page.goto(base + 'admin/#legal');
       // 欄は画面を描いてから出るので、出るのも待つ
       await page.waitForFunction(() => document.getElementById('lgTerms')?.value.includes('本サービス'), null, { timeout: 15000 });
       assert.match(await page.textContent('#lgTermsState'), /既定の文/);
-      await page.fill('#lgOperator', 'e2e の運営');
+      await page.fill('#lgOperator', 'e2eの運営');
       await page.fill('#lgContact', 'https://example.com/contact');
-      await page.fill('#lgTerms', '## e2e の決まり\n- 仲良く遊ぶ');
+      await page.fill('#lgTerms', '## e2eの決まり\n- 仲良く遊ぶ');
       await page.click('#opLegal button[type=submit]');
       await page.waitForSelector('#lgTermsState >> text=直した文', { timeout: 15000 });
       const doc = await context.newPage();
       await doc.goto(base + 'terms');
       assert.equal(await doc.textContent('h1'), '利用規約');
-      assert.match(await doc.textContent('dl.who'), /e2e の運営/);
+      assert.match(await doc.textContent('dl.who'), /e2eの運営/);
       assert.equal(await doc.getAttribute('dl.who a', 'href'), 'https://example.com/contact');
-      assert.equal(await doc.textContent('article h2'), 'e2e の決まり');
+      assert.equal(await doc.textContent('article h2'), 'e2eの決まり');
       await Promise.all([doc.waitForURL('**/privacy'), doc.click('nav a[href="/privacy"]')]);
       assert.equal(await doc.textContent('h1'), 'プライバシーポリシー');
       await doc.close();
@@ -492,19 +492,19 @@ await withDevServer(async (base) => {
       await page.click('#opLegal button[type=submit]');
       await page.waitForSelector('#lgTermsState >> text=既定の文', { timeout: 15000 });
       await page.goto(base);
-      // 入口は React で描くので、描き終わるのを待つ
+      // 入口はReactで描くので、描き終わるのを待つ
       await page.waitForSelector('.foot a[href="/terms"]', { timeout: 15000 });
       await main();
       await tab('settings');
       assert.equal(await page.isVisible('#tab-settings a[href="/privacy"]'), true, '設定の画面にリンクがある');
     });
 
-    await step('運営の管理画面: 新しい版があれば「様子」で知らせ、「更新」で変わったことを見て更新を始められる（開発用の偽の GitHub）', async () => {
+    await step('運営の管理画面: 新しい版があれば「様子」で知らせ、「更新」で変わったことを見て更新を始められる（開発用の偽のGitHub）', async () => {
       await page.goto(base + 'admin/overview/');
       await page.waitForSelector('#opUpdateNotice', { timeout: 15000 });
       await Promise.all([page.waitForURL('**/admin/update/'), page.click('#opUpdateNotice')]);
       await page.waitForSelector('#opNotes li', { timeout: 15000 });
-      assert.match(await page.textContent('#opUpdateState'), /新しい版 v\d+\.\d+\.\d+ があります/);
+      assert.match(await page.textContent('#opUpdateState'), /新しい版v\d+\.\d+\.\d+があります/);
       assert.equal(await page.isVisible('#opMigrations'), true, '表の変更を含むと知らせる');
       await page.click('#opUpdateStart');
       await confirm();
@@ -512,14 +512,14 @@ await withDevServer(async (base) => {
       await main();
     });
 
-    await step('Google でログイン: 初めては Discord（開発用ログイン）と結びつけ、次からは Google だけで入れる。設定で外せる', async () => {
+    await step('Googleでログイン: 初めてはDiscord（開発用ログイン）と結びつけ、次からはGoogleだけで入れる。設定で外せる', async () => {
       const ctx = await browser.newContext({ viewport: { width: 1280, height: 860 } });
       const g = await ctx.newPage();
       g.on('pageerror', (e) => errors.push(e.message));
       await g.goto(base);
       await Promise.all([g.waitForURL('**/?login=google-new'), g.click('#googleLoginBtn')]);
-      assert.match(await g.textContent('#notice'), /初めての Google アカウント/);
-      assert.equal(await g.locator('#googleLoginBtn').count(), 0, '結びつけを待つあいだは、Google のボタンを出さない');
+      assert.match(await g.textContent('#notice'), /初めてのGoogleアカウント/);
+      assert.equal(await g.locator('#googleLoginBtn').count(), 0, '結びつけを待つあいだは、Googleのボタンを出さない');
       assert.equal(await g.locator('#devForm input[name=link_google]').count(), 1, '結びつけるためのログインに印を付ける');
       await g.selectOption('#devAs', 'ひより');
       await Promise.all([g.waitForURL('**/?login=google-linked'), g.click('#devForm button')]);

@@ -1,4 +1,4 @@
-// ログインの続き（セッション）。cookie にはランダムな値を入れ、D1 にはそのハッシュだけを置く
+// ログインの続き（セッション）。cookieにはランダムな値を入れ、D1にはそのハッシュだけを置く
 import type { Context as HonoContext } from 'hono';
 import { deleteCookie, getCookie, setCookie } from 'hono/cookie';
 import type { Bindings } from '../env';
@@ -8,7 +8,7 @@ type Context = HonoContext<{ Bindings: Bindings }>;
 
 export const SESSION_DAYS = 30;
 
-/** 手元（http://localhost）では Secure の cookie が使えないブラウザもあるので、名前と属性を変える */
+/** 手元（http://localhost）ではSecureのcookieが使えないブラウザもあるので、名前と属性を変える */
 export function isLocalHttp(url: URL): boolean {
   return url.protocol === 'http:' && (url.hostname === 'localhost' || url.hostname === '127.0.0.1');
 }
@@ -41,7 +41,7 @@ export async function startSession(c: Context, userId: string, now = new Date())
   });
 }
 
-/** cookie からログインしている人を読む。無い・期限切れ・締め出されていれば null */
+/** cookieからログインしている人を読む。無い・期限切れ・締め出されていればnull */
 export async function currentViewer(c: Context, now = new Date()): Promise<Viewer | null> {
   const token = getCookie(c, cookieName(new URL(c.req.url)));
   if (!token) return null;

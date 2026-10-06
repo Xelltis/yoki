@@ -1,4 +1,4 @@
-// カレンダーのタブ: 左にカレンダー、右に選んだ日の内訳と卓予定。上に、はじめの 3 ステップ
+// カレンダーのタブ: 左にカレンダー、右に選んだ日の内訳と卓予定。上に、はじめの3ステップ
 import { store, reducedMotion } from '../../../app/storage';
 import { Icon } from '../../../ui/Icon';
 import type { IconName } from '../../../ui/icons';
@@ -67,12 +67,12 @@ export function CalendarTab() {
             <div className="ml-auto flex flex-wrap items-center gap-8 max-sm:ml-0 max-sm:w-full">
               <label className="flex items-center gap-8 text-13 text-muted max-sm:min-w-0 max-sm:flex-1">都合を見る卓 <select className={'max-w-[16em] max-sm:min-w-0 max-sm:max-w-none max-sm:flex-1' + (target !== '全員' ? ' border-accent bg-accent-soft font-semibold text-accent-text' : '')} id="target" value={target} onChange={(ev) => setTarget(ev.target.value)}>{targets.map((n) => <option value={n} key={n}>{n}</option>)}</select></label>
             </div>
-            {/* 卓を登録・募集を始める・日程調整を始める。月と「都合を見る卓」の下に 1 段で並べる。スマホでは「卓を登録」を右下の丸いボタンにする */}
+            {/* 卓を登録・募集を始める・日程調整を始める。月と「都合を見る卓」の下に1段で並べる。スマホでは「卓を登録」を右下の丸いボタンにする */}
             <div className="flex basis-full flex-wrap gap-8 max-sm:w-full">
               <button type="button" id="newSession" className={'btn primary xl max-sm:fixed max-sm:right-[max(16px,env(safe-area-inset-right))] max-sm:bottom-[calc(var(--nav-h)+16px+env(safe-area-inset-bottom))] '
-                + 'max-sm:z-(--z-fab) max-sm:min-h-56 max-sm:rounded-xl max-sm:pr-20 max-sm:pl-16 max-sm:text-15 max-sm:shadow-pop'} title={sel ? fmtJa(u.selDay) + ' の卓を登録します' : 'カレンダーで日を選んでから押すと、その日の卓になります。日付の無い卓（募集・調整中）もここから登録できます'}
+                + 'max-sm:z-(--z-fab) max-sm:min-h-56 max-sm:rounded-xl max-sm:pr-20 max-sm:pl-16 max-sm:text-15 max-sm:shadow-pop'} title={sel ? fmtJa(u.selDay) + 'の卓を登録します' : 'カレンダーで日を選んでから押すと、その日の卓になります。日付の無い卓（募集・調整中）もここから登録できます'}
                 onClick={() => openForm(ui, { date: u.selDay || undefined })}>
-                <Icon name="add" /><span id="newSessionLbl">{sel ? (sel.getMonth() + 1) + '/' + sel.getDate() + ' に卓を登録' : '卓を登録'}</span>
+                <Icon name="add" /><span id="newSessionLbl">{sel ? (sel.getMonth() + 1) + '/' + sel.getDate() + 'に卓を登録' : '卓を登録'}</span>
               </button>
               <button type="button" id="newRecruit" className={secondaryNew} title="状態を「募集」にした登録の窓を開きます" onClick={() => openForm(ui, { status: '募集' })}><Icon name="campaign" />募集を始める</button>
               <button type="button" id="newAdjust" className={secondaryNew} title="状態を「調整中」にした登録の窓を開きます" onClick={() => openForm(ui, { status: '調整中' })}><Icon name="edit_calendar" />日程調整を始める</button>

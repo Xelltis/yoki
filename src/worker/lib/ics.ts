@@ -1,4 +1,4 @@
-// 卓の期間と、iCalendar（RFC 5545）の文。購読 URL（/cal/<token>.ics）と、Google カレンダーへの書き込みが使う
+// 卓の期間と、iCalendar（RFC 5545）の文。購読URL（/cal/<token>.ics）と、Googleカレンダーへの書き込みが使う
 import { addDays, minutesOfTime } from './jst';
 
 const JST_MS = 9 * 3600_000;
@@ -6,10 +6,10 @@ const JST_MS = 9 * 3600_000;
 /** 終わりの時刻が無い卓の長さ（分） */
 export const DEFAULT_MINUTES = 180;
 
-/** 卓の期間。開始時刻が無ければ終日（end は次の日）。時刻があれば UTC のミリ秒（終わりが開始より前なら、次の日の時刻とみる） */
+/** 卓の期間。開始時刻が無ければ終日（endは次の日）。時刻があればUTCのミリ秒（終わりが開始より前なら、次の日の時刻とみる） */
 export type Span = { allDay: true; date: string; endDate: string } | { allDay: false; startMs: number; endMs: number };
 
-/** 日本時間の日付と 0 時からの分を、UTC のミリ秒に */
+/** 日本時間の日付と0時からの分を、UTCのミリ秒に */
 export function jstMs(ymd: string, minutes: number): number {
   const [y, m, d] = ymd.split('-').map(Number);
   return Date.UTC(y!, m! - 1, d!, 0, minutes) - JST_MS;
@@ -23,7 +23,7 @@ export function sessionSpan(date: string, start: string, end: string): Span {
   return { allDay: false, startMs: jstMs(date, s), endMs: jstMs(date, e) };
 }
 
-/** iCalendar に載せる卓 */
+/** iCalendarに載せる卓 */
 export type IcsEvent = {
   uid: string;
   span: Span;
@@ -40,7 +40,7 @@ export function escapeText(s: string): string {
   return s.replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n');
 }
 
-/** 1 行を 75 オクテットまでで折り返す（続きの行は空白 1 つで始める）。UTF-8 の文字の途中では切らない */
+/** 1行を75オクテットまでで折り返す（続きの行は空白1つで始める）。UTF-8の文字の途中では切らない */
 export function fold(line: string): string {
   const enc = new TextEncoder();
   const out: string[] = [];
@@ -59,7 +59,7 @@ export function fold(line: string): string {
   return out.join('\r\n ');
 }
 
-/** UTC の日時（20261010T110000Z の形） */
+/** UTCの日時（20261010T110000Zの形） */
 export function utcStamp(ms: number): string {
   return new Date(ms).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
 }
@@ -86,7 +86,7 @@ function eventLines(e: IcsEvent, stamp: string): string[] {
   ];
 }
 
-/** カレンダー 1 つ分の文（行の区切りは CRLF） */
+/** カレンダー1つ分の文（行の区切りはCRLF） */
 export function buildCalendar(name: string, events: IcsEvent[], now: Date): string {
   const stamp = utcStamp(now.getTime());
   const lines = [
@@ -97,7 +97,7 @@ export function buildCalendar(name: string, events: IcsEvent[], now: Date): stri
     'METHOD:PUBLISH',
     'X-WR-CALNAME:' + escapeText(name),
     'X-WR-TIMEZONE:Asia/Tokyo',
-    // 読み直す間隔の目安（従うかはカレンダーのアプリ次第。Google カレンダーは従わない）
+    // 読み直す間隔の目安（従うかはカレンダーのアプリ次第。Googleカレンダーは従わない）
     'REFRESH-INTERVAL;VALUE=DURATION:PT1H',
     'X-PUBLISHED-TTL:PT1H',
     ...events.flatMap((e) => eventLines(e, stamp)),

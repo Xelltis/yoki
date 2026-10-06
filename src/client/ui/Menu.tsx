@@ -1,18 +1,18 @@
 // 帯のメニュー。ボタンを押すと、下に項目の一覧が開く。
-// 外を押す・Esc・Tab・項目を選ぶと閉じる。開いたら最初の項目へ、Esc で閉じたら開いたボタンへフォーカスを移す。↑↓・Home・End で項目を移る。
-// 一覧は描いたまま hidden で開け閉めする（中の項目の ID は、e2e とスクリーンショットの道具が使う）
+// 外を押す・Esc・Tab・項目を選ぶと閉じる。開いたら最初の項目へ、Escで閉じたら開いたボタンへフォーカスを移す。↑↓・Home・Endで項目を移る。
+// 一覧は描いたままhiddenで開け閉めする（中の項目のIDは、e2eとスクリーンショットの道具が使う）
 import { type KeyboardEvent, type ReactNode, useEffect, useRef, useState } from 'react';
 import { menuPanel } from './chrome';
 
-/** 一覧の中の、いま選べる項目（hidden の項目は飛ばす） */
+/** 一覧の中の、いま選べる項目（hiddenの項目は飛ばす） */
 function items(panel: HTMLElement): HTMLElement[] {
   return Array.from(panel.querySelectorAll<HTMLElement>('[role="menuitem"]')).filter((el) => !el.closest('[hidden]'));
 }
 
 export function Menu({ id, buttonId, buttonClass, label, title, align = 'end', active, className = 'relative inline-flex', onOpen, children, button }: {
-  /** 一覧の ID */
+  /** 一覧のID */
   id: string;
-  /** 開くボタンの ID */
+  /** 開くボタンのID */
   buttonId: string;
   buttonClass: string;
   /** 開くボタンの読み上げ名 */
@@ -22,11 +22,11 @@ export function Menu({ id, buttonId, buttonClass, label, title, align = 'end', a
   align?: 'start' | 'end';
   /** ボタンを押してある見た目にする（メニューの先の画面を開いているとき） */
   active?: boolean;
-  /** ボタンと一覧を包む要素のクラス（一覧の位置の基準になるので relative を含める） */
+  /** ボタンと一覧を包む要素のクラス（一覧の位置の基準になるのでrelativeを含める） */
   className?: string;
   /** 開いたとき（中身を読み直すなど） */
   onOpen?: () => void;
-  /** 一覧の項目。押せるものには role="menuitem" を付ける */
+  /** 一覧の項目。押せるものにはrole="menuitem" を付ける */
   children: ReactNode;
   /** ボタンの中身 */
   button: ReactNode;
@@ -67,7 +67,7 @@ export function Menu({ id, buttonId, buttonClass, label, title, align = 'end', a
         onKeyDown={(ev) => { if (ev.key === 'ArrowDown' && !open) { ev.preventDefault(); onOpen?.(); setOpen(true); } }}>
         {button}
       </button>
-      {/* 項目を押したら閉じる（項目の動きはそれぞれの onClick・リンクが受け持つ） */}
+      {/* 項目を押したら閉じる（項目の動きはそれぞれのonClick・リンクが受け持つ） */}
       <div id={id} ref={panel} role="menu" aria-label={label} hidden={!open} tabIndex={-1}
         className={menuPanel + (align === 'start' ? ' left-0' : ' right-0')}
         onKeyDown={onPanelKey}

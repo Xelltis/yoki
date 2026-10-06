@@ -1,11 +1,11 @@
-// 開発サーバー（vite.config.ts の設定）をこの場で立て、使い終わったら止める。e2e（smoke.js）と、サイトのスクリーンショット（website/tools/screenshots.js）が使う
+// 開発サーバー（vite.config.tsの設定）をこの場で立て、使い終わったら止める。e2e（smoke.js）と、サイトのスクリーンショット（website/tools/screenshots.js）が使う
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 
-/** 開発サーバーを立てて fn(サーバーの URL) を回す。終わったら（失敗しても）止める */
+/** 開発サーバーを立ててfn(サーバーのURL) を回す。終わったら（失敗しても）止める */
 export async function withDevServer(fn) {
   const server = await createServer({ configFile: path.join(root, 'vite.config.ts'), logLevel: 'warn' });
   await server.listen();
@@ -16,7 +16,7 @@ export async function withDevServer(fn) {
   }
 }
 
-/** 開発用ログインで、サンプルのグループに入る（page は Playwright のページ） */
+/** 開発用ログインで、サンプルのグループに入る（pageはPlaywrightのページ） */
 export async function devLogin(page, base, as = 'ひより') {
   await page.goto(base);
   await page.selectOption('#devAs', as);

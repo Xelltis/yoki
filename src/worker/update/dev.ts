@@ -1,13 +1,13 @@
-// 開発用の偽の GitHub（開発サーバーだけ）。運営の管理画面の「更新」を、本物の GitHub なしで試すため。
-// 最新の版はいつも、今の版の小さい版を 1 つ上げたもの。表の変更も含む。更新を頼むと、meta の dev_update に実行を足す。
-// config.ts が import.meta.env.DEV のときだけ選ぶので、本番の組み立てには入らない
+// 開発用の偽のGitHub（開発サーバーだけ）。運営の管理画面の「更新」を、本物のGitHubなしで試すため。
+// 最新の版はいつも、今の版の小さい版を1つ上げたもの。表の変更も含む。更新を頼むと、metaのdev_updateに実行を足す。
+// config.tsがimport.meta.env.DEVのときだけ選ぶので、本番の組み立てには入らない
 import { APP_VERSION } from '../version';
 import type { UpdateApi, UpdateRun } from './api';
 
 const KEY = 'dev_update';
 const REPO_URL = 'https://github.com/example/yoki';
 
-/** 今の版の小さい版を 1 つ上げる（1.2.3 → 1.3.0） */
+/** 今の版の小さい版を1つ上げる（1.2.3 → 1.3.0） */
 export function nextMinor(v: string): string {
   const p = (v + '.0.0').split('.').map((x) => Number(x) || 0);
   return p[0]! + '.' + (p[1]! + 1) + '.0';

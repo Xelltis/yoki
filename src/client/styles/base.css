@@ -1,7 +1,7 @@
-/* 要素の既定（base の層）。どの画面にも当てる土台 */
+/* 要素の既定（baseの層）。どの画面にも当てる土台 */
 * { box-sizing: border-box; }
 html, body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.6 var(--font-sans); }
-/* 長い URL などの切れ目の無い字は、入らなければ折り返す（ページが横にはみ出さないように） */
+/* 長いURLなどの切れ目の無い字は、入らなければ折り返す（ページが横にはみ出さないように） */
 body { overflow-wrap: break-word; }
 html.modal-open { overflow: hidden; }
 [hidden] { display: none !important; }
@@ -30,7 +30,7 @@ tr:last-child > td { border-bottom: 0; }
 /* 文字サイズ。端末ごとに ふつう（そのまま）・中・大。画面全体を拡げる */
 :root[data-font="m"] body { zoom: 1.12; }
 :root[data-font="l"] body { zoom: 1.25; }
-/* 窓を開いてページのスクロールを止めるとき、スクロールバーが出ていたら、その分の場所を残す（窓の開け閉めで横にずれないように。ModalManager が印を付ける）。
+/* 窓を開いてページのスクロールを止めるとき、スクロールバーが出ていたら、その分の場所を残す（窓の開け閉めで横にずれないように。ModalManagerが印を付ける）。
  * いつも空けておくと、スクロールバーの出ない短いページで、右端に地の色の隙間ができる（上の帯も届かない）ので、そうしない */
 html.modal-open.has-scrollbar { scrollbar-gutter: stable; }
 

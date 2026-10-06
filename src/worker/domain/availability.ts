@@ -1,4 +1,4 @@
-// メンバーの予定（都合の △ ×）と予定のメモ、日付メモ（GAS 版 Availability.js）
+// メンバーの予定（都合の △ ×）と予定のメモ、日付メモ（GAS版Availability.js）
 import { badRequest } from '../lib/errors';
 import { addDays, dowOf, fmtDateJa, parseYmd } from '../lib/jst';
 import { AVAIL_NOTE_MAX, DAY_NOTE_MAX, MARKS } from './constants';
@@ -12,26 +12,26 @@ function readMark(v: unknown): string {
   return mark;
 }
 
-/** 予定表の範囲（今日から avail_days 日） */
+/** 予定表の範囲（今日からavail_days日） */
 function inRange(ctx: Ctx, ymd: string): boolean {
   return ymd >= ctx.today && ymd < addDays(ctx.today, ctx.group.avail_days);
 }
 
-/** 本人が入れる印。Google から入れた印の日も、本人の印になる（もう Google からは書き換えない） */
+/** 本人が入れる印。Googleから入れた印の日も、本人の印になる（もうGoogleからは書き換えない） */
 const upsertMark = "INSERT INTO availability (member_id, date, mark) VALUES (?1, ?2, ?3) ON CONFLICT (member_id, date) DO UPDATE SET mark = excluded.mark, source = ''";
-/** Google から入れた印を本人が消したら、その日を覚えておく（もう入れない） */
+/** Googleから入れた印を本人が消したら、その日を覚えておく（もう入れない） */
 const dismissGoogle = `INSERT INTO google_dismissed (member_id, date)
   SELECT member_id, date FROM availability WHERE member_id = ?1 AND source = 'google' AND date IN (SELECT value FROM json_each(?2))
   ON CONFLICT DO NOTHING`;
 
-/** 予定の 1 マスを書く。form: { name（本人）, ymd, mark }。卓に入っている日は変えられない */
+/** 予定の1マスを書く。form: { name（本人）, ymd, mark }。卓に入っている日は変えられない */
 export async function setAvailability(ctx: Ctx, form: Form) {
   const name = requireSelf(ctx, form.name), memberId = ctx.actor.memberId;
   const mark = readMark(form.mark);
   const ymd = parseYmd(form.ymd);
   if (!ymd) throw badRequest('日付が読めません: ' + str(form.ymd));
-  if (!inRange(ctx, ymd)) throw badRequest(fmtDateJa(ymd) + ' は予定表の範囲外です。設定の「予定の日数」を増やしてください。');
-  if (bookedMap(ctx.sessions)[ymd]?.[name]) throw badRequest(fmtDateJa(ymd) + ' は ' + name + ' が卓に入っている日なので、都合は変えられません。');
+  if (!inRange(ctx, ymd)) throw badRequest(fmtDateJa(ymd) + 'は予定表の範囲外です。設定の「予定の日数」を増やしてください。');
+  if (bookedMap(ctx.sessions)[ymd]?.[name]) throw badRequest(fmtDateJa(ymd) + 'は' + name + 'が卓に入っている日なので、都合は変えられません。');
   if (mark) await ctx.db.prepare(upsertMark).bind(memberId, ymd, mark).run();
   else {
     await ctx.db.batch([
@@ -44,7 +44,7 @@ export async function setAvailability(ctx: Ctx, form: Form) {
 
 /**
  * 自分の列に、期間と曜日を絞ってまとめて印を入れる。
- * form: { name, from, to, weekdays: [0-6], mark: '△'|'×'|'', keep: true なら入力済みのマスは残す }
+ * form: { name, from, to, weekdays: [0-6], mark: '△'|'×'|'', keep: trueなら入力済みのマスは残す }
  */
 export async function setAvailabilityBulk(ctx: Ctx, form: Form) {
   const name = requireSelf(ctx, form.name), memberId = ctx.actor.memberId;
@@ -81,21 +81,21 @@ export async function setAvailabilityBulk(ctx: Ctx, form: Form) {
       ]);
     }
   }
-  let message = name + ' の ' + days.length + ' 日に「' + (mark || '空欄') + '」を入れました。';
+  let message = name + 'の' + days.length + '日に「' + (mark || '空欄') + '」を入れました。';
   const notes: string[] = [];
-  if (skippedBooked) notes.push('卓の日 ' + skippedBooked + ' 日');
-  if (skippedKeep) notes.push('入力済み ' + skippedKeep + ' 日');
-  if (notes.length) message += '（' + notes.join('、') + 'は飛ばしました）';
+  if (skippedBooked) notes.push('卓のある日を' + skippedBooked + '日');
+  if (skippedKeep) notes.push('入力済みの日を' + skippedKeep + '日');
+  if (notes.length) message += '（' + notes.join('、') + '飛ばしました）';
   return { ok: true, count: days.length, skippedBooked, skippedKeep, message };
 }
 
-/** 予定の 1 マスにメモを書く。△×とは別で、卓に入っている日にも書ける。空にすると消える */
+/** 予定の1マスにメモを書く。△×とは別で、卓に入っている日にも書ける。空にすると消える */
 export async function setAvailNote(ctx: Ctx, form: Form) {
   const name = requireSelf(ctx, form.name), memberId = ctx.actor.memberId;
   const ymd = parseYmd(form.ymd);
   if (!ymd) throw badRequest('日付が読めません: ' + str(form.ymd));
   const text = str(form.text);
-  if (text.length > AVAIL_NOTE_MAX) throw badRequest('メモは ' + AVAIL_NOTE_MAX + ' 文字までです。');
+  if (text.length > AVAIL_NOTE_MAX) throw badRequest('メモは' + AVAIL_NOTE_MAX + '文字までです。');
   if (text) {
     await ctx.db
       .prepare('INSERT INTO avail_notes (member_id, date, text, updated_at) VALUES (?1, ?2, ?3, ?4) ON CONFLICT (member_id, date) DO UPDATE SET text = excluded.text, updated_at = excluded.updated_at')
@@ -104,7 +104,7 @@ export async function setAvailNote(ctx: Ctx, form: Form) {
   } else {
     await ctx.db.prepare('DELETE FROM avail_notes WHERE member_id = ? AND date = ?').bind(memberId, ymd).run();
   }
-  return { ok: true, ymd, name, message: fmtDateJa(ymd) + ' ' + name + ' のメモを' + (text ? '保存' : '消') + 'しました。' };
+  return { ok: true, ymd, name, message: fmtDateJa(ymd) + ' ' + name + 'のメモを' + (text ? '保存' : '消') + 'しました。' };
 }
 
 /** 日付メモを書く。空にすると消す。form: { ymd, text } */
@@ -112,7 +112,7 @@ export async function setDayNote(ctx: Ctx, form: Form) {
   const ymd = parseYmd(form.ymd);
   if (!ymd) throw badRequest('日付が読めません: ' + str(form.ymd));
   const text = str(form.text);
-  if (text.length > DAY_NOTE_MAX) throw badRequest('メモは ' + DAY_NOTE_MAX + ' 文字までです。');
+  if (text.length > DAY_NOTE_MAX) throw badRequest('メモは' + DAY_NOTE_MAX + '文字までです。');
   if (text) {
     await ctx.db
       .prepare(`INSERT INTO day_notes (group_id, date, text, by_name, updated_at) VALUES (?1, ?2, ?3, ?4, ?5)
@@ -122,5 +122,5 @@ export async function setDayNote(ctx: Ctx, form: Form) {
   } else {
     await ctx.db.prepare('DELETE FROM day_notes WHERE group_id = ? AND date = ?').bind(ctx.group.id, ymd).run();
   }
-  return { ok: true, ymd, message: fmtDateJa(ymd) + ' のメモを' + (text ? '保存しました。' : '消しました。') };
+  return { ok: true, ymd, message: fmtDateJa(ymd) + 'のメモを' + (text ? '保存しました。' : '消しました。') };
 }

@@ -1,4 +1,4 @@
-// グループの画面の中の移り（タブ・管理の区分）と、はじめの 3 ステップを出すか
+// グループの画面の中の移り（タブ・管理の区分）と、はじめの3ステップを出すか
 import { useNavigate } from '@tanstack/react-router';
 import type { ConsoleData } from '../../../../shared/api';
 import type { AdminPane } from '../../../../shared/routes';
@@ -23,7 +23,7 @@ export function useGoTab(): (t: MainTab) => void {
   return (t) => { void navigate({ to: TAB_TO[t], params: { groupId } }); };
 }
 
-/** 「募集・調整」のタブへ移る関数。卓の ID を渡すと、その卓のカードまで動かして目立たせる */
+/** 「募集・調整」のタブへ移る関数。卓のIDを渡すと、その卓のカードまで動かして目立たせる */
 export function useGoRecruit(): (id?: string) => void {
   const navigate = useNavigate();
   const { groupId, ui } = useConsole();
@@ -48,20 +48,20 @@ export function tabOf(pathname: string): Tab {
   return m ? (m[1] as Tab) : 'cal';
 }
 
-/** はじめの 3 ステップのうち、要るもの（仲間が入る・卓がある）が済んだか。Discord の知らせは無くても使えるので入れない */
+/** はじめの3ステップのうち、要るもの（仲間が入る・卓がある）が済んだか。Discordの知らせは無くても使えるので入れない */
 export function setupDone(d: ConsoleData): boolean {
   return d.members.length > 1 && d.sessions.some(isActive);
 }
 
-/** はじめの 3 ステップを出すか。出し直したら閉じるまで出す。閉じたら出さない。それ以外は、要るものが済むまで出す */
+/** はじめの3ステップを出すか。出し直したら閉じるまで出す。閉じたら出さない。それ以外は、要るものが済むまで出す */
 export function guideShown(d: ConsoleData, guide: ConsoleUi['guide']): boolean {
   return guide === 'open' || (guide !== 'closed' && !setupDone(d));
 }
 
-/** はじめの 3 ステップを閉じたかを、この端末にグループごとに控えるキー */
+/** はじめの3ステップを閉じたかを、この端末にグループごとに控えるキー */
 export const guideClosedKey = (groupId: string) => 'guideClosed:' + groupId;
 
-/** はじめの 3 ステップを閉じる。次に開いたときも出さない（ヘルプのメニューから、いつでも出し直せる） */
+/** はじめの3ステップを閉じる。次に開いたときも出さない（ヘルプのメニューから、いつでも出し直せる） */
 export function closeGuide(ui: Store<ConsoleUi>, groupId: string): void {
   store(guideClosedKey(groupId), '1');
   ui.set((s) => ({ ...s, guide: 'closed' }));

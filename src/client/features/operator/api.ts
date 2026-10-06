@@ -1,11 +1,11 @@
-// 運営者の管理画面の読み書き。/api/admin/*（サーバーが運営者かを確かめる）。形は src/shared/admin.ts。
-// データは TanStack Query の ['admin', …] に置く。読み直すのは、変えたあとと「更新」のときだけ
+// 運営者の管理画面の読み書き。/api/admin/*（サーバーが運営者かを確かめる）。形はsrc/shared/admin.ts。
+// データはTanStack Queryの ['admin', …] に置く。読み直すのは、変えたあとと「更新」のときだけ
 import { keepPreviousData, type QueryKey, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import type { AdminResult } from '../../../shared/admin';
 import { toast } from '../../ui/toast';
 
-/** サーバーを呼ぶ。ログインが切れていたらログインし直して戻る。失敗は Error（message はサーバーの文） */
+/** サーバーを呼ぶ。ログインが切れていたらログインし直して戻る。失敗はError（messageはサーバーの文） */
 export async function adminCall<T>(path: string, body?: unknown): Promise<T> {
   const res = await fetch(path, {
     method: body === undefined ? 'GET' : 'POST',
@@ -41,8 +41,8 @@ export function useAdmin<T>(queryKey: QueryKey, path: string, opts: { enabled?: 
 }
 
 /**
- * 変える操作。結果を吹き出しに出し、読み直す。うまくいったら true。
- * before は読み直す前にすること（消したグループを閉じるなど）。skip で始まるキーは読み直さない（消えたものを読みにいかない）
+ * 変える操作。結果を吹き出しに出し、読み直す。うまくいったらtrue。
+ * beforeは読み直す前にすること（消したグループを閉じるなど）。skipで始まるキーは読み直さない（消えたものを読みにいかない）
  */
 export function useAct() {
   const qc = useQueryClient();

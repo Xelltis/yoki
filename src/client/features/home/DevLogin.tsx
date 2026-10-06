@@ -2,14 +2,14 @@ import { Icon } from '../../ui/Icon';
 import { heroBtn, heroField } from './styles';
 
 /**
- * 開発用ログイン（開発サーバーだけ）。選んだメンバーとして、サンプルのグループに入る（素の POST。サーバーが cookie を付けて移す）。
- * 入口の青い枠の中、Discord でログインと同じ場所に並べる。Discord でログインもあるときは、枠線だけのボタンにして見分ける。
- * Home が import.meta.env.DEV のときだけ描くので、本番の組み立てには入らない
+ * 開発用ログイン（開発サーバーだけ）。選んだメンバーとして、サンプルのグループに入る（素のPOST。サーバーがcookieを付けて移す）。
+ * 入口の青い枠の中、Discordでログインと同じ場所に並べる。Discordでログインもあるときは、枠線だけのボタンにして見分ける。
+ * Homeがimport.meta.env.DEVのときだけ描くので、本番の組み立てには入らない
  */
 export function DevLogin({ users, ghost = false, linkGoogle = false }: { users: string[]; ghost?: boolean; linkGoogle?: boolean }) {
   return (
     <form className="flex flex-wrap items-center gap-8" id="devForm" method="post" action="/dev/login">
-      {/* 初めての Google のアカウントを、この人に結びつける（Discord でログインの ?link_google=1 と同じ） */}
+      {/* 初めてのGoogleのアカウントを、この人に結びつける（Discordでログインの ?link_google=1と同じ） */}
       {linkGoogle && <input type="hidden" name="link_google" value="1" />}
       <select className={heroField} name="as" id="devAs" aria-label="入るメンバー">
         {users.map((n) => <option key={n}>{n}</option>)}

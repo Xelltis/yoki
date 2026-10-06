@@ -1,6 +1,6 @@
-// 購読 URL（GET /cal/<token>.ics）。カレンダーのアプリ（Google カレンダーの「URL で追加」など）が、ログインせずに読む。
-// token を知っていればだれでも読めるので、読めるのは、作った人がまだそのグループのメンバーで、締め出されておらず、
-// グループの Discord サーバーの控えがある間だけ。ほかは 404（あるかどうかも教えない）
+// 購読URL（GET /cal/<token>.ics）。カレンダーのアプリ（Googleカレンダーの「URLで追加」など）が、ログインせずに読む。
+// tokenを知っていればだれでも読めるので、読めるのは、作った人がまだそのグループのメンバーで、締め出されておらず、
+// グループのDiscordサーバーの控えがある間だけ。ほかは404（あるかどうかも教えない）
 import { Hono } from 'hono';
 import type { AppEnv } from '../app';
 import { SYSTEM_ACTOR } from '../auth/guard';

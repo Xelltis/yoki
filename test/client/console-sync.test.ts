@@ -17,7 +17,7 @@ let blocked: boolean;
 let logins: number;
 let sync: ConsoleSync;
 
-/** 返事を待たせるサーバー。取り消されたら AbortError で断る */
+/** 返事を待たせるサーバー。取り消されたらAbortErrorで断る */
 const rpc = <R,>(_g: string, name: string, form: object = {}, signal?: AbortSignal) =>
   new Promise<R>((resolve, reject) => {
     calls.push({ name, form, resolve: resolve as (v: unknown) => void, reject });
@@ -46,7 +46,7 @@ describe('読み込み', () => {
     expect(sync.view.get().busy).toBe(true);
     reads()[1]!.resolve(data('A', '2026-10-05 10:05'));
     await manual;
-    expect(toasts).toEqual(['最新の状態です。変更はありません（10:05 時点）']);
+    expect(toasts).toEqual(['最新の状態です。変更はありません（10:05時点）']);
   });
 
   test('読んでいる途中にもう一度頼んでも、同じ読み込みを待つ（手で頼んだら回る印を出す）', async () => {
@@ -92,12 +92,12 @@ describe('書き込みと読み込みが重なったとき', () => {
   test('ほかの書き込みが返事待ちなら、先に来た返事のデータは描かず、最後の返事で描く', async () => {
     const w1 = sync.write('setAvailability', { mark: '△' });
     const w2 = sync.write('setAvailability', { mark: '×' });
-    calls[0]!.resolve({ ok: true, data: data('1 つ目のあと') });
+    calls[0]!.resolve({ ok: true, data: data('1つ目のあと') });
     await w1;
     expect(shown()).toBeUndefined();
-    calls[1]!.resolve({ ok: true, data: data('2 つ目のあと') });
+    calls[1]!.resolve({ ok: true, data: data('2つ目のあと') });
     await w2;
-    expect(shown()).toBe('2 つ目のあと');
+    expect(shown()).toBe('2つ目のあと');
   });
 
   test('先に来た返事を見送り、最後の返事にデータが無ければ、読み直す', async () => {
@@ -114,7 +114,7 @@ describe('書き込みと読み込みが重なったとき', () => {
     expect(shown()).toBe('読み直した');
   });
 
-  test('返事を待たずに描く書き込み（optimistic）。失敗したら rollback を当てて、失敗を返す', async () => {
+  test('返事を待たずに描く書き込み（optimistic）。失敗したらrollbackを当てて、失敗を返す', async () => {
     const r = sync.refresh('boot'); reads()[0]!.resolve(data('元')); await r;
     const w = sync.write('setAvailability', {}, { optimistic: (d) => ({ ...d, title: '押した瞬間' }), rollback: (d) => ({ ...d, title: '戻した' }) });
     expect(shown()).toBe('押した瞬間');
@@ -125,7 +125,7 @@ describe('書き込みと読み込みが重なったとき', () => {
 });
 
 describe('ログインとグループ', () => {
-  test('ログインが切れたらログインし直しに行く（3 回目からは止めて案内する）', async () => {
+  test('ログインが切れたらログインし直しに行く（3回目からは止めて案内する）', async () => {
     const store = new Map<string, string>();
     vi.stubGlobal('sessionStorage', { getItem: (k: string) => store.get(k) ?? null, setItem: (k: string, v: string) => { store.set(k, v); }, removeItem: (k: string) => { store.delete(k); } });
     for (let i = 0; i < 3; i++) {

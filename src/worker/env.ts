@@ -1,18 +1,18 @@
-// Worker が受け取る値。Env は wrangler types が wrangler.jsonc から作る（worker-configuration.d.ts）。
-// 秘密の値（Worker の secret。手元では .dev.vars）は wrangler.jsonc に書かないので、ここで足す
+// Workerが受け取る値。Envはwrangler typesがwrangler.jsoncから作る（worker-configuration.d.ts）。
+// 秘密の値（Workerのsecret。手元では .dev.vars）はwrangler.jsoncに書かないので、ここで足す
 export type Bindings = Env & {
   DISCORD_CLIENT_SECRET?: string;
-  /** 知らせを送る Bot（卓予定の Discord アプリ）のトークン。無ければ Discord に送れない */
+  /** 知らせを送るBot（卓予定のDiscordアプリ）のトークン。無ければDiscordに送れない */
   DISCORD_BOT_TOKEN?: string;
-  /** 運営者の Discord ユーザー ID（カンマか空白で区切る）。公開の Actions のログに出さないように、vars ではなく secret にする */
+  /** 運営者のDiscordユーザーID（カンマか空白で区切る）。公開のActionsのログに出さないように、varsではなくsecretにする */
   OPERATOR_IDS?: string;
-  /** Google カレンダーとの連携（OAuth のクライアント）。Client ID は vars、secret は Worker の secret */
+  /** Googleカレンダーとの連携（OAuthのクライアント）。Client IDはvars、secretはWorkerのsecret */
   GOOGLE_CLIENT_SECRET?: string;
-  /** Google の refresh token を D1 に置くときに暗号化する鍵（32 バイトを base64 にしたもの）。無ければ Google 連携は使えない */
+  /** Googleのrefresh tokenをD1に置くときに暗号化する鍵（32バイトをbase64にしたもの）。無ければGoogle連携は使えない */
   GOOGLE_TOKEN_KEY?: string;
   /**
-   * 運営の管理画面の「更新」のボタンで、公開しているリポジトリの更新のワークフローを動かすトークン（GitHub の fine-grained token。
-   * そのリポジトリの Actions を読み書きする権限だけ）。無ければ、GitHub の Actions の画面から動かす。画面・ログ・API には出さない
+   * 運営の管理画面の「更新」のボタンで、公開しているリポジトリの更新のワークフローを動かすトークン（GitHubのfine-grained token。
+   * そのリポジトリのActionsを読み書きする権限だけ）。無ければ、GitHubのActionsの画面から動かす。画面・ログ・APIには出さない
    */
   UPDATE_DISPATCH_TOKEN?: string;
 };

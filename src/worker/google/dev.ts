@@ -1,6 +1,6 @@
-// 開発用の偽の Google（GOOGLE_CLIENT_ID が dev-fake の開発サーバーだけ）。本物の Google の値が無くても、連携の流れを通しで確かめるため。
-// 同意の画面は出さずに許可したことにし、書き込んだ予定と「予定あり」の時間は D1 の meta（dev_google）に置く。
-// app.ts と config.ts が import.meta.env.DEV のときだけ使うので、本番の組み立てには入らない（vite.config.ts の noDevLogin が確かめる）
+// 開発用の偽のGoogle（GOOGLE_CLIENT_IDがdev-fakeの開発サーバーだけ）。本物のGoogleの値が無くても、連携の流れを通しで確かめるため。
+// 同意の画面は出さずに許可したことにし、書き込んだ予定と「予定あり」の時間はD1のmeta（dev_google）に置く。
+// app.tsとconfig.tsがimport.meta.env.DEVのときだけ使うので、本番の組み立てには入らない（vite.config.tsのnoDevLoginが確かめる）
 import type { Hono } from 'hono';
 import type { AppEnv } from '../app';
 import { isLocalHttp } from '../auth/session';
@@ -9,10 +9,10 @@ import type { Busy, GoogleApi, GoogleEventBody } from './api';
 import { GoogleRevoked } from './api';
 
 const KEY = 'dev_google';
-/** 偽の Google のアカウントの ID（ログインに使う） */
+/** 偽のGoogleのアカウントのID（ログインに使う） */
 export const DEV_GOOGLE_SUB = 'dev-google-account';
 
-/** 偽の Google の中身。events は書き込まれた予定、busy は「予定あり」の時間（ISO）、revoked は取り消した refresh token */
+/** 偽のGoogleの中身。eventsは書き込まれた予定、busyは「予定あり」の時間（ISO）、revokedは取り消したrefresh token */
 export type FakeState = { seq: number; events: Record<string, GoogleEventBody>; busy: { start: string; end: string }[]; revoked: string[] };
 
 const empty = (): FakeState => ({ seq: 0, events: {}, busy: [], revoked: [] });
@@ -36,7 +36,7 @@ async function change<T>(db: D1Database, fn: (s: FakeState) => T): Promise<T> {
   return out;
 }
 
-/** 偽の Google。同意の画面は origin の /dev/google/authorize（すぐに許可して戻す） */
+/** 偽のGoogle。同意の画面はoriginの /dev/google/authorize（すぐに許可して戻す） */
 export function fakeGoogle(db: D1Database, origin: string): GoogleApi {
   return {
     authorizeUrl(redirectUri, state) {
@@ -48,12 +48,12 @@ export function fakeGoogle(db: D1Database, origin: string): GoogleApi {
     loginUrl(redirectUri, state) {
       return origin + '/dev/google/authorize?' + new URLSearchParams({ redirect_uri: redirectUri, state }).toString();
     },
-    // 偽の Google のアカウントは 1 つだけ（開発用の人のだれにでも結びつけられる）
+    // 偽のGoogleのアカウントは1つだけ（開発用の人のだれにでも結びつけられる）
     async exchangeLogin() {
       return { sub: DEV_GOOGLE_SUB, email: 'dev@example.com' };
     },
     async accessToken(refreshToken) {
-      if ((await readFake(db)).revoked.includes(refreshToken)) throw new GoogleRevoked('取り消されています（偽の Google）');
+      if ((await readFake(db)).revoked.includes(refreshToken)) throw new GoogleRevoked('取り消されています（偽のGoogle）');
       return 'dev-access';
     },
     async revoke(refreshToken) {
@@ -85,8 +85,8 @@ export function fakeGoogle(db: D1Database, origin: string): GoogleApi {
 }
 
 export function registerGoogleDevRoutes(app: Hono<AppEnv>): void {
-  // 同意の画面の代わり。すぐに許可したことにして、戻り先へ code と state を付けて返す。
-  // code は毎回変える（refresh token は code から作るので、前に外して取り消した token と重ならないように）
+  // 同意の画面の代わり。すぐに許可したことにして、戻り先へcodeとstateを付けて返す。
+  // codeは毎回変える（refresh tokenはcodeから作るので、前に外して取り消したtokenと重ならないように）
   app.get('/dev/google/authorize', (c) => {
     if (!isLocalHttp(new URL(c.req.url))) return c.notFound();
     const back = new URL(c.req.query('redirect_uri') ?? '/', c.req.url);
@@ -95,12 +95,12 @@ export function registerGoogleDevRoutes(app: Hono<AppEnv>): void {
     back.searchParams.set('state', c.req.query('state') ?? '');
     return c.redirect(back.toString());
   });
-  // 中身を見る（e2e が、書き込まれた予定を確かめる）
+  // 中身を見る（e2eが、書き込まれた予定を確かめる）
   app.get('/dev/google/state', async (c) => {
     if (!isLocalHttp(new URL(c.req.url))) return c.notFound();
     return c.json(await readFake(c.env.DB));
   });
-  // 「予定あり」の時間を置き換える（e2e が、予定から印が入るのを確かめる）。{ busy: [{ start, end }]（ISO） }
+  // 「予定あり」の時間を置き換える（e2eが、予定から印が入るのを確かめる）。{ busy: [{ start, end }]（ISO） }
   app.post('/dev/google/busy', async (c) => {
     if (!isLocalHttp(new URL(c.req.url))) return c.notFound();
     const body = (await c.req.json()) as { busy?: { start: string; end: string }[] };

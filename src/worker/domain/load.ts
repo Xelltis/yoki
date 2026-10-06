@@ -1,4 +1,4 @@
-// グループ 1 つ分のデータを、1 回の db.batch で読む。過ぎた卓の自動終了（GAS 版 autoFinishPast_）も同じ回で行う
+// グループ1つ分のデータを、1回のdb.batchで読む。過ぎた卓の自動終了（GAS版autoFinishPast_）も同じ回で行う
 import type { Actor } from '../auth/guard';
 import { addDays, jst } from '../lib/jst';
 import type { Status } from './constants';
@@ -19,7 +19,7 @@ export async function loadGroup(
   const today = jst(now).ymd;
   const at = now.toISOString();
   const res = await db.batch([
-    // 開催日が過ぎた「開催」の卓を「終了」に（設定が ON のとき。当日はそのまま）
+    // 開催日が過ぎた「開催」の卓を「終了」に（設定がONのとき。当日はそのまま）
     db
       .prepare(
         `UPDATE sessions SET status = '終了', updated_at = ?1

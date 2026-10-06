@@ -1,8 +1,8 @@
-// 知らせの決まり（送り先があるか・開催前の知らせの日時）。画面のデータ d を受け取って読むだけ
+// 知らせの決まり（送り先があるか・開催前の知らせの日時）。画面のデータdを受け取って読むだけ
 import type { ConsoleData, ConsoleSession, SeriesNotifyView } from '../../../../shared/api';
 import { addDaysYmd, fmtJa } from './dates';
 
-/** シリーズごとの通知の設定（無ければ null） */
+/** シリーズごとの通知の設定（無ければnull） */
 export function snEntry(d: ConsoleData, name: string): SeriesNotifyView | null { return (d.seriesNotify || []).filter((x) => x.series === name)[0] || null; }
 /** そのシリーズに専用のチャンネルがあるか */
 export function seriesHook(d: ConsoleData, name: string | undefined): boolean { const e = name ? snEntry(d, name) : null; return !!(e && e.channelId); }
@@ -15,23 +15,23 @@ export function kindOf(s: ConsoleSession | null): string { return s && s.status 
 
 export function baseHour(d: ConsoleData): number { const st = d.settings; return st.notifyHour === undefined ? 20 : st.notifyHour; }
 export function baseDays(d: ConsoleData): number { const st = d.settings; return st.notifyDays === undefined ? 1 : st.notifyDays; }
-/** 「前日の 20 時台」「3 日前の 9 時台」「当日の 12 時台」 */
-export function whenText(days: number, h: number): string { return (days === 0 ? '当日' : days === 1 ? '前日' : days + ' 日前') + 'の ' + h + ' 時台'; }
+/** 「前日の20時台」「3日前の9時台」「当日の12時台」 */
+export function whenText(days: number, h: number): string { return (days === 0 ? '当日' : days === 1 ? '前日' : days + '日前') + 'の' + h + '時台'; }
 export function hasVal<T>(v: T | null | undefined): v is T { return v !== null && v !== undefined; }
 /** 卓ごとの開催前の知らせ（何日前）と時刻。シリーズに値があればそれ、無ければ基本 */
 export function notifyDaysFor(d: ConsoleData, s: ConsoleSession): number { const e = s.series ? snEntry(d, s.series) : null; return e && hasVal(e.days) ? e.days : baseDays(d); }
 export function notifyHourFor(d: ConsoleData, s: ConsoleSession): number { const e = s.series ? snEntry(d, s.series) : null; return e && hasVal(e.hour) ? e.hour : baseHour(d); }
 /** 開催前の知らせの状態。送信済み／この日時に送る／送る日を過ぎた未送信／自動通知が未設定 */
 export function notifyState(d: ConsoleData, s: ConsoleSession): string {
-  if (s.notified) return '開催前の知らせ 送信済み';
-  if (!d.notifySetter) return '開催前の知らせ 未設定';
+  if (s.notified) return '開催前の知らせは送りました';
+  if (!d.notifySetter) return '開催前の知らせは未設定';
   const k = s.date ? addDaysYmd(s.date, -notifyDaysFor(d, s)) : '';
-  return k && k >= d.today ? '開催前の知らせ ' + fmtJa(k) + ' ' + notifyHourFor(d, s) + ' 時台に送る' : '開催前の知らせ 未送信';
+  return k && k >= d.today ? '開催前の知らせは' + fmtJa(k) + notifyHourFor(d, s) + '時台に送る' : '開催前の知らせは未送信';
 }
-/** 「何日前」と「何時台」の欄を読む。dOk・hOk はそれぞれの欄が正しいか、err は正しくないときの理由 */
+/** 「何日前」と「何時台」の欄を読む。dOk・hOkはそれぞれの欄が正しいか、errは正しくないときの理由 */
 export function readWhen(dv: string, hv: string): { days: number; hour: number; dOk: boolean; hOk: boolean; err: string } {
   const ds = dv.trim(), hs = hv.trim(), days = +ds, hour = +hs;
   const dOk = /^\d{1,2}$/.test(ds) && days <= 30, hOk = /^\d{1,2}$/.test(hs) && hour <= 23;
-  const err = !dOk ? '何日前かは 0〜30 の数で入れてください（0 は当日、1 は前日）。' : !hOk ? '時刻は 0〜23 の数で入れてください。' : '';
+  const err = !dOk ? '何日前かは0〜30の数で入れてください（0は当日、1は前日）。' : !hOk ? '時刻は0〜23の数で入れてください。' : '';
   return { days, hour, dOk, hOk, err };
 }

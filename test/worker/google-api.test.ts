@@ -1,4 +1,4 @@
-// Google 連携の部品: 暗号化、設定、本物の Google の呼び方（fetch を差し替える）、開発用の偽の Google
+// Google連携の部品: 暗号化、設定、本物のGoogleの呼び方（fetchを差し替える）、開発用の偽のGoogle
 import { env, SELF } from 'cloudflare:test';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import type { Bindings } from '../../src/worker/env';
@@ -28,20 +28,20 @@ describe('暗号化', () => {
     await expect(open(await importKey(OTHER), sealed)).rejects.toThrow();
     await expect(open(await importKey(KEY), 'v2.a.b')).rejects.toThrow('形が違います');
     await expect(open(await importKey(KEY), 'v1.a')).rejects.toThrow('形が違います');
-    await expect(importKey(btoa('short'))).rejects.toThrow('32 バイト');
+    await expect(importKey(btoa('short'))).rejects.toThrow('32バイト');
   });
 });
 
 describe('設定', () => {
   const base = env as unknown as Bindings;
-  test('開発の形では、Client ID が空なら偽の Google。値を入れたら 3 つそろったときだけ', () => {
+  test('開発の形では、Client IDが空なら偽のGoogle。値を入れたら3つそろったときだけ', () => {
     expect(googleConfigured({ ...base, GOOGLE_CLIENT_ID: '' })).toBe(true);
     expect(googleConfigured({ ...base, GOOGLE_CLIENT_ID: 'id' })).toBe(false);
     expect(googleConfigured({ ...base, GOOGLE_CLIENT_ID: 'id', GOOGLE_CLIENT_SECRET: 's' })).toBe(false);
     expect(googleConfigured({ ...base, GOOGLE_CLIENT_ID: 'id', GOOGLE_CLIENT_SECRET: 's', GOOGLE_TOKEN_KEY: KEY })).toBe(true);
   });
 
-  test('一式: 偽の Google は /dev/google/authorize、本物は accounts.google.com。設定が無ければ null。アドレスは APP_URL を正とする', async () => {
+  test('一式: 偽のGoogleは /dev/google/authorize、本物はaccounts.google.com。設定が無ければnull。アドレスはAPP_URLを正とする', async () => {
     const fake = (await googleDeps({ ...base, GOOGLE_CLIENT_ID: '', APP_URL: '' }, 'http://localhost:5173'))!;
     expect(fake.appBase).toBe('http://localhost:5173');
     expect(fake.api.authorizeUrl('http://localhost:5173/auth/google/callback', 'st')).toMatch(/^http:\/\/localhost:5173\/dev\/google\/authorize\?/);
@@ -57,7 +57,7 @@ describe('設定', () => {
   });
 });
 
-/** fetch を差し替える。route は URL とメソッドから返事を作る */
+/** fetchを差し替える。routeはURLとメソッドから返事を作る */
 function mockFetch(route: (url: string, init: RequestInit) => Response | Promise<Response>) {
   const calls: { url: string; init: RequestInit }[] = [];
   vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init = {}) => {
@@ -68,37 +68,37 @@ function mockFetch(route: (url: string, init: RequestInit) => Response | Promise
   return calls;
 }
 
-/** JWT の形（中身は UTF-8 の JSON を base64url に） */
+/** JWTの形（中身はUTF-8のJSONをbase64urlに） */
 const idToken = (claims: Record<string, unknown>) =>
   'h.' + btoa(String.fromCharCode(...new TextEncoder().encode(JSON.stringify(claims)))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '') + '.s';
 const body = { summary: 'A', location: '', description: '', start: { date: '2026-10-10' }, end: { date: '2026-10-11' }, source: { title: '卓予定', url: 'u' }, extendedProperties: { private: { yoki: '1' as const, session: 'g-1' } } };
 
-describe('本物の Google でログイン', () => {
+describe('本物のGoogleでログイン', () => {
   const g = realGoogle('cid', 'secret');
-  test('同意の画面は openid email だけを求め、アカウントを選んでもらう（refresh token は求めない）', () => {
+  test('同意の画面はopenid emailだけを求め、アカウントを選んでもらう（refresh tokenは求めない）', () => {
     const u = new URL(g.loginUrl('https://x/cb', 'st'));
     expect(Object.fromEntries(u.searchParams)).toEqual({ client_id: 'cid', redirect_uri: 'https://x/cb', response_type: 'code', scope: 'openid email', prompt: 'select_account', state: 'st' });
   });
-  test('id_token から sub とメールを読む。ほかのアプリ向け・sub が無い id_token と、失敗は断る', async () => {
+  test('id_tokenからsubとメールを読む。ほかのアプリ向け・subが無いid_tokenと、失敗は断る', async () => {
     let tok = idToken({ sub: '123', email: 'a@example.com', aud: 'cid' });
     mockFetch(() => Response.json({ id_token: tok }));
     expect(await g.exchangeLogin('c', 'u')).toEqual({ sub: '123', email: 'a@example.com' });
     tok = idToken({ sub: '123', aud: 'cid' });
     expect(await g.exchangeLogin('c', 'u')).toEqual({ sub: '123', email: '' });
     tok = idToken({ sub: '123', aud: 'other' });
-    await expect(g.exchangeLogin('c', 'u')).rejects.toThrow('Google のログインを確かめられませんでした。');
+    await expect(g.exchangeLogin('c', 'u')).rejects.toThrow('Googleのログインを確かめられませんでした。');
     tok = idToken({ aud: 'cid' });
-    await expect(g.exchangeLogin('c', 'u')).rejects.toThrow('Google のログインを確かめられませんでした。');
+    await expect(g.exchangeLogin('c', 'u')).rejects.toThrow('Googleのログインを確かめられませんでした。');
     vi.restoreAllMocks();
     mockFetch(() => new Response('x', { status: 500 }));
     await expect(g.exchangeLogin('c', 'u')).rejects.toBeInstanceOf(GoogleHttpError);
   });
 });
 
-describe('本物の Google の呼び方', () => {
+describe('本物のGoogleの呼び方', () => {
   const g = realGoogle('cid', 'secret');
 
-  test('認可コードを換える。refresh token が無い・失敗は投げる', async () => {
+  test('認可コードを換える。refresh tokenが無い・失敗は投げる', async () => {
     const calls = mockFetch(() => Response.json({ refresh_token: 'rt', id_token: idToken({ email: 'a@example.com' }) }));
     expect(await g.exchangeCode('code', 'https://x/cb')).toEqual({ refreshToken: 'rt', email: 'a@example.com' });
     expect(calls[0]!.url).toBe('https://oauth2.googleapis.com/token');
@@ -107,13 +107,13 @@ describe('本物の Google の呼び方', () => {
     });
     vi.restoreAllMocks();
     mockFetch(() => Response.json({ id_token: idToken({}) }));
-    await expect(g.exchangeCode('c', 'u')).rejects.toThrow('refresh token が返りませんでした');
+    await expect(g.exchangeCode('c', 'u')).rejects.toThrow('refresh tokenが返りませんでした');
     vi.restoreAllMocks();
     mockFetch(() => new Response('', { status: 400 }));
     await expect(g.exchangeCode('c', 'u')).rejects.toBeInstanceOf(GoogleHttpError);
   });
 
-  test('access token を取る。取り消されていれば GoogleRevoked、ほかの失敗は GoogleHttpError', async () => {
+  test('access tokenを取る。取り消されていればGoogleRevoked、ほかの失敗はGoogleHttpError', async () => {
     mockFetch(() => Response.json({ access_token: 'at' }));
     expect(await g.accessToken('rt')).toBe('at');
     vi.restoreAllMocks();
@@ -136,7 +136,7 @@ describe('本物の Google の呼び方', () => {
     expect(calls[0]!.url).toBe('https://oauth2.googleapis.com/revoke');
   });
 
-  test('予定を書く・書き直す・消す。もう無い予定は gone か、そのまま', async () => {
+  test('予定を書く・書き直す・消す。もう無い予定はgoneか、そのまま', async () => {
     const calls = mockFetch((url, init) => {
       if (init.method === 'POST') return Response.json({ id: 'ev1' });
       if (url.endsWith('/gone')) return new Response('', { status: init.method === 'PUT' ? 410 : 404 });
@@ -178,7 +178,7 @@ describe('本物の Google の呼び方', () => {
     await expect(g.busy('at', 0, 1)).rejects.toThrow('読み込み');
   });
 
-  test('数える予定: 取り消し・予定なし・卓予定が書いた予定・欠席・時刻の無い予定は数えない。終日は日本時間の 0 時から', () => {
+  test('数える予定: 取り消し・予定なし・卓予定が書いた予定・欠席・時刻の無い予定は数えない。終日は日本時間の0時から', () => {
     expect(toBusy({ status: 'cancelled', start: { date: '2026-10-10' }, end: { date: '2026-10-11' } })).toBeNull();
     expect(toBusy({ transparency: 'transparent', start: { date: '2026-10-10' }, end: { date: '2026-10-11' } })).toBeNull();
     expect(toBusy({ extendedProperties: { private: { yoki: '1' } }, start: { date: '2026-10-10' }, end: { date: '2026-10-11' } })).toBeNull();
@@ -188,14 +188,14 @@ describe('本物の Google の呼び方', () => {
       .toEqual({ start: jstMs('2026-10-10', 0), end: jstMs('2026-10-11', 0) });
   });
 
-  test('id_token からメールを読む。無ければ空', () => {
+  test('id_tokenからメールを読む。無ければ空', () => {
     expect(emailOfIdToken(idToken({ email: 'ü@example.com' }))).toBe('ü@example.com');
     expect(emailOfIdToken(idToken({}))).toBe('');
     expect(emailOfIdToken(undefined)).toBe('');
   });
 });
 
-describe('開発用の偽の Google', () => {
+describe('開発用の偽のGoogle', () => {
   test('許可・書き込み・書き直し・消す・予定あり・取り消し', async () => {
     const g = fakeGoogle(env.DB, 'http://localhost:5173');
     expect(await g.exchangeCode('c', 'u')).toEqual({ refreshToken: 'dev-refresh-c', email: 'dev@example.com' });
@@ -217,7 +217,7 @@ describe('開発用の偽の Google', () => {
   test('道: 同意の画面の代わりにすぐ戻す。中身を読む・予定ありを置き換える。手元からだけ', async () => {
     const res = await SELF.fetch(LOCAL + '/dev/google/authorize?redirect_uri=' + encodeURIComponent(LOCAL + '/auth/google/callback') + '&state=st', { redirect: 'manual' });
     expect(res.status).toBe(302);
-    // code は毎回変わる（前に取り消した refresh token と重ならないように）
+    // codeは毎回変わる（前に取り消したrefresh tokenと重ならないように）
     expect(res.headers.get('Location')).toMatch(new RegExp('^' + LOCAL + '/auth/google/callback\\?code=dev-code-[\\w-]{8}&state=st$'));
     expect((await SELF.fetch(LOCAL + '/dev/google/authorize?redirect_uri=https://evil.example/&state=st', { redirect: 'manual' })).status).toBe(404);
     expect((await SELF.fetch(LOCAL + '/dev/google/authorize', { redirect: 'manual' })).headers.get('Location')).toMatch(new RegExp('^' + LOCAL + '/\\?code=dev-code-[\\w-]{8}&state=$'));

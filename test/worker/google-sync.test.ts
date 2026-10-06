@@ -1,4 +1,4 @@
-// Google カレンダーとの同期: 卓の書き込み（足す・書き直す・消す）と、予定から都合の印を入れる
+// Googleカレンダーとの同期: 卓の書き込み（足す・書き直す・消す）と、予定から都合の印を入れる
 import { env } from 'cloudflare:test';
 import { beforeEach, describe, expect, test } from 'vitest';
 import type { Bindings } from '../../src/worker/env';
@@ -40,7 +40,7 @@ const events = async () => Object.values((await readFake(env.DB)).events);
 const mappings = async (userId = SORA) => (await env.DB.prepare('SELECT * FROM google_events WHERE user_id = ? ORDER BY session_id').bind(userId).all<Record<string, any>>()).results;
 
 describe('小さな決まり', () => {
-  test('時間帯が全部埋まれば ×、一部なら △、無ければ空。重なる予定は 1 つに数える', () => {
+  test('時間帯が全部埋まれば ×、一部なら △、無ければ空。重なる予定は1つに数える', () => {
     expect(markOf([], 0, 100)).toBe('');
     expect(markOf([{ start: 100, end: 200 }], 0, 100)).toBe('');
     expect(markOf([{ start: -50, end: 150 }], 0, 100)).toBe('×');
@@ -49,7 +49,7 @@ describe('小さな決まり', () => {
     expect(markOf([{ start: 70, end: 90 }, { start: 0, end: 30 }], 0, 100)).toBe('△');
   });
 
-  test('時間帯の時刻。24:00 は日の終わり', () => {
+  test('時間帯の時刻。24:00は日の終わり', () => {
     expect(windowMinutes('24:00')).toBe(1440);
     expect(windowMinutes('19:30')).toBe(1170);
     expect(windowMinutes('夜')).toBeNull();
@@ -69,19 +69,19 @@ describe('小さな決まり', () => {
 describe('卓の書き込み', () => {
   beforeEach(async () => {
     await ok(G.admin, G.id, 'saveSession', { name: 'ソラが参加', gm: 'ひより', members: ['ソラ'], date: T(3), start: '20', end: '23', status: '開催' });
-    await ok(G.admin, G.id, 'saveSession', { name: 'ソラが GM', gm: 'ソラ', members: [], date: T(4), status: '開催' });
+    await ok(G.admin, G.id, 'saveSession', { name: 'ソラがGM', gm: 'ソラ', members: [], date: T(4), status: '開催' });
     await ok(G.admin, G.id, 'saveSession', { name: 'こまちだけ', gm: 'こまち', members: [], date: T(5), status: '開催' });
     await ok(G.admin, G.id, 'saveSession', { name: '中止', gm: 'ソラ', members: [], date: T(6), status: '中止' });
     await link(SORA);
   });
 
   test('連携していなければ何もしない', async () => {
-    expect(await syncUser(env.DB, deps, KOMACHI, now)).toEqual({ ok: false, message: 'Google と連携していません。' });
+    expect(await syncUser(env.DB, deps, KOMACHI, now)).toEqual({ ok: false, message: 'Googleと連携していません。' });
   });
 
-  test('入っている開催の卓だけを書く。2 回目は変わっていなければ Google を呼ばない', async () => {
-    expect(await syncUser(env.DB, deps, SORA, now)).toEqual({ ok: true, message: 'Google カレンダーと同期しました。' });
-    expect((await events()).map((e) => e.summary).sort()).toEqual(['ソラが GM', 'ソラが参加']);
+  test('入っている開催の卓だけを書く。2回目は変わっていなければGoogleを呼ばない', async () => {
+    expect(await syncUser(env.DB, deps, SORA, now)).toEqual({ ok: true, message: 'Googleカレンダーと同期しました。' });
+    expect((await events()).map((e) => e.summary).sort()).toEqual(['ソラがGM', 'ソラが参加']);
     expect((await mappings()).length).toBe(2);
     const row = (await linkRow(SORA))!;
     expect(row.synced_at).not.toBeNull();
@@ -92,25 +92,25 @@ describe('卓の書き込み', () => {
     expect((await readFake(env.DB)).seq).toBe(seq);
   });
 
-  test('変われば書き直し、中止・参加者から外れたら消す。Google 側で消されていたら書き足す', async () => {
+  test('変われば書き直し、中止・参加者から外れたら消す。Google側で消されていたら書き足す', async () => {
     await syncUser(env.DB, deps, SORA, now);
     await env.DB.prepare("UPDATE sessions SET name = 'ソラが参加（改）' WHERE name = 'ソラが参加'").run();
     await syncUser(env.DB, deps, SORA, now);
-    expect((await events()).map((e) => e.summary).sort()).toEqual(['ソラが GM', 'ソラが参加（改）']);
+    expect((await events()).map((e) => e.summary).sort()).toEqual(['ソラがGM', 'ソラが参加（改）']);
     await env.DB.prepare("UPDATE sessions SET status = '中止' WHERE name = 'ソラが参加（改）'").run();
     await syncUser(env.DB, deps, SORA, now);
-    expect((await events()).map((e) => e.summary)).toEqual(['ソラが GM']);
+    expect((await events()).map((e) => e.summary)).toEqual(['ソラがGM']);
     expect((await mappings()).length).toBe(1);
-    // Google 側で消された予定
+    // Google側で消された予定
     await writeFake(env.DB, { ...(await readFake(env.DB)), events: {} });
-    await env.DB.prepare("UPDATE sessions SET place = 'Discord' WHERE name = 'ソラが GM'").run();
+    await env.DB.prepare("UPDATE sessions SET place = 'Discord' WHERE name = 'ソラがGM'").run();
     await syncUser(env.DB, deps, SORA, now);
     const ev = await events();
     expect(ev.map((e) => e.location)).toEqual(['Discord']);
     expect((await mappings())[0]!.event_id).toBe(Object.keys((await readFake(env.DB)).events)[0]);
   });
 
-  test('開催日から 7 日より前の卓は、Google の予定を残したまま覚えるのをやめる', async () => {
+  test('開催日から7日より前の卓は、Googleの予定を残したまま覚えるのをやめる', async () => {
     await env.DB.prepare("INSERT INTO google_events (user_id, session_id, event_id, hash, date) VALUES (?, 9999, 'old-event', 'h', ?)").bind(SORA, T(-8)).run();
     await writeFake(env.DB, { seq: 0, events: { 'old-event': {} as any }, busy: [], revoked: [] });
     await syncUser(env.DB, deps, SORA, now);
@@ -156,8 +156,8 @@ describe('卓の書き込み', () => {
     expect(await hasGoogleWriters(env.DB, G.id)).toBe(true);
     expect(await hasGoogleWriters(env.DB, 'other')).toBe(false);
     await syncGroupWrites(env.DB, deps, G.id, now);
-    expect((await events()).map((e) => e.summary).sort()).toEqual(['こまちだけ', 'ソラが GM', 'ソラが参加']);
-    // 先に回るひよりに 40 卓。ひよりで使い切り、ソラとこまちには回らない
+    expect((await events()).map((e) => e.summary).sort()).toEqual(['こまちだけ', 'ソラがGM', 'ソラが参加']);
+    // 先に回るひよりに40卓。ひよりで使い切り、ソラとこまちには回らない
     await env.DB.prepare('UPDATE google_links SET write_events = 1').run();
     await env.DB.prepare('DELETE FROM google_events').run();
     await writeFake(env.DB, { seq: 0, events: {}, busy: [], revoked: [] });
@@ -190,7 +190,7 @@ describe('卓の書き込み', () => {
     expect((await linkRow(SORA))!.checked_at).toBe(now.toISOString());
   });
 
-  test('書いた予定を消す。access token が無ければ控えだけ消す。消せなかった予定は残す', async () => {
+  test('書いた予定を消す。access tokenが無ければ控えだけ消す。消せなかった予定は残す', async () => {
     await syncUser(env.DB, deps, SORA, now);
     const failing = { ...deps, api: { ...deps.api, deleteEvent: () => Promise.reject(new Error('x')) } };
     expect(await removeEvents(env.DB, failing, 'at', SORA, { left: CALL_BUDGET })).toBe(0);
@@ -201,7 +201,7 @@ describe('卓の書き込み', () => {
     expect(await removeEvents(env.DB, deps, null, SORA, { left: CALL_BUDGET })).toBe(0);
   });
 
-  test('access token: 取れれば返し、取れなければ null と連携の印', async () => {
+  test('access token: 取れれば返し、取れなければnullと連携の印', async () => {
     const row = (await linkRow(SORA))!;
     expect(await tryAccessToken(env.DB, deps, SORA, row.refresh_token, now)).toBe('dev-access');
     expect(await tryAccessToken(env.DB, deps, SORA, 'broken', now)).toBeNull();
@@ -230,23 +230,23 @@ describe('予定から都合の印', () => {
     ]);
     const full = (d: string) => busyOn(d, '18', '24');
     await writeFake(env.DB, { seq: 0, events: {}, revoked: [], busy: [full(T(1)), busyOn(T(2), '20', '21'), full(T(3)), full(T(5)), full(T(6))] });
-    expect(await syncUser(env.DB, deps, SORA, now, { busy: true })).toEqual({ ok: true, message: 'Google カレンダーと同期しました。' });
+    expect(await syncUser(env.DB, deps, SORA, now, { busy: true })).toEqual({ ok: true, message: 'Googleカレンダーと同期しました。' });
     expect(await marks()).toEqual({ [T(1)]: '×:google', [T(2)]: '△:google', [T(5)]: '△' });
     expect((await linkRow(SORA))!.busy_at).toBe(now.toISOString());
-    // 予定が変われば、Google から入れた印も変わる
+    // 予定が変われば、Googleから入れた印も変わる
     await writeFake(env.DB, { seq: 0, events: {}, revoked: [], busy: [busyOn(T(1), '20', '21')] });
     await syncUser(env.DB, deps, SORA, now, { busy: true });
     expect(await marks()).toEqual({ [T(1)]: '△:google', [T(5)]: '△' });
   });
 
-  test('時間帯は人ごと。due なら 1 時間おき', async () => {
+  test('時間帯は人ごと。dueなら1時間おき', async () => {
     await link(SORA, { write: 0, read: 1, from: '10:00', to: '24:00', busyAt: new Date(now.getTime() - BUSY_EVERY_MS / 2).toISOString() });
     await writeFake(env.DB, { seq: 0, events: {}, revoked: [], busy: [busyOn(T(1), '10', '24')] });
     await syncUser(env.DB, deps, SORA, now, { busy: 'due' });
     expect(await marks()).toEqual({});
     await syncUser(env.DB, deps, SORA, new Date(now.getTime() + BUSY_EVERY_MS), { busy: 'due' });
     expect(await marks()).toEqual({ [T(1)]: '×:google' });
-    // 読めない時間帯は 19:00〜23:00 とみる
+    // 読めない時間帯は19:00〜23:00とみる
     await env.DB.prepare("UPDATE google_links SET busy_from = 'x', busy_to = 'y'").run();
     await writeFake(env.DB, { seq: 0, events: {}, revoked: [], busy: [busyOn(T(1), '19', '23')] });
     await syncUser(env.DB, deps, SORA, now, { busy: true });

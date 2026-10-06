@@ -1,4 +1,4 @@
-// 管理画面の「知らせ」の折りたためる枠（チャンネル・シリーズごとの上書き）の見た目（Tailwind のクラス）
+// 管理画面の「知らせ」の折りたためる枠（チャンネル・シリーズごとの上書き）の見た目（Tailwindのクラス）
 
 /** 折りたためる枠（チャンネル・シリーズ）。開くと右の印が上を向く */
 export const foldCard = 'group mb-16 overflow-hidden rounded-lg border border-line bg-card shadow-card';

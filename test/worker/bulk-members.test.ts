@@ -20,25 +20,25 @@ describe('まとめての変更', () => {
     await ok(G.sora, G.id, 'setInterest', { id: 'S002', name: 'ソラ', level: 'want' });
   });
 
-  test('参加者の追加と除外、GM の変更、シリーズ', async () => {
+  test('参加者の追加と除外、GMの変更、シリーズ', async () => {
     let r = await ok(G.admin, G.id, 'bulkUpdateSessions', { ids: ['S001', 'S002'], action: 'addMember', value: 'こまち' });
-    expect(r.message).toBe('2 件の卓の参加者に こまち を足しました: A、B');
+    expect(r.message).toBe('2件の卓の参加者にこまちを足しました: A、B');
     expect(byId(r).S001.members).toEqual(['ソラ', 'こまち']);
     r = await ok(G.admin, G.id, 'bulkUpdateSessions', { ids: ['S001'], action: 'removeMember', value: 'ソラ' });
-    expect(r.message).toBe('1 件の卓の参加者から ソラ を外しました: A');
+    expect(r.message).toBe('1件の卓の参加者からソラを外しました: A');
     expect(byId(r).S001.members).toEqual(['こまち']);
     r = await ok(G.admin, G.id, 'bulkUpdateSessions', { ids: ['S001'], action: 'setGm', value: 'ソラ' });
-    expect(r.message).toBe('1 件の卓の GM を ソラ にしました: A');
+    expect(r.message).toBe('1件の卓のGMをソラにしました: A');
     expect(byId(r).S001.gm).toBe('ソラ');
     r = await ok(G.admin, G.id, 'bulkUpdateSessions', { ids: ['S001', 'S002'], action: 'setSeries', value: '港' });
-    expect(r.message).toBe('2 件の卓のシリーズを「港」にしました: A、B');
+    expect(r.message).toBe('2件の卓のシリーズを「港」にしました: A、B');
     expect([byId(r).S001.series, byId(r).S002.series]).toEqual(['港', '港']);
   });
 
   test('開催日をずらすと、開催前の知らせの印が消える。日付の無い卓は飛ばす', async () => {
     await env.DB.prepare("UPDATE sessions SET notified_at = '2026-01-01T00:00:00Z'").run();
     const r = await ok(G.admin, G.id, 'bulkUpdateSessions', { ids: ['S001', 'S002'], action: 'shiftDays', value: '7' });
-    expect(r.message).toBe('2 件の卓の開催日を 7 日後ろにずらしました: A、B');
+    expect(r.message).toBe('2件の卓の開催日を7日後ろにずらしました: A、B');
     expect(byId(r).S001).toMatchObject({ date: T(10), notified: '' });
     expect(byId(r).S002.date).toBe('');
     expect((await fail(G.admin, G.id, 'bulkUpdateSessions', { ids: ['S001'], action: 'shiftDays', value: 'x' })).error).toContain('ずらす日数');
@@ -56,7 +56,7 @@ describe('まとめての変更', () => {
     await ok(G.admin, G.id, 'saveSession', { name: 'C', gm: 'ひより', members: ['ソラ'], status: '調整中' });
     await ok(G.admin, G.id, 'startPoll', { id: 'S003', dates: [T(5)] });
     const r = await ok(G.admin, G.id, 'bulkUpdateSessions', { ids: ['S002', 'S003'], action: 'status', value: '中止' });
-    expect(r.message).toBe('2 件の卓の状態を「中止」にしました: B、C');
+    expect(r.message).toBe('2件の卓の状態を「中止」にしました: B、C');
     expect(byId(r).S002).toMatchObject({ status: '中止', window: '', want: ['ソラ'], members: [] });
     expect(byId(r).S003).toMatchObject({ status: '中止', candidates: [], votes: {} });
     expect(await env.DB.prepare('SELECT count(*) AS n FROM poll_votes').first('n')).toBe(0);
@@ -66,31 +66,31 @@ describe('まとめての変更', () => {
     const r = await ok(G.admin, G.id, 'bulkUpdateSessions', { ids: ['S001', 'S002'], action: 'status', value: '調整中' });
     expect(byId(r).S001).toMatchObject({ status: '調整中', members: ['ソラ'], want: [] });
     expect(byId(r).S002).toMatchObject({ status: '調整中', members: ['ソラ'], want: [] });
-    expect(r.message).toBe('2 件の卓の状態を「調整中」にしました: A、B　参加希望の人を参加者に加えました: ソラ（B）');
+    expect(r.message).toBe('2件の卓の状態を「調整中」にしました: A、B　参加希望の人を参加者に加えました: ソラ（B）');
   });
 
   test('開催日を前にずらす。シリーズを外す', async () => {
     let r = await ok(G.admin, G.id, 'bulkUpdateSessions', { ids: ['S001'], action: 'shiftDays', value: '-1' });
-    expect(r.label).toBe('開催日を -1 日');
-    expect(r.message).toBe('1 件の卓の開催日を 1 日前にずらしました: A');
+    expect(r.label).toBe('開催日を-1日');
+    expect(r.message).toBe('1件の卓の開催日を1日前にずらしました: A');
     expect(byId(r).S001.date).toBe(T(2));
     await ok(G.admin, G.id, 'bulkUpdateSessions', { ids: ['S001', 'S002'], action: 'setSeries', value: '港' });
     r = await ok(G.admin, G.id, 'bulkUpdateSessions', { ids: ['S001', 'S002'], action: 'setSeries', value: '' });
     expect(r.label).toBe('シリーズを外す');
-    expect(r.message).toBe('2 件の卓のシリーズを外しました: A、B');
+    expect(r.message).toBe('2件の卓のシリーズを外しました: A、B');
     expect([byId(r).S001.series, byId(r).S002.series]).toEqual(['', '']);
   });
 
   test('削除と、管理者だけ', async () => {
     expect((await fail(G.sora, G.id, 'bulkUpdateSessions', { ids: ['S001'], action: 'delete' })).error).toMatch(/^ADMIN:/);
     const r = await ok(G.admin, G.id, 'bulkUpdateSessions', { ids: ['S001', 'S002'], action: 'delete' });
-    expect(r.message).toBe('2 件の卓を削除しました: A、B');
+    expect(r.message).toBe('2件の卓を削除しました: A、B');
     expect(r.data.sessions).toEqual([]);
   });
 });
 
 describe('メンバー', () => {
-  test('管理者は追加できる。区切り文字・予約語・同じ名前・数字でない Discord ID は断る', async () => {
+  test('管理者は追加できる。区切り文字・予約語・同じ名前・数字でないDiscord IDは断る', async () => {
     const r = await ok(G.admin, G.id, 'saveMember', { name: 'エマ', discordId: '<@987654321098765432>', note: '見学' });
     expect(r.data.members.find((m: any) => m.name === 'エマ')).toMatchObject({ discordId: '987654321098765432', note: '見学', linked: false });
     expect((await fail(G.admin, G.id, 'saveMember', { name: 'a、b' })).error).toContain('区切り文字');
@@ -99,7 +99,7 @@ describe('メンバー', () => {
     expect((await fail(G.admin, G.id, 'saveMember', { name: 'フラン', discordId: 'abc' })).error).toContain('数字だけ');
   });
 
-  test('名前を変えると、卓・回答・予定にもそのまま伝わる（中は ID で持つ）', async () => {
+  test('名前を変えると、卓・回答・予定にもそのまま伝わる（中はIDで持つ）', async () => {
     await ok(G.admin, G.id, 'saveSession', { name: '卓', gm: 'ソラ', members: ['こまち'], status: '調整中' });
     await ok(G.admin, G.id, 'startPoll', { id: 'S001', dates: [T(5)] });
     await ok(G.sora, G.id, 'setPollVote', { id: 'S001', ymd: T(5), name: 'ソラ', vote: '◯' });
@@ -111,7 +111,7 @@ describe('メンバー', () => {
     expect(r.data.avail[T(2)]).toEqual({ ソラ改: '×' });
   });
 
-  test('ログインした人は自分の名前と備考を直せる（Discord ID とほかの人は管理者だけ）', async () => {
+  test('ログインした人は自分の名前と備考を直せる（Discord IDとほかの人は管理者だけ）', async () => {
     const r = await ok(G.sora, G.id, 'saveMember', { oldName: 'ソラ', name: 'そら', discordId: '1234567890', note: 'よろしく' });
     expect(r.data.members.find((m: any) => m.name === 'そら')).toMatchObject({ discordId: '400000000000000011', note: 'よろしく', linked: true });
     expect((await fail(G.sora, G.id, 'saveMember', { oldName: 'こまち', name: 'x' })).status).toBe(403);
@@ -126,9 +126,9 @@ describe('メンバー', () => {
     expect(r.data.sessions[0].members).toEqual(['エマ']);
   });
 
-  test('管理者にする・外す。管理者が 1 人だけのときは外せない', async () => {
+  test('管理者にする・外す。管理者が1人だけのときは外せない', async () => {
     await env.DB.prepare("UPDATE members SET is_admin = 1 WHERE name = 'ひより'").run();
-    expect((await fail(G.admin, G.id, 'setAdmin', { name: 'ひより', admin: false })).error).toContain('1 人だけ');
+    expect((await fail(G.admin, G.id, 'setAdmin', { name: 'ひより', admin: false })).error).toContain('1人だけ');
     let r = await ok(G.admin, G.id, 'setAdmin', { name: 'ソラ', admin: true });
     expect(r.data.admins).toEqual(['ひより', 'ソラ']);
     r = await ok(G.admin, G.id, 'setAdmin', { name: 'ひより', admin: false });

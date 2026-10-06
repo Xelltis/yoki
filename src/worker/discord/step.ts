@@ -1,6 +1,6 @@
-// 画面から Discord へ 1 回だけ送る（GAS 版 sendDiscordStep）。待ちと送り直しは画面が回す。
+// 画面からDiscordへ1回だけ送る（GAS版sendDiscordStep）。待ちと送り直しは画面が回す。
 // form: { kind, attempt, to（送り先の番号）, id, verb, name, series, status, names, ids, label, channel, message }
-// 送り先が 2 か所あるとき（シリーズのチャンネルと基本のチャンネル）は、画面が to を 0, 1 と進めて 1 か所ずつ送る
+// 送り先が2か所あるとき（シリーズのチャンネルと基本のチャンネル）は、画面がtoを0, 1と進めて1か所ずつ送る
 import { ASK_MESSAGE_MAX, DATED, STATUS } from '../domain/constants';
 import { type Form, list, str } from '../domain/form';
 import { findSession } from '../domain/model';
@@ -81,7 +81,7 @@ export async function sendDiscordStep(ctx: Ctx, form: Form, io: { data: () => Pr
       const x = need((y) =>
         y.status !== STATUS.RECRUIT ? '「' + y.name + '」は募集中ではありません（' + y.status + '）。'
         : !y.interest.length ? '「' + y.name + '」に興味ありの人がいません。'
-        : message.length > ASK_MESSAGE_MAX ? '添える一言は ' + ASK_MESSAGE_MAX + ' 文字までです。'
+        : message.length > ASK_MESSAGE_MAX ? '添える一言は' + ASK_MESSAGE_MAX + '文字までです。'
         : null);
       payload = askPayload(ctx, x, me, message);
       label = '参加確認';
@@ -111,7 +111,7 @@ export async function sendDiscordStep(ctx: Ctx, form: Form, io: { data: () => Pr
       if (!names.length) throw badRequest('対象の卓がありません。');
       const ids = list(form.ids);
       const picked = ctx.sessions.filter((x) => ids.includes(x.id));
-      // 複数日をまとめて登録したときは、その回の GM と参加者をメンションする
+      // 複数日をまとめて登録したときは、その回のGMと参加者をメンションする
       const mentions = str(form.label) === '登録' && picked.length ? mentionsOf(ctx, picked) : '';
       payload = bulkPayload(str(form.label) || '変更', me, names, mentions);
       label = '一括変更';

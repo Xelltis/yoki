@@ -1,5 +1,5 @@
-// 運営の管理画面の「更新」: 版の比べ方・元のリポジトリの Release を読む（1 時間控える）・表の変更があるか・更新のワークフローを動かす・
-// 開発用の偽の GitHub・設定（リポジトリの名前）
+// 運営の管理画面の「更新」: 版の比べ方・元のリポジトリのReleaseを読む（1時間控える）・表の変更があるか・更新のワークフローを動かす・
+// 開発用の偽のGitHub・設定（リポジトリの名前）
 import { env } from 'cloudflare:test';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import type { AdminUpdate } from '../../src/shared/admin';
@@ -22,7 +22,7 @@ beforeEach(() => {
 });
 afterEach(() => vi.restoreAllMocks());
 
-/** GitHub の API の返事を差し替える。routes は「道の頭 → 返事」。呼ばれた道・方法・ヘッダー・本文を控える */
+/** GitHubのAPIの返事を差し替える。routesは「道の頭 → 返事」。呼ばれた道・方法・ヘッダー・本文を控える */
 function mockGitHub(routes: Record<string, () => Response>) {
   const calls: { url: string; method: string; auth: string; body: string }[] = [];
   vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
@@ -38,7 +38,7 @@ const release = (tag: string, extra: Record<string, unknown> = {}) => () => Resp
 const deps = (over: Partial<UpdateDeps> = {}): UpdateDeps => ({ api: realGitHub(), upstream: 'o/u', repo: 'me/yoki', token: 'tok', ...over });
 
 describe('版を比べる', () => {
-  test('頭の v はあってもなくてもよい。読めない版は比べない', () => {
+  test('頭のvはあってもなくてもよい。読めない版は比べない', () => {
     expect(parseVersion('v1.2.3')).toEqual([1, 2, 3]);
     expect(parseVersion(' 10.0.1 ')).toEqual([10, 0, 1]);
     expect(parseVersion('1.2')).toBeNull();
@@ -52,8 +52,8 @@ describe('版を比べる', () => {
   });
 });
 
-describe('新しい版を確かめる（本物の GitHub。fetch を差し替える）', () => {
-  test('新しい版があれば、変わったファイルから表の変更を調べる。1 時間は控えを使い、確かめ直すと読み直す', async () => {
+describe('新しい版を確かめる（本物のGitHub。fetchを差し替える）', () => {
+  test('新しい版があれば、変わったファイルから表の変更を調べる。1時間は控えを使い、確かめ直すと読み直す', async () => {
     const calls = mockGitHub({
       '/repos/o/u/releases/latest': release('v' + NEXT),
       '/repos/o/u/compare/': () => Response.json({ files: [{ filename: 'src/a.ts' }, { filename: 'migrations/0009_x.sql' }] }),
@@ -71,7 +71,7 @@ describe('新しい版を確かめる（本物の GitHub。fetch を差し替え
       { id: 6, status: 'in_progress', conclusion: '', createdAt: '2026-10-01T00:00:00Z', url: 'u' },
     ]);
     expect(calls.find((c) => c.url.includes('/compare/'))!.url).toContain('/compare/v' + APP_VERSION + '...v' + NEXT);
-    // Release は誰でも読めるので、トークンを付けない。実行の一覧はトークンで読む
+    // Releaseは誰でも読めるので、トークンを付けない。実行の一覧はトークンで読む
     expect(calls.find((c) => c.url.endsWith('/releases/latest'))!.auth).toBe('');
     expect(calls.find((c) => c.url.includes('/runs'))!.auth).toBe('Bearer tok');
     const n = calls.filter((c) => c.url.endsWith('/releases/latest')).length;
@@ -84,7 +84,7 @@ describe('新しい版を確かめる（本物の GitHub。fetch を差し替え
     expect(calls.some((c) => c.url.includes('/repos/o/other/releases/latest'))).toBe(true);
   });
 
-  test('Release がまだ無い・今と同じ版なら、新しい版は無い（表の変更は調べない）。トークンが無ければ実行は読まない', async () => {
+  test('Releaseがまだ無い・今と同じ版なら、新しい版は無い（表の変更は調べない）。トークンが無ければ実行は読まない', async () => {
     const calls = mockGitHub({});
     const none = await updateStatus(env.DB, deps({ token: '' }), new Date(), true);
     expect(none).toMatchObject({ latest: null, available: false, migrations: null, error: '', canDispatch: false, runs: [] });
@@ -102,7 +102,7 @@ describe('新しい版を確かめる（本物の GitHub。fetch を差し替え
     vi.restoreAllMocks();
     mockGitHub({ '/repos/o/u/releases/latest': () => new Response('x', { status: 500 }) });
     const broken = await updateStatus(env.DB, deps({ token: '' }), new Date(), true);
-    expect(broken).toMatchObject({ available: true, latest: { version: NEXT }, migrations: false, error: '新しい版を確かめられませんでした（GitHub が 500 を返しました）' });
+    expect(broken).toMatchObject({ available: true, latest: { version: NEXT }, migrations: false, error: '新しい版を確かめられませんでした（GitHubが500を返しました）' });
     vi.restoreAllMocks();
     // 控えが無いときに読めなければ、何も無い
     await env.DB.prepare("DELETE FROM meta WHERE key = 'update_check'").run();
@@ -118,12 +118,12 @@ describe('新しい版を確かめる（本物の GitHub。fetch を差し替え
     mockGitHub({ '/repos/o/u/releases/latest': release('v' + APP_VERSION), '/repos/me/yoki/actions/': () => new Response('no', { status: 403 }) });
     const u = await updateStatus(env.DB, deps(), new Date(), true);
     expect(u.runs).toEqual([]);
-    expect(u.error).toBe('更新の記録を読めませんでした（GitHub が 403 を返しました。トークンの権限と、リポジトリの名前を確かめてください）');
+    expect(u.error).toBe('更新の記録を読めませんでした（GitHubが403を返しました。トークンの権限と、リポジトリの名前を確かめてください）');
   });
 });
 
 describe('更新を始める', () => {
-  test('トークンが無ければ 400、新しい版が無ければ 409。GitHub が断れば 409', async () => {
+  test('トークンが無ければ400、新しい版が無ければ409。GitHubが断れば409', async () => {
     await expect(startUpdate(env.DB, deps({ token: '' }))).rejects.toMatchObject({ status: 400 });
     await expect(startUpdate(env.DB, deps({ repo: '' }))).rejects.toMatchObject({ status: 400 });
     mockGitHub({ '/repos/o/u/releases/latest': release('v' + APP_VERSION) });
@@ -132,10 +132,10 @@ describe('更新を始める', () => {
     vi.restoreAllMocks();
     mockGitHub({ '/repos/o/u/releases/latest': release('v' + NEXT), '/repos/me/yoki/actions/workflows/update.yml/dispatches': () => new Response('', { status: 422 }) });
     await updateStatus(env.DB, deps(), new Date(), true);
-    await expect(startUpdate(env.DB, deps())).rejects.toMatchObject({ status: 409, message: '更新を始められませんでした（GitHub が 422 を返しました）' });
+    await expect(startUpdate(env.DB, deps())).rejects.toMatchObject({ status: 409, message: '更新を始められませんでした（GitHubが422を返しました）' });
   });
 
-  test('最新の版で、更新のワークフローを main で動かす', async () => {
+  test('最新の版で、更新のワークフローをmainで動かす', async () => {
     const calls = mockGitHub({ '/repos/o/u/releases/latest': release('v' + NEXT), '/repos/me/yoki/actions/workflows/update.yml/dispatches': () => new Response(null, { status: 204 }) });
     expect(await startUpdate(env.DB, deps(), new Date())).toBe(NEXT);
     const d = calls.find((c) => c.url.endsWith('/dispatches'))!;
@@ -144,7 +144,7 @@ describe('更新を始める', () => {
   });
 });
 
-describe('運営者の API（/api/admin/update）と、開発用の偽の GitHub', () => {
+describe('運営者のAPI（/api/admin/update）と、開発用の偽のGitHub', () => {
   test('運営者だけが読め、動かせる', async () => {
     const { admin } = await setupGroup();
     expect((await call('/api/admin/update')).status).toBe(401);
@@ -152,14 +152,14 @@ describe('運営者の API（/api/admin/update）と、開発用の偽の GitHub
     expect((await postJson('/api/admin/update', {}, admin)).status).toBe(403);
   });
 
-  test('開発サーバーでは偽の GitHub で、次の版があり、表の変更を含む。更新を始めると記録に出て、log に控えが残る', async () => {
+  test('開発サーバーでは偽のGitHubで、次の版があり、表の変更を含む。更新を始めると記録に出て、logに控えが残る', async () => {
     const op = await loginAs(OP, []);
     const u = (await (await call('/api/admin/update', { sid: op })).json()) as AdminUpdate;
     expect(u).toMatchObject({ current: APP_VERSION, upstream: DEFAULT_UPSTREAM, available: true, migrations: true, repo: 'example/yoki', canDispatch: true, runs: [], latest: { version: NEXT } });
     expect(u.latest!.notes).toContain('### 足したこと・変えたこと');
     const res = await postJson('/api/admin/update', {}, op);
     expect(res.status).toBe(200);
-    expect(((await res.json()) as { message: string }).message).toBe('v' + NEXT + ' への更新を始めました。GitHub の Actions が取り込んで公開します（数分かかります）。');
+    expect(((await res.json()) as { message: string }).message).toBe('v' + NEXT + 'への更新を始めました。GitHubのActionsが取り込んで公開します（数分かかります）。');
     expect(logs.map((l) => JSON.parse(l))).toContainEqual({ audit: 'operator', by: OP.id, action: 'update', target: 'v' + NEXT, from: 'v' + APP_VERSION });
     const again = (await (await call('/api/admin/update?refresh=1', { sid: op })).json()) as AdminUpdate;
     expect(again.runs).toHaveLength(1);
@@ -167,13 +167,13 @@ describe('運営者の API（/api/admin/update）と、開発用の偽の GitHub
     expect(await fakeGitHub(env.DB).runs('', '', '')).toHaveLength(1);
   });
 
-  test('公開しているリポジトリが入っていれば本物の GitHub を使う。リポジトリの名前の形が違えば使わない', async () => {
+  test('公開しているリポジトリが入っていれば本物のGitHubを使う。リポジトリの名前の形が違えば使わない', async () => {
     const e = env as unknown as Bindings;
     expect(updateDeps({ ...e, APP_REPOSITORY: 'me/yoki', UPSTREAM_REPOSITORY: 'up/yoki', UPDATE_DISPATCH_TOKEN: 't' })).toMatchObject({ upstream: 'up/yoki', repo: 'me/yoki', token: 't' });
     expect(updateDeps({ ...e, APP_REPOSITORY: 'me/yoki' })).toMatchObject({ upstream: DEFAULT_UPSTREAM, token: '' });
     expect(updateDeps({ ...e, APP_REPOSITORY: 'bad name/x', UPSTREAM_REPOSITORY: '../x' })).toMatchObject({ upstream: DEFAULT_UPSTREAM, repo: '' });
     expect(updateDeps({ ...e, APP_REPOSITORY: 'me/..', UPSTREAM_REPOSITORY: 'up/.' })).toMatchObject({ upstream: DEFAULT_UPSTREAM, repo: '' });
-    // 本物の GitHub につないだ運営者の API（トークンが無ければ、ボタンでは始められない）
+    // 本物のGitHubにつないだ運営者のAPI（トークンが無ければ、ボタンでは始められない）
     mockGitHub({ ['/repos/' + DEFAULT_UPSTREAM + '/releases/latest']: release('v' + APP_VERSION) });
     const op = await loginAs(OP, []);
     const headers = { Cookie: SID + '=' + op, Origin: ORIGIN, 'Content-Type': 'application/json' };

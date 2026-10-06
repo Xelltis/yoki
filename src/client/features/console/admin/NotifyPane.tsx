@@ -17,13 +17,13 @@ import { useCall } from './useCall';
 const KW = { remind: { id: 'kwRemind', label: '開催前の知らせのチャンネル' }, recruit: { id: 'kwRecruit', label: '募集のチャンネル' } } as const;
 type Kind = keyof typeof KW;
 
-/** 開始の何分前か。5〜720 の整数だけ通す */
+/** 開始の何分前か。5〜720の整数だけ通す */
 function soonMin(v: string): { n: number; err: string } {
   const s = v.trim(), n = Number(s);
-  return !/^\d+$/.test(s) || n < 5 || n > 720 ? { n, err: '開始の何分前は 5〜720 の数で入れてください。' } : { n, err: '' };
+  return !/^\d+$/.test(s) || n < 5 || n > 720 ? { n, err: '開始の何分前は5〜720の数で入れてください。' } : { n, err: '' };
 }
 
-/** ON/OFF のつまみ。checkbox ではなく button[role=switch] で持つ。入れると水色になり、丸が右へ動く */
+/** ON/OFFのつまみ。checkboxではなくbutton[role=switch] で持つ。入れると水色になり、丸が右へ動く */
 function Switch({ id, on, label, busy, onClick }: { id: string; on: boolean; label: string; busy: boolean; onClick: () => void }) {
   return (
     <button type="button" id={id} role="switch" aria-checked={on} aria-label={label} disabled={busy} onClick={onClick}
@@ -67,16 +67,16 @@ export function NotifyPane() {
     void call(btn, 'ntMsg', 'saveConsoleSettings', form).then((r) => { if (r && after) after(); });
   };
   const bad = (t: string) => { setMsg('ntMsg', t); };
-  /** 基本の日時の例え。「9/26（土）の卓なら、9/25（金）の 20 時台に届きます」 */
+  /** 基本の日時の例え。「9/26（土）の卓なら、9/25（金）の20時台に届きます」 */
   const ex = addDaysYmd(d.today, 7);
-  const line = wn.err ? wn.err : '例: ' + fmtJa(ex) + 'の卓なら、' + fmtJa(addDaysYmd(ex, -wn.days)) + 'の ' + wn.hour + ' 時台に届きます。' + (st.setter ? '' : '（いまは送っていません。右のつまみで始められます）');
+  const line = wn.err ? wn.err : '例: ' + fmtJa(ex) + 'の卓なら、' + fmtJa(addDaysYmd(ex, -wn.days)) + 'の' + wn.hour + '時台に届きます。' + (st.setter ? '' : '（いまは送っていません。右のつまみで始められます）');
   const toggleRemind = () => {
     if (wn.err) { daysRef.current!.focus(); return; }
     if (st.setter) {
       askConfirm({ title: '開催前の知らせを止めますか？', message: '自動で送るのをやめます。あとからいつでも戻せます。', ok: '止める', danger: true }, () => save('ntRemind', { remind: false }));
       return;
     }
-    askConfirm({ title: '開催前の知らせを送りますか？', message: '開催日の' + whenText(wn.days, wn.hour) + 'に、卓の知らせを Discord に送ります。シリーズごとに日時を決めた卓は、その日時に送ります。', ok: '送る' },
+    askConfirm({ title: '開催前の知らせを送りますか？', message: '開催日の' + whenText(wn.days, wn.hour) + 'に、卓の知らせをDiscordに送ります。シリーズごとに日時を決めた卓は、その日時に送ります。', ok: '送る' },
       () => save('ntRemind', { remind: true, days: String(wn.days), hour: String(wn.hour) }, () => { setDays(null); setHour(null); }));
   };
   /* 日時は欄を離れたときに保存する。まだ送っていないなら、つまみを入れたときに一緒に送る */
@@ -89,7 +89,7 @@ export function NotifyPane() {
     if (m.err) { bad(m.err); soonRef.current!.focus(); return; }
     save('stSoon', { soon: !st.soon, soonMinutes: String(m.n) }, () => setSoon(null));
   };
-  /* 分を変えたら、ON のときだけその場で保存する（OFF なら ON にしたときに一緒に送る） */
+  /* 分を変えたら、ONのときだけその場で保存する（OFFならONにしたときに一緒に送る） */
   const blurSoon = () => {
     if (!st.soon || soon === null || soon.trim() === String(soonNow)) return;
     const m = soonMin(soonV);
@@ -99,7 +99,7 @@ export function NotifyPane() {
   // 送り先の札。種類ごとのチャンネルを決めていれば、そちらを出す
   const destR = d.remindChannelSet ? '開催前のチャンネル' : '基本のチャンネル', destC = d.recruitChannelSet ? '募集のチャンネル' : '基本のチャンネル';
   const sl = d.seriesNotify || [];
-  /** チャンネルをまだ決めていなければ、チャンネル（Bot を招く・基本のチャンネル）を表より先に開いて出す。開いたときだけ決める（保存しても動かさない） */
+  /** チャンネルをまだ決めていなければ、チャンネル（Botを招く・基本のチャンネル）を表より先に開いて出す。開いたときだけ決める（保存しても動かさない） */
   const [setupFirst] = useState(() => !d.channelSet);
   const channels = (
     <details className={foldCard} id="chFold" open={setupFirst}>
@@ -130,25 +130,25 @@ export function NotifyPane() {
             </thead>
             <tbody className="max-tab:block max-tab:w-full">
               <tr className={ntr + 'max-tab:border-b max-tab:border-line'}>
-                <td className={what(false)}><b className={whatTitle}>開催前の知らせ</b><span className={whatHint}>開催日が近づいた卓を、GM と参加者に</span></td>
+                <td className={what(false)}><b className={whatTitle}>開催前の知らせ</b><span className={whatHint}>開催日が近づいた卓を、GMと参加者に</span></td>
                 <td className={plain(false)}><span className={chip(!!d.remindChannelSet)} id="ntDestRemind">{destR}</span></td>
                 <td className={plain(false)}>開催日の <input type="text" className={num(!wn.dOk)} id="stDays" ref={daysRef} inputMode="numeric" maxLength={2} aria-label="何日前（0〜30）" value={daysV} onChange={(ev) => setDays(ev.target.value)} onBlur={blurWhen} /> 日前 <input type="text" className={num(!wn.hOk)} id="stHour" inputMode="numeric" maxLength={2} aria-label="何時台（0〜23）" value={hourV} onChange={(ev) => setHour(ev.target.value)} onBlur={blurWhen} /> 時台</td>
                 <td className={ntd(false) + ntdSw}><Switch id="ntRemind" on={!!st.setter} label="開催前の知らせを送る" busy={!!busy.ntRemind} onClick={toggleRemind} /></td>
               </tr>
               <tr className={ntr + 'max-tab:border-b max-tab:border-line'}>
-                <td className={what(false)}><b className={whatTitle}>期間前の催促</b><span className={whatHint}>募集中・調整中のまま、期間の前日になったら GM に</span></td>
+                <td className={what(false)}><b className={whatTitle}>期間前の催促</b><span className={whatHint}>募集中・調整中のまま、期間の前日になったらGMに</span></td>
                 <td className={plain(false)}><span className={chip(!!d.recruitChannelSet)} id="ntDestUrge">{destC}</span></td>
                 <td className={plain(false)}>期間の前日（開催前の知らせと同じ時刻）</td>
                 <td className={ntd(false) + ntdSw}><Switch id="stUrge" on={!!st.urge} label="期間前の催促を送る" busy={!!busy.stUrge} onClick={() => save('stUrge', { urge: !st.urge })} /></td>
               </tr>
               <tr className={ntr + 'max-tab:border-b max-tab:border-line'}>
-                <td className={what(false)}><b className={whatTitle}>開始直前の知らせ</b><span className={whatHint}>当日、開始の少し前に GM と参加者に</span></td>
+                <td className={what(false)}><b className={whatTitle}>開始直前の知らせ</b><span className={whatHint}>当日、開始の少し前にGMと参加者に</span></td>
                 <td className={plain(false)}><span className={chip(!!d.remindChannelSet)} id="ntDestSoon">{destR}</span></td>
                 <td className={plain(false)}>開始の <input type="text" className={num(false)} id="stSoonMin" ref={soonRef} inputMode="numeric" maxLength={3} aria-label="開始の何分前（5〜720）" value={soonV} onChange={(ev) => setSoon(ev.target.value)} onBlur={blurSoon} /> 分前</td>
                 <td className={ntd(false) + ntdSw}><Switch id="stSoon" on={!!st.soon} label="開始直前の知らせを送る" busy={!!busy.stSoon} onClick={toggleSoon} /></td>
               </tr>
               <tr className={ntr + 'max-tab:border-b max-tab:border-line'}>
-                <td className={what(false)}><b className={whatTitle}>登録・変更・削除</b><span className={whatHint}>保存のときに「Discord に知らせる」を付けたぶん</span></td>
+                <td className={what(false)}><b className={whatTitle}>登録・変更・削除</b><span className={whatHint}>保存のときに「Discordに知らせる」を付けたぶん</span></td>
                 <td className={plain(false)}><span className={chip(false)}>卓に合わせて自動</span></td>
                 <td className={plain(false)}>保存したとき</td>
                 <td className={ntd(false) + ntdSw}><Switch id="stNotifyOnSave" on={!!st.notifyOnSave} label="登録・変更・削除を知らせる" busy={!!busy.stNotifyOnSave} onClick={() => save('stNotifyOnSave', { notifyOnSave: !st.notifyOnSave })} /></td>
@@ -164,13 +164,13 @@ export function NotifyPane() {
         </div>
         <p className={'hint mt-6 mb-0' + (wn.err ? ' text-err-text' : '')} id="stWhenSay">{line}</p>
         <p className="hint" id="ntMsg">{msg.ntMsg || ''}</p>
-        <p className="hint">開催前の知らせは、0 日前なら当日、1 日前なら前日です。開始直前の知らせを ON にすると見回りが 5 分ごとになり、指定した時刻を過ぎた最初の見回りで届きます。送り先は下の「チャンネル」で決めます。</p>
+        <p className="hint">開催前の知らせは、0日前なら当日、1日前なら前日です。開始直前の知らせをONにすると見回りが5分ごとになり、指定した時刻を過ぎた最初の見回りで届きます。送り先は下の「チャンネル」で決めます。</p>
       </div>
 
       {!setupFirst && channels}
 
       <details className={foldCard} id="snFold">
-        <summary className={foldSummary}><Icon name="date_range" size="sm" />シリーズごとの上書き<span className="hint font-normal" id="snSum">{sl.length ? sl.length + ' 件' : 'なし'}</span></summary>
+        <summary className={foldSummary}><Icon name="date_range" size="sm" />シリーズごとの上書き<span className="hint font-normal" id="snSum">{sl.length ? sl.length + '件' : 'なし'}</span></summary>
         <div className={foldBody}>
           <SeriesNotify />
         </div>
@@ -179,24 +179,24 @@ export function NotifyPane() {
   );
 }
 
-/** 卓予定の Bot。サーバーにいるかと、招く・読み直す */
+/** 卓予定のBot。サーバーにいるかと、招く・読み直す */
 function BotCard() {
   const d = useData();
   const { sync } = useConsole();
   const ch = useChannels();
-  // 区分を開いたら、Bot とチャンネルの一覧を読む（まだなら）
+  // 区分を開いたら、Botとチャンネルの一覧を読む（まだなら）
   useEffect(() => { ensureChannels(sync); }, [sync, d.bot.ready]);
   const state = botStateText(d, ch);
   return (
     <div className={foldInner(true)} id="botCard">
-      <h3>卓予定の Bot</h3>
-      <p className="hint">知らせは、卓予定の Bot がチャンネルに書き込みます。はじめに、このグループの Discord サーバーに Bot を招きます（サーバーの管理の権限が要ります）。</p>
+      <h3>卓予定のBot</h3>
+      <p className="hint">知らせは、卓予定のBotがチャンネルに書き込みます。はじめに、このグループのDiscordサーバーにBotを招きます（サーバーの管理の権限が要ります）。</p>
       <p className={'hint' + (state.bad ? ' text-err-text' : '')} id="botState">{state.text}</p>
       <div className="btns">
-        <a className="btn primary" id="botInvite" href={d.bot.inviteUrl || '#'} target="_blank" rel="noopener" hidden={!d.bot.inviteUrl}><Icon name="add" size="sm" />Bot をサーバーに招く</a>
+        <a className="btn primary" id="botInvite" href={d.bot.inviteUrl || '#'} target="_blank" rel="noopener" hidden={!d.bot.inviteUrl}><Icon name="add" size="sm" />Botをサーバーに招く</a>
         <button type="button" className="btn" id="botReload" disabled={ch.loading || !d.bot.ready} onClick={() => loadChannels(sync)}><Icon name="refresh" size="sm" />読み直す</button>
       </div>
-      <p className="hint">Bot には「チャンネルを見る」「メッセージを送信」「埋め込みリンク」の権限が付きます。限られた人だけが見られるチャンネルに送るときは、そのチャンネルの権限で Bot を許可してください。</p>
+      <p className="hint">Botには「チャンネルを見る」「メッセージを送信」「埋め込みリンク」の権限が付きます。限られた人だけが見られるチャンネルに送るときは、そのチャンネルの権限でBotを許可してください。</p>
     </div>
   );
 }
@@ -227,7 +227,7 @@ function BaseChannel() {
     if (v === cur) { setMsg('stChannelMsg', 'いまと同じです。'); return; }
     const go = () => { void call('stChannelSave', 'stChannelMsg', 'saveConsoleSettings', { channelId: v }).then((r) => { if (r) setPick(null); }); };
     if (v) go();
-    else askConfirm({ title: '基本のチャンネルを外しますか？', message: '種類ごとやシリーズ専用のチャンネルを決めていない知らせは、Discord に送られなくなります。', ok: '外す', danger: true }, go);
+    else askConfirm({ title: '基本のチャンネルを外しますか？', message: '種類ごとやシリーズ専用のチャンネルを決めていない知らせは、Discordに送られなくなります。', ok: '外す', danger: true }, go);
   };
   return (
     <div className={foldInner(false)}>
@@ -238,14 +238,14 @@ function BaseChannel() {
       <div className="btns">
         {/* 選び直すまでは押せない */}
         <button type="button" className="btn primary" id="stChannelSave" disabled={!canPick(ch) || !!busy.stChannelSave || v === cur} onClick={saveIt}>保存</button>
-        <button type="button" className="btn" id="stTest" disabled={!d.channelSet || testing} onClick={() => test({ kind: 'test' }, 'Discord に届きました')}>接続テスト</button>
+        <button type="button" className="btn" id="stTest" disabled={!d.channelSet || testing} onClick={() => test({ kind: 'test' }, 'Discordに届きました')}>接続テスト</button>
         <span className="hint" id="stChannelMsg">{msg.stChannelMsg || ''}</span>
       </div>
     </div>
   );
 }
 
-/** 種類ごとのチャンネル 1 つ（開催前の知らせ・募集） */
+/** 種類ごとのチャンネル1つ（開催前の知らせ・募集） */
 function KindChannel({ kind, label, note, first }: { kind: Kind; label: string; note: string; first?: boolean }) {
   const d = useData();
   const { busy, msg, setMsg, call } = useCall();

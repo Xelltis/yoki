@@ -1,5 +1,5 @@
 // 利用規約とプライバシーポリシー（/terms・/privacy）。運営者が運営の管理画面で、運営者の名前・問い合わせ先・本文を直す。
-// 印は meta の legal_operator・legal_contact と、直した本文の legal_terms・legal_privacy（{"text","at"} の JSON）。
+// 印はmetaのlegal_operator・legal_contactと、直した本文のlegal_terms・legal_privacy（{"text","at"}のJSON）。
 // 本文の行が無ければ、既定の文（legal-text.ts）を出す。空か既定の文と同じにして保存すると、行を消して既定の文に戻す
 import { type AdminLegal, LEGAL_KINDS, LEGAL_MAX, LEGAL_TITLES, type LegalKind } from '../../shared/admin';
 import { badRequest } from '../lib/errors';
@@ -34,14 +34,14 @@ export async function saveLegal(db: D1Database, form: Form, now: Date): Promise<
   for (const [key, label] of [['operator', '運営者の名前'], ['contact', '問い合わせ先']] as const) {
     if (form[key] === undefined) continue;
     const v = str(form[key]);
-    if (v.length > LEGAL_MAX[key]) throw badRequest(label + 'は ' + LEGAL_MAX[key] + ' 文字までです。');
+    if (v.length > LEGAL_MAX[key]) throw badRequest(label + 'は' + LEGAL_MAX[key] + '文字までです。');
     stmts.push(v ? db.prepare(upsert).bind('legal_' + key, v) : db.prepare('DELETE FROM meta WHERE key = ?').bind('legal_' + key));
   }
   for (const k of LEGAL_KINDS) {
     if (form[k] === undefined) continue;
     // 空なら既定の文
     const text = normText(form[k]) || DEFAULT_LEGAL[k];
-    if (text.length > LEGAL_MAX.text) throw badRequest(LEGAL_TITLES[k] + 'は ' + LEGAL_MAX.text + ' 文字までです。');
+    if (text.length > LEGAL_MAX.text) throw badRequest(LEGAL_TITLES[k] + 'は' + LEGAL_MAX.text + '文字までです。');
     if (text === cur[k].text) continue;
     changed.push(k);
     stmts.push(

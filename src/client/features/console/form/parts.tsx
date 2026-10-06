@@ -7,14 +7,14 @@ import { canNotify, type Fields, type Msg, notifyHint } from './model';
 
 type Props = { f: Fields; set: (patch: Partial<Fields>) => void };
 
-/** シリーズと、シリーズの最終日。onPick は、欄を離れたときに名前が変わっていたら呼ぶ */
+/** シリーズと、シリーズの最終日。onPickは、欄を離れたときに名前が変わっていたら呼ぶ */
 export function SeriesRow({ f, set, hint, onPick }: Props & { hint: string; onPick?: (name: string) => void }) {
   const atFocus = useRef('');
   return (
     <div className="row" id="seriesRow">
       <div>
         <label htmlFor="series">シリーズ <small>{hint}</small></label>
-        <input type="text" id="series" list="seriesList" placeholder="例: 鉄鳴界の夜明け（1 日で終わる卓なら空のまま）" value={f.series}
+        <input type="text" id="series" list="seriesList" placeholder="例: 鉄鳴界の夜明け（1日で終わる卓なら空のまま）" value={f.series}
           onChange={(ev) => set({ series: ev.target.value })}
           onFocus={(ev) => { atFocus.current = ev.target.value; }}
           onBlur={(ev) => { const name = ev.target.value.trim(); if (onPick && name && ev.target.value !== atFocus.current) onPick(name); }} />
@@ -27,7 +27,7 @@ export function SeriesRow({ f, set, hint, onPick }: Props & { hint: string; onPi
   );
 }
 
-/** 卓の名前（右に置く欄があれば children） */
+/** 卓の名前（右に置く欄があればchildren） */
 export function NameRow({ f, set, children }: Props & { children?: ReactNode }) {
   return (
     <div className="row">
@@ -71,7 +71,7 @@ export function WindowRow({ f, set }: Props) {
   );
 }
 
-/** GM と参加者（募集の卓は、参加者を決めないので出さない） */
+/** GMと参加者（募集の卓は、参加者を決めないので出さない） */
 export function PeopleFields({ f, set }: Props) {
   const d = useData();
   return (
@@ -106,7 +106,7 @@ export function PlaceMemo({ f, set }: Props) {
   );
 }
 
-/** Discord に知らせる（送り先が無ければ押せない） */
+/** Discordに知らせる（送り先が無ければ押せない） */
 export function NotifyCheck({ f, set, label }: Props & { label: string }) {
   const d = useData();
   return (

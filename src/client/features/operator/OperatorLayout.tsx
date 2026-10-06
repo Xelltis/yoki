@@ -1,4 +1,4 @@
-// 運営者の管理画面（/admin/<区分>/）の外枠。上の帯・左の区分（e2e は #opNav の data-set を押す）・区分の中身・窓・吹き出し。
+// 運営者の管理画面（/admin/<区分>/）の外枠。上の帯・左の区分（e2eは #opNavのdata-setを押す）・区分の中身・窓・吹き出し。
 // すべてのグループと利用者を見渡し、困ったときに手を入れる。グループの中身（卓・予定）は見ない
 import { useQueryClient } from '@tanstack/react-query';
 import { Link, Outlet, useNavigate, useRouterState } from '@tanstack/react-router';

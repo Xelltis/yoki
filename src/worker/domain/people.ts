@@ -1,4 +1,4 @@
-// 名前とメンバーの変換。中ではメンバーを ID で持ち、メンバーに無い人（ゲスト）は名前だけで持つ。画面とのやり取りは名前
+// 名前とメンバーの変換。中ではメンバーをIDで持ち、メンバーに無い人（ゲスト）は名前だけで持つ。画面とのやり取りは名前
 import type { Ctx, Role, Session } from './types';
 
 export type PersonRef = { member_id: number | null; guest_name: string | null };
@@ -28,7 +28,7 @@ const INSERT_FROM_JSON = (sessionSql: string, jsonParam: string) =>
    SELECT ${sessionSql}, json_extract(value, '$.role'), json_extract(value, '$.pos'), json_extract(value, '$.member_id'), json_extract(value, '$.guest_name')
      FROM json_each(${jsonParam})`;
 
-/** いくつかの卓の関わる人を、まとめて書き直す（卓の数によらず 2 文） */
+/** いくつかの卓の関わる人を、まとめて書き直す（卓の数によらず2文） */
 export function replacePeople(ctx: Ctx, changes: { rowId: number; people: People }[]): D1PreparedStatement[] {
   if (!changes.length) return [];
   const all = changes.flatMap((c) => rows(ctx, c.rowId, c.people));
@@ -38,7 +38,7 @@ export function replacePeople(ctx: Ctx, changes: { rowId: number; people: People
   ];
 }
 
-/** 新しく入れる卓（まだ id が分からない）の関わる人。グループと番号で卓を引く */
+/** 新しく入れる卓（まだidが分からない）の関わる人。グループと番号で卓を引く */
 export function insertPeopleForSeq(ctx: Ctx, seq: number, people: People): D1PreparedStatement {
   return ctx.db
     .prepare(INSERT_FROM_JSON('(SELECT id FROM sessions WHERE group_id = ?1 AND seq = ?2)', '?3'))

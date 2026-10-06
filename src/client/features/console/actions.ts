@@ -5,7 +5,7 @@ import type { ConsoleUi, FormReq } from './context';
 
 let seq = 0;
 
-/** 卓の登録の窓を開く（req.id があれば、その卓の変更の窓） */
+/** 卓の登録の窓を開く（req.idがあれば、その卓の変更の窓） */
 export function openForm(ui: Store<ConsoleUi>, req: FormReq = {}): void {
   ui.set((s) => ({ ...s, form: { seq: ++seq, req } }));
 }

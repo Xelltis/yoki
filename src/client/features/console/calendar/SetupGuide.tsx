@@ -1,5 +1,5 @@
-// はじめの 3 ステップ。仲間が入って卓ができるまで、カレンダーの上に出す。閉じたら次からも出さない（ヘルプのメニューから、いつでも出し直せる）。
-// 1. 仲間を招く（URL を Discord に貼る） 2. 卓を登録する 3. Discord に知らせる（無くても使えるので「任意」。管理者がする）
+// はじめの3ステップ。仲間が入って卓ができるまで、カレンダーの上に出す。閉じたら次からも出さない（ヘルプのメニューから、いつでも出し直せる）。
+// 1. 仲間を招く（URLをDiscordに貼る）2. 卓を登録する3. Discordに知らせる（無くても使えるので「任意」。管理者がする）
 import { useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
 import type { ConsoleData } from '../../../../shared/api';
@@ -29,11 +29,11 @@ function Step({ n, state, title, optional = false, text, children }: { n: number
   );
 }
 
-/** グループの URL を写す。写せない端末では、URL を吹き出しに出す */
+/** グループのURLを写す。写せない端末では、URLを吹き出しに出す */
 function copyUrl(url: string): void {
   void navigator.clipboard.writeText(url).then(
-    () => toast('グループの URL を写しました。Discord のチャンネルに貼ってください'),
-    () => toast('写せませんでした。この URL を貼ってください: ' + url),
+    () => toast('グループのURLを写しました。Discordのチャンネルに貼ってください'),
+    () => toast('写せませんでした。このURLを貼ってください: ' + url),
   );
 }
 
@@ -53,25 +53,25 @@ export function SetupGuide({ d }: { d: ConsoleData }) {
   return (
     <div className="card border-accent-line" id="setupGuide" ref={ref} tabIndex={guideFocus ? -1 : undefined}>
       <h3 className="flex items-center gap-6">
-        <Icon name="flag" size="sm" />はじめの 3 ステップ
-        <button type="button" className="btn icon ml-auto" data-go="close" aria-label="はじめの 3 ステップを閉じる" title="閉じる（ヘルプのメニューから、また出せます）" onClick={() => closeGuide(ui, groupId)}><Icon name="close" /></button>
+        <Icon name="flag" size="sm" />はじめの3ステップ
+        <button type="button" className="btn icon ml-auto" data-go="close" aria-label="はじめの3ステップを閉じる" title="閉じる（ヘルプのメニューから、また出せます）" onClick={() => closeGuide(ui, groupId)}><Icon name="close" /></button>
       </h3>
       <ol className="m-0 grid list-none grid-cols-3 gap-x-24 gap-y-16 p-0 max-md:grid-cols-[minmax(0,1fr)]">
-        <Step n={1} state={state(0)} title="仲間を招く" text="グループの URL を、Discord サーバーのチャンネルに貼ります。開いてログインした人は、自動でメンバーになります（入れるのは、サーバーにいる人だけ）。">
-          {others > 0 && <span className="hint mr-6">{'あなたのほかに ' + others + ' 人がいます'}</span>}
+        <Step n={1} state={state(0)} title="仲間を招く" text="グループのURLを、Discordサーバーのチャンネルに貼ります。開いてログインした人は、自動でメンバーになります（入れるのは、サーバーにいる人だけ）。">
+          {others > 0 && <span className="hint mr-6">{'あなたのほかに' + others + '人がいます'}</span>}
           <div className="btns mt-2 gap-6">
-            <button type="button" className={'btn ' + (others > 0 ? 'small' : 'primary')} data-go="copy" onClick={() => copyUrl(d.appUrl)}><Icon name="link" size="sm" />URL を写す</button>
-            {d.isAdmin && <button type="button" className="btn small" data-go="members" title="まだ開いていない人を、名前と Discord の ID で先に足す" onClick={() => goPane('members')}>メンバーを先に足す</button>}
+            <button type="button" className={'btn ' + (others > 0 ? 'small' : 'primary')} data-go="copy" onClick={() => copyUrl(d.appUrl)}><Icon name="link" size="sm" />URLを写す</button>
+            {d.isAdmin && <button type="button" className="btn small" data-go="members" title="まだ開いていない人を、名前とDiscordのIDで先に足す" onClick={() => goPane('members')}>メンバーを先に足す</button>}
           </div>
         </Step>
         <Step n={2} state={state(1)} title="卓を登録する" text="カレンダーで日を選んで「卓を登録」を押します。日が決まっていなければ、「募集を始める」か「日程調整を始める」から。">
-          {nActive > 0 && <span className="hint mr-6">{nActive + ' 件の卓があります'}</span>}
+          {nActive > 0 && <span className="hint mr-6">{nActive + '件の卓があります'}</span>}
           <button type="button" className={'btn mt-2 ' + (nActive > 0 ? 'small' : now === 1 ? 'primary' : '')} data-go="new" onClick={() => openForm(ui, { date: selDay || undefined })}><Icon name="add" size="sm" />卓を登録</button>
         </Step>
-        <Step n={3} state={state(2)} title="Discord に知らせる" optional text="卓予定の Bot を Discord サーバーに招き、知らせのチャンネルを選ぶと、卓の案内と開催前の知らせが届きます。無くても使えます。">
+        <Step n={3} state={state(2)} title="Discordに知らせる" optional text="卓予定のBotをDiscordサーバーに招き、知らせのチャンネルを選ぶと、卓の案内と開催前の知らせが届きます。無くても使えます。">
           {hasDiscord && <span className="hint mr-6">設定してあります</span>}
           {d.isAdmin
-            ? <button type="button" className={'btn mt-2 ' + (hasDiscord ? 'small' : now === 2 ? 'primary' : '')} data-go="discord" onClick={() => goPane('notify')}><Icon name="notifications" size="sm" />{hasDiscord ? '開く' : 'Discord を設定'}</button>
+            ? <button type="button" className={'btn mt-2 ' + (hasDiscord ? 'small' : now === 2 ? 'primary' : '')} data-go="discord" onClick={() => goPane('notify')}><Icon name="notifications" size="sm" />{hasDiscord ? '開く' : 'Discordを設定'}</button>
             : !hasDiscord && <span className="hint">管理者が、管理画面の「知らせ」で設定します</span>}
         </Step>
       </ol>

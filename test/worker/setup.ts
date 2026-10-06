@@ -1,4 +1,4 @@
-// テストの前に、ローカルの D1 にマイグレーションを当てる。テストごとに表を空にする（テストどうしが混ざらないように）
+// テストの前に、ローカルのD1にマイグレーションを当てる。テストごとに表を空にする（テストどうしが混ざらないように）
 import { applyD1Migrations, env } from 'cloudflare:test';
 import { beforeEach } from 'vitest';
 

@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 
 /**
  * 管理画面の左の区分と中身（グループの管理画面・運営の管理画面）。狭い画面では区分を上に横に並べる。
- * 区分のボタンは e2e が data-set で押す
+ * 区分のボタンはe2eがdata-setで押す
  */
 export function SetLayout({ nav, label, id, children }: { nav: ReactNode; label: string; id: string; children: ReactNode }) {
   return (

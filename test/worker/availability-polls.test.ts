@@ -43,34 +43,34 @@ describe('予定', () => {
     const r = await ok(G.sora, G.id, 'setAvailabilityBulk', { name: 'ソラ', from: T(0), to: T(20), weekdays: [wd], mark: '×', keep: true });
     // T(0)・T(7)・T(14) が同じ曜日。T(7) は卓、T(14) は入力済み
     expect(r).toMatchObject({ count: 1, skippedBooked: 1, skippedKeep: 1 });
-    expect(r.message).toBe('ソラ の 1 日に「×」を入れました。（卓の日 1 日、入力済み 1 日は飛ばしました）');
+    expect(r.message).toBe('ソラの1日に「×」を入れました。（卓のある日を1日、入力済みの日を1日飛ばしました）');
     expect(r.data.avail[T(0)]).toEqual({ ソラ: '×' });
   });
 
   test('まとめて: 曜日を省くと毎日。同じ印のマスは数えない。空欄にすると消える', async () => {
     await ok(G.sora, G.id, 'setAvailability', { name: 'ソラ', ymd: T(1), mark: '△' });
     let r = await ok(G.sora, G.id, 'setAvailabilityBulk', { name: 'ソラ', from: T(0), to: T(2), mark: '△' });
-    expect(r).toMatchObject({ count: 2, skippedBooked: 0, skippedKeep: 0, message: 'ソラ の 2 日に「△」を入れました。' });
+    expect(r).toMatchObject({ count: 2, skippedBooked: 0, skippedKeep: 0, message: 'ソラの2日に「△」を入れました。' });
     expect([T(0), T(1), T(2), T(3)].map((d) => r.data.avail[d])).toEqual([{ ソラ: '△' }, { ソラ: '△' }, { ソラ: '△' }, undefined]);
     // もう一度入れても、書くマスが無い
     r = await ok(G.sora, G.id, 'setAvailabilityBulk', { name: 'ソラ', from: T(0), to: T(2), mark: '△' });
-    expect(r).toMatchObject({ count: 0, message: 'ソラ の 0 日に「△」を入れました。' });
+    expect(r).toMatchObject({ count: 0, message: 'ソラの0日に「△」を入れました。' });
     r = await ok(G.sora, G.id, 'setAvailabilityBulk', { name: 'ソラ', from: T(1), to: T(2), mark: '' });
-    expect(r.message).toBe('ソラ の 2 日に「空欄」を入れました。');
+    expect(r.message).toBe('ソラの2日に「空欄」を入れました。');
     expect([T(0), T(1), T(2)].map((d) => r.data.avail[d])).toEqual([{ ソラ: '△' }, undefined, undefined]);
   });
 
   test('予定のメモは、空にすると消える', async () => {
-    await ok(G.sora, G.id, 'setAvailNote', { name: 'ソラ', ymd: T(8), text: '21 時から' });
+    await ok(G.sora, G.id, 'setAvailNote', { name: 'ソラ', ymd: T(8), text: '21時から' });
     const r = await ok(G.sora, G.id, 'setAvailNote', { name: 'ソラ', ymd: T(8), text: '' });
-    expect(r.message).toBe(fmtDateJa(T(8)) + ' ソラ のメモを消しました。');
+    expect(r.message).toBe(fmtDateJa(T(8)) + ' ソラのメモを消しました。');
     expect(r.data.availNotes[T(8)]).toBeUndefined();
   });
 
-  test('予定のメモ（200 文字まで）と日付メモ（500 文字まで）', async () => {
-    let r = await ok(G.sora, G.id, 'setAvailNote', { name: 'ソラ', ymd: T(8), text: '21 時から' });
-    expect(r.data.availNotes[T(8)].ソラ.text).toBe('21 時から');
-    expect((await fail(G.sora, G.id, 'setAvailNote', { name: 'ソラ', ymd: T(8), text: 'あ'.repeat(201) })).error).toContain('200 文字');
+  test('予定のメモ（200文字まで）と日付メモ（500文字まで）', async () => {
+    let r = await ok(G.sora, G.id, 'setAvailNote', { name: 'ソラ', ymd: T(8), text: '21時から' });
+    expect(r.data.availNotes[T(8)].ソラ.text).toBe('21時から');
+    expect((await fail(G.sora, G.id, 'setAvailNote', { name: 'ソラ', ymd: T(8), text: 'あ'.repeat(201) })).error).toContain('200文字');
     r = await ok(G.komachi, G.id, 'setDayNote', { ymd: T(5), text: '合宿' });
     expect(r.data.notes[T(5)]).toMatchObject({ text: '合宿', by: 'こまち' });
     r = await ok(G.komachi, G.id, 'setDayNote', { ymd: T(5), text: '' });
@@ -86,7 +86,7 @@ describe('日程調整', () => {
   });
   const posts: string[] = [];
   const urls: string[] = [];
-  /** Bot の送信を差し替える。送った文と送り先を残す */
+  /** Botの送信を差し替える。送った文と送り先を残す */
   const mockBot = () => {
     posts.length = 0;
     urls.length = 0;
@@ -97,14 +97,14 @@ describe('日程調整', () => {
     });
   };
 
-  test('始めると、出した人（GM か参加者）の候補日に ◯ が付く。過ぎた日や 21 日以上は断る', async () => {
+  test('始めると、出した人（GMか参加者）の候補日に ◯ が付く。過ぎた日や21日以上は断る', async () => {
     const r = await ok(G.admin, G.id, 'startPoll', { id: 'S001', dates: [T(6), T(5), T(5)], start: '20', end: '23:00' });
     expect(r.dates).toEqual([T(5), T(6)]);
     const s = r.data.sessions[0];
     expect(s).toMatchObject({ candidates: [T(5), T(6)], start: '20:00', end: '23:00' });
     expect(s.votes).toEqual({ [T(5)]: { ひより: '◯' }, [T(6)]: { ひより: '◯' } });
     expect((await fail(G.admin, G.id, 'startPoll', { id: 'S001', dates: [T(-1)] })).error).toContain('過ぎた日');
-    expect((await fail(G.admin, G.id, 'startPoll', { id: 'S001', dates: Array.from({ length: 21 }, (_, i) => T(i + 1)) })).error).toContain('20 日まで');
+    expect((await fail(G.admin, G.id, 'startPoll', { id: 'S001', dates: Array.from({ length: 21 }, (_, i) => T(i + 1)) })).error).toContain('20日まで');
   });
 
   test('選び直すと、外した日の回答だけ消える', async () => {
@@ -114,14 +114,14 @@ describe('日程調整', () => {
     expect(r.data.sessions[0].votes).toEqual({ [T(5)]: { ひより: '◯', ソラ: '×' }, [T(7)]: { ひより: '◯' } });
   });
 
-  test('全員の回答がそろったら、サーバーが GM に 1 回だけ知らせる。取り消してそろい直せば、また知らせる', async () => {
+  test('全員の回答がそろったら、サーバーがGMに1回だけ知らせる。取り消してそろい直せば、また知らせる', async () => {
     await ok(G.admin, G.id, 'startPoll', { id: 'S001', dates: [T(5), T(6)] });
     mockBot();
     let r = await ok(G.sora, G.id, 'setPollVote', { id: 'S001', ymd: T(5), name: 'ソラ', vote: '◯' });
     expect(r.ready).toBe(false);
     r = await ok(G.sora, G.id, 'setPollVote', { id: 'S001', ymd: T(6), name: 'ソラ', vote: '×' });
     expect(r).toMatchObject({ ready: true, notified: true });
-    expect(r.message).toContain('全員の回答がそろいました。　GM への知らせを Discord に送りました。');
+    expect(r.message).toContain('全員の回答がそろいました。　GMへの知らせをDiscordに送りました。');
     expect(posts).toHaveLength(1);
     expect(urls).toEqual(['https://discord.com/api/v10/channels/' + CH + '/messages']);
     expect(posts[0]).toContain('「迷宮」の日程調整の回答がそろいました。');
@@ -135,17 +135,17 @@ describe('日程調整', () => {
     expect(posts).toHaveLength(2);
   });
 
-  test('回答できるのは GM と参加者だけ。候補日でない日は断る', async () => {
+  test('回答できるのはGMと参加者だけ。候補日でない日は断る', async () => {
     await ok(G.admin, G.id, 'startPoll', { id: 'S001', dates: [T(5)] });
-    expect((await fail(G.komachi, G.id, 'setPollVote', { id: 'S001', ymd: T(5), name: 'こまち', vote: '◯' })).error).toContain('GM でも参加者でもない');
+    expect((await fail(G.komachi, G.id, 'setPollVote', { id: 'S001', ymd: T(5), name: 'こまち', vote: '◯' })).error).toContain('GMでも参加者でもない');
     expect((await fail(G.sora, G.id, 'setPollVote', { id: 'S001', ymd: T(9), name: 'ソラ', vote: '◯' })).error).toContain('候補日ではありません');
   });
 
-  test('開催日を決められるのは GM か管理者。決めると「開催」になり、日程が決まった知らせが届く', async () => {
+  test('開催日を決められるのはGMか管理者。決めると「開催」になり、日程が決まった知らせが届く', async () => {
     await ok(G.admin, G.id, 'startPoll', { id: 'S001', dates: [T(5), T(6)] });
     await ok(G.admin, G.id, 'saveMember', { oldName: 'ひより', name: 'ひより' });
     await env.DB.prepare("UPDATE members SET is_admin = 0").run();
-    expect((await fail(G.sora, G.id, 'decidePoll', { id: 'S001', ymd: T(5) })).error).toBe('ADMIN: GM のほかが開催日を決めることができるのは管理者だけです。');
+    expect((await fail(G.sora, G.id, 'decidePoll', { id: 'S001', ymd: T(5) })).error).toBe('ADMIN: GMのほかが開催日を決めることができるのは管理者だけです。');
     mockBot();
     const r = await ok(G.admin, G.id, 'decidePoll', { id: 'S001', ymd: T(6) });
     expect(r.data.sessions[0]).toMatchObject({ status: '開催', date: T(6), candidates: [], votes: {}, window: '' });
@@ -154,7 +154,7 @@ describe('日程調整', () => {
     expect(r.data.log.some((l: any) => l.kind === '日程決定')).toBe(true);
   });
 
-  test('回答は本人だけ。ゲストと Discord の無いメンバーは、管理者も代わりに入れられず、「そろった」にも数えない', async () => {
+  test('回答は本人だけ。ゲストとDiscordの無いメンバーは、管理者も代わりに入れられず、「そろった」にも数えない', async () => {
     await ok(G.admin, G.id, 'saveMember', { name: 'エマ' });
     await ok(G.admin, G.id, 'saveSession', { id: 'S001', name: '迷宮', gm: 'ひより', members: ['ソラ', 'エマ'], extra: 'ゲスト太郎', status: '調整中' });
     await ok(G.admin, G.id, 'startPoll', { id: 'S001', dates: [T(5)] });
@@ -184,17 +184,17 @@ describe('日程調整', () => {
     await ok(G.admin, G.id, 'startPoll', { id: 'S001', dates: [T(5)] });
     mockBot();
     const r = await ok(G.sora, G.id, 'setPollVoteAll', { id: 'S001', name: 'ソラ', vote: '◯' });
-    expect(r).toMatchObject({ ready: true, notified: null, message: 'ソラ: 候補日 1 日すべてに ◯ を付けました（どの日でもいい）　全員の回答がそろいました。' });
+    expect(r).toMatchObject({ ready: true, notified: null, message: 'ソラ: 候補日1日すべてに ◯ を付けました（どの日でもいい）　全員の回答がそろいました。' });
     expect(posts).toHaveLength(0);
     expect(await env.DB.prepare('SELECT poll_ready_at FROM sessions').first('poll_ready_at')).not.toBeNull();
   });
 
-  test('GM への知らせが届かなければ、そろいの印を外す（画面から送り直せるように）', async () => {
+  test('GMへの知らせが届かなければ、そろいの印を外す（画面から送り直せるように）', async () => {
     await ok(G.admin, G.id, 'startPoll', { id: 'S001', dates: [T(5)] });
     vi.spyOn(globalThis, 'fetch').mockImplementation(async () => Response.json({ message: 'Unknown Channel', code: 10003 }, { status: 404 }));
     const r = await ok(G.sora, G.id, 'setPollVote', { id: 'S001', ymd: T(5), name: 'ソラ', vote: '◯' });
     expect(r).toMatchObject({ ready: true, notified: false });
-    expect(r.message).toBe(fmtDateJa(T(5)) + ' ソラ: ◯　全員の回答がそろいました。　GM への知らせを Discord に送れませんでした。');
+    expect(r.message).toBe(fmtDateJa(T(5)) + ' ソラ: ◯　全員の回答がそろいました。　GMへの知らせをDiscordに送れませんでした。');
     expect(await env.DB.prepare('SELECT poll_ready_at FROM sessions').first('poll_ready_at')).toBeNull();
     expect(r.data.log[0]).toMatchObject({ kind: '回答そろい', target: '迷宮' });
     expect(r.data.log[0].result).toContain('送信失敗（チャンネル）');

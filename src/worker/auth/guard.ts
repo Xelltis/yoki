@@ -1,6 +1,6 @@
 // グループに入れるかの確認と、「あなた」（メンバー）を決める。
-// 入れるのは、グループに結びつけた Discord サーバーにいる人。参加しているサーバーはログインのときに控え、
-// 控えが古ければ（SNAPSHOT_HOURS）、Bot がそのサーバーにいれば Bot に、いなければ Discord に黙って聞き直す（/auth/login は prompt=none）
+// 入れるのは、グループに結びつけたDiscordサーバーにいる人。参加しているサーバーはログインのときに控え、
+// 控えが古ければ（SNAPSHOT_HOURS）、BotがそのサーバーにいればBotに、いなければDiscordに黙って聞き直す（/auth/loginはprompt=none）
 import { guildMembership } from '../discord/member';
 import type { Viewer } from './session';
 import { memberNameFrom } from '../lib/text';
@@ -12,7 +12,7 @@ export const RECHECK_MINUTES = 5;
 export type GroupRef = { id: string; guildId: string; guildName: string; title: string };
 export type Actor = { memberId: number; name: string; isAdmin: boolean; userId: string };
 
-/** 人ではなく、見回りや購読 URL が読むときの「あなた」（メンバーではない） */
+/** 人ではなく、見回りや購読URLが読むときの「あなた」（メンバーではない） */
 export const SYSTEM_ACTOR: Actor = { memberId: 0, name: '', isAdmin: true, userId: '' };
 
 export type Access =
@@ -24,10 +24,10 @@ export function snapshotAgeMs(viewer: Viewer, now: Date): number {
 }
 
 /**
- * グループに入れるか。bot は知らせの Bot のトークン（無ければ undefined か空）。
- * サーバーの一覧の控え（ログインのときに読む）か、Bot で確かめた日時（サーバーごと）が SNAPSHOT_HOURS より新しければ、控えで決める。
- * 古い・控えにサーバーが無いときは、Bot がそのサーバーにいれば Bot に聞く（Discord のログインの画面へ送らずに済む。Google でログインした人のため）。
- * Bot で分からなければ、今までどおり Discord に聞き直す（recheck）
+ * グループに入れるか。botは知らせのBotのトークン（無ければundefinedか空）。
+ * サーバーの一覧の控え（ログインのときに読む）か、Botで確かめた日時（サーバーごと）がSNAPSHOT_HOURSより新しければ、控えで決める。
+ * 古い・控えにサーバーが無いときは、BotがそのサーバーにいればBotに聞く（Discordのログインの画面へ送らずに済む。Googleでログインした人のため）。
+ * Botで分からなければ、今までどおりDiscordに聞き直す（recheck）
  */
 export async function groupAccess(db: D1Database, viewer: Viewer | null, groupId: string, bot: string | undefined, now = new Date()): Promise<Access> {
   const g = await db
@@ -73,8 +73,8 @@ export async function groupAccess(db: D1Database, viewer: Viewer | null, groupId
 type MemberRow = { id: number; name: string; is_admin: number };
 
 /**
- * ログインした人に結びつくメンバーを返す。無ければ、管理者が Discord ID 付きで先に登録していた行に結びつけ、
- * それも無ければ Discord の表示名で新しく作る（同じ名前があれば「 (2)」を付ける）
+ * ログインした人に結びつくメンバーを返す。無ければ、管理者がDiscord ID付きで先に登録していた行に結びつけ、
+ * それも無ければDiscordの表示名で新しく作る（同じ名前があれば「 (2)」を付ける）
  */
 export async function resolveMember(db: D1Database, groupId: string, viewer: Viewer, canManage: boolean, now: Date): Promise<Actor> {
   const byUser = () =>
@@ -99,7 +99,7 @@ export async function resolveMember(db: D1Database, groupId: string, viewer: Vie
           .bind(groupId, name, viewer.id, viewer.id, now.toISOString())
           .first<MemberRow>();
       } catch {
-        // 同じ人の最初の 2 つの呼び出しが重なった（user_id の一意に当たった）。先に作られた行を使う
+        // 同じ人の最初の2つの呼び出しが重なった（user_idの一意に当たった）。先に作られた行を使う
         m = await byUser();
       }
     }

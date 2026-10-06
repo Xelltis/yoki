@@ -1,5 +1,5 @@
-// 吹き出し。項目ごとの説明（data-tip を持つ「？」）と、予定のメモ（data-memo を持つマス）。
-// 1 つずつの吹き出しを使い回し、置き場所は押した要素のそばに合わせる（画面の外にはみ出さない）
+// 吹き出し。項目ごとの説明（data-tipを持つ「？」）と、予定のメモ（data-memoを持つマス）。
+// 1つずつの吹き出しを使い回し、置き場所は押した要素のそばに合わせる（画面の外にはみ出さない）
 import { useEffect, useRef } from 'react';
 
 const closestOf = <T extends HTMLElement = HTMLElement>(ev: Event, sel: string): T | null => {
@@ -34,7 +34,7 @@ export function TipLayer() {
     // 押したときは出すだけ（触って開く端末では、載せたのと同時に押されるため）
     const onClick = (ev: MouseEvent) => { const b = closestOf(ev, '.tip[data-tip]'); if (b) { ev.preventDefault(); show(b); return; } hide(); };
     const onKey = (ev: KeyboardEvent) => { if (ev.key === 'Escape') hide(); };
-    /* メモの吹き出し。data-memo を持つ要素にマウスを載せると、そのそばに出る */
+    /* メモの吹き出し。data-memoを持つ要素にマウスを載せると、そのそばに出る */
     const showMemo = (el: HTMLElement) => {
       pop.textContent = el.dataset.memo || ''; pop.hidden = false;
       const r = el.getBoundingClientRect(), pw = pop.offsetWidth, ph = pop.offsetHeight;

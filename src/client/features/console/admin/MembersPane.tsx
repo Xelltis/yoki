@@ -49,7 +49,7 @@ export function MembersPane() {
   const remove = () => {
     const name = sel; if (!name) return;
     const inUse = act.filter((s) => peopleOf(s).indexOf(name) >= 0).length;
-    askConfirm({ title: 'メンバーから外しますか？', message: '「' + name + '」をメンバーから外します。' + (inUse ? '\n参加中の卓 ' + inUse + ' 件には名前が残ります（「メンバーの予定」タブに注意が出ます）。' : ''), ok: '外す', danger: true }, () => {
+    askConfirm({ title: 'メンバーから外しますか？', message: '「' + name + '」をメンバーから外します。' + (inUse ? '\n参加中の卓' + inUse + '件には名前が残ります（「メンバーの予定」タブに注意が出ます）。' : ''), ok: '外す', danger: true }, () => {
       setBusy(true); setMsg({ text: '保存しています…', err: false });
       sync.write<RpcResult>('deleteMember', { name }).then((res) => after(res, ''), (e: Error) => { setBusy(false); setMsg({ text: e.message, err: true }); });
     });
@@ -57,7 +57,7 @@ export function MembersPane() {
   const edit = (patch: Partial<Fields>) => setDraft({ ...f, ...patch });
   return (
     <div data-pane="members">
-      <p className="hint">ここに入れた名前が、卓の参加者の候補と「メンバーの予定」の列になります。Discord でログインして開いた人は、自動でメンバーになります。</p>
+      <p className="hint">ここに入れた名前が、卓の参加者の候補と「メンバーの予定」の列になります。Discordでログインして開いた人は、自動でメンバーになります。</p>
       <form id="mf" className="card" onSubmit={(ev) => { ev.preventDefault(); save(); }}>
         <label htmlFor="mpick">編集するメンバー <small>新しく足すなら「（新規追加）」のまま</small></label>
         <select className={field} id="mpick" value={m ? m.name : ''} onChange={(ev) => pick(ev.target.value)}>
@@ -67,13 +67,13 @@ export function MembersPane() {
         <div className="row">
           <div><label htmlFor="mname">名前 <small>必須。卓の参加者名と同じ表記に</small></label><input type="text" className={field} id="mname" required value={f.name} onChange={(ev) => edit({ name: ev.target.value })} /></div>
           <div>
-            <label htmlFor="mdiscord">Discord ユーザーID <small>任意。数字だけ</small></label>
-            {/* ログインした人の Discord ID は、ログインから自動で入る */}
-            <input type="text" className={field} id="mdiscord" inputMode="numeric" placeholder="123456789012345678" readOnly={!!(m && m.linked)} title={m && m.linked ? 'ログインした人の Discord ID は、自動で入ります' : ''} value={f.discordId} onChange={(ev) => edit({ discordId: ev.target.value })} />
+            <label htmlFor="mdiscord">DiscordユーザーID <small>任意。数字だけ</small></label>
+            {/* ログインした人のDiscord IDは、ログインから自動で入る */}
+            <input type="text" className={field} id="mdiscord" inputMode="numeric" placeholder="123456789012345678" readOnly={!!(m && m.linked)} title={m && m.linked ? 'ログインした人のDiscord IDは、自動で入ります' : ''} value={f.discordId} onChange={(ev) => edit({ discordId: ev.target.value })} />
           </div>
         </div>
         <label htmlFor="mnote">備考</label><input type="text" className={field} id="mnote" value={f.note} onChange={(ev) => edit({ note: ev.target.value })} />
-        <p className="hint">Discord のユーザーID は、ユーザー設定 → 詳細設定 → 開発者モードを ON にしてから、名前を右クリック →「ユーザーIDをコピー」。入れておくと開催前の知らせなどでメンションされます。</p>
+        <p className="hint">DiscordのユーザーIDは、ユーザー設定 → 詳細設定 → 開発者モードをONにしてから、名前を右クリック →「ユーザーIDをコピー」。入れておくと開催前の知らせなどでメンションされます。</p>
         <div className="btns">
           {/* いる人を直すときは、変えるまで押せない */}
           <button type="submit" className="btn primary" id="msave" disabled={busy || (!!m && !draft)}>{m ? '更新' : '追加'}</button>
@@ -85,14 +85,14 @@ export function MembersPane() {
       <div className="wrap">
         <table id="memberTable" ref={tableRef}>
           <tbody>
-            <tr><th>名前</th><th>Discord ユーザーID</th><th>備考</th><th className="c">参加</th><th className="c">GM</th></tr>
+            <tr><th>名前</th><th>DiscordユーザーID</th><th>備考</th><th className="c">参加</th><th className="c">GM</th></tr>
             {d.members.map((x) => {
               const part = act.filter((s) => s.members.indexOf(x.name) >= 0 && s.gm !== x.name).length, gm = act.filter((s) => s.gm === x.name).length;
               return (
                 // いまフォームで直している人の行は、色を付ける
                 <tr className={'click' + (x.name === sel ? ' checked' : '')} aria-selected={x.name === sel} data-name={x.name} key={x.name}>
-                  <td><b>{x.name}</b>{x.linked && <>{' '}<span className="hint inline-block whitespace-nowrap" title="Discord でログインしたことがある"><Icon name="check" size="xs" />ログイン済み</span></>}</td>
-                  <td>{x.discordId ? <>{x.discordId}{x.idOk === false && <>{' '}<span className="hint text-err-text" title="Discord のユーザーID は 17〜20 桁の数字です"><Icon name="warning" size="xs" /> 桁がおかしい</span></>}</> : <span className="hint">（未設定）</span>}</td>
+                  <td><b>{x.name}</b>{x.linked && <>{' '}<span className="hint inline-block whitespace-nowrap" title="Discordでログインしたことがある"><Icon name="check" size="xs" />ログイン済み</span></>}</td>
+                  <td>{x.discordId ? <>{x.discordId}{x.idOk === false && <>{' '}<span className="hint text-err-text" title="DiscordのユーザーIDは17〜20桁の数字です"><Icon name="warning" size="xs" /> 桁がおかしい</span></>}</> : <span className="hint">（未設定）</span>}</td>
                   <td className="min-w-[8em]">{x.note}</td><td className="c">{part}</td><td className="c">{gm}</td>
                 </tr>
               );

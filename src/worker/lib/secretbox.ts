@@ -1,5 +1,5 @@
-// 秘密の値を D1 に置くための暗号化（AES-GCM、Web Crypto）。鍵は Worker の secret（32 バイトを base64 にしたもの）。
-// 書く形は v1.<IV>.<暗号文>（どちらも base64url）。鍵が違う・中身が書き換わっていれば、読むときに失敗する
+// 秘密の値をD1に置くための暗号化（AES-GCM、Web Crypto）。鍵はWorkerのsecret（32バイトをbase64にしたもの）。
+// 書く形はv1.<IV>.<暗号文>（どちらもbase64url）。鍵が違う・中身が書き換わっていれば、読むときに失敗する
 
 const b64urlEncode = (bytes: Uint8Array) => btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 
@@ -9,10 +9,10 @@ function b64Decode(s: string): Uint8Array {
   return Uint8Array.from(bin, (c) => c.charCodeAt(0));
 }
 
-/** 鍵を読む。32 バイトでなければ投げる（設定の誤りに早く気づけるように） */
+/** 鍵を読む。32バイトでなければ投げる（設定の誤りに早く気づけるように） */
 export async function importKey(base64: string): Promise<CryptoKey> {
   const raw = b64Decode(base64.trim());
-  if (raw.length !== 32) throw new Error('鍵は 32 バイトを base64 にしたものにしてください（' + raw.length + ' バイトでした）');
+  if (raw.length !== 32) throw new Error('鍵は32バイトをbase64にしたものにしてください（' + raw.length + 'バイトでした）');
   return crypto.subtle.importKey('raw', raw, 'AES-GCM', false, ['encrypt', 'decrypt']);
 }
 

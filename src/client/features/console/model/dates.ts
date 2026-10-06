@@ -1,9 +1,9 @@
-// 日付（YYYY-MM-DD の文字列）。画面は見る人の手元の暦で扱う（サーバーが日本時間の今日を d.today で渡す）
+// 日付（YYYY-MM-DDの文字列）。画面は見る人の手元の暦で扱う（サーバーが日本時間の今日をd.todayで渡す）
 
 export const WD = ['日', '月', '火', '水', '木', '金', '土'];
 
 export function pad(n: number): string { return ('0' + n).slice(-2); }
-/** 月は 0 から（Date と同じ） */
+/** 月は0から（Dateと同じ） */
 export function ymdOf(y: number, m: number, d: number): string { return y + '-' + pad(m + 1) + '-' + pad(d); }
 export function parseYmd(s: string): Date { const p = s.split('-'); return new Date(+p[0]!, +p[1]! - 1, +p[2]!); }
 export function addDaysYmd(s: string, n: number): string { const d = parseYmd(s); d.setDate(d.getDate() + n); return ymdOf(d.getFullYear(), d.getMonth(), d.getDate()); }
@@ -14,10 +14,10 @@ export function fmtJa(s: string): string { const d = parseYmd(s); return (d.getM
 export function timeRange(s: { start: string; end: string }): string { if (!s.start && !s.end) return '時間未定'; return (s.start || '？') + '〜' + (s.end || ''); }
 /** 期間の見出し。10/3（土）〜10/17（土） */
 export function winLabel(from: string, to: string): string { return from && to ? fmtJa(from) + '〜' + fmtJa(to) : ''; }
-/** 2026/10/03（土） 21:16 → 21:16 */
+/** 2026/10/03（土）21:16 → 21:16 */
 export function hhmm(t: string): string { return String(t || '').slice(11, 16); }
 
-/* 日本の祝日。振替休日と国民の休日を含む。春分・秋分は 1980〜2099 年の近似式 */
+/* 日本の祝日。振替休日と国民の休日を含む。春分・秋分は1980〜2099年の近似式 */
 const HOLIDAYS: Record<number, Record<string, string>> = {};
 export function jpHolidays(year: number): Record<string, string> {
   if (HOLIDAYS[year]) return HOLIDAYS[year];

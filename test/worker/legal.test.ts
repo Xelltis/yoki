@@ -1,4 +1,4 @@
-// 利用規約とプライバシーポリシー: 本文の書き方（lib/markup.ts）、/terms・/privacy のページ、運営者の API（/api/admin/legal）
+// 利用規約とプライバシーポリシー: 本文の書き方（lib/markup.ts）、/terms・/privacyのページ、運営者のAPI（/api/admin/legal）
 import { env } from 'cloudflare:test';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import type { AdminLegal } from '../../src/shared/admin';
@@ -14,12 +14,12 @@ describe('本文の書き方', () => {
     expect(renderDoc('- あ\n* い\n1. う\n2) え')).toBe('<ul><li>あ</li><li>い</li></ul>\n<ol><li>う</li><li>え</li></ol>');
     // 段落のすぐ後の箇条書き、箇条書きのすぐ後の段落は、分ける
     expect(renderDoc('前置き\n- 項目\nあとがき')).toBe('<p>前置き</p>\n<ul><li>項目</li></ul>\n<p>あとがき</p>');
-    // 印のあとに空白が無ければ、ただの文。改行は \r\n でも \r でもよい
+    // 印のあとに空白が無ければ、ただの文。改行は \r\nでも \rでもよい
     expect(renderDoc('-ではない\r\n#でもない\r  前後の空白は除く  ')).toBe('<p>-ではない<br>#でもない<br>前後の空白は除く</p>');
     expect(renderDoc('')).toBe('');
   });
 
-  test('HTML は使えない（文字で出す）', () => {
+  test('HTMLは使えない（文字で出す）', () => {
     expect(renderDoc('<script>alert("x")</script> & \'')).toBe('<p>&lt;script&gt;alert(&quot;x&quot;)&lt;/script&gt; &amp; &#39;</p>');
     expect(renderDoc('## <b>太</b>')).toBe('<h2>&lt;b&gt;太&lt;/b&gt;</h2>');
   });
@@ -30,17 +30,17 @@ describe('本文の書き方', () => {
     expect(inline('https://example.com/contact。こちらへ')).toBe('<a href="https://example.com/contact">https://example.com/contact</a>。こちらへ');
     expect(inline('見て https://example.com/x. 次')).toBe('見て <a href="https://example.com/x">https://example.com/x</a>. 次');
     expect(inline('連絡は op.yoki+web@mail.example.jp まで')).toBe('連絡は <a href="mailto:op.yoki+web@mail.example.jp">op.yoki+web@mail.example.jp</a> まで');
-    // 使えない URL（javascript: や // で始まるもの）は、リンクにしない
+    // 使えないURL（javascript: や // で始まるもの）は、リンクにしない
     expect(inline('[x](javascript:alert(1))')).toBe('[x](javascript:alert(1))');
     expect(inline('[x](//evil.example)')).toBe('[x](//evil.example)');
     expect(inline('リンクなし')).toBe('リンクなし');
   });
 
-  test('既定の文は、見出しと箇条書きのある HTML になる', () => {
+  test('既定の文は、見出しと箇条書きのあるHTMLになる', () => {
     const terms = renderDoc(DEFAULT_LEGAL.terms);
     expect(terms).toContain('<h2>1. 本サービス</h2>');
     expect(terms).toContain('<a href="/privacy">プライバシーポリシー</a>');
-    expect(renderDoc(DEFAULT_LEGAL.privacy)).toContain('<h3>Discord から受け取るもの</h3>');
+    expect(renderDoc(DEFAULT_LEGAL.privacy)).toContain('<h3>Discordから受け取るもの</h3>');
   });
 });
 
@@ -88,7 +88,7 @@ describe('ページ', () => {
   });
 });
 
-describe('運営者の API', () => {
+describe('運営者のAPI', () => {
   test('はじめは既定の文で、運営者と問い合わせ先は空', async () => {
     const d = await getLegal();
     expect(d).toEqual({
@@ -131,16 +131,16 @@ describe('運営者の API', () => {
     expect(d).toMatchObject({ operator: '', contact: '', terms: { custom: false, updatedAt: DEFAULT_LEGAL_DATE }, privacy: { custom: false } });
     expect(await metaKeys()).toEqual([]);
     expect(JSON.parse(logs.at(-1)!).changed).toEqual(['terms', 'privacy']);
-    // null も空と同じ
+    // nullも空と同じ
     await save({ privacy: 'C' });
     await save({ privacy: null });
     expect((await getLegal()).privacy.custom).toBe(false);
   });
 
   test('長すぎるものは断り、何も変えない', async () => {
-    expect((await save({ operator: 'あ'.repeat(101) })).body.error).toBe('運営者の名前は 100 文字までです。');
-    expect((await save({ operator: '運営', contact: 'x'.repeat(301) })).body.error).toBe('問い合わせ先は 300 文字までです。');
-    expect((await save({ operator: '運営', privacy: 'あ'.repeat(20001) })).body.error).toBe('プライバシーポリシーは 20000 文字までです。');
+    expect((await save({ operator: 'あ'.repeat(101) })).body.error).toBe('運営者の名前は100文字までです。');
+    expect((await save({ operator: '運営', contact: 'x'.repeat(301) })).body.error).toBe('問い合わせ先は300文字までです。');
+    expect((await save({ operator: '運営', privacy: 'あ'.repeat(20001) })).body.error).toBe('プライバシーポリシーは20000文字までです。');
     expect((await save({ terms: 'あ'.repeat(20000) })).status).toBe(200);
     expect(await metaKeys()).toEqual(['legal_terms']);
   });

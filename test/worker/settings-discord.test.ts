@@ -1,4 +1,4 @@
-// 設定（§18・39・41・44）と、画面から 1 回ずつ送る Discord（§7・16・25・26・27・32・42）
+// 設定（§18・39・41・44）と、画面から1回ずつ送るDiscord（§7・16・25・26・27・32・42）
 import { env } from 'cloudflare:test';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { addDays } from '../../src/worker/lib/jst';
@@ -17,8 +17,8 @@ const CH = (n: number) => '12345678901234567' + n;
 const NAMES: Record<string, string> = { [CH(1)]: '卓の知らせ', [CH(2)]: '募集', [CH(3)]: '鉄鳴界' };
 
 /**
- * Discord の API（Bot）の返事を差し替える。チャンネルを読むと、このグループのサーバーのテキストチャンネルとして返す。
- * メッセージを送ると codes を順に返し、尽きたら 200。送った先・Authorization・本文を記録する
+ * DiscordのAPI（Bot）の返事を差し替える。チャンネルを読むと、このグループのサーバーのテキストチャンネルとして返す。
+ * メッセージを送るとcodesを順に返し、尽きたら200。送った先・Authorization・本文を記録する
  */
 function mockBot(codes: number[] = []) {
   const posts: { channel: string; auth: string | null; content: string; mentions: unknown }[] = [];
@@ -35,9 +35,9 @@ function mockBot(codes: number[] = []) {
 }
 
 describe('設定', () => {
-  test('基本のチャンネルは、ID の形で、Bot が見られるものだけ。画面にはチャンネルの ID と Bot の様子を渡す', async () => {
+  test('基本のチャンネルは、IDの形で、Botが見られるものだけ。画面にはチャンネルのIDとBotの様子を渡す', async () => {
     mockBot();
-    expect((await fail(G.admin, G.id, 'saveConsoleSettings', { channelId: 'https://discord.com/api/webhooks/1/x' })).error).toBe('チャンネルの ID が正しくありません。');
+    expect((await fail(G.admin, G.id, 'saveConsoleSettings', { channelId: 'https://discord.com/api/webhooks/1/x' })).error).toBe('チャンネルのIDが正しくありません。');
     let r = await ok(G.admin, G.id, 'getConsoleData');
     expect(r).toMatchObject({ channelSet: false, settings: { channelId: '' } });
     expect(r.bot).toEqual({ ready: true, inviteUrl: 'https://discord.com/oauth2/authorize?client_id=test-client&scope=bot&permissions=19456&guild_id=guild-t&disable_guild_select=true' });
@@ -49,9 +49,9 @@ describe('設定', () => {
 
   test('開催前の知らせの日時・有効にする・ほかの値。範囲の外は断る', async () => {
     let r = await ok(G.admin, G.id, 'saveConsoleSettings', { days: '2', hour: '9' });
-    expect(r.message).toBe('保存しました: 開催前の知らせ 2 日前の 9 時台');
+    expect(r.message).toBe('保存しました: 開催前の知らせを2日前の9時台に');
     r = await ok(G.admin, G.id, 'saveConsoleSettings', { remind: true });
-    expect(r.message).toBe('開催前の知らせを有効にしました。開催日の2 日前の 9 時台に送ります（シリーズで変えた卓はその日時）。');
+    expect(r.message).toBe('開催前の知らせを有効にしました。開催日の2日前の9時台に送ります（シリーズで変えた卓はその日時）。');
     expect(r.data.settings).toMatchObject({ remind: true, notifyDays: 2, notifyHour: 9 });
     expect(r.data.notifySetter).toMatch(/^ひより \/ /);
     r = await ok(G.admin, G.id, 'saveConsoleSettings', { soon: true, soonMinutes: '45', calMonths: '3', availDays: '90', autoFinish: false, urge: false });
@@ -68,7 +68,7 @@ describe('設定', () => {
     expect(r.message).toBe('保存しました: 募集のチャンネルを「#募集」に');
     expect(r.data).toMatchObject({ channelSet: false, remindChannelSet: false, recruitChannelSet: true, settings: { remindChannelId: '', recruitChannelId: CH(2) } });
     r = await ok(G.admin, G.id, 'saveSeriesNotify', { series: '鉄鳴界', channelId: CH(3), alsoBase: false, days: '0', hour: '' });
-    expect(r.message).toBe('「鉄鳴界」の通知を保存しました: 専用のチャンネルへ、開催日の当日の 20 時台に送ります。');
+    expect(r.message).toBe('「鉄鳴界」の通知を保存しました: 専用のチャンネルへ、開催日の当日の20時台に送ります。');
     expect(r.data.seriesNotify).toEqual([{ series: '鉄鳴界', channelId: CH(3), alsoBase: false, days: 0, hour: null }]);
     r = await ok(G.admin, G.id, 'saveSeriesNotify', { series: '鉄鳴界', remove: true });
     expect(r.data.seriesNotify).toEqual([]);
@@ -82,14 +82,14 @@ describe('設定', () => {
 });
 
 describe('sendDiscordStep', () => {
-  /** 送り先のチャンネルを選んだあと、Discord の返事を codes にする */
+  /** 送り先のチャンネルを選んだあと、Discordの返事をcodesにする */
   async function withChannels(codes: number[] = []) {
     const posts = mockBot(codes);
     await ok(G.admin, G.id, 'saveConsoleSettings', { channelId: CH(1), kindChannel: { kind: 'recruit', channelId: CH(2) } });
     return posts;
   }
 
-  test('接続テストは基本のチャンネルへ、卓予定の Bot で送る。送信記録に残る', async () => {
+  test('接続テストは基本のチャンネルへ、卓予定のBotで送る。送信記録に残る', async () => {
     const posts = await withChannels();
     const r = await ok(G.sora, G.id, 'sendDiscordStep', { kind: 'test', attempt: 1 });
     expect(r).toMatchObject({ ok: true, code: 200, to: 0, targetCount: 1, targetLabel: '基本のチャンネル' });
@@ -98,17 +98,17 @@ describe('sendDiscordStep', () => {
     expect(d.log[0]).toMatchObject({ kind: '接続テスト', target: '-', result: 'OK (200)' });
   });
 
-  test('429 は送り直してよい。待つ時間は Retry-After（retry_after）を見る。3 回目で打ち止め', async () => {
+  test('429は送り直してよい。待つ時間はRetry-After（retry_after）を見る。3回目で打ち止め', async () => {
     await withChannels([429, 429, 429]);
     const r1 = await ok(G.sora, G.id, 'sendDiscordStep', { kind: 'test', attempt: 1 });
     expect(r1).toMatchObject({ ok: false, code: 429, retryable: true, waitMs: 3000, attempt: 1, maxTries: 3 });
-    expect(r1.reason.label).toBe('Discord 側の制限');
+    expect(r1.reason.label).toBe('Discord側の制限');
     const r3 = await ok(G.sora, G.id, 'sendDiscordStep', { kind: 'test', attempt: 3 });
     expect(r3).toMatchObject({ ok: false, retryable: false, waitMs: 0 });
     expect(r3.result).toContain('打ち止め');
   });
 
-  test('登録の知らせは GM と参加者をメンションし、募集中の卓は募集のチャンネルへ送る', async () => {
+  test('登録の知らせはGMと参加者をメンションし、募集中の卓は募集のチャンネルへ送る', async () => {
     await ok(G.admin, G.id, 'saveSession', { name: '港', gm: 'ひより', members: ['ソラ'], date: T(3), status: '開催' });
     await ok(G.admin, G.id, 'saveSession', { name: '古城', gm: 'こまち', status: '募集' });
     const posts = await withChannels();
@@ -160,7 +160,7 @@ describe('sendDiscordStep', () => {
 });
 
 describe('権限', () => {
-  test('管理者だけの操作は、ただのメンバーには ADMIN: で断る', async () => {
+  test('管理者だけの操作は、ただのメンバーにはADMIN: で断る', async () => {
     for (const fn of ['deleteSession', 'bulkUpdateSessions', 'deleteMember', 'setAdmin', 'saveConsoleSettings', 'saveSeriesNotify', 'renameGroup', 'getDiscordChannels']) {
       const r = await fail(G.sora, G.id, fn, {});
       expect(r.status, fn).toBe(403);
@@ -168,11 +168,11 @@ describe('権限', () => {
     }
   });
 
-  test('知らない操作は 404。ほかのグループには入れない', async () => {
+  test('知らない操作は404。ほかのグループには入れない', async () => {
     expect((await fail(G.sora, G.id, 'login', {})).status).toBe(404);
     const other = await setupGroup('other');
     await env.DB.prepare("UPDATE groups SET guild_id = 'elsewhere' WHERE id = 'other'").run();
-    // Bot はそのサーバーにいない（控えで決める）
+    // Botはそのサーバーにいない（控えで決める）
     const bot = mockBotGuilds();
     expect((await fail(other.sora, 'other', 'getConsoleData')).status).toBe(403);
     bot.restore();

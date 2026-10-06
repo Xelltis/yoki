@@ -26,7 +26,7 @@ const afKey = (k: string, mine: string) => 'av' + k + ':' + (mine || '-');
 /** まとめて入れるの入力（タブを移っても残す） */
 const bulkStore = createStore({ mark: '△', from: '', to: '', wds: ALL_WDS, keep: true });
 
-/** 絞り込み・まとめて入れるの枠（名前と欄を 2 列に並べる。狭い画面では 1 列） */
+/** 絞り込み・まとめて入れるの枠（名前と欄を2列に並べる。狭い画面では1列） */
 const pgrid = 'grid grid-cols-[max-content_minmax(0,1fr)] items-center gap-x-16 gap-y-10 max-sm:grid-cols-[minmax(0,1fr)] max-sm:gap-4';
 const plabel = 'm-0 text-12 font-semibold text-muted max-sm:mt-6';
 const pctl = 'flex min-w-0 flex-wrap items-center gap-6';
@@ -68,7 +68,7 @@ export function AvailTab() {
   const ff: AvailFilter = { ...f, target };
   const names = visibleNames(d, ff, mine, sortByLoad), rows = availRows(d, ff, names);
   const filtering = !!(f.from || f.to || f.members || f.wds.length < 7 || f.cond || targetNames(d, ff) || activeNames(d, ff) || f.hol || f.free || f.mineOnly);
-  const summary = filtering ? '絞り込み中: ' + rows.length + ' 日' + (f.members || targetNames(d, ff) || activeNames(d, ff) || f.mineOnly ? '・' + names.length + ' 人' : '') + (f.cond ? '・' + COND_TEXT[f.cond] : '') : '';
+  const summary = filtering ? '絞り込み中: ' + rows.length + '日' + (f.members || targetNames(d, ff) || activeNames(d, ff) || f.mineOnly ? '・' + names.length + '人' : '') + (f.cond ? '・' + COND_TEXT[f.cond] : '') : '';
   const bulkFrom = bulk.from || d.today, bulkTo = bulk.to || d.availDays[d.availDays.length - 1] || '';
   const hotRec = sortSessions(active(d).filter(isRecruit)), hotAdj = sortSessions(active(d).filter(isAdjusting));
 
@@ -130,7 +130,7 @@ export function AvailTab() {
     if (!form.from || !form.to) { setBulkMsg({ text: '期間を入れてください。', running: false }); return; }
     if (!form.weekdays.length) { setBulkMsg({ text: '曜日を選んでください。', running: false }); return; }
     const markText = bulk.mark === '△' ? '△ 調整すれば可' : bulk.mark === '×' ? '× 不可' : '空欄に戻す（参加できる）';
-    askConfirm({ title: '自分の列にまとめて入れますか？', message: mine + ' の ' + fmtJa(form.from) + '〜' + fmtJa(form.to) + '（' + form.weekdays.map((x) => WD[x]).join('') + '）に「' + markText + '」を入れます。' + (form.keep ? '\n入力済みのマスは残します。' : '\n入力済みのマスも上書きします。'), ok: '入れる' }, () => {
+    askConfirm({ title: '自分の列にまとめて入れますか？', message: mine + 'の' + fmtJa(form.from) + '〜' + fmtJa(form.to) + '（' + form.weekdays.map((x) => WD[x]).join('') + '）に「' + markText + '」を入れます。' + (form.keep ? '\n入力済みのマスは残します。' : '\n入力済みのマスも上書きします。'), ok: '入れる' }, () => {
       setBulkMsg({ text: '保存しています…', running: true });
       sync.write<RpcResult>('setAvailabilityBulk', form).then((res) => { setBulkMsg({ text: res.message, running: false }); toast(res.message); },
         (e: Error) => { setBulkMsg({ text: e.message, running: false }); toast(e.message); });
@@ -158,15 +158,15 @@ export function AvailTab() {
   return (
     <section id="tab-avail">
       <PageHead
-        title={<>メンバーの予定 <Tip text="自分の列のマスをタップすると 空 → △ → × → 空 と変わります。空欄は「参加できる」扱いです。マスの右上の鉛筆（マウスを載せると出ます）で、その日のメモ（「21 時から」など）を書けます。ほかの人の列は見るだけです。スマホでは日ごとのリストになり、◯ △ × のボタンで選べます。" label="予定表の使い方" /></>}
+        title={<>メンバーの予定 <Tip text="自分の列のマスをタップすると 空 → △ → × → 空 と変わります。空欄は「参加できる」扱いです。マスの右上の鉛筆（マウスを載せると出ます）で、その日のメモ（「21時から」など）を書けます。ほかの人の列は見るだけです。スマホでは日ごとのリストになり、◯ △ × のボタンで選べます。" label="予定表の使い方" /></>}
         lead="空欄は「参加できる」扱いです。都合の悪い日だけ、自分の印（△ か ×）を付けます。" />
       <UnknownWarn d={d} />
       <div id="availHot" className="mb-12 flex flex-wrap items-center gap-x-8 gap-y-6 rounded-lg border border-[color-mix(in_srgb,var(--soon-text)_35%,var(--line))] bg-soon px-10 py-8 text-13" hidden={!hotRec.length && !hotAdj.length}>
         {(hotRec.length > 0 || hotAdj.length > 0) && (
           <>
             <span className="inline-flex items-center gap-4 font-semibold"><Icon name="campaign" size="sm" className="text-soon-text" />日が未定の卓</span>
-            {hotRec.map((s) => hotChip(s, '募集 ' + (s.windowLabel || '期間未定')))}
-            {hotAdj.map((s) => hotChip(s, '調整 ' + (s.windowLabel || '期間未定')))}
+            {hotRec.map((s) => hotChip(s, '募集　' + (s.windowLabel || '期間未定')))}
+            {hotAdj.map((s) => hotChip(s, '調整　' + (s.windowLabel || '期間未定')))}
             <span className="hint">押すと、その卓の人だけに絞ります</span>
           </>
         )}
@@ -175,7 +175,7 @@ export function AvailTab() {
         <button type="button" className={'btn small' + (fold.availFilter ? ' on bg-head' : '')} id="foldFilter" data-target="availFilter" aria-expanded={fold.availFilter ? 'true' : 'false'} onClick={() => toggleFold('availFilter')}>
           <Icon name={fold.availFilter ? 'expand_more' : 'chevron_right'} size="sm" className="-ml-4" />絞り込み
         </button>
-        <Tip className="ml-2" text="出す人・期間・曜日をしぼります。卓を選ぶと、その卓の GM と参加者だけになります。" label="絞り込みとは" />
+        <Tip className="ml-2" text="出す人・期間・曜日をしぼります。卓を選ぶと、その卓のGMと参加者だけになります。" label="絞り込みとは" />
         <span className="hint" id="afSummary">{summary}</span>
         <button type="button" className={'btn small' + (fold.availBulk ? ' on bg-head' : '')} id="foldBulk" data-target="availBulk" aria-expanded={fold.availBulk ? 'true' : 'false'} onClick={() => toggleFold('availBulk')}>
           <Icon name={fold.availBulk ? 'expand_more' : 'chevron_right'} size="sm" className="-ml-4" />まとめて入れる
@@ -222,7 +222,7 @@ export function AvailTab() {
         </div>
         <div className={panelBtns}>
           <button type="button" className="btn small" id="afReset" onClick={() => setF({ from: '', to: '', cond: '', target: '（なし）', only: false, hol: false, free: false, mineOnly: false, members: null, wds: ALL_WDS })}>解除</button>
-          <span id="afMsg" className="hint">{filtering ? rows.length + ' 日を表示' : ''}</span>
+          <span id="afMsg" className="hint">{filtering ? rows.length + '日を表示' : ''}</span>
         </div>
       </div>
       <div className="card" id="availBulk" hidden={!fold.availBulk}>
@@ -265,17 +265,17 @@ export function AvailTab() {
         </select>
         <span className="hint ml-auto max-tab:hidden">自分のマスを押すと 空 → △ → × と変わります</span>
       </div>
-      {/* 表をつかんで動かせる（dragging は動かしているあいだ）。狭い画面では隠して、下の日ごとのリストを出す。wrap・avail・dragging は確かめと自動の読み直しが探す印 */}
+      {/* 表をつかんで動かせる（draggingは動かしているあいだ）。狭い画面では隠して、下の日ごとのリストを出す。wrap・avail・draggingは確かめと自動の読み直しが探す印 */}
       {/* 枠は表の幅に合わせる（メンバーが少ないときに、列が横いっぱいに伸びないように） */}
       <div className={'wrap avail w-fit max-w-full max-h-[max(360px,calc((100dvh-40px)/var(--zoom,1)-var(--appbar-h)-var(--nav-h)))] cursor-grab overflow-auto [&.dragging]:cursor-grabbing [&.dragging]:select-none max-tab:hidden'} ref={wrapRef}><AvailTable d={d} names={names} mine={mine} rows={rows} onMark={setMark} onPen={openMemo} /></div>
-      {/* 狭い画面（760px 以下）では、表の代わりに日ごとのリストを出す。横にスクロールせずに自分の印を打てる */}
+      {/* 狭い画面（760px以下）では、表の代わりに日ごとのリストを出す。横にスクロールせずに自分の印を打てる */}
       <AvailList d={d} names={names} mine={mine} rows={rows} onMark={setMark} onPen={openMemo} />
 
       <Modal id="memoModal" open={!!memo} onClose={() => setMemo(null)}>
         <form className="box" id="memoForm" role="dialog" aria-modal="true" aria-labelledby="memoTitle" tabIndex={-1} onSubmit={(ev) => { ev.preventDefault(); saveMemo(memo ? memo.text : ''); }}>
-          <h3 id="memoTitle">{memo ? fmtJa(memo.day) + '　' + mine + ' のメモ' : '予定のメモ'}</h3>
+          <h3 id="memoTitle">{memo ? fmtJa(memo.day) + '　' + mine + 'のメモ' : '予定のメモ'}</h3>
           <p className="hint">△ や × とは別に、その日の事情を短く書けます。ほかの人にも見えます。</p>
-          <textarea id="memoText" ref={memoRef} maxLength={200} placeholder="例: 21 時からなら参加できます" aria-labelledby="memoTitle" value={memo ? memo.text : ''} onChange={(ev) => setMemo((m) => (m ? { ...m, text: ev.target.value } : m))} />
+          <textarea id="memoText" ref={memoRef} maxLength={200} placeholder="例: 21時からなら参加できます" aria-labelledby="memoTitle" value={memo ? memo.text : ''} onChange={(ev) => setMemo((m) => (m ? { ...m, text: ev.target.value } : m))} />
           <div className="btns">
             <button type="button" className="btn danger" id="memoClear" hidden={!memo || !memo.had} onClick={() => saveMemo('')}><Icon name="delete" size="sm" />消す</button>
             <button type="button" className="btn" id="memoCancel" onClick={() => setMemo(null)}>閉じる</button>

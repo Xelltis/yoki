@@ -1,5 +1,5 @@
-// 日本時間の日付と時刻。Workers は UTC で動くので、日本時間（UTC+9、夏時間なし）を明示して扱う。
-// 暦日は 'YYYY-MM-DD' の文字列で持ち、計算は Date.UTC で行う（new Date(y, m, d) は使わない）
+// 日本時間の日付と時刻。WorkersはUTCで動くので、日本時間（UTC+9、夏時間なし）を明示して扱う。
+// 暦日は 'YYYY-MM-DD' の文字列で持ち、計算はDate.UTCで行う（new Date(y, m, d) は使わない）
 const JST_MS = 9 * 3600_000;
 export const WD = ['日', '月', '火', '水', '木', '金', '土'];
 
@@ -29,7 +29,7 @@ export function addDays(ymd: string, n: number): string {
   return ymdOfUtc(Date.UTC(y, m - 1, d + n));
 }
 
-/** a から b まで何日（b が後なら正） */
+/** aからbまで何日（bが後なら正） */
 export function daysBetween(a: string, b: string): number {
   const [ay, am, ad] = ymdParts(a);
   const [by, bm, bd] = ymdParts(b);
@@ -41,7 +41,7 @@ export function dowOf(ymd: string): number {
   return new Date(Date.UTC(y, m - 1, d)).getUTCDay();
 }
 
-/** 'YYYY-MM-DD'・'YYYY/MM/DD'・'YYYY年M月D日'（と時刻つき）を 'YYYY-MM-DD' にする。読めない・無い日付なら null */
+/** 'YYYY-MM-DD'・'YYYY/MM/DD'・'YYYY年M月D日'（と時刻つき）を 'YYYY-MM-DD' にする。読めない・無い日付ならnull */
 export function parseYmd(v: unknown): string | null {
   const m = /^(\d{4})[/\-.年](\d{1,2})[/\-.月](\d{1,2})/.exec(String(v ?? '').trim());
   if (!m) return null;
@@ -50,7 +50,7 @@ export function parseYmd(v: unknown): string | null {
   return ymd === y + '-' + pad2(mo) + '-' + pad2(d) ? ymd : null;
 }
 
-/** '10/3（土）'（GAS 版 fmtDateJa_） */
+/** '10/3（土）'（GAS版fmtDateJa_） */
 export function fmtDateJa(ymd: string): string {
   const [, m, d] = ymdParts(ymd);
   return m + '/' + d + '（' + WD[dowOf(ymd)] + '）';
@@ -67,22 +67,22 @@ export function fmtYmdSlash(ymd: string): string {
   return ymd.replace(/-/g, '/');
 }
 
-/** 日時を '2026/09/15 21:23'（日本時間）に（GAS 版 fmtDateTime_） */
+/** 日時を '2026/09/15 21:23'（日本時間）に（GAS版fmtDateTime_） */
 export function fmtDateTime(at: Date): string {
   const p = jst(at);
   return fmtYmdSlash(p.ymd) + ' ' + pad2(p.hour) + ':' + pad2(p.minute);
 }
 
-/** ISO の日時を '2026/09/15（火） 21:23'（日本時間）に。空なら ''（GAS 版 stampText_） */
+/** ISOの日時を '2026/09/15（火）21:23'（日本時間）に。空なら ''（GAS版stampText_） */
 export function stampText(iso: string | null | undefined): string {
   if (!iso) return '';
   const at = new Date(iso);
   if (Number.isNaN(at.getTime())) return '';
   const p = jst(at);
-  return fmtYmdSlash(p.ymd) + '（' + WD[p.dow] + '） ' + pad2(p.hour) + ':' + pad2(p.minute);
+  return fmtYmdSlash(p.ymd) + '（' + WD[p.dow] + '）' + pad2(p.hour) + ':' + pad2(p.minute);
 }
 
-/** 時刻の入力を 'HH:MM' に（'9' → '09:00'、'21：30' → '21:30'）。読めなければそのまま（GAS 版 normTime_） */
+/** 時刻の入力を 'HH:MM' に（'9' → '09:00'、'21：30' → '21:30'）。読めなければそのまま（GAS版normTime_） */
 export function normTime(v: unknown): string {
   const s = String(v ?? '').trim().replace(/：/g, ':');
   const m = /^(\d{1,2})(?::(\d{2}))?/.exec(s);
@@ -90,7 +90,7 @@ export function normTime(v: unknown): string {
   return pad2(Number(m[1])) + ':' + (m[2] ?? '00');
 }
 
-/** 'HH:MM' を 0 時からの分に。読めなければ null（GAS 版 minutesOfTime_） */
+/** 'HH:MM' を0時からの分に。読めなければnull（GAS版minutesOfTime_） */
 export function minutesOfTime(t: string): number | null {
   const m = /^(\d{1,2}):(\d{2})$/.exec(t.trim());
   if (!m) return null;
@@ -99,7 +99,7 @@ export function minutesOfTime(t: string): number | null {
   return h * 60 + mi;
 }
 
-/** '20:00〜23:00'・'時間未定'（GAS 版 timeRange_） */
+/** '20:00〜23:00'・'時間未定'（GAS版timeRange_） */
 export function timeRange(s: { start: string; end: string }): string {
   if (!s.start && !s.end) return '時間未定';
   return (s.start || '？') + '〜' + (s.end || '');

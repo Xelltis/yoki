@@ -1,22 +1,22 @@
-// Discord でログイン・ログアウト・/api/me
+// Discordでログイン・ログアウト・/api/me
 import { env, SELF } from 'cloudflare:test';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import { call, loginAs, makeGroup, mockDiscord, ORIGIN, postJson, setCookies } from './helpers';
 
 afterEach(() => vi.restoreAllMocks());
 
-/** /auth/login を呼び、Discord へ渡す state と、戻ってくるときの cookie を返す */
+/** /auth/loginを呼び、Discordへ渡すstateと、戻ってくるときのcookieを返す */
 async function startLogin(returnTo = '/') {
   const res = await call('/auth/login?return_to=' + encodeURIComponent(returnTo));
   const to = new URL(res.headers.get('Location') ?? '');
   const cookie = setCookies(res).find((c) => c.startsWith('yoki_oauth='))!.split(';')[0]!;
-  // 値は URL エンコードされている（Worker は読むときに戻す）
+  // 値はURLエンコードされている（Workerは読むときに戻す）
   const saved = decodeURIComponent(cookie.slice('yoki_oauth='.length));
   return { res, to, state: to.searchParams.get('state')!, cookie, saved };
 }
 
 describe('/auth/login', () => {
-  test('Discord の認可の画面へ送る（identify と guilds、prompt=none、戻り先は /auth/callback）', async () => {
+  test('Discordの認可の画面へ送る（identifyとguilds、prompt=none、戻り先は /auth/callback）', async () => {
     const { res, to, saved } = await startLogin('/g/abc/');
     expect(res.status).toBe(302);
     expect(to.origin + to.pathname).toBe('https://discord.com/oauth2/authorize');
@@ -38,13 +38,13 @@ describe('/auth/login', () => {
 });
 
 describe('/auth/callback', () => {
-  test('state が違えば断る', async () => {
+  test('stateが違えば断る', async () => {
     const { cookie } = await startLogin();
     const res = await call('/auth/callback?code=c&state=wrong', { headers: { Cookie: cookie } });
     expect(res.status).toBe(400);
   });
 
-  test('ログインすると、セッションの cookie が付き、グループのあるサーバーと管理できるサーバーだけを控える', async () => {
+  test('ログインすると、セッションのcookieが付き、グループのあるサーバーと管理できるサーバーだけを控える', async () => {
     await makeGroup('grp1', 'g-hosted');
     const d = mockDiscord({
       user: { id: '100', username: 'alice', global_name: 'アリス' },
@@ -71,7 +71,7 @@ describe('/auth/callback', () => {
     expect(await env.DB.prepare('SELECT global_name FROM users WHERE id = ?').bind('100').first('global_name')).toBe('アリス');
   });
 
-  test('prompt=none を Discord が断ったら、consent でやり直す。やめたら入口へ', async () => {
+  test('prompt=noneをDiscordが断ったら、consentでやり直す。やめたら入口へ', async () => {
     const a = await startLogin('/g/x/');
     const r1 = await call('/auth/callback?error=consent_required&state=' + a.state, { headers: { Cookie: a.cookie } });
     expect(r1.headers.get('Location')).toBe('/auth/login?consent=1&return_to=%2Fg%2Fx%2F');
@@ -81,15 +81,15 @@ describe('/auth/callback', () => {
   });
 });
 
-describe('/api/me とログアウト', () => {
-  test('ログインしていなければ loggedIn: false', async () => {
+describe('/api/meとログアウト', () => {
+  test('ログインしていなければloggedIn: false', async () => {
     const body = await (await call('/api/me')).json<{ loggedIn: boolean; discord: boolean }>();
     expect(body.loggedIn).toBe(false);
     expect(body.discord).toBe(true);
   });
 
   test('入れるグループと、グループを作れるサーバーを返す', async () => {
-    await makeGroup('grp2', 'g-a', 'A の卓');
+    await makeGroup('grp2', 'g-a', 'Aの卓');
     const sid = await loginAs({ id: '200', name: 'ボブ' }, [
       { id: 'g-a', name: 'A' },
       { id: 'g-b', name: 'B', canManage: true },
@@ -111,7 +111,7 @@ describe('/api/me とログアウト', () => {
 });
 
 describe('ログインの端の場合', () => {
-  test('戻り先が無ければ入口。consent=1 なら Discord に許可の画面を出させる', async () => {
+  test('戻り先が無ければ入口。consent=1ならDiscordに許可の画面を出させる', async () => {
     expect((await startLogin()).saved.endsWith('|n|/')).toBe(true);
     const res = await call('/auth/login?consent=1&return_to=%2Fg%2Fx%2F');
     expect(new URL(res.headers.get('Location')!).searchParams.get('prompt')).toBe('consent');
@@ -119,14 +119,14 @@ describe('ログインの端の場合', () => {
     expect(saved.endsWith('|c|/g/x/')).toBe(true);
   });
 
-  test('consent でも断られたら、もうやり直さずに入口へ', async () => {
+  test('consentでも断られたら、もうやり直さずに入口へ', async () => {
     const res = await call('/auth/login?consent=1');
     const cookie = setCookies(res).find((c) => c.startsWith('yoki_oauth='))!.split(';')[0]!;
     const r = await call('/auth/callback?error=consent_required', { headers: { Cookie: cookie } });
     expect(r.headers.get('Location')).toBe('/?login=cancelled');
   });
 
-  test('途中の情報（cookie）が無いか、state が無ければやり直してもらう', async () => {
+  test('途中の情報（cookie）が無いか、stateが無ければやり直してもらう', async () => {
     expect((await call('/auth/callback?code=c&state=s')).status).toBe(400);
     const { cookie } = await startLogin();
     expect((await call('/auth/callback?code=c', { headers: { Cookie: cookie } })).status).toBe(400);
@@ -144,7 +144,7 @@ describe('ログインの端の場合', () => {
     expect(await env.DB.prepare("SELECT global_name FROM users WHERE id = '100'").first('global_name')).toBeNull();
   });
 
-  test('Discord が応えなければ、エラーのページを出す（中身は log へ）', async () => {
+  test('Discordが応えなければ、エラーのページを出す（中身はlogへ）', async () => {
     const logged = vi.spyOn(console, 'error').mockImplementation(() => {});
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('down', { status: 502 }));
     const { state, cookie } = await startLogin();
@@ -161,7 +161,7 @@ describe('ログインの端の場合', () => {
   });
 });
 
-describe('/api/me とグループを作るときの端の場合', () => {
+describe('/api/meとグループを作るときの端の場合', () => {
   test('手元から開くと、開発用ログインの人を並べる', async () => {
     const body = await (await SELF.fetch('http://localhost:5173/api/me')).json<{ dev: { users: string[] } | null }>();
     expect(body.dev?.users).toContain('ひより');
@@ -182,12 +182,12 @@ describe('/api/me とグループを作るときの端の場合', () => {
     const sid = await loginAs({ id: '202', name: 'デイブ' }, [{ id: 'g1', name: 'G', canManage: true }]);
     const r2 = await postJson('/api/groups', {}, sid);
     expect(r2.status).toBe(400);
-    expect((await r2.json<{ error: string }>()).error).toBe('Discord サーバーを選んでください。');
+    expect((await r2.json<{ error: string }>()).error).toBe('Discordサーバーを選んでください。');
   });
 
   test('名前を付けなければ、サーバーの名前をグループの名前にする', async () => {
-    const sid = await loginAs({ id: '203', name: 'エレン' }, [{ id: 'g1', name: 'G のサーバー', canManage: true }]);
+    const sid = await loginAs({ id: '203', name: 'エレン' }, [{ id: 'g1', name: 'Gのサーバー', canManage: true }]);
     const { id } = await (await postJson('/api/groups', { guildId: 'g1' }, sid)).json<{ id: string }>();
-    expect(await env.DB.prepare('SELECT title FROM groups WHERE id = ?').bind(id).first('title')).toBe('G のサーバー');
+    expect(await env.DB.prepare('SELECT title FROM groups WHERE id = ?').bind(id).first('title')).toBe('Gのサーバー');
   });
 });

@@ -1,7 +1,7 @@
 {
   "name": "卓予定",
   "short_name": "卓予定",
-  "description": "TRPG の卓の予定を、Discord サーバーの仲間と決める Web アプリ",
+  "description": "TRPGの卓の予定を、Discordサーバーの仲間と決めるWebアプリ",
   "lang": "ja",
   "start_url": "/",
   "scope": "/",

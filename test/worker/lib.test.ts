@@ -1,4 +1,4 @@
-// 小さな部品: 名前・日時・ID・Discord の権限・手元かどうか・Discord との OAuth・メンバーを決める処理の端の場合
+// 小さな部品: 名前・日時・ID・Discordの権限・手元かどうか・DiscordとのOAuth・メンバーを決める処理の端の場合
 import { env } from 'cloudflare:test';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import { resolveMember } from '../../src/worker/auth/guard';
@@ -18,7 +18,7 @@ describe('名前', () => {
     expect(splitNames(undefined)).toEqual([]);
   });
 
-  test('Discord の表示名が無いか使えなければユーザー名、それも使えなければ「メンバー」', () => {
+  test('Discordの表示名が無いか使えなければユーザー名、それも使えなければ「メンバー」', () => {
     expect(memberNameFrom(null, 'alice')).toBe('alice');
     expect(memberNameFrom('全員', 'alice')).toBe('alice');
     expect(memberNameFrom('、、', '（なし）')).toBe('メンバー');
@@ -30,7 +30,7 @@ describe('日時', () => {
     expect(stampText('きのう')).toBe('');
   });
 
-  test('時刻の形でないか、ありえない時刻なら null', () => {
+  test('時刻の形でないか、ありえない時刻ならnull', () => {
     expect(minutesOfTime('夜')).toBeNull();
     expect(minutesOfTime('24:00')).toBeNull();
     expect(minutesOfTime('21:60')).toBeNull();
@@ -42,11 +42,11 @@ describe('日時', () => {
   });
 });
 
-test('ID は小文字の base32 で、決めた長さ', () => {
+test('IDは小文字のbase32で、決めた長さ', () => {
   expect(randomId(10)).toMatch(/^[a-z2-7]{10}$/);
 });
 
-test('Discord の権限: オーナー・管理者・サーバー管理なら管理できる。権限が無いか読めなければ管理できない', () => {
+test('Discordの権限: オーナー・管理者・サーバー管理なら管理できる。権限が無いか読めなければ管理できない', () => {
   expect(canManageGuild({ owner: true })).toBe(true);
   expect(canManageGuild({ permissions: '8' })).toBe(true);
   expect(canManageGuild({ permissions: '32' })).toBe(true);
@@ -54,15 +54,15 @@ test('Discord の権限: オーナー・管理者・サーバー管理なら管�
   expect(canManageGuild({ permissions: 'たくさん' })).toBe(false);
 });
 
-test('手元（http の localhost と 127.0.0.1）かどうか', () => {
+test('手元（httpのlocalhostと127.0.0.1）かどうか', () => {
   expect(isLocalHttp(new URL('http://localhost:5173/'))).toBe(true);
   expect(isLocalHttp(new URL('http://127.0.0.1:8787/'))).toBe(true);
   expect(isLocalHttp(new URL('https://localhost/'))).toBe(false);
   expect(isLocalHttp(new URL('http://yoki.test/'))).toBe(false);
 });
 
-describe('Discord との OAuth', () => {
-  test('秘密の値が無くても、空のまま Discord に聞く', async () => {
+describe('DiscordとのOAuth', () => {
+  test('秘密の値が無くても、空のままDiscordに聞く', async () => {
     const bodies: string[] = [];
     vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
       const url = String(input instanceof Request ? input.url : input);
@@ -74,22 +74,22 @@ describe('Discord との OAuth', () => {
     expect(new URLSearchParams(bodies[0]).get('client_secret')).toBe('');
   });
 
-  test('Discord が断ったら、何が失敗したかを添えて投げる', async () => {
+  test('Discordが断ったら、何が失敗したかを添えて投げる', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('no', { status: 401 }));
-    await expect(fetchDiscordProfile(env, 'code', 'https://yoki.test/auth/callback')).rejects.toThrow('トークンの取得 が失敗しました（HTTP 401）');
+    await expect(fetchDiscordProfile(env, 'code', 'https://yoki.test/auth/callback')).rejects.toThrow('トークンの取得が失敗しました（HTTP 401）');
   });
 });
 
 describe('メンバーを決める（resolveMember）', () => {
   const viewer: Viewer = { id: '100', username: 'alice', globalName: 'アリス', avatar: null, guildsCheckedAt: new Date().toISOString() };
 
-  test('同じ人の最初の 2 つの呼び出しが重なったら、先に作られた行を使う', async () => {
+  test('同じ人の最初の2つの呼び出しが重なったら、先に作られた行を使う', async () => {
     await makeGroup('g', 'guild');
     await env.DB.batch([
       env.DB.prepare("INSERT INTO users (id, username, guilds_checked_at, created_at, last_login_at) VALUES ('100', 'alice', 'x', 'x', 'x')"),
       env.DB.prepare("INSERT INTO members (group_id, name, user_id, discord_id, created_at) VALUES ('g', 'アリス', '100', '100', 'x')"),
     ]);
-    // 1 回目の「この人の行はあるか」だけ、まだ無かったことにする（もう 1 つの呼び出しが、そのあとで作った）
+    // 1回目の「この人の行はあるか」だけ、まだ無かったことにする（もう1つの呼び出しが、そのあとで作った）
     let missed = false;
     const db = new Proxy(env.DB, {
       get(t, k) {
@@ -111,7 +111,7 @@ describe('メンバーを決める（resolveMember）', () => {
     expect(await env.DB.prepare("SELECT count(*) AS n FROM members WHERE group_id = 'g'").first('n')).toBe(1);
   });
 
-  test('同じ名前が 20 個まで埋まっていたら、作れずに投げる', async () => {
+  test('同じ名前が20個まで埋まっていたら、作れずに投げる', async () => {
     await makeGroup('g', 'guild');
     const names = ['アリス', ...Array.from({ length: 19 }, (_, i) => 'アリス (' + (i + 2) + ')')];
     await env.DB.batch(names.map((n) => env.DB.prepare("INSERT INTO members (group_id, name, created_at) VALUES ('g', ?, 'x')").bind(n)));

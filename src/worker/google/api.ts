@@ -1,17 +1,17 @@
-// Google の API（OAuth とカレンダー）。本物（realGoogle）と、開発用の偽物（dev.ts の fakeGoogle）が同じ形を持つ。
-// 使うのは本人のメインのカレンダー（primary）だけ。scope は calendar.events.owned（本人が持つカレンダーの予定を書く・読む。共有されたほかの人の
-// カレンダーには届かない、いちばん狭いもの）と、だれの連携かを知る openid email
+// GoogleのAPI（OAuthとカレンダー）。本物（realGoogle）と、開発用の偽物（dev.tsのfakeGoogle）が同じ形を持つ。
+// 使うのは本人のメインのカレンダー（primary）だけ。scopeはcalendar.events.owned（本人が持つカレンダーの予定を書く・読む。共有されたほかの人の
+// カレンダーには届かない、いちばん狭いもの）と、だれの連携かを知るopenid email
 import { jstMs } from '../lib/ics';
 
 export const GOOGLE_SCOPE = 'openid email https://www.googleapis.com/auth/calendar.events.owned';
-/** Google でログインするときの scope（だれかを知るだけ。カレンダーには触らない） */
+/** Googleでログインするときのscope（だれかを知るだけ。カレンダーには触らない） */
 export const GOOGLE_LOGIN_SCOPE = 'openid email';
 
 const AUTH = 'https://accounts.google.com/o/oauth2/v2/auth';
 const TOKEN = 'https://oauth2.googleapis.com/token';
 const REVOKE = 'https://oauth2.googleapis.com/revoke';
 const EVENTS = 'https://www.googleapis.com/calendar/v3/calendars/primary/events';
-/** 予定を読むときのページの数の上限（1 ページ 250 件） */
+/** 予定を読むときのページの数の上限（1ページ250件） */
 const MAX_PAGES = 4;
 
 type When = { date: string } | { dateTime: string; timeZone: string };
@@ -27,10 +27,10 @@ export type GoogleEventBody = {
   extendedProperties: { private: { yoki: '1'; session: string } };
 };
 
-/** 予定ありの時間（UTC のミリ秒。[start, end)） */
+/** 予定ありの時間（UTCのミリ秒。[start, end)） */
 export type Busy = { start: number; end: number };
 
-/** refresh token が使えない（本人が Google で取り消した・期限が切れた）。連携し直してもらう */
+/** refresh tokenが使えない（本人がGoogleで取り消した・期限が切れた）。連携し直してもらう */
 export class GoogleRevoked extends Error {}
 
 export class GoogleHttpError extends Error {
@@ -40,19 +40,19 @@ export class GoogleHttpError extends Error {
 }
 
 export type GoogleApi = {
-  /** 同意の画面の URL */
+  /** 同意の画面のURL */
   authorizeUrl(redirectUri: string, state: string): string;
-  /** 認可コードを refresh token と、連携した Google アカウントのメールに換える */
+  /** 認可コードをrefresh tokenと、連携したGoogleアカウントのメールに換える */
   exchangeCode(code: string, redirectUri: string): Promise<{ refreshToken: string; email: string }>;
-  /** ログインの同意の画面の URL（openid email だけ。アカウントを選んでもらう） */
+  /** ログインの同意の画面のURL（openid emailだけ。アカウントを選んでもらう） */
   loginUrl(redirectUri: string, state: string): string;
-  /** ログインの認可コードを、Google のアカウントの ID（sub）とメールに換える */
+  /** ログインの認可コードを、GoogleのアカウントのID（sub）とメールに換える */
   exchangeLogin(code: string, redirectUri: string): Promise<{ sub: string; email: string }>;
   accessToken(refreshToken: string): Promise<string>;
   /** 許可を取り消す（連携を外すとき。失敗しても投げない） */
   revoke(refreshToken: string): Promise<void>;
   insertEvent(accessToken: string, body: GoogleEventBody): Promise<string>;
-  /** 書き直す。予定が Google 側で消されていれば 'gone' */
+  /** 書き直す。予定がGoogle側で消されていれば 'gone' */
   updateEvent(accessToken: string, eventId: string, body: GoogleEventBody): Promise<'ok' | 'gone'>;
   /** 消す。もう無ければそのまま */
   deleteEvent(accessToken: string, eventId: string): Promise<void>;
@@ -60,7 +60,7 @@ export type GoogleApi = {
   busy(accessToken: string, fromMs: number, toMs: number): Promise<Busy[]>;
 };
 
-/** Google カレンダーの予定（読む欄だけ） */
+/** Googleカレンダーの予定（読む欄だけ） */
 export type GoogleEvent = {
   status?: string;
   transparency?: string;
@@ -72,7 +72,7 @@ export type GoogleEvent = {
 
 const whenMs = (w: GoogleEvent['start']) => (w?.dateTime ? Date.parse(w.dateTime) : w?.date ? jstMs(w.date, 0) : NaN);
 
-/** 予定を、予定ありの時間にする。数えない予定は null。終日の予定は、日本時間の 0 時から次の日の 0 時まで */
+/** 予定を、予定ありの時間にする。数えない予定はnull。終日の予定は、日本時間の0時から次の日の0時まで */
 export function toBusy(e: GoogleEvent): Busy | null {
   if (e.status === 'cancelled' || e.transparency === 'transparent' || e.extendedProperties?.private?.yoki === '1') return null;
   if (e.attendees?.some((a) => a.self && a.responseStatus === 'declined')) return null;
@@ -81,8 +81,8 @@ export function toBusy(e: GoogleEvent): Busy | null {
 }
 
 /**
- * id_token（JWT）の中身。トークンは Google のトークンの窓口から HTTPS で直接受け取ったものなので、署名は確かめない
- * （OpenID Connect の決まりで、直接受け取ったときは TLS の確かめで代えてよい）
+ * id_token（JWT）の中身。トークンはGoogleのトークンの窓口からHTTPSで直接受け取ったものなので、署名は確かめない
+ * （OpenID Connectの決まりで、直接受け取ったときはTLSの確かめで代えてよい）
  */
 export function idTokenClaims(idToken: string | undefined): { sub?: string; email?: string; aud?: string } {
   const payload = idToken?.split('.')[1];
@@ -91,7 +91,7 @@ export function idTokenClaims(idToken: string | undefined): { sub?: string; emai
   return JSON.parse(new TextDecoder().decode(Uint8Array.from(json, (c) => c.charCodeAt(0)))) as { sub?: string; email?: string; aud?: string };
 }
 
-/** id_token からメールを読む */
+/** id_tokenからメールを読む */
 export function emailOfIdToken(idToken: string | undefined): string {
   return String(idTokenClaims(idToken).email ?? '');
 }
@@ -108,7 +108,7 @@ export function realGoogle(clientId: string, clientSecret: string): GoogleApi {
         redirect_uri: redirectUri,
         response_type: 'code',
         scope: GOOGLE_SCOPE,
-        // refresh token を受け取るため。prompt=consent で、連携し直したときも必ず受け取る
+        // refresh tokenを受け取るため。prompt=consentで、連携し直したときも必ず受け取る
         access_type: 'offline',
         prompt: 'consent',
         include_granted_scopes: 'true',
@@ -119,9 +119,9 @@ export function realGoogle(clientId: string, clientSecret: string): GoogleApi {
 
     async exchangeCode(code, redirectUri) {
       const res = await fetch(TOKEN, form({ code, client_id: clientId, client_secret: clientSecret, redirect_uri: redirectUri, grant_type: 'authorization_code' }));
-      if (!res.ok) throw new GoogleHttpError(res.status, 'Google のトークンの取得');
+      if (!res.ok) throw new GoogleHttpError(res.status, 'Googleのトークンの取得');
       const j = (await res.json()) as { refresh_token?: string; id_token?: string };
-      if (!j.refresh_token) throw new Error('Google から refresh token が返りませんでした。');
+      if (!j.refresh_token) throw new Error('Googleからrefresh tokenが返りませんでした。');
       return { refreshToken: j.refresh_token, email: emailOfIdToken(j.id_token) };
     },
 
@@ -132,10 +132,10 @@ export function realGoogle(clientId: string, clientSecret: string): GoogleApi {
 
     async exchangeLogin(code, redirectUri) {
       const res = await fetch(TOKEN, form({ code, client_id: clientId, client_secret: clientSecret, redirect_uri: redirectUri, grant_type: 'authorization_code' }));
-      if (!res.ok) throw new GoogleHttpError(res.status, 'Google のログイン');
+      if (!res.ok) throw new GoogleHttpError(res.status, 'Googleのログイン');
       const claims = idTokenClaims(((await res.json()) as { id_token?: string }).id_token);
-      // ほかのアプリに向けて出された id_token は受け取らない
-      if (!claims.sub || claims.aud !== clientId) throw new Error('Google のログインを確かめられませんでした。');
+      // ほかのアプリに向けて出されたid_tokenは受け取らない
+      if (!claims.sub || claims.aud !== clientId) throw new Error('Googleのログインを確かめられませんでした。');
       return { sub: claims.sub, email: String(claims.email ?? '') };
     },
 
@@ -143,9 +143,9 @@ export function realGoogle(clientId: string, clientSecret: string): GoogleApi {
       const res = await fetch(TOKEN, form({ refresh_token: refreshToken, client_id: clientId, client_secret: clientSecret, grant_type: 'refresh_token' }));
       if (res.status === 400 || res.status === 401) {
         const err = ((await res.json().catch(() => ({}))) as { error?: string }).error;
-        if (err === 'invalid_grant' || err === 'unauthorized_client') throw new GoogleRevoked('Google の許可が取り消されたか、期限が切れました。');
+        if (err === 'invalid_grant' || err === 'unauthorized_client') throw new GoogleRevoked('Googleの許可が取り消されたか、期限が切れました。');
       }
-      if (!res.ok) throw new GoogleHttpError(res.status, 'Google のトークンの更新');
+      if (!res.ok) throw new GoogleHttpError(res.status, 'Googleのトークンの更新');
       return ((await res.json()) as { access_token: string }).access_token;
     },
 
@@ -155,20 +155,20 @@ export function realGoogle(clientId: string, clientSecret: string): GoogleApi {
 
     async insertEvent(accessToken, body) {
       const res = await fetch(EVENTS, json(accessToken, 'POST', body));
-      if (!res.ok) throw new GoogleHttpError(res.status, 'Google カレンダーへの書き込み');
+      if (!res.ok) throw new GoogleHttpError(res.status, 'Googleカレンダーへの書き込み');
       return ((await res.json()) as { id: string }).id;
     },
 
     async updateEvent(accessToken, eventId, body) {
       const res = await fetch(EVENTS + '/' + encodeURIComponent(eventId), json(accessToken, 'PUT', body));
       if (res.status === 404 || res.status === 410) return 'gone';
-      if (!res.ok) throw new GoogleHttpError(res.status, 'Google カレンダーの書き直し');
+      if (!res.ok) throw new GoogleHttpError(res.status, 'Googleカレンダーの書き直し');
       return 'ok';
     },
 
     async deleteEvent(accessToken, eventId) {
       const res = await fetch(EVENTS + '/' + encodeURIComponent(eventId), bearer(accessToken, { method: 'DELETE' }));
-      if (!res.ok && res.status !== 404 && res.status !== 410) throw new GoogleHttpError(res.status, 'Google カレンダーの予定の削除');
+      if (!res.ok && res.status !== 404 && res.status !== 410) throw new GoogleHttpError(res.status, 'Googleカレンダーの予定の削除');
     },
 
     async busy(accessToken, fromMs, toMs) {
@@ -186,7 +186,7 @@ export function realGoogle(clientId: string, clientSecret: string): GoogleApi {
         });
         if (pageToken) q.set('pageToken', pageToken);
         const res = await fetch(EVENTS + '?' + q.toString(), bearer(accessToken));
-        if (!res.ok) throw new GoogleHttpError(res.status, 'Google カレンダーの読み込み');
+        if (!res.ok) throw new GoogleHttpError(res.status, 'Googleカレンダーの読み込み');
         const j = (await res.json()) as { items?: GoogleEvent[]; nextPageToken?: string };
         for (const e of j.items ?? []) {
           const b = toBusy(e);

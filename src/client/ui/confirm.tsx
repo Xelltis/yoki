@@ -1,4 +1,4 @@
-// 確かめる窓（ブラウザの confirm の代わり。見た目と言葉をアプリにそろえるため）。askConfirm でどこからでも開ける
+// 確かめる窓（ブラウザのconfirmの代わり。見た目と言葉をアプリにそろえるため）。askConfirmでどこからでも開ける
 import { useLayoutEffect, useRef } from 'react';
 import { Modal } from './Modal';
 import { createStore, useStore } from './store';
@@ -8,13 +8,13 @@ export type ConfirmOptions = {
   message?: string;
   /** 進むボタンの名前 */
   ok?: string;
-  /** 消す・止めるなど戻しにくい操作なら true（やめるボタンにフォーカスを置く） */
+  /** 消す・止めるなど戻しにくい操作ならtrue（やめるボタンにフォーカスを置く） */
   danger?: boolean;
 };
 
 const confirmStore = createStore<{ open: boolean; o: ConfirmOptions; yes: (() => void) | null; n: number }>({ open: false, o: {}, yes: null, n: 0 });
 
-/** 確かめる窓を開く。進むを押したら yes() を呼ぶ */
+/** 確かめる窓を開く。進むを押したらyes() を呼ぶ */
 export function askConfirm(o: ConfirmOptions, yes: () => void): void {
   confirmStore.set((s) => ({ open: true, o, yes, n: s.n + 1 }));
 }

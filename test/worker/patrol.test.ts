@@ -1,4 +1,4 @@
-// 知らせの見回り（§23・40・46・47）。時刻は scheduledTime で渡す（日本時間 = UTC + 9）
+// 知らせの見回り（§23・40・46・47）。時刻はscheduledTimeで渡す（日本時間 = UTC + 9）
 import { env } from 'cloudflare:test';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { loadGroup } from '../../src/worker/domain/load';
@@ -8,14 +8,14 @@ import { makeGroup } from './helpers';
 
 const CH = '123456789012345678';          // 基本のチャンネル
 const SERIES_CH = '123456789012345679';   // シリーズのチャンネル
-/** Bot がメッセージを書く Discord の API */
+/** Botがメッセージを書くDiscordのAPI */
 const msgUrl = (ch: string) => 'https://discord.com/api/v10/channels/' + ch + '/messages';
 const DAY = '2026-10-10';   // 「今日」（日本時間）
 const at = (hhmm: string) => Date.parse(DAY + 'T' + hhmm + ':00+09:00');
 const noWait = { sleep: async () => {} };
 let posts: { url: string; content: string; embeds: number; auth: string | null; allowed: unknown }[] = [];
 
-/** Bot の送信を差し替える。codes の順に返し、尽きたら 200 */
+/** Botの送信を差し替える。codesの順に返し、尽きたら200 */
 function mockBot(codes: number[] = []) {
   posts = [];
   vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
@@ -53,14 +53,14 @@ beforeEach(async () => {
 afterEach(() => vi.restoreAllMocks());
 
 describe('開催前の知らせ', () => {
-  test('知らせの日の、送る時刻になったら 1 通にまとめて送る。同じ時刻台に何度回っても、次の時刻台でも送り直さない', async () => {
+  test('知らせの日の、送る時刻になったら1通にまとめて送る。同じ時刻台に何度回っても、次の時刻台でも送り直さない', async () => {
     await addSession({ name: '明日の卓', date: addDays(DAY, 1), start: '20:00', gm: 'ひより', members: ['ソラ'] });
     await addSession({ name: 'あさっての卓', date: addDays(DAY, 2), gm: 'ソラ' });
     await patrol(env, at('19:00'), noWait);
     expect(posts).toHaveLength(0);
     await patrol(env, at('20:00'), noWait);
     expect(posts).toHaveLength(1);
-    // Bot のトークンでチャンネルに書く。メンションで呼ぶのは人だけ
+    // Botのトークンでチャンネルに書く。メンションで呼ぶのは人だけ
     expect(posts[0]).toEqual({
       url: msgUrl(CH), content: '📢 明日は卓の日です！ <@400000000000000010> <@400000000000000011>', embeds: 1,
       auth: 'Bot test-bot-token', allowed: { parse: ['users'] },
@@ -76,16 +76,16 @@ describe('開催前の知らせ', () => {
     await addSession({ name: '港 #1', series: '港', date: addDays(DAY, 3), gm: 'ひより' });
     await patrol(env, at('09:00'), noWait);
     expect(posts.map((p) => p.url).sort()).toEqual([msgUrl(CH), msgUrl(SERIES_CH)].sort());
-    expect(posts[0]!.content).toContain('3 日後は卓の日です！');
+    expect(posts[0]!.content).toContain('3日後は卓の日です！');
   });
 
-  test('11 卓を超えたら 10 卓ごとに分けて送り、届いた卓だけを送った扱いにする', async () => {
+  test('11卓を超えたら10卓ごとに分けて送り、届いた卓だけを送った扱いにする', async () => {
     for (let i = 1; i <= 12; i++) await addSession({ name: '卓' + i, date: addDays(DAY, 1), gm: 'ひより' });
     mockBot([200, 500, 500, 500]);
     await patrol(env, at('20:00'), noWait);
     expect(posts.map((p) => p.embeds)).toEqual([10, 2, 2, 2]);
     expect(await mark('卓1', 'notified_at')).not.toBeNull();
-    // 2 通目は 3 回とも失敗したので、印を戻して次の時刻台で送り直す
+    // 2通目は3回とも失敗したので、印を戻して次の時刻台で送り直す
     expect(await mark('卓12', 'notified_at')).toBeNull();
     mockBot();
     await patrol(env, at('21:00'), noWait);
@@ -104,18 +104,18 @@ describe('開催前の知らせ', () => {
     expect(await env.DB.prepare('SELECT result FROM notify_log ORDER BY id DESC').first('result')).toBe('送らず: 送り先のチャンネルが未設定');
   });
 
-  test('Bot のトークンが無ければ（運営者の設定）送らずに失敗を記録し、印を戻す', async () => {
+  test('Botのトークンが無ければ（運営者の設定）送らずに失敗を記録し、印を戻す', async () => {
     await addSession({ name: '明日の卓', date: addDays(DAY, 1), gm: 'ひより' });
-    // 本番では secret の DISCORD_BOT_TOKEN を入れ忘れることがある
+    // 本番ではsecretのDISCORD_BOT_TOKENを入れ忘れることがある
     await patrol({ ...env, DISCORD_BOT_TOKEN: undefined as unknown as string }, at('20:00'), noWait);
     expect(posts).toHaveLength(0);
-    expect(await env.DB.prepare('SELECT result FROM notify_log ORDER BY id DESC').first('result')).toMatch(/^送信失敗（Bot の設定）/);
+    expect(await env.DB.prepare('SELECT result FROM notify_log ORDER BY id DESC').first('result')).toMatch(/^送信失敗（Botの設定）/);
     expect(await mark('明日の卓', 'notified_at')).toBeNull();
   });
 });
 
 describe('期間前の催促と開始直前の知らせ', () => {
-  test('期間の始まりが明日の募集中の卓を、GM に知らせる', async () => {
+  test('期間の始まりが明日の募集中の卓を、GMに知らせる', async () => {
     await addSession({ name: '古城', status: '募集', windowFrom: addDays(DAY, 1), windowTo: addDays(DAY, 10), gm: 'ひより' });
     await patrol(env, at('20:00'), noWait);
     expect(posts).toHaveLength(1);
@@ -125,13 +125,13 @@ describe('期間前の催促と開始直前の知らせ', () => {
     expect(posts).toHaveLength(1);
   });
 
-  test('開始の N 分前を過ぎた最初の見回りで、GM と参加者に知らせる（ON のときだけ）', async () => {
+  test('開始のN分前を過ぎた最初の見回りで、GMと参加者に知らせる（ONのときだけ）', async () => {
     await env.DB.prepare("UPDATE groups SET soon = 1, soon_minutes = 30 WHERE id = 'g'").run();
     await addSession({ name: '今夜の卓', date: DAY, start: '21:00', gm: 'ひより', members: ['ソラ'] });
     await patrol(env, at('20:25'), noWait);
     expect(posts).toHaveLength(0);
     await patrol(env, at('20:35'), noWait);
-    expect(posts[0]!.content).toBe('⏰ あと 25 分で「今夜の卓」が始まります。 <@400000000000000010> <@400000000000000011>');
+    expect(posts[0]!.content).toBe('⏰ あと25分で「今夜の卓」が始まります。 <@400000000000000010> <@400000000000000011>');
     await patrol(env, at('20:40'), noWait);
     expect(posts).toHaveLength(1);
   });
@@ -161,10 +161,10 @@ describe('見回りの様子の記録（運営者の管理画面が読む）', (
 
   test('失敗したら、理由を残してから投げ直す。うまくいった時刻は前のまま', async () => {
     await runPatrol(env, at('20:00'), noWait);
-    const boom = async () => { throw new Error('D1 が応えない'); };
-    await expect(runPatrol(env, at('20:05'), noWait, boom)).rejects.toThrow('D1 が応えない');
+    const boom = async () => { throw new Error('D1が応えない'); };
+    await expect(runPatrol(env, at('20:05'), noWait, boom)).rejects.toThrow('D1が応えない');
     const rec = JSON.parse((await meta('patrol'))!) as PatrolRecord;
-    expect(rec).toMatchObject({ at: new Date(at('20:05')).toISOString(), ok: false, error: 'D1 が応えない' });
+    expect(rec).toMatchObject({ at: new Date(at('20:05')).toISOString(), ok: false, error: 'D1が応えない' });
     expect(await meta('patrol_ok_at')).toBe(new Date(at('20:00')).toISOString());
   });
 });
@@ -173,16 +173,16 @@ describe('見回りの端の場合', () => {
   const SYSTEM = { memberId: 0, name: '', isAdmin: true, userId: '' };
   const load = (hhmm: string) => loadGroup(env.DB, 'g', SYSTEM, '', new Date(at(hhmm)), { token: env.DISCORD_BOT_TOKEN, clientId: env.DISCORD_CLIENT_ID });
   const lastLog = () => env.DB.prepare('SELECT result FROM notify_log ORDER BY id DESC').first('result');
-  /** Discord の ID の無いメンバー（知らせにメンションが付かない） */
+  /** DiscordのIDの無いメンバー（知らせにメンションが付かない） */
   const addGuest = () => env.DB.prepare("INSERT INTO members (group_id, name, created_at) VALUES ('g', 'ゲスト', 'x')").run();
 
-  test('Error でないものが投げられても、文にして残してから投げ直す', async () => {
+  test('Errorでないものが投げられても、文にして残してから投げ直す', async () => {
     await expect(runPatrol(env, at('20:00'), noWait, async () => { throw '止まった'; })).rejects.toBe('止まった');
     const rec = JSON.parse((await env.DB.prepare("SELECT value FROM meta WHERE key = 'patrol'").first<string>('value'))!) as PatrolRecord;
     expect(rec).toMatchObject({ ok: false, error: '止まった' });
   });
 
-  test('メンションする人がいなければ、文だけを送る。アプリの URL が無ければリンクを付けない', async () => {
+  test('メンションする人がいなければ、文だけを送る。アプリのURLが無ければリンクを付けない', async () => {
     await addGuest();
     await addSession({ name: '明日の卓', date: addDays(DAY, 1), gm: 'ゲスト' });
     await addSession({ name: '古城', status: '調整中', windowFrom: addDays(DAY, 1), gm: 'ゲスト' });

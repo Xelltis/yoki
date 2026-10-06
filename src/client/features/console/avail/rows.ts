@@ -1,4 +1,4 @@
-// メンバーの予定のタブで見せる人と日（絞り込みを当てたもの）。画面のデータ d と絞り込みを受け取って計算するだけ
+// メンバーの予定のタブで見せる人と日（絞り込みを当てたもの）。画面のデータdと絞り込みを受け取って計算するだけ
 import type { ConsoleData, ConsoleSession } from '../../../../shared/api';
 import { holidayName, parseYmd } from '../model/dates';
 import { active, candidatesOf, memberOrder, targetPeople, windowByDay } from '../model/model';
@@ -7,16 +7,16 @@ export type Mark = '' | '△' | '×';
 /** 印の言い方（読み上げと日ごとのリスト）と、押したときの次の印 */
 export const MARK_WORD: Record<Mark, string> = { '': '参加できる', '△': '調整すれば行ける', '×': '行けない' };
 export const MARK_NEXT: Record<Mark, Mark> = { '': '△', '△': '×', '×': '' };
-/** その人の印（△ か ×）。旧い印（○・参・GM）は空欄とみなす。卓に入っている日は d.booked を見る */
+/** その人の印（△ か ×）。旧い印（○・参・GM）は空欄とみなす。卓に入っている日はd.bookedを見る */
 export function markIn(marks: Record<string, string>, n: string): Mark { const v = marks[n] || ''; return v === '△' || v === '×' ? v : ''; }
 
-/** 絞り込み。members・wds・from・to・cond は「絞り込み」の中、hol・free・mineOnly は表の上のチップ、target・only は卓で絞る */
+/** 絞り込み。members・wds・from・to・condは「絞り込み」の中、hol・free・mineOnlyは表の上のチップ、target・onlyは卓で絞る */
 export type AvailFilter = {
   members: string[] | null; wds: number[]; hol: boolean; free: boolean; mineOnly: boolean;
   from: string; to: string; cond: string; target: string; only: boolean;
 };
 
-/** 卓を選んだら、その卓の GM と参加者（募集なら参加希望も）だけにする。「（なし）」「全員」なら絞らない */
+/** 卓を選んだら、その卓のGMと参加者（募集なら参加希望も）だけにする。「（なし）」「全員」なら絞らない */
 export function targetNames(d: ConsoleData, f: AvailFilter): string[] | null {
   const v = f.target;
   if (!v || v === '（なし）' || v === '全員') return null;
@@ -40,7 +40,7 @@ export function visibleNames(d: ConsoleData, f: AvailFilter, mine: string, sortB
   return all.filter((n) => members.indexOf(n) >= 0);
 }
 
-/** 表とリストの 1 日分 */
+/** 表とリストの1日分 */
 export type Row = {
   key: string; date: Date; dow: number; hol: string; wk: boolean;
   marks: Record<string, string>; bk: Record<string, string>; list: ConsoleSession[]; wins: ConsoleSession[];

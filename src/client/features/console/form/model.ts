@@ -5,35 +5,35 @@ import { addDaysYmd, fmtJa } from '../model/dates';
 import { isActive, me, peopleOf, sortSessions, splitNames, STATUS_DATED } from '../model/model';
 import { hookFor, kindSet, seriesHook, snEntry } from '../model/notify';
 
-/** 窓の入力。id は変える卓（新しく登録するなら空） */
+/** 窓の入力。idは変える卓（新しく登録するなら空） */
 export type Fields = {
   id: string; series: string; seriesEnd: string; name: string; status: string; date: string; start: string; end: string;
   winFrom: string; winTo: string; gm: string; members: string[]; extra: string; place: string; memo: string; notify: boolean;
   /** まとめて登録する日（開催日のほかに足した日） */
   more: { key: number; v: string }[];
 };
-/** 窓の下の文。cls は 'ok'（案内）・'err'（失敗） */
+/** 窓の下の文。clsは 'ok'（案内）・'err'（失敗） */
 export type Msg = { text: string; cls: 'ok' | 'err' } | null;
 
 /** 状態ごとの説明と手順。登録の窓では選んだ状態の手順を、変更の窓では状態を変えたときに説明を出す */
 export const FLOW: Record<string, { icon: IconName; lead: string; steps: string[] }> = {
   '開催': { icon: 'event', lead: '日が決まっている卓', steps: [
     '開催日と時間を入れる（何日か続けるなら「日を足す」）',
-    'GM と参加者を選ぶ。× の人がいれば下に注意が出る',
-    '登録する。「Discord に知らせる」で告知、開催前には開催前の知らせ'] },
+    'GMと参加者を選ぶ。× の人がいれば下に注意が出る',
+    '登録する。「Discordに知らせる」で告知、開催前には開催前の知らせ'] },
   '募集': { icon: 'campaign', lead: 'メンバーを集める卓（日はまだ決めない）', steps: [
-    '開きたい期間を入れて登録する（「Discord に知らせる」で告知）',
+    '開きたい期間を入れて登録する（「Discordに知らせる」で告知）',
     '「参加希望」「興味あり」が付くのを待つ。「興味ありの人に聞く」で声もかけられる',
     '集まったら「開催」か「調整中」にする。参加希望の人は参加者に入る'] },
   '調整中': { icon: 'edit_calendar', lead: 'メンバーは決まった。みんなで日を選ぶ卓', steps: [
     '参加者と候補の期間を入れて登録する',
     '候補日を選んで聞く（登録するとそのまま窓が開く）',
-    '参加者が ◯ か × を押す。全員が答えると GM に知らせが届く',
-    'GM が「この日に決める」で開催日を選ぶ。状態は「開催」になる'] },
+    '参加者が ◯ か × を押す。全員が答えるとGMに知らせが届く',
+    'GMが「この日に決める」で開催日を選ぶ。状態は「開催」になる'] },
   '終了': { icon: 'task_alt', lead: '終わった卓。カレンダーには灰色で残る', steps: [] },
   '中止': { icon: 'block', lead: '開けなくなった卓。カレンダーには残り、開催前の知らせは送らない', steps: [] },
 };
-/** 新しく登録するときに選べる状態（終了・中止の卓は、登録してから変える）。label は札の短い説明 */
+/** 新しく登録するときに選べる状態（終了・中止の卓は、登録してから変える）。labelは札の短い説明 */
 export const KINDS: { status: string; label: string }[] = [
   { status: '開催', label: '日が決まっている' },
   { status: '募集', label: 'メンバーを集める' },
@@ -42,7 +42,7 @@ export const KINDS: { status: string; label: string }[] = [
 
 /** 「灰の街 #3」→「灰の街」。単発の卓から続けるとき、シリーズ名の下敷きにする */
 export function baseSeriesName(name: string): string { return String(name || '').replace(/[\s　]*[#＃]?\s*\d+\s*$/, '').trim() || String(name || ''); }
-/** 名前の末尾の数字を 1 つ進める。「#1」→「#2」「第3回」→「第4回」。数字が無ければ「（続き）」 */
+/** 名前の末尾の数字を1つ進める。「#1」→「#2」「第3回」→「第4回」。数字が無ければ「（続き）」 */
 export function nextName(name: string): string {
   const m = /^(.*?)(\d+)(\D*)$/.exec(name);
   if (m) return m[1]! + (parseInt(m[2]!, 10) + 1) + m[3]!;
@@ -60,9 +60,9 @@ function splitMembers(d: ConsoleData, list: string[]): { members: string[]; extr
   (list || []).forEach((n) => { if (names.indexOf(n) >= 0) members.push(n); else extra.push(n); });
   return { members, extra: extra.join('、') };
 }
-/** 送り先（Discord に知らせる）があるか */
+/** 送り先（Discordに知らせる）があるか */
 export const canNotify = (d: ConsoleData, f: Pick<Fields, 'series' | 'status'>) => hookFor(d, f.series.trim(), f.status === '募集' ? 'recruit' : '');
-/** 「Discord に知らせる」の横に出す、送り先の説明 */
+/** 「Discordに知らせる」の横に出す、送り先の説明 */
 export function notifyHint(d: ConsoleData, f: Pick<Fields, 'series' | 'status'>): string {
   const kind = f.status === '募集' ? 'recruit' : '', e = seriesHook(d, f.series.trim()) ? snEntry(d, f.series.trim()) : null;
   const baseName = kindSet(d, kind) ? '募集のチャンネル' : '基本のチャンネル', baseOk = kindSet(d, kind) || !!d.channelSet;
@@ -79,14 +79,14 @@ export function fieldsOf(d: ConsoleData, s: ConsoleSession | null): Fields {
   f.notify = canNotify(d, f) && !!d.notifyDefault;
   return f;
 }
-/** 入力を変える。送り先が無くなったら「Discord に知らせる」を外し、送れるようになったら既定に戻す */
+/** 入力を変える。送り先が無くなったら「Discordに知らせる」を外し、送れるようになったら既定に戻す */
 export function patchFields(d: ConsoleData, cur: Fields, patch: Partial<Fields>): Fields {
   const next = { ...cur, ...patch };
   const before = canNotify(d, cur), after = canNotify(d, next);
   if (!after) next.notify = false; else if (!before) next.notify = !!d.notifyDefault;
   return next;
 }
-/** シリーズを選んだら、直前の回の GM・参加者・時間・場所・メモを引き継ぐ（新しく登録するときだけ）。直前の回が無ければ null */
+/** シリーズを選んだら、直前の回のGM・参加者・時間・場所・メモを引き継ぐ（新しく登録するときだけ）。直前の回が無ければnull */
 export function inheritSeries(d: ConsoleData, base: Fields, name: string): { f: Fields; msg: string } | null {
   const t = seriesLatest(d, name);
   if (!t || base.id) return null;
@@ -94,7 +94,7 @@ export function inheritSeries(d: ConsoleData, base: Fields, name: string): { f: 
   return {
     f: { ...base, gm: t.gm, ...splitMembers(d, t.members), place: t.place, memo: t.memo, start: t.start, end: t.end,
       name: !cur || /#\d+$/.test(cur) || cur === t.name ? name + ' #' + (d.sessions.filter((x) => x.series === name).length + 1) : base.name },
-    msg: '「' + name + '」の直前の回（' + t.name + '）から GM・参加者・時間・場所・メモを引き継ぎました。名前と開催日を確かめてください。',
+    msg: '「' + name + '」の直前の回（' + t.name + '）からGM・参加者・時間・場所・メモを引き継ぎました。名前と開催日を確かめてください。',
   };
 }
 /** 卓の設定を引き継ぎ、翌日の卓を新しく登録する形にする。単発の卓から続けるときは、この回からシリーズにまとめる（前の回にも同じ名前が入る） */
@@ -105,7 +105,7 @@ export function continueFrom(d: ConsoleData, src: ConsoleSession): { f: Fields; 
   return {
     f: { ...base, id: '', name: nextName(src.name), date, status: date ? '開催' : base.status, series },
     seriesFrom: src.series ? '' : src.id,
-    msg: '「' + src.name + '」の GM・参加者・時間・場所を引き継いでいます。' + (src.series ? '' : '前の回と合わせて「' + series + '」というシリーズにします。') + '名前と開催日を確かめて登録してください。',
+    msg: '「' + src.name + '」のGM・参加者・時間・場所を引き継いでいます。' + (src.series ? '' : '前の回と合わせて「' + series + '」というシリーズにします。') + '名前と開催日を確かめて登録してください。',
   };
 }
 

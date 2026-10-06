@@ -1,19 +1,19 @@
-// Worker がその場で作るページ: 入れないとき・見つからないときの短いお知らせと、利用規約・プライバシーポリシー
+// Workerがその場で作るページ: 入れないとき・見つからないときの短いお知らせと、利用規約・プライバシーポリシー
 import { type AdminLegal, LEGAL_KINDS, LEGAL_TITLES, type LegalKind } from '../../shared/admin';
 import { fmtDateLong } from '../lib/jst';
 import { esc, inline, renderDoc } from '../lib/markup';
 import { ogTags } from './og';
 
-/** どのページにも付ける頭のタグ（ファビコン・ホーム画面のアイコン・manifest・文字。画面の index.html と同じ） */
+/** どのページにも付ける頭のタグ（ファビコン・ホーム画面のアイコン・manifest・文字。画面のindex.htmlと同じ） */
 const HEAD_ICONS = '<link rel="icon" href="/favicon.ico" sizes="32x32"><link rel="icon" href="/icon-192.png" type="image/png" sizes="192x192"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><link rel="manifest" href="/manifest.webmanifest"><meta name="theme-color" content="#2d2afe">'
   + '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400..700&display=swap">';
-/** 色（画面の src/client/styles/theme.css と同じ。明るい・端末のダーク） */
+/** 色（画面のsrc/client/styles/theme.cssと同じ。明るい・端末のダーク） */
 const COLORS = ':root { color-scheme: light dark; --bg: #f3f4ff; --card: #fff; --text: #15163a; --muted: #5d608a; --line: #e1e3fa; --link: #2421d6; --bar: #2d2afe; }'
   + ' @media (prefers-color-scheme: dark) { :root { --bg: #0c0d29; --card: #16173e; --text: #eceeff; --muted: #a2a5d4; --line: #2a2c66; --link: #a8c0ff; --bar: #2422c9; } }'
   + ' body { margin: 0; font-family: "Noto Sans JP", system-ui, sans-serif; background: var(--bg); color: var(--text); -webkit-font-smoothing: antialiased; }'
   + ' .card { border-radius: 16px; background: var(--card); border: 1px solid var(--line); box-shadow: 0 1px 2px rgba(21, 22, 58, .05), 0 6px 18px rgba(45, 42, 254, .06); }';
 
-/** お知らせのページ。どのページにも、次に行く先のリンクを 1 つ付ける */
+/** お知らせのページ。どのページにも、次に行く先のリンクを1つ付ける */
 export function noticePage(title: string, message: string, link: { href: string; label: string }): string {
   return `<!doctype html>
 <html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
@@ -29,14 +29,14 @@ export function noticePage(title: string, message: string, link: { href: string;
 <body><div class="card"><img class="logo" src="/icon-192.png" alt=""><h1>${esc(title)}</h1><p>${esc(message)}</p><p><a href="${esc(link.href)}">${esc(link.label)}</a></p></div></body></html>`;
 }
 
-/** 利用規約・プライバシーポリシーのページ。上に運営者と問い合わせ先、下にもう一方への道を出す。JS は使わない。origin は公開しているアドレス（リンクの見た目に使う） */
+/** 利用規約・プライバシーポリシーのページ。上に運営者と問い合わせ先、下にもう一方への道を出す。JSは使わない。originは公開しているアドレス（リンクの見た目に使う） */
 export function legalPage(kind: LegalKind, legal: AdminLegal, origin: string): string {
   const doc = legal[kind], title = LEGAL_TITLES[kind];
   const unset = '<span class="unset">まだ設定されていません</span>';
   const links = LEGAL_KINDS.map((k) => (k === kind ? '<span>' + LEGAL_TITLES[k] + '</span>' : '<a href="/' + k + '">' + LEGAL_TITLES[k] + '</a>')).join('') + '<a href="/">卓予定の入口へ</a>';
   return `<!doctype html>
 <html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>${title} - 卓予定</title>${HEAD_ICONS}${ogTags(origin, { title: title + ' - 卓予定', description: '卓予定（TRPG の卓の予定を、Discord サーバーの仲間と管理する Web アプリ）の' + title + 'です。', url: origin + '/' + kind })}
+<title>${title} - 卓予定</title>${HEAD_ICONS}${ogTags(origin, { title: title + ' - 卓予定', description: '卓予定（TRPGの卓の予定を、Discordサーバーの仲間と管理するWebアプリ）の' + title + 'です。', url: origin + '/' + kind })}
 <style>
   ${COLORS}
   body { font-size: 15px; line-height: 1.8; }

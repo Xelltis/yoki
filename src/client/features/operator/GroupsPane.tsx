@@ -1,5 +1,5 @@
-// 運営者の管理画面の「グループ」。一覧と、開いたグループの詳しい中身（管理者の付け外し・Discord サーバーの付け替え・消す）。
-// 開いているグループは URL の ?open=<id> に出す
+// 運営者の管理画面の「グループ」。一覧と、開いたグループの詳しい中身（管理者の付け外し・Discordサーバーの付け替え・消す）。
+// 開いているグループはURLの ?open=<id> に出す
 import { getRouteApi } from '@tanstack/react-router';
 import { type FormEvent, useState } from 'react';
 import type { AdminGroupDetail, AdminGroupRow } from '../../../shared/admin';
@@ -35,12 +35,12 @@ export function GroupsPane() {
           <table id="opGroups">
             {groups && (
               <tbody>
-                <tr><th>グループ</th><th>Discord サーバー</th><th className="c">メンバー</th><th className="c">管理者の印</th><th className="c">卓</th><th>最後に使われた</th><th className="c">7 日の失敗</th></tr>
+                <tr><th>グループ</th><th>Discordサーバー</th><th className="c">メンバー</th><th className="c">管理者の印</th><th className="c">卓</th><th>最後に使われた</th><th className="c">7日の失敗</th></tr>
                 {groups.map((g) => (
                   <tr className={'click' + (g.id === openId ? ' [&_td]:bg-accent-soft [&:hover_td]:bg-hover' : '')} data-gid={g.id} key={g.id} onClick={() => { void show(g.id); }}>
                     <td><b>{g.title}</b><small className={idCls}>{g.id}</small></td>
                     <td>{g.guildName}<small className={idCls}>{g.guildId}</small></td>
-                    <td className="c nw">{g.memberCount}<small className={idCls}>{'ログイン ' + g.linkedCount}</small></td>
+                    <td className="c nw">{g.memberCount}<small className={idCls}>{'ログイン' + g.linkedCount + '人'}</small></td>
                     <td className="c">{g.adminCount}</td>
                     <td className="c nw">{g.activeCount + ' / ' + g.sessionCount}</td>
                     <td className="nw">{fmt(g.lastUsedAt)}<small className={idCls}>{ago(g.lastUsedAt)}</small></td>
@@ -74,10 +74,10 @@ function GroupDetail({ d, onClose }: { d: AdminGroupDetail; onClose: () => Promi
     <>
       <div className="flex items-center gap-10"><h3 className="m-0">{d.title}</h3><button type="button" className="btn small ml-auto" data-close onClick={() => { void onClose(); }}><Icon name="close" size="sm" />閉じる</button></div>
       <dl className={dl}>
-        <dt className={dt}>Discord サーバー</dt><dd className={dd}>{d.guildName + ' '}<small className={idCls}>{d.guildId}</small></dd>
-        <dt className={dt}>作った人</dt><dd className={dd}>{who ? who + ' ／ ' + fmt(d.createdAt) : <><span className="hint">消した利用者</span>{' ／ ' + fmt(d.createdAt)}</>}</dd>
+        <dt className={dt}>Discordサーバー</dt><dd className={dd}>{d.guildName + ' '}<small className={idCls}>{d.guildId}</small></dd>
+        <dt className={dt}>作った人</dt><dd className={dd}>{who ? who + '／' + fmt(d.createdAt) : <><span className="hint">消した利用者</span>{' ／' + fmt(d.createdAt)}</>}</dd>
         <dt className={dt}>最後に使われた</dt><dd className={dd}>{fmt(d.lastUsedAt)}</dd>
-        <dt className={dt}>卓</dt><dd className={dd}>{d.activeCount + ' 件が動いている（全部で ' + d.sessionCount + ' 件）'}</dd>
+        <dt className={dt}>卓</dt><dd className={dd}>{d.activeCount + '件が動いている（全部で' + d.sessionCount + '件）'}</dd>
         <dt className={dt}>知らせの基本のチャンネル</dt><dd className={dd}>{d.channelSet ? 'あり' : 'なし'}</dd>
         <dt className={dt}>サーバーの管理者</dt>
         <dd className={dd}>{d.guildManagers.length ? <>{d.guildManagers.map((x) => x.name).join('、') + ' '}<span className="hint">（印が無くても管理者）</span></> : <span className="hint">ログインした人の中にはいません</span>}</dd>
@@ -108,24 +108,24 @@ function GroupDetail({ d, onClose }: { d: AdminGroupDetail; onClose: () => Promi
       })}>
         <b className={formTitle}><Icon name="person_add" size="sm" />まだ開いていない人を管理者として足す</b>
         <div className={formRow}>
-          <label className={formLabel}>Discord ユーザー ID<input type="text" className={formInput} name="discordId" inputMode="numeric" placeholder="123456789012345678" required /></label>
+          <label className={formLabel}>DiscordユーザーID<input type="text" className={formInput} name="discordId" inputMode="numeric" placeholder="123456789012345678" required /></label>
           <label className={formLabel}>名前 <small className="ml-6 font-normal text-muted">メンバーにいなければ使う</small><input type="text" className={formInput} name="name" /></label>
         </div>
         <button type="submit" className="btn mt-10">管理者として足す</button>
-        <p className={formHint}>初めてグループを開いたときに、その人に結びつきます。管理者の印は 0 人にできないので、付け替えるときは足してから外します。</p>
+        <p className={formHint}>初めてグループを開いたときに、その人に結びつきます。管理者の印は0人にできないので、付け替えるときは足してから外します。</p>
       </form>
       <form className={form} id="opGuild" onSubmit={(ev) => submit(ev, (data, f) => {
         const body = { guildId: val(data, 'guildId').trim(), guildName: val(data, 'guildName').trim() };
-        askConfirm({ title: 'Discord サーバーを付け替えますか？', message: '「' + d.title + '」を、サーバー ' + body.guildId + ' に結び直します。いまのサーバーの人は入れなくなります。知らせのチャンネルも外れます。', ok: '付け替える', danger: true },
+        askConfirm({ title: 'Discordサーバーを付け替えますか？', message: '「' + d.title + '」を、サーバー' + body.guildId + 'に結び直します。いまのサーバーの人は入れなくなります。知らせのチャンネルも外れます。', ok: '付け替える', danger: true },
           () => { void act(path + '/guild', body).then((ok) => { if (ok) f.reset(); }); });
       })}>
-        <b className={formTitle}><Icon name="swap_horiz" size="sm" />Discord サーバーを付け替える</b>
+        <b className={formTitle}><Icon name="swap_horiz" size="sm" />Discordサーバーを付け替える</b>
         <div className={formRow}>
-          <label className={formLabel}>新しいサーバーの ID<input type="text" className={formInput} name="guildId" inputMode="numeric" placeholder="123456789012345678" required /></label>
+          <label className={formLabel}>新しいサーバーのID<input type="text" className={formInput} name="guildId" inputMode="numeric" placeholder="123456789012345678" required /></label>
           <label className={formLabel}>サーバーの名前 <small className="ml-6 font-normal text-muted">分からないときだけ要る</small><input type="text" className={formInput} name="guildName" /></label>
         </div>
         <button type="submit" className="btn mt-10">付け替える</button>
-        <p className={formHint}>新しいサーバーの人が入れるようになり、いまのサーバーの人は入れなくなります。メンバーの行と管理者の印は残ります。知らせのチャンネルは外れるので、新しいサーバーに Bot を招いて選び直してもらいます。</p>
+        <p className={formHint}>新しいサーバーの人が入れるようになり、いまのサーバーの人は入れなくなります。メンバーの行と管理者の印は残ります。知らせのチャンネルは外れるので、新しいサーバーにBotを招いて選び直してもらいます。</p>
       </form>
       <form className={form} id="opDelete" onSubmit={(ev) => submit(ev, () => {
         askConfirm({ title: '「' + d.title + '」を消しますか？', message: '中身もすべて消え、元に戻せません。', ok: '消す', danger: true },

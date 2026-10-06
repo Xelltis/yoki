@@ -1,4 +1,4 @@
-// テストの小道具: ログイン済みの人を作る、Discord との通信を差し替える、Worker を呼ぶ
+// テストの小道具: ログイン済みの人を作る、Discordとの通信を差し替える、Workerを呼ぶ
 import { env, SELF } from 'cloudflare:test';
 import { vi } from 'vitest';
 import { sha256Hex } from '../../src/worker/lib/ids';
@@ -8,7 +8,7 @@ export const SID = '__Host-yoki_sid';
 
 export type Guild = { id: string; name: string; owner?: boolean; permissions?: string };
 
-/** ログイン済みの人を DB に直接作り、cookie の値を返す（OAuth を通さない） */
+/** ログイン済みの人をDBに直接作り、cookieの値を返す（OAuthを通さない） */
 export async function loginAs(
   user: { id: string; name: string },
   guilds: { id: string; name: string; canManage?: boolean }[],
@@ -42,7 +42,7 @@ export async function makeGroup(id: string, guildId: string, title = 'テスト�
     .run();
 }
 
-/** Worker を呼ぶ。cookie があれば添える。転送は追わない */
+/** Workerを呼ぶ。cookieがあれば添える。転送は追わない */
 export function call(path: string, init: RequestInit & { sid?: string } = {}): Promise<Response> {
   const headers = new Headers(init.headers);
   if (init.sid) headers.set('Cookie', SID + '=' + init.sid);
@@ -53,7 +53,7 @@ export function postJson(path: string, body: unknown, sid?: string, extra: Recor
   return call(path, { method: 'POST', sid, headers: { 'Content-Type': 'application/json', Origin: ORIGIN, ...extra }, body: JSON.stringify(body) });
 }
 
-/** Discord（OAuth のトークン・プロフィール・サーバーの一覧）の返事を差し替え、呼ばれた URL を記録する */
+/** Discord（OAuthのトークン・プロフィール・サーバーの一覧）の返事を差し替え、呼ばれたURLを記録する */
 export function mockDiscord(profile: { user: { id: string; username: string; global_name?: string }; guilds: Guild[] }) {
   const calls: { url: string; init?: RequestInit }[] = [];
   const spy = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
@@ -68,8 +68,8 @@ export function mockDiscord(profile: { user: { id: string; username: string; glo
 }
 
 /**
- * Bot の Discord の API（サーバーのメンバー・サーバー）の返事を差し替える。members はサーバーごとのメンバー（ID → ロール）。
- * 載っていないサーバーは、Bot がいない（403）。owner と roles（ID → 権限の数）はサーバーの中身
+ * BotのDiscordのAPI（サーバーのメンバー・サーバー）の返事を差し替える。membersはサーバーごとのメンバー（ID → ロール）。
+ * 載っていないサーバーは、Botがいない（403）。ownerとroles（ID → 権限の数）はサーバーの中身
  */
 export function mockBotGuilds(guilds: Record<string, { members: Record<string, string[]>; owner?: string; roles?: Record<string, string> }> = {}) {
   const calls: string[] = [];
@@ -90,7 +90,7 @@ export function setCookies(res: Response): string[] {
   return res.headers.getSetCookie();
 }
 
-/** テスト用のグループと人。admin はサーバーの管理者（グループの管理者）、ソラとこまちはただのメンバー */
+/** テスト用のグループと人。adminはサーバーの管理者（グループの管理者）、ソラとこまちはただのメンバー */
 export const GUILD = 'guild-t';
 export async function setupGroup(id = 'grp') {
   await makeGroup(id, GUILD);
@@ -112,14 +112,14 @@ export async function rpc(sid: string, groupId: string, fn: string, form: Record
 /** 成功を確かめて返事を返す */
 export async function ok(sid: string, groupId: string, fn: string, form: Record<string, unknown> = {}): Promise<Record<string, any>> {
   const r = await rpc(sid, groupId, fn, form);
-  if (r.status !== 200) throw new Error(fn + ' が失敗: ' + r.status + ' ' + JSON.stringify(r.body));
+  if (r.status !== 200) throw new Error(fn + 'が失敗: ' + r.status + ' ' + JSON.stringify(r.body));
   return r.body;
 }
 
 /** 失敗を確かめてメッセージを返す */
 export async function fail(sid: string, groupId: string, fn: string, form: Record<string, unknown> = {}): Promise<{ status: number; error: string }> {
   const r = await rpc(sid, groupId, fn, form);
-  if (r.status === 200) throw new Error(fn + ' が成功してしまった: ' + JSON.stringify(r.body).slice(0, 200));
+  if (r.status === 200) throw new Error(fn + 'が成功してしまった: ' + JSON.stringify(r.body).slice(0, 200));
   return { status: r.status, error: String(r.body.error) };
 }
 

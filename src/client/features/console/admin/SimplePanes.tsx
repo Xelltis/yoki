@@ -27,7 +27,7 @@ export function AdminsPane() {
             <span className="inline-flex h-30 items-center gap-6 rounded-full border border-accent-line bg-accent-soft py-0 pr-6 pl-12 text-13 font-semibold text-accent-text" key={n}>
               {n}
               {d.isAdmin && list.length > 1 && (
-                <button type="button" className="grid cursor-pointer place-items-center rounded-[50%] border-0 bg-transparent p-2 text-inherit opacity-70 hover:bg-accent-line hover:opacity-100" title="管理者から外す" aria-label={n + ' を管理者から外す'}
+                <button type="button" className="grid cursor-pointer place-items-center rounded-[50%] border-0 bg-transparent p-2 text-inherit opacity-70 hover:bg-accent-line hover:opacity-100" title="管理者から外す" aria-label={n + 'を管理者から外す'}
                   onClick={() => askConfirm({ title: '管理者から外しますか？', message: '「' + n + '」を管理者の名簿から外します。', ok: '外す', danger: true }, () => { void call('admAdd', 'admMsg', 'setAdmin', { name: n, admin: false }); })}>
                   <Icon name="close" size="xs" />
                 </button>
@@ -35,7 +35,7 @@ export function AdminsPane() {
             </span>
           ))}
         </div>
-        <p className="hint">グループの Discord サーバーで、オーナーか「サーバー管理」の権限がある人は、名簿に無くても管理者です。</p>
+        <p className="hint">グループのDiscordサーバーで、オーナーか「サーバー管理」の権限がある人は、名簿に無くても管理者です。</p>
       </div>
       <div className="card" id="admAddCard" hidden={!d.isAdmin}>
         <h3>管理者を足す</h3>
@@ -63,14 +63,14 @@ export function TablePane() {
     const n = nameV.trim();
     if (!n) { setMsg('stNameMsg', '名前を入れてください。'); return; }
     if (n === d.title) { setMsg('stNameMsg', 'いまの名前と同じです。'); return; }
-    askConfirm({ title: '名前を変えますか？', message: '画面の左上と、Discord の知らせに出る名前が「' + n + '」になります。', ok: '変える' }, () => { void call('stNameSave', 'stNameMsg', 'renameGroup', { name: n }).then((r) => { if (r) setName(null); }); });
+    askConfirm({ title: '名前を変えますか？', message: '画面の左上と、Discordの知らせに出る名前が「' + n + '」になります。', ok: '変える' }, () => { void call('stNameSave', 'stNameMsg', 'renameGroup', { name: n }).then((r) => { if (r) setName(null); }); });
   };
   return (
     <div data-pane="table">
       <div className="card">
         <h3>名前</h3>
-        <p className="hint">画面の左上と、Discord の知らせに出る名前です。みんなに見えます。</p>
-        <label className={fieldLabel} htmlFor="stName">グループの名前 <small className={fieldNote}>80 文字まで</small></label>
+        <p className="hint">画面の左上と、Discordの知らせに出る名前です。みんなに見えます。</p>
+        <label className={fieldLabel} htmlFor="stName">グループの名前 <small className={fieldNote}>80文字まで</small></label>
         <input type="text" className={field} id="stName" maxLength={80} value={nameV} onChange={(ev) => setName(ev.target.value)} />
         <div className="btns"><button type="button" className="btn primary" id="stNameSave" disabled={!!busy.stNameSave || nameV.trim() === d.title} onClick={rename}>名前を変える</button><span className="hint" id="stNameMsg">{msg.stNameMsg || ''}</span></div>
       </div>
@@ -90,14 +90,14 @@ export function TablePane() {
   );
 }
 
-/** 送信の記録。新しい順 10 件 */
+/** 送信の記録。新しい順10件 */
 export function LogPane() {
   const d = useData();
   const lg = d.log || [];
   return (
     <div data-pane="log">
       <div className="card">
-        <h3>送信の記録 <small className="hint">届かないときはここを見る。新しい順 10 件</small></h3>
+        <h3>送信の記録 <small className="hint">届かないときはここを見る。新しい順10件</small></h3>
         <div className="wrap">
           <table id="stLog">
             <tbody>

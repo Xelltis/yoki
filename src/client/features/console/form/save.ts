@@ -1,5 +1,5 @@
 // 卓の保存と削除（登録の窓と変更の窓で共通）。
-// 押した瞬間にカレンダーへ仮に出して窓を閉じ、返事が来たら本物に置き換える。失敗したら onFail で窓に戻す
+// 押した瞬間にカレンダーへ仮に出して窓を閉じ、返事が来たら本物に置き換える。失敗したらonFailで窓に戻す
 import type { ConsoleSession, RpcResult } from '../../../../shared/api';
 import { askConfirm } from '../../../ui/confirm';
 import { toast } from '../../../ui/toast';
@@ -23,7 +23,7 @@ export function useSessionSave() {
     if (n > 0) setTimeout(() => openPollWhenReady(id, n - 1), 250);
   };
 
-  /** 保存する（確かめは済ませておく）。promoted は、募集から移すときに参加者にする興味ありの人 */
+  /** 保存する（確かめは済ませておく）。promotedは、募集から移すときに参加者にする興味ありの人 */
   const save = (form: SessionForm, promoted: string[] | null, onFail: (message: string) => void) => {
     const prev = byId(d, form.id);
     if (promoted) promoted.forEach((n) => { if (form.members.indexOf(n) < 0) form.members.push(n); });
@@ -48,13 +48,13 @@ export function useSessionSave() {
     close();
     toast('保存しています…');
     const wantNotify = form.notify, wasEdit = !!form.id, wantPoll = form.status === '調整中' && !(prev && hasPoll(prev));
-    form.notify = false;   // Discord へは、保存が終わってから画面側が送る
+    form.notify = false;   // Discordへは、保存が終わってから画面側が送る
     sync.write<RpcResult>('saveSession', form, { optimistic: (cur) => withSessions(cur, tmps), rollback: withoutTmp }).then((res) => {
       toast(res.message);
       if (wantPoll && res.id) openPollWhenReady(res.id);
       if (!wantNotify) return;
       const r = res.ids && res.ids.length > 1 ? { kind: 'bulk', names: res.names, ids: res.ids, label: '登録', series: form.series, me: me(d) } : { kind: 'change', id: res.id, verb: wasEdit ? '変更' : '登録', me: me(d) };
-      void discordSend(sync, r, (t) => toast(t)).then(({ ok, r: sr }) => { toast(ok ? 'Discord に送りました: ' + res.message.replace(/^.*?: /, '') : failToast(sr)); });
+      void discordSend(sync, r, (t) => toast(t)).then(({ ok, r: sr }) => { toast(ok ? 'Discordに送りました: ' + res.message.replace(/^.*?: /, '') : failToast(sr)); });
     }, (err: Error) => {
       // 失敗したら、入力を残したまま窓を開き直す
       onFail(err.message); toast('保存できませんでした');
@@ -72,7 +72,7 @@ export function useSessionSave() {
         toast(res.message);
         if (!form.notify) return;
         void discordSend(sync, { kind: 'delete', name: form.name, series: form.series, status: form.status, me: me(d) }, (t) => toast(t))
-          .then(({ ok, r }) => { toast(ok ? 'Discord に送りました: ' + form.name : failToast(r)); });
+          .then(({ ok, r }) => { toast(ok ? 'Discordに送りました: ' + form.name : failToast(r)); });
       }, (err: Error) => { onFail(err.message); toast('削除できませんでした'); void sync.refresh('quiet'); });
     });
   };

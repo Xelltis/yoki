@@ -1,4 +1,4 @@
-// 小さな状態の入れ物。React の外（読み直しの仕組み・window.yoki など）からも読み書きでき、React は useStore で見る
+// 小さな状態の入れ物。Reactの外（読み直しの仕組み・window.yokiなど）からも読み書きでき、ReactはuseStoreで見る
 import { useSyncExternalStore } from 'react';
 
 export type Store<T> = {

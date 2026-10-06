@@ -1,11 +1,11 @@
-// 知らせのチャンネル（管理画面の「知らせ」）。Bot がサーバーにいるかと、送り先に選べるチャンネルの一覧を、
-// サーバー（getDiscordChannels）から読む。Discord に問い合わせるので、区分を開いたときと「読み直す」のときだけ読む
+// 知らせのチャンネル（管理画面の「知らせ」）。Botがサーバーにいるかと、送り先に選べるチャンネルの一覧を、
+// サーバー（getDiscordChannels）から読む。Discordに問い合わせるので、区分を開いたときと「読み直す」のときだけ読む
 import type { ConsoleData, DiscordChannelsResult } from '../../../../shared/api';
 import { createStore, useStore } from '../../../ui/store';
 import type { ConsoleSync } from '../api/sync';
 import { useConsole } from '../context';
 
-/** 読んだ一覧（まだ読んでいなければ null）。group はどのグループの一覧か */
+/** 読んだ一覧（まだ読んでいなければnull）。groupはどのグループの一覧か */
 type ChannelState = { group: string; list: DiscordChannelsResult | null; loading: boolean; failed: string };
 const EMPTY = { list: null, loading: false, failed: '' };
 const channelStore = createStore<ChannelState>({ group: '', ...EMPTY });
@@ -17,7 +17,7 @@ export function useChannels(): ChannelState {
   return s.group === sync.groupId ? s : { group: sync.groupId, ...EMPTY };
 }
 
-/** Bot とチャンネルの一覧を読む。Bot が設定されていなければ読まない */
+/** Botとチャンネルの一覧を読む。Botが設定されていなければ読まない */
 export function loadChannels(sync: ConsoleSync): void {
   const d = sync.data(), group = sync.groupId, cur = channelStore.get();
   if (!d || !d.bot.ready || (cur.group === group && cur.loading)) return;
@@ -32,32 +32,32 @@ export function ensureChannels(sync: ConsoleSync): void {
   if (s.group !== sync.groupId || (!s.list && !s.failed)) loadChannels(sync);
 }
 
-/** チャンネルの名前（「#卓の知らせ」）。一覧に無ければ ID のまま。空なら空 */
+/** チャンネルの名前（「#卓の知らせ」）。一覧に無ければIDのまま。空なら空 */
 export function channelLabel(list: DiscordChannelsResult | null, id: string): string {
   if (!id) return '';
   const c = list && list.channels.filter((x) => x.id === id)[0];
   return '#' + (c ? c.name : id);
 }
 
-/** チャンネルを選べるか（Bot がサーバーにいて、一覧を読めた） */
+/** チャンネルを選べるか（Botがサーバーにいて、一覧を読めた） */
 export function canPick(s: ChannelState): boolean { return !!(s.list && s.list.inGuild); }
 
-/** Bot の様子の文。読めないときや、Bot がサーバーにいないときは bad */
+/** Botの様子の文。読めないときや、Botがサーバーにいないときはbad */
 export function botStateText(d: ConsoleData, s: ChannelState): { text: string; bad: boolean } {
   const { list, loading, failed } = s;
-  const text = !d.bot.ready ? '卓予定を公開している運営者が、Bot をまだ設定していません。Discord への知らせは送れません。'
-    : loading ? 'Bot とチャンネルの一覧を読んでいます…'
+  const text = !d.bot.ready ? '卓予定を公開している運営者が、Botをまだ設定していません。Discordへの知らせは送れません。'
+    : loading ? 'Botとチャンネルの一覧を読んでいます…'
       : failed ? 'チャンネルの一覧を読めませんでした: ' + failed
-        : !list ? '「読み直す」を押すと、Bot がサーバーにいるかと、チャンネルの一覧を確かめます。'
-          : !list.inGuild ? 'Bot がまだこのサーバーにいません。「Bot をサーバーに招く」から招いて、「読み直す」を押してください。'
-            : 'Bot はサーバーにいます。送り先に選べるチャンネルは ' + list.channels.length + ' 個です。';
+        : !list ? '「読み直す」を押すと、Botがサーバーにいるかと、チャンネルの一覧を確かめます。'
+          : !list.inGuild ? 'Botがまだこのサーバーにいません。「Botをサーバーに招く」から招いて、「読み直す」を押してください。'
+            : 'Botはサーバーにいます。送り先に選べるチャンネルは' + list.channels.length + '個です。';
   return { text, bad: !d.bot.ready || !!failed || !!(list && !list.inGuild) };
 }
 
 /**
- * チャンネルを選ぶ欄。頭に empty（「基本のチャンネルと同じ」など）を置き、カテゴリーごとに並べる。
- * 一覧に無いいまの設定は「（いまの設定）」として残す。一覧が無い（Bot がいない・まだ読んでいない）ときは選べない。
- * value は選んでいる値（選びかけか、いまの設定）
+ * チャンネルを選ぶ欄。頭にempty（「基本のチャンネルと同じ」など）を置き、カテゴリーごとに並べる。
+ * 一覧に無いいまの設定は「（いまの設定）」として残す。一覧が無い（Botがいない・まだ読んでいない）ときは選べない。
+ * valueは選んでいる値（選びかけか、いまの設定）
  */
 export function ChannelSelect({ id, value, empty, onChange, className }: { id: string; value: string; empty: string; onChange: (v: string) => void; className?: string }) {
   const st = useChannels();

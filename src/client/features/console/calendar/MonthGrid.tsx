@@ -12,23 +12,23 @@ type Props = {
   selDay: string;
   /** 日を押した（選んでいた日をもう一度押したら外す） */
   onPick: (key: string) => void;
-  /** 月を送る（n は +1 か -1） */
+  /** 月を送る（nは +1か -1） */
   onShift: (n: number) => void;
 };
 
-/** マス（日）。中身は折り返して上から並べる（day は e2e が探す印） */
+/** マス（日）。中身は折り返して上から並べる（dayはe2eが探す印） */
 const dayBase = 'day relative m-0 flex min-h-108 w-full min-w-0 appearance-none flex-wrap content-start items-center overflow-hidden rounded-none border-0 p-6 text-left font-inherit text-12 text-inherit '
   + 'max-sm:min-h-68 max-sm:p-3 max-sm:text-11 ';
 /**
- * 卓の札。左の線の色で状態を示す。広い画面では 2 行まで折り返して名前を読めるようにし、
- * スマホでは 1 行で、… を付けずに入るだけ見せる（狭いマスでは … が字の場所を取るため）
+ * 卓の札。左の線の色で状態を示す。広い画面では2行まで折り返して名前を読めるようにし、
+ * スマホでは1行で、… を付けずに入るだけ見せる（狭いマスでは … が字の場所を取るため）
  */
 const chipBase = 'mt-3 block min-w-0 flex-[0_0_100%] overflow-hidden whitespace-nowrap text-clip rounded-sm py-2 pr-6 pl-8 text-[11.5px] leading-[1.4] '
   + 'sm:line-clamp-2 sm:whitespace-normal sm:wrap-anywhere max-sm:mt-2 max-sm:py-1 max-sm:pr-2 max-sm:pl-4 max-sm:text-10 ';
 const chipIcon = 'mr-2 align-[-3px] max-sm:hidden ';
 /** みんなの都合の印（◎・△）。マスの右上 */
 const avMark = 'absolute top-6 right-6 text-11 font-bold text-ok-text max-sm:hidden';
-/** マスに並べる卓の札の数。多い日は残りを「ほか N 件」にまとめる（その行だけ縦に伸びないように。全部は日の内訳に出る） */
+/** マスに並べる卓の札の数。多い日は残りを「ほかN件」にまとめる（その行だけ縦に伸びないように。全部は日の内訳に出る） */
 const MAX_CHIPS = 3;
 const CHIP: Record<string, [string, string]> = {
   '': ['bg-card font-semibold text-fg shadow-[inset_3px_0_0_var(--accent),0_0_0_1px_var(--line)]', 'text-accent-text'],
@@ -64,8 +64,8 @@ export function MonthGrid({ d, view, target, selDay, onPick, onShift }: Props) {
     if (tsel && isAdjusting(tsel) && wins.indexOf(tsel) >= 0) cls += ' shadow-[inset_0_0_0_2px_var(--accent-line)]';
     if (key === selDay) cls += ' z-(--z-cell) outline-2 outline-offset-[-2px] outline-accent';
     const note = (d.notes || {})[key];
-    const aria = (m + 1) + '月' + day + '日（' + WD[c] + '）' + (hol ? ' ' + hol : '') + (key === d.today ? '、今日' : '') + (list.length ? '、卓 ' + list.length + ' 件' : '') +
-      (wins.length ? '、調整中 ' + wins.length + ' 件' : '') + (av[key] === 'ok' ? '、全員空き' : av[key] === 'soft' ? '、△あり' : '') + (note ? '、メモあり' : '');
+    const aria = (m + 1) + '月' + day + '日（' + WD[c] + '）' + (hol ? ' ' + hol : '') + (key === d.today ? '、今日' : '') + (list.length ? '、卓' + list.length + '件' : '') +
+      (wins.length ? '、調整中' + wins.length + '件' : '') + (av[key] === 'ok' ? '、全員空き' : av[key] === 'soft' ? '、△あり' : '') + (note ? '、メモあり' : '');
     const icos = list.filter((s) => isAdjusting(s) && wins.indexOf(s) < 0).concat(wins);
     // 調整中はアイコンだけ（下で並べる）。ほかは札にする
     const chips = list.filter((s) => !isAdjusting(s));
@@ -89,12 +89,12 @@ export function MonthGrid({ d, view, target, selDay, onPick, onShift }: Props) {
             </span>
           );
         })}
-        {chips.length > MAX_CHIPS && <span className="mt-3 block flex-[0_0_100%] pl-8 text-11 font-semibold text-muted max-sm:mt-2 max-sm:pl-4 max-sm:text-10">{'ほか ' + (chips.length - MAX_CHIPS + 1) + ' 件'}</span>}
+        {chips.length > MAX_CHIPS && <span className="mt-3 block flex-[0_0_100%] pl-8 text-11 font-semibold text-muted max-sm:mt-2 max-sm:pl-4 max-sm:text-10">{'ほか' + (chips.length - MAX_CHIPS + 1) + '件'}</span>}
         {icos.length > 0 && (
           <span className="mt-3 flex flex-[0_0_100%] flex-wrap gap-3">
             {icos.map((s, j) => {
               const poll = hasPoll(s);
-              const label = s.name + (poll ? '（日程調整の候補日　◯ ' + pollOk(d, s, key).length + '/' + pollVoters(d, s).length + '）' : '（調整中' + (s.windowLabel ? '　' + s.windowLabel + ' のどこか' : '') + '）');
+              const label = s.name + (poll ? '（日程調整の候補日　◯ ' + pollOk(d, s, key).length + '/' + pollVoters(d, s).length + '）' : '（調整中' + (s.windowLabel ? '　' + s.windowLabel + 'のどこか' : '') + '）');
               return (
                 <span className={'inline-flex h-20 w-20 items-center justify-center rounded-sm bg-card max-sm:h-16 max-sm:w-16 ' + (poll ? 'text-accent-text shadow-[0_0_0_1px_var(--accent-line)]' : 'text-muted shadow-[0_0_0_1px_var(--line)]')}
                   key={s.id + ':' + j} role="img" aria-label={label} title={label}>

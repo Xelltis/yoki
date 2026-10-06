@@ -1,4 +1,4 @@
-// 画面に渡す一式（GAS 版 consoleData_）。形は src/shared/api.ts の ConsoleData（画面と共有する）。日時の書き方は GAS 版のまま。
+// 画面に渡す一式（GAS版consoleData_）。形はsrc/shared/api.tsのConsoleData（画面と共有する）。日時の書き方はGAS版のまま。
 // 外したもの: url（シート）・hasPassword・adminSet。足したもの: me・group・members[].linked / admin・settings.remind
 import type { ConsoleData } from '../../shared/api';
 import { botInviteUrl } from '../discord/channel';
@@ -90,7 +90,7 @@ export function consoleData(ctx: Ctx): ConsoleData {
   };
 }
 
-/** カレンダーとの連携の様子。購読 URL は、グループの画面と同じアドレスで作る */
+/** カレンダーとの連携の様子。購読URLは、グループの画面と同じアドレスで作る */
 function calendarView(ctx: Ctx): ConsoleData['calendar'] {
   const g = ctx.google;
   return {

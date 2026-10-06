@@ -1,11 +1,11 @@
-// グループの画面のデータの読み書き。データは TanStack Query の入れ物（キー ['console', グループの ID]）に置き、
-// いつ読むか・書いたあとにどう当てるかを、ここで決める（前の画面の load.ts と api.ts の決まりと同じ）。
+// グループの画面のデータの読み書き。データはTanStack Queryの入れ物（キー ['console', グループのID]）に置き、
+// いつ読むか・書いたあとにどう当てるかを、ここで決める（前の画面のload.tsとapi.tsの決まりと同じ）。
 //   - 開いたら、この端末の控えを先に描き、すぐ最新を読む（控えに書くのは、サーバーから来たデータだけ）
 //   - 書き込みの返事には最新のデータが付いてくる。ほかの書き込みが返事待ちなら、まだ当てない（押した瞬間の表示が戻らないように）。
 //     全部の返事が来て、当てるのを見送ったぶんがあれば、そっと読み直す
 //   - 読んでいる途中に書き込みが始まったら、その読み込みは捨てる（書き込みの前のデータなので）
 //   - 自動の読み直しは、隠れている・窓が開いている・表をつかんでいる・文字を打っているあいだは待つ
-//   - ログインが切れたらログインし直す（2 回まで）。グループが消されたら、控えを消して読むのをやめる
+//   - ログインが切れたらログインし直す（2回まで）。グループが消されたら、控えを消して読むのをやめる
 import type { QueryClient } from '@tanstack/react-query';
 import type { ConsoleData, RpcName } from '../../../../shared/api';
 import { load, store } from '../../../app/storage';
@@ -14,15 +14,15 @@ import { hhmm } from '../model/dates';
 import { type Rpc, RpcError } from './rpc';
 
 export type SyncView = {
-  /** boot は読み込み中（まだデータが無い）、ready は描ける、error はデータが無いまま読めなかった、gone はグループが消された、relogin はログインし直せなかった */
+  /** bootは読み込み中（まだデータが無い）、readyは描ける、errorはデータが無いまま読めなかった、goneはグループが消された、reloginはログインし直せなかった */
   phase: 'boot' | 'ready' | 'error' | 'gone' | 'relogin';
-  /** error・gone・relogin のときに出す文 */
+  /** error・gone・reloginのときに出す文 */
   message: string;
   /** 手で読み直している（更新ボタンが回る） */
   busy: boolean;
   /** 自動の読み直しに失敗した（上の帯の時刻の印が赤くなる） */
   failed: boolean;
-  /** 自動更新の間隔（分）。0 はしない */
+  /** 自動更新の間隔（分）。0はしない */
   autoMin: number;
 };
 
@@ -49,7 +49,7 @@ export function sigOf(d: ConsoleData): string {
 
 /*
  * この端末の控え（グループごと）。画面とサーバーの約束（src/shared/api.ts）の形の印と一緒に置き、印が違えば使わない。
- * 公開で画面のデータに欄が増えたあと、古い形の控えで先に描くと、増えた欄が無くて画面が落ちるため（印は vite.config.ts が入れる）
+ * 公開で画面のデータに欄が増えたあと、古い形の控えで先に描くと、増えた欄が無くて画面が落ちるため（印はvite.config.tsが入れる）
  */
 const cacheKey = (groupId: string) => 'taku.cache:' + groupId;
 type Cached = { shape: string; d: ConsoleData };
@@ -61,7 +61,7 @@ export function readCache(groupId: string): ConsoleData | null {
 function saveCache(groupId: string, d: ConsoleData): void { try { localStorage.setItem(cacheKey(groupId), JSON.stringify({ shape: __API_SHAPE__, d } satisfies Cached)); } catch { /* 使えない端末 */ } }
 export function clearCache(groupId: string): void { try { localStorage.removeItem(cacheKey(groupId)); } catch { /* 使えない端末 */ } }
 
-/** 自動更新の間隔（分）。このブラウザだけの設定。未設定なら 3 分、0 はしない */
+/** 自動更新の間隔（分）。このブラウザだけの設定。未設定なら3分、0はしない */
 export function autoMinutes(): number { const v = load('autoRefresh'); return v === '' ? 3 : Math.max(0, +v || 0); }
 
 /** 自動の読み直しを待つとき: 画面が隠れている、窓が開いている、文字を入力中、予定表をつかんで動かしている */
@@ -115,7 +115,7 @@ export class ConsoleSync {
   }
 
   /**
-   * 読み込む。boot は開いたとき、manual は更新ボタン、auto は自動更新、quiet は書き込みのあとの読み直し（吹き出しを出さない）。
+   * 読み込む。bootは開いたとき、manualは更新ボタン、autoは自動更新、quietは書き込みのあとの読み直し（吹き出しを出さない）。
    * 更新ボタンは、回る印と吹き出しで結果を返す。自動更新は、中身が変わったときだけ描き直す
    */
   async refresh(mode: Mode): Promise<void> {
@@ -145,7 +145,7 @@ export class ConsoleSync {
         return;
       }
       this.apply(d);
-      if (req.manual) this.deps.toast((changed ? '最新の状態にしました' : '最新の状態です。変更はありません') + '（' + hhmm(d.loadedAt) + ' 時点）');
+      if (req.manual) this.deps.toast((changed ? '最新の状態にしました' : '最新の状態です。変更はありません') + '（' + hhmm(d.loadedAt) + '時点）');
     } catch (e) {
       this.done(req);
       if (req.ctl.signal.aborted) {
@@ -162,9 +162,9 @@ export class ConsoleSync {
   }
 
   /**
-   * 書き込む（読み込みのほかの呼び出し）。optimistic を渡すと、返事を待たずにデータをその形にする（押した瞬間に見えるように）。
-   * 失敗したら rollback を当て、失敗を投げる（ログインし直す・グループが消えたときは、それぞれの画面にする）。
-   * 返事にデータが付いていなければ読み直す。quiet なら読み直さない（Discord への送信の途中など、データが変わらないとき）
+   * 書き込む（読み込みのほかの呼び出し）。optimisticを渡すと、返事を待たずにデータをその形にする（押した瞬間に見えるように）。
+   * 失敗したらrollbackを当て、失敗を投げる（ログインし直す・グループが消えたときは、それぞれの画面にする）。
+   * 返事にデータが付いていなければ読み直す。quietなら読み直さない（Discordへの送信の途中など、データが変わらないとき）
    */
   async write<R extends { data?: ConsoleData }>(name: RpcName, form: object = {}, opts: { optimistic?: (d: ConsoleData) => ConsoleData; rollback?: (d: ConsoleData) => ConsoleData; quiet?: boolean } = {}): Promise<R> {
     this.pending++;
@@ -188,7 +188,7 @@ export class ConsoleSync {
     }
   }
 
-  /** データを変えない呼び出し（Discord のチャンネルの一覧など）。書き込みとは数えない */
+  /** データを変えない呼び出し（Discordのチャンネルの一覧など）。書き込みとは数えない */
   async call<R>(name: RpcName, form: object = {}): Promise<R> {
     try {
       return await this.deps.rpc<R>(this.groupId, name, form);
@@ -244,12 +244,12 @@ export class ConsoleSync {
 
   private setBusy(on: boolean): void { this.view.set((v) => (v.busy === on ? v : { ...v, busy: on })); }
 
-  /** ログインが切れた・グループが消された失敗なら、その画面にして true を返す */
+  /** ログインが切れた・グループが消された失敗なら、その画面にしてtrueを返す */
   private loginOrGone(e: unknown): boolean {
     if (!(e instanceof RpcError)) return false;
     if (e.kind === 'gone') { this.setGone(e.message); return true; }
     if (e.kind !== 'auth') return false;
-    // ログインし直す。続くときは止める（Discord の設定の誤りなどで、行き来を繰り返さないように）
+    // ログインし直す。続くときは止める（Discordの設定の誤りなどで、行き来を繰り返さないように）
     let n = 0;
     try { n = +(sessionStorage.getItem('taku.relogin') || 0) || 0; sessionStorage.setItem('taku.relogin', String(n + 1)); } catch { /* 使えない端末 */ }
     if (n >= 2) this.view.set((v) => ({ ...v, phase: 'relogin', message: 'ログインできませんでした。入口から開き直してください。' }));
@@ -265,7 +265,7 @@ export class ConsoleSync {
     void this.refresh('auto');
   }
 
-  /** ほかのタブや別のアプリから戻ったとき。自動更新が有効で、前の読み込みから 1 分以上（間隔が短ければその間隔）経っていれば読む */
+  /** ほかのタブや別のアプリから戻ったとき。自動更新が有効で、前の読み込みから1分以上（間隔が短ければその間隔）経っていれば読む */
   private wake(): void {
     const min = autoMinutes();
     if (min && this.data() && !document.hidden && Date.now() - this.last > Math.min(min * 60000, 60000)) this.autoTick(true);

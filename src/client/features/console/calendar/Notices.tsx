@@ -8,14 +8,14 @@ import { active, hasPoll, isAdjusting, isDated, isMyTurn, isRecruit, pollPending
 import { notifyState } from '../model/notify';
 import { notice, noticeSub } from '../styles';
 
-/** 押したときに移る先。day はその日を選ぶ、recruit は「募集・調整」のタブ（卓の ID があればその卓のカードへ）、target は都合を見る卓 */
+/** 押したときに移る先。dayはその日を選ぶ、recruitは「募集・調整」のタブ（卓のIDがあればその卓のカードへ）、targetは都合を見る卓 */
 type Item = { cls: string; body: ReactNode; day?: string; recruit?: { id?: string }; target?: string };
 
 export function Notices({ d, onDay, onRecruit, onTarget }: {
   d: ConsoleData;
   /** その日を選ぶ */
   onDay: (day: string) => void;
-  /** 「募集・調整」のタブへ（卓の ID があれば、その卓のカードへ） */
+  /** 「募集・調整」のタブへ（卓のIDがあれば、その卓のカードへ） */
   onRecruit: (id?: string) => void;
   /** 都合を見る卓を変える */
   onTarget: (name: string) => void;
@@ -26,20 +26,20 @@ export function Notices({ d, onDay, onRecruit, onTarget }: {
   const line = (s: ConsoleSession, head: ReactNode) => (
     <>{head}<b>{s.name}</b><span className={noticeSub}>{timeRange(s) + '　GM: ' + (s.gm || '未定') + '　参加: ' + (s.members.join('、') || '未定')}</span></>
   );
-  // 見落としやすい募集中・調整中を先に出す（色は hot）
+  // 見落としやすい募集中・調整中を先に出す（色はhot）
   const rec = sortSessions(active(d).filter(isRecruit));
   if (rec.length) {
-    // 卓ごとに 1 行。参加希望はタブで出す
+    // 卓ごとに1行。参加希望はタブで出す
     add('adjust hot', (
       <>
-        <Icon name="campaign" />{'募集中 ' + rec.length + ' 件'}
+        <Icon name="campaign" />{'募集中' + rec.length + '件'}
         {rec.slice(0, rec.length > 3 ? 2 : 3).map((s) => (
           <span className="block" key={s.id}>
-            <b>{s.name}</b><span className="ml-6 text-12 font-normal text-muted">{(s.windowLabel || '期間未定') + (s.want.length ? '　希望 ' + s.want.length + ' 人' : '')}</span>
+            <b>{s.name}</b><span className="ml-6 text-12 font-normal text-muted">{(s.windowLabel || '期間未定') + (s.want.length ? '　希望' + s.want.length + '人' : '')}</span>
           </span>
         ))}
-        {/* 多いときは 2 件だけ出し、残りの数を出す（全部は「募集・調整」タブにある） */}
-        {rec.length > 3 && <span className="block text-12 font-semibold text-muted">{'ほか ' + (rec.length - 2) + ' 件'}</span>}
+        {/* 多いときは2件だけ出し、残りの数を出す（全部は「募集・調整」タブにある） */}
+        {rec.length > 3 && <span className="block text-12 font-semibold text-muted">{'ほか' + (rec.length - 2) + '件'}</span>}
         <span className={noticeSub}>参加希望は「募集・調整」タブで出せます</span>
       </>
     ), '', {});
@@ -51,7 +51,7 @@ export function Notices({ d, onDay, onRecruit, onTarget }: {
       add('adjust hot' + (turn ? ' mine' : ''), (
         <>
           <Icon name="how_to_vote" />{pend.length ? '日程調整の回答待ち: ' : '日程調整の回答がそろいました: '}<b>{s.name}</b>
-          <span className={noticeSub}>{'候補 ' + s.candidates.length + ' 日　' + (pend.length ? '未回答: ' + pend.join('、') : '全員が回答済み。GM が開催日を選びます')}</span>
+          <span className={noticeSub}>{'候補' + s.candidates.length + '日　' + (pend.length ? '未回答: ' + pend.join('、') : '全員が回答済み。GMが開催日を選びます')}</span>
           {turn && <span className="block text-12 font-semibold text-soon-text">{waitMe ? 'あなたの回答を待っています' : '開催日を選んでください'}</span>}
         </>
       ), '', { id: s.id });
@@ -60,7 +60,7 @@ export function Notices({ d, onDay, onRecruit, onTarget }: {
     add('adjust hot', (
       <>
         <Icon name="edit_calendar" />日程調整中: <b>{s.name}</b>
-        <span className={noticeSub}>{(s.windowLabel ? s.windowLabel + ' のどこか' : '期間未定') + '　GM: ' + (s.gm || '未定') + '　参加: ' + (s.members.join('、') || '未定')}</span>
+        <span className={noticeSub}>{(s.windowLabel ? s.windowLabel + 'のどこか' : '期間未定') + '　GM: ' + (s.gm || '未定') + '　参加: ' + (s.members.join('、') || '未定')}</span>
         <span className={noticeSub}>押すと、この卓の人の都合をカレンダーに出し、候補の期間に枠を付けます</span>
       </>
     ), s.windowFrom || '', undefined, s.name);
@@ -72,7 +72,7 @@ export function Notices({ d, onDay, onRecruit, onTarget }: {
   if (!t.length && !tm.length) add('info', '今日・明日の卓はありません。');
   planned.filter((s) => { const n = daysBetween(d.today, s.date); return n >= 2 && n <= 14; }).forEach((s) => { add('week', line(s, <><Icon name="date_range" />{fmtJa(s.date) + ' '}</>), s.date); });
   const later = planned.filter((s) => daysBetween(d.today, s.date) > 14);
-  if (later.length) add('info', '15 日以降: ' + later.map((s) => fmtJa(s.date) + ' ' + s.name).join('、'));
+  if (later.length) add('info', '15日以降: ' + later.map((s) => fmtJa(s.date) + ' ' + s.name).join('、'));
   adj.filter((s) => s.windowTo && s.windowTo < d.today).forEach((s) => {
     add('overdue', <><Icon name="history" />{'候補の期間を過ぎています: ' + s.name + '（' + s.windowLabel + '）→ 開催日を決めて「開催」にするか、期間を延ばしてください。'}</>, s.windowFrom, undefined, s.name);
   });

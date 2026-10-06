@@ -10,7 +10,7 @@ import { daysBetween, fmtJa } from '../model/dates';
 import { byId, isActive, isAdjusting, isRecruit, me, sortSessions, sortedActive } from '../model/model';
 
 const ACTIONS = [
-  ['status', '状態を変更'], ['addMember', '参加者を追加'], ['removeMember', '参加者から外す'], ['setGm', 'GM を変更'],
+  ['status', '状態を変更'], ['addMember', '参加者を追加'], ['removeMember', '参加者から外す'], ['setGm', 'GMを変更'],
   ['shiftDays', '開催日をずらす'], ['setSeries', 'シリーズを変更'], ['delete', '削除'],
 ] as const;
 type Action = (typeof ACTIONS)[number][0];
@@ -52,14 +52,14 @@ export function OpsPane() {
     const what = label + (action === 'delete' ? '' : '（' + (value || (action === 'setSeries' ? '外す' : '')) + '）');
     if (action !== 'delete' && action !== 'setSeries' && !value) { setMsg('値を選んでください。'); return; }
     const sel = ids.slice(), selNames = sel.map((id) => { const s = byId(d, id); return s ? s.name : id; });
-    askConfirm({ title: sel.length + ' 件の卓で「' + what + '」を実行しますか？', message: selNames.join('、'), ok: action === 'delete' ? '削除する' : '実行する', danger: action === 'delete' }, () => {
+    askConfirm({ title: sel.length + '件の卓で「' + what + '」を実行しますか？', message: selNames.join('、'), ok: action === 'delete' ? '削除する' : '実行する', danger: action === 'delete' }, () => {
       setBusy(true); setMsg('保存しています…');
       const wantNotify = notify;
       sync.write<RpcResult>('bulkUpdateSessions', { ids: sel, action, value, notify: false, me: me(d) }).then((res) => {
         setBusy(false); setMsg(res.message); toast(res.message); setSelected({});
         if (!wantNotify) return;
         void discordSend(sync, { kind: 'bulk', names: res.names || selNames, ids: res.ids || sel, label: res.label || what }, (t) => setMsg(res.message + '　' + t))
-          .then(({ ok, r }) => toast(ok ? 'Discord に送りました' : failToast(r)));
+          .then(({ ok, r }) => toast(ok ? 'Discordに送りました' : failToast(r)));
       }, (e: Error) => { setBusy(false); setMsg(e.message); toast(e.message); });
     });
   };
@@ -68,7 +68,7 @@ export function OpsPane() {
       <p className="hint">卓の一覧から選び、参加者の出入り・開催日のずらし・状態の変更・削除をまとめてできます。</p>
       <div className="card" id="availOps">
         <div className="mb-10 flex flex-wrap items-center gap-8">
-          <span className="min-w-[5em] font-bold" id="bulkCount">{'選択 ' + ids.length + ' 件'}</span>
+          <span className="min-w-[5em] font-bold" id="bulkCount">{'選択' + ids.length + '件'}</span>
           <button type="button" className="btn small" id="bulkPast" onClick={() => pick(rows.filter((s) => s.date && daysBetween(d.today, s.date) < 0 && isActive(s)).map((s) => s.id), true)}>過ぎた卓を選ぶ</button>
           <button type="button" className="btn small" id="bulkNone" onClick={() => setSelected({})}>選択解除</button>
           <label className="chk"><input type="checkbox" id="showAll" checked={showAll} onChange={(ev) => {
@@ -93,7 +93,7 @@ export function OpsPane() {
                   // 行のどこを押しても選べる（チェック欄と編集のボタンは、それぞれで受ける）
                   <tr className={(isActive(s) ? '' : 'done') + (on ? ' checked' : '')} data-id={s.id} key={s.id}
                     onClick={(ev) => { if (!(ev.target instanceof Element && ev.target.closest('input,button'))) pick([s.id], !on); }}>
-                    <td className="sel"><input type="checkbox" className="rowsel" data-id={s.id} aria-label={s.name + ' を選ぶ'} checked={on} onChange={(ev) => pick([s.id], ev.target.checked)} /></td>
+                    <td className="sel"><input type="checkbox" className="rowsel" data-id={s.id} aria-label={s.name + 'を選ぶ'} checked={on} onChange={(ev) => pick([s.id], ev.target.checked)} /></td>
                     <td className="min-w-[14em] max-sm:min-w-0">
                       <b>{s.name}</b>
                       <small className="hidden text-12 leading-[1.5] text-muted max-sm:block">
@@ -110,7 +110,7 @@ export function OpsPane() {
             </tbody>
           </table>
         </div>
-        {/* 選んだ卓にすること。欄は中身の幅にして 1 行に並べる */}
+        {/* 選んだ卓にすること。欄は中身の幅にして1行に並べる */}
         <div className="mt-12 flex flex-wrap items-center gap-8 border-t border-line pt-12" id="bulkBar" hidden={!rows.length}>
           <span className="text-13 font-semibold text-muted">選んだ卓を</span>
           <select className={bulkField} id="bulkAction" value={action} onChange={(ev) => setAction(ev.target.value as Action)}>
@@ -122,9 +122,9 @@ export function OpsPane() {
           <select className={bulkField} id="bulkMember" hidden={!(action === 'addMember' || action === 'removeMember' || action === 'setGm')} value={memberV} onChange={(ev) => setMember(ev.target.value)}>
             {names.map((n) => <option value={n} key={n}>{n}</option>)}
           </select>
-          <input type="text" className="w-[9em] max-w-640" id="bulkDays" inputMode="numeric" placeholder="日数（7 や -1）" hidden={action !== 'shiftDays'} value={days} onChange={(ev) => setDays(ev.target.value)} />
+          <input type="text" className="w-[9em] max-w-640" id="bulkDays" inputMode="numeric" placeholder="日数（7や -1）" hidden={action !== 'shiftDays'} value={days} onChange={(ev) => setDays(ev.target.value)} />
           <input type="text" className="w-[14em] max-w-640" id="bulkSeries" list="seriesList" placeholder="シリーズ名（空で外す）" hidden={action !== 'setSeries'} value={series} onChange={(ev) => setSeries(ev.target.value)} />
-          <label className="chk"><input type="checkbox" id="bulkNotify" disabled={!d.channelSet} checked={notify} onChange={(ev) => setNotify(ev.target.checked)} /> Discord に知らせる</label>
+          <label className="chk"><input type="checkbox" id="bulkNotify" disabled={!d.channelSet} checked={notify} onChange={(ev) => setNotify(ev.target.checked)} /> Discordに知らせる</label>
           <button type="button" className={'btn ' + (action === 'delete' ? 'danger' : 'primary')} id="bulkRun" disabled={busy || !ids.length} onClick={run}>実行</button>
           <span id="bulkMsg" className="hint">{msg}</span>
         </div>

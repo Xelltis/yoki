@@ -1,4 +1,4 @@
-// 卓の登録・変更・削除・参加希望・まとめての変更（GAS 版 Sessions.js）
+// 卓の登録・変更・削除・参加希望・まとめての変更（GAS版Sessions.js）
 import { badRequest, notFound } from '../lib/errors';
 import { normTime, parseYmd } from '../lib/jst';
 import { splitNames, uniq } from '../lib/text';
@@ -15,7 +15,7 @@ function readStatus(v: unknown): Status {
   return (STATUS_LIST as string[]).includes(s) ? (s as Status) : STATUS.HELD;
 }
 
-/** 新しい卓の番号を n 個とる（使った番号は使い直さない） */
+/** 新しい卓の番号をn個とる（使った番号は使い直さない） */
 async function allocateSeq(ctx: Ctx, n: number): Promise<number> {
   const r = await ctx.db
     .prepare('UPDATE groups SET next_session_seq = next_session_seq + ?2 WHERE id = ?1 RETURNING next_session_seq - ?2 AS first')
@@ -27,7 +27,7 @@ async function allocateSeq(ctx: Ctx, n: number): Promise<number> {
 const INSERT_SESSION = `INSERT INTO sessions (group_id, seq, name, status, date, start_time, end_time, place, memo, series, series_end,
   window_from, window_to, candidates, editor, updated_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, '[]', ?14, ?15)`;
 
-/** 卓を登録・更新する。form.dates に 2 日以上あれば、まとめて登録する（新規だけ） */
+/** 卓を登録・更新する。form.datesに2日以上あれば、まとめて登録する（新規だけ） */
 export async function saveSession(ctx: Ctx, form: Form) {
   const name = str(form.name);
   if (!name) throw badRequest('卓の名前を入れてください。');
@@ -37,14 +37,14 @@ export async function saveSession(ctx: Ctx, form: Form) {
   const date = form.date ? parseYmd(form.date) : null;
   if (form.date && !date) throw badRequest('開催日の形式が読めません: ' + str(form.date));
   if (!date && DATED.includes(status)) throw badRequest('開催日を入れてください。まだ決まっていなければ状態を「募集」か「調整中」にします。');
-  // 期間。募集は「開催したい期間」、調整中は「候補の期間」。この 2 つの状態だけが持つ
+  // 期間。募集は「開催したい期間」、調整中は「候補の期間」。この2つの状態だけが持つ
   const win = status === STATUS.RECRUIT || status === STATUS.ADJUSTING ? readWindow(form.windowFrom, form.windowTo) : null;
   const gm = str(form.gm);
   const series = str(form.series);
   let members = uniq(splitNames(list(form.members).join('、') + '、' + str(form.extra)));
   const existing = form.id ? findSession(ctx, form.id) : null;
   const dateChanged = !existing || existing.date !== date;
-  // 参加希望・興味あり。参加者や GM になった人は外す。募集から「調整中」「開催」になったら、参加希望の人を参加者に移す
+  // 参加希望・興味あり。参加者やGMになった人は外す。募集から「調整中」「開催」になったら、参加希望の人を参加者に移す
   const notIn = (n: string) => !members.includes(n) && n !== gm;
   let want = existing ? existing.want.filter(notIn) : [];
   let interest = existing ? existing.interest.filter(notIn) : [];
@@ -97,7 +97,7 @@ export async function saveSession(ctx: Ctx, form: Form) {
       insertPeopleForSeq(ctx, seq, people),
     );
   }
-  // 単発の卓から「続けて登録」したときは、元の回にも同じシリーズ名を入れて 1 つのシリーズにする（元の回にシリーズ名が無いときだけ）
+  // 単発の卓から「続けて登録」したときは、元の回にも同じシリーズ名を入れて1つのシリーズにする（元の回にシリーズ名が無いときだけ）
   let linked = false;
   const from = series && form.seriesFrom ? ctx.sessions.find((x) => x.id === str(form.seriesFrom)) : undefined;
   if (from && !from.series) {
@@ -107,14 +107,14 @@ export async function saveSession(ctx: Ctx, form: Form) {
   await db.batch(stmts);
   let message = (existing ? '更新しました: ' : '登録しました: ') + name + '（' + id + '）';
   if (linked) message += '　前の回も「' + series + '」にまとめました。';
-  if (promoted.length) message += '　参加希望の ' + promoted.join('、') + ' を参加者に加えました。';
-  if (dropped.length) message += '　興味ありの ' + dropped.join('、') + ' は外しました。';
+  if (promoted.length) message += '　参加希望の' + promoted.join('、') + 'を参加者に加えました。';
+  if (dropped.length) message += '　興味ありの' + dropped.join('、') + 'は外しました。';
   return { ok: true, id, message, promoted, dropped };
 }
 
 /**
  * 複数の開催日をまとめて登録する（新規だけ）。GM・参加者・時間・場所・メモ・シリーズは全部同じ。
- * 名前は末尾の数字を進める（「#1」→「#2」）。数字が無ければ 2 回目から「名前 #2」
+ * 名前は末尾の数字を進める（「#1」→「#2」）。数字が無ければ2回目から「名前 #2」
  */
 async function saveSessionDates(ctx: Ctx, form: Form, name: string, raw: string[]) {
   if (form.id) throw badRequest('複数日をまとめて登録できるのは新規のときだけです。');
@@ -140,17 +140,17 @@ async function saveSessionDates(ctx: Ctx, form: Form, name: string, raw: string[
   ]);
   await ctx.db.batch(stmts);
   const ids = dates.map((_, i) => sessionCode(first + i));
-  return { ok: true, id: ids[0], ids, names, count: dates.length, message: dates.length + ' 回分を登録しました: ' + names.join('、') };
+  return { ok: true, id: ids[0], ids, names, count: dates.length, message: dates.length + '回分を登録しました: ' + names.join('、') };
 }
 
-/** 募集タブの「参加希望」「興味あり」「取り消す」。片方だけ付く。Discord には送らない */
+/** 募集タブの「参加希望」「興味あり」「取り消す」。片方だけ付く。Discordには送らない */
 export async function setInterest(ctx: Ctx, form: Form) {
   const name = requireSelf(ctx, form.name);
   const level = str(form.level) || 'none';
   if (!['want', 'interest', 'none'].includes(level)) throw badRequest('操作が不正です: ' + level);
   const s = findSession(ctx, form.id);
   if (s.status !== STATUS.RECRUIT) throw badRequest('「' + s.name + '」は募集中ではありません（' + s.status + '）。');
-  if (level !== 'none' && peopleOf(s).includes(name)) throw badRequest(name + ' はすでにこの卓の' + (s.gm === name ? 'GM' : '参加者') + 'です。');
+  if (level !== 'none' && peopleOf(s).includes(name)) throw badRequest(name + 'はすでにこの卓の' + (s.gm === name ? 'GM' : '参加者') + 'です。');
   const want = s.want.filter((n) => n !== name);
   const interest = s.interest.filter((n) => n !== name);
   if (level === 'want') want.push(name);
@@ -175,7 +175,7 @@ export async function deleteSession(ctx: Ctx, form: Form) {
 /**
  * 複数の卓をまとめて変える。form: { ids, action, value }
  * action: status / addMember / removeMember / setGm / shiftDays / setSeries / delete
- * 卓の数によらず決まった数の文で書く（D1 の問い合わせの数の上限のため）
+ * 卓の数によらず決まった数の文で書く（D1の問い合わせの数の上限のため）
  */
 export async function bulkUpdateSessions(ctx: Ctx, form: Form) {
   const ids = list(form.ids);
@@ -185,7 +185,7 @@ export async function bulkUpdateSessions(ctx: Ctx, form: Form) {
   const targets = ctx.sessions.filter((s) => ids.includes(s.id));
   if (!targets.length) throw notFound('選んだ卓が見つかりません。');
 
-  // 先に検査して、途中で止まらないようにする。label は Discord の「一括で〜」に、done は返事の「N 件の卓〜」に使う
+  // 先に検査して、途中で止まらないようにする。labelはDiscordの「一括で〜」に、doneは返事の「N件の卓〜」に使う
   let label = '';
   let done = '';
   let days = 0;
@@ -197,13 +197,13 @@ export async function bulkUpdateSessions(ctx: Ctx, form: Form) {
     done = 'の状態を「' + value + '」にしました';
   } else if (action === 'addMember' || action === 'removeMember' || action === 'setGm') {
     if (!value) throw badRequest('名前を選んでください。');
-    label = action === 'addMember' ? '参加者に ' + value + ' を追加' : action === 'removeMember' ? '参加者から ' + value + ' を外す' : 'GM を ' + value + ' に';
-    done = action === 'addMember' ? 'の参加者に ' + value + ' を足しました' : action === 'removeMember' ? 'の参加者から ' + value + ' を外しました' : 'の GM を ' + value + ' にしました';
+    label = action === 'addMember' ? '参加者に' + value + 'を追加' : action === 'removeMember' ? '参加者から' + value + 'を外す' : 'GMを' + value + 'に';
+    done = action === 'addMember' ? 'の参加者に' + value + 'を足しました' : action === 'removeMember' ? 'の参加者から' + value + 'を外しました' : 'のGMを' + value + 'にしました';
   } else if (action === 'shiftDays') {
     days = parseInt(value, 10);
-    if (Number.isNaN(days) || days === 0) throw badRequest('ずらす日数を入れてください（例: 7 や -1）。');
-    label = '開催日を ' + (days > 0 ? '+' : '') + days + ' 日';
-    done = 'の開催日を ' + Math.abs(days) + (days > 0 ? ' 日後ろ' : ' 日前') + 'にずらしました';
+    if (Number.isNaN(days) || days === 0) throw badRequest('ずらす日数を入れてください（例: 7や -1）。');
+    label = '開催日を' + (days > 0 ? '+' : '') + days + '日';
+    done = 'の開催日を' + Math.abs(days) + (days > 0 ? '日後ろ' : '日前') + 'にずらしました';
   } else if (action === 'setSeries') {
     label = value ? 'シリーズを「' + value + '」に' : 'シリーズを外す';
     done = value ? 'のシリーズを「' + value + '」にしました' : 'のシリーズを外しました';
@@ -269,7 +269,7 @@ export async function bulkUpdateSessions(ctx: Ctx, form: Form) {
   }
   stmts.push(...replacePeople(ctx, peopleChanges));
   await db.batch(stmts);
-  let message = targets.length + ' 件の卓' + done + ': ' + targets.map((s) => s.name).join('、');
+  let message = targets.length + '件の卓' + done + ': ' + targets.map((s) => s.name).join('、');
   if (promoted.length) message += '　参加希望の人を参加者に加えました: ' + promoted.join('、');
   return { ok: true, count: targets.length, message, names: targets.map((s) => s.name), ids: targets.map((s) => s.id), label };
 }

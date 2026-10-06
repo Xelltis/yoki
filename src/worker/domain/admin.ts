@@ -8,10 +8,10 @@ import { STATUS } from './constants';
 import { type Form, str } from './form';
 import { forgetGoogle } from './google';
 
-/** 送信の失敗に数える記録（送り直しの途中の HTTP…・ERROR… は数えない） */
+/** 送信の失敗に数える記録（送り直しの途中のHTTP…・ERROR… は数えない） */
 const FAILED = "(l.result LIKE '送信失敗%' OR l.result LIKE '送らず%')";
 const ACTIVE = `('${STATUS.RECRUIT}', '${STATUS.ADJUSTING}', '${STATUS.HELD}')`;
-/** 最後の見回りがこれより前なら、cron が止まっているかもしれない */
+/** 最後の見回りがこれより前なら、cronが止まっているかもしれない */
 const PATROL_STALE_MIN = 15;
 const DAY_MS = 86400_000;
 
@@ -116,8 +116,8 @@ async function requireGroup(db: D1Database, id: string): Promise<{ id: string; t
 }
 
 /**
- * 管理者を付け替える。form: { memberId, admin }、または { discordId, name, admin: true }（まだ開いていない人を管理者として足す。
- * 初めて開いたときに、その行に結びつく）。管理者の印が 0 人になる外し方は断る（足してから外す）
+ * 管理者を付け替える。form: { memberId, admin }、または{ discordId, name, admin: true }（まだ開いていない人を管理者として足す。
+ * 初めて開いたときに、その行に結びつく）。管理者の印が0人になる外し方は断る（足してから外す）
  */
 export async function setGroupAdmin(db: D1Database, groupId: string, form: Form, now = new Date()): Promise<{ message: string }> {
   await requireGroup(db, groupId);
@@ -125,43 +125,43 @@ export async function setGroupAdmin(db: D1Database, groupId: string, form: Form,
   const discordId = str(form.discordId).replace(/[<@!>\s]/g, '');
   if (discordId) {
     if (!admin) throw badRequest('外すときは、メンバーを選んでください。');
-    if (!/^\d{17,20}$/.test(discordId)) throw badRequest('Discord ユーザー ID は 17〜20 桁の数字です。');
+    if (!/^\d{17,20}$/.test(discordId)) throw badRequest('DiscordユーザーIDは17〜20桁の数字です。');
     const hit = await db
       .prepare('SELECT id, name FROM members WHERE group_id = ?1 AND (discord_id = ?2 OR user_id = ?2) ORDER BY user_id IS NULL LIMIT 1')
       .bind(groupId, discordId)
       .first<{ id: number; name: string }>();
     if (hit) {
       await db.prepare('UPDATE members SET is_admin = 1 WHERE id = ?').bind(hit.id).run();
-      return { message: hit.name + ' を管理者にしました。' };
+      return { message: hit.name + 'を管理者にしました。' };
     }
     const name = str(form.name);
     if (!name) throw badRequest('名前を入れてください（その人がまだグループを開いていないため）。');
     if (NAME_SEPARATORS.test(name) || RESERVED_NAMES.includes(name)) throw badRequest('その名前は使えません: ' + name);
     if (await db.prepare('SELECT 1 FROM members WHERE group_id = ? AND name = ?').bind(groupId, name).first()) throw badRequest('同じ名前のメンバーがいます: ' + name);
     await db.prepare('INSERT INTO members (group_id, name, discord_id, is_admin, created_at) VALUES (?, ?, ?, 1, ?)').bind(groupId, name, discordId, now.toISOString()).run();
-    return { message: name + ' を管理者として足しました。初めてグループを開いたときに、この人に結びつきます。' };
+    return { message: name + 'を管理者として足しました。初めてグループを開いたときに、この人に結びつきます。' };
   }
   const memberId = Number(form.memberId);
   const m = await db.prepare('SELECT id, name, is_admin FROM members WHERE id = ? AND group_id = ?').bind(memberId, groupId).first<{ id: number; name: string; is_admin: number }>();
   if (!m) throw notFound('メンバーが見つかりません。');
   if (!admin && m.is_admin === 1) {
     const others = await db.prepare('SELECT count(*) AS n FROM members WHERE group_id = ? AND is_admin = 1 AND id <> ?').bind(groupId, m.id).first<number>('n');
-    if (!others) throw badRequest('管理者の印が 0 人になります。先にほかの人を管理者にしてから外してください。');
+    if (!others) throw badRequest('管理者の印が0人になります。先にほかの人を管理者にしてから外してください。');
   }
   await db.prepare('UPDATE members SET is_admin = ? WHERE id = ?').bind(admin ? 1 : 0, m.id).run();
   return { message: m.name + (admin ? ' を管理者にしました。' : ' を管理者から外しました。') };
 }
 
 /**
- * グループを別の Discord サーバーに結び直す（サーバーを引っ越したとき）。form: { guildId, guildName? }。
- * 名前とアイコンは、そのサーバーからログインした人の控えにあればそこから取る。無ければ guildName が要る。
+ * グループを別のDiscordサーバーに結び直す（サーバーを引っ越したとき）。form: { guildId, guildName? }。
+ * 名前とアイコンは、そのサーバーからログインした人の控えにあればそこから取る。無ければguildNameが要る。
  * 新しいサーバーの人は、控えを読み直したときに入れるようになり、古いサーバーの人は入れなくなる。メンバーの行と管理者の印は残る。
- * 知らせのチャンネルは古いサーバーのものなので、いつも外す（新しいサーバーに Bot を招いて選び直す）
+ * 知らせのチャンネルは古いサーバーのものなので、いつも外す（新しいサーバーにBotを招いて選び直す）
  */
 export async function changeGuild(db: D1Database, groupId: string, form: Form): Promise<{ message: string }> {
   const g = await requireGroup(db, groupId);
   const guildId = str(form.guildId);
-  if (!/^\d{17,20}$/.test(guildId)) throw badRequest('Discord サーバーの ID は 17〜20 桁の数字です。');
+  if (!/^\d{17,20}$/.test(guildId)) throw badRequest('DiscordサーバーのIDは17〜20桁の数字です。');
   if (guildId === g.guild_id) throw badRequest('いまと同じサーバーです。');
   const known = await db.prepare('SELECT name, icon FROM user_guilds WHERE guild_id = ? LIMIT 1').bind(guildId).first<{ name: string; icon: string | null }>();
   const name = known?.name || str(form.guildName);
@@ -171,7 +171,7 @@ export async function changeGuild(db: D1Database, groupId: string, form: Form): 
       .bind(guildId, name, known?.icon ?? null, groupId),
     db.prepare("UPDATE series_notify SET channel_id = '' WHERE group_id = ?").bind(groupId),
   ]);
-  return { message: '「' + g.title + '」を Discord サーバー「' + name + '」に結び直しました。知らせのチャンネルは外したので、新しいサーバーに Bot を招いて選び直してください。' };
+  return { message: '「' + g.title + '」をDiscordサーバー「' + name + '」に結び直しました。知らせのチャンネルは外したので、新しいサーバーにBotを招いて選び直してください。' };
 }
 
 /** 利用者の一覧。最後にログインしたのが新しい順 */
@@ -200,11 +200,11 @@ async function requireUser(db: D1Database, id: string): Promise<{ id: string; na
   return u;
 }
 
-/** その人のログインをすべて消す（Discord でログインし直せば、また入れる） */
+/** その人のログインをすべて消す（Discordでログインし直せば、また入れる） */
 export async function logoutUser(db: D1Database, id: string): Promise<{ message: string }> {
   const u = await requireUser(db, id);
   const r = await db.prepare('DELETE FROM auth_sessions WHERE user_id = ?').bind(id).run();
-  return { message: u.name + ' のログインを ' + r.meta.changes + ' 件消しました。' };
+  return { message: u.name + 'のログインを' + r.meta.changes + '件消しました。' };
 }
 
 /** 締め出す・戻す。form: { banned, reason? }。締め出すときは、その人のログインも消す。運営者は締め出せない */
@@ -212,41 +212,41 @@ export async function setBan(db: D1Database, id: string, form: Form, isOp: (id: 
   const u = await requireUser(db, id);
   if (form.banned !== true) {
     await db.prepare("UPDATE users SET banned_at = NULL, banned_reason = '' WHERE id = ?").bind(id).run();
-    return { message: u.name + ' を締め出しから戻しました。Discord でログインすれば、また入れます。' };
+    return { message: u.name + 'を締め出しから戻しました。Discordでログインすれば、また入れます。' };
   }
-  if (isOp(id)) throw badRequest('運営者は締め出せません（OPERATOR_IDS から外してからにしてください）。');
+  if (isOp(id)) throw badRequest('運営者は締め出せません（OPERATOR_IDSから外してからにしてください）。');
   await db.batch([
     db.prepare('UPDATE users SET banned_at = ?, banned_reason = ? WHERE id = ?').bind(now.toISOString(), str(form.reason).slice(0, 200), id),
     db.prepare('DELETE FROM auth_sessions WHERE user_id = ?').bind(id),
   ]);
-  return { message: u.name + ' を締め出しました。ログインも消しました。' };
+  return { message: u.name + 'を締め出しました。ログインも消しました。' };
 }
 
 /**
  * 利用者を消す（本人から消してほしいと頼まれたとき）。消すのは、利用者の行（ログインと、入っているサーバーの控えも一緒に消える）と、
- * どのグループでもその人のメンバーの行（ログインで結びついた行と、その Discord ID で先に登録されていた行）。メンバーの行の消し方は、
- * グループの管理者がメンバーを消すときと同じで、予定とメモは消え、卓と回答には名前だけが残る。グループの「作った人」の ID も外す。
- * Discord サーバーにいれば、次に開いたときにまた入れる。運営者は消せない。締め出している人は、消すと締め出しの印も消えるので消せない。
- * Google カレンダーと連携していれば、本人が外すときと同じく、書いた予定を消して Google の許可も取り消す（google は連携の一式。
- * 運営者が Google の値を外していて null なら、連携の行と書いた予定の控えだけを消す。Google 側には予定と許可が残る）
+ * どのグループでもその人のメンバーの行（ログインで結びついた行と、そのDiscord IDで先に登録されていた行）。メンバーの行の消し方は、
+ * グループの管理者がメンバーを消すときと同じで、予定とメモは消え、卓と回答には名前だけが残る。グループの「作った人」のIDも外す。
+ * Discordサーバーにいれば、次に開いたときにまた入れる。運営者は消せない。締め出している人は、消すと締め出しの印も消えるので消せない。
+ * Googleカレンダーと連携していれば、本人が外すときと同じく、書いた予定を消してGoogleの許可も取り消す（googleは連携の一式。
+ * 運営者がGoogleの値を外していてnullなら、連携の行と書いた予定の控えだけを消す。Google側には予定と許可が残る）
  */
 export async function deleteUser(db: D1Database, id: string, isOp: (id: string) => boolean, google: GoogleDeps | null = null, now = new Date()): Promise<{ message: string }> {
   const u = await requireUser(db, id);
-  if (isOp(id)) throw badRequest('運営者は消せません（OPERATOR_IDS から外してからにしてください）。');
+  if (isOp(id)) throw badRequest('運営者は消せません（OPERATOR_IDSから外してからにしてください）。');
   if (u.banned_at) throw badRequest('締め出している人は消せません。消すと締め出しの印も消え、また入れるようになるためです。消すなら、先に締め出しから戻してください。');
   if (google) await forgetGoogle(db, google, id, now);
   const mine = 'SELECT id FROM members WHERE user_id = ?1 OR discord_id = ?1';
-  // 消すメンバーの行の数は、消す前に同じ batch の中で数える（DELETE の changes は、一緒に消えた予定の行も数えるため）
+  // 消すメンバーの行の数は、消す前に同じbatchの中で数える（DELETEのchangesは、一緒に消えた予定の行も数えるため）
   const [counted] = await db.batch([
     db.prepare(`SELECT count(*) AS n FROM (${mine})`).bind(id),
     db.prepare(`UPDATE OR IGNORE session_people SET guest_name = (SELECT name FROM members m WHERE m.id = session_people.member_id), member_id = NULL WHERE member_id IN (${mine})`).bind(id),
     db.prepare(`UPDATE OR IGNORE poll_votes SET guest_name = (SELECT name FROM members m WHERE m.id = poll_votes.member_id), member_id = NULL WHERE member_id IN (${mine})`).bind(id),
     db.prepare('DELETE FROM members WHERE user_id = ?1 OR discord_id = ?1').bind(id),
     db.prepare("UPDATE groups SET created_by = '' WHERE created_by = ?").bind(id),
-    // 書いた予定の控えは外部キーにしていないので、ここで消す（連携の行は users の CASCADE で消える）
+    // 書いた予定の控えは外部キーにしていないので、ここで消す（連携の行はusersのCASCADEで消える）
     db.prepare('DELETE FROM google_events WHERE user_id = ?').bind(id),
     db.prepare('DELETE FROM users WHERE id = ?').bind(id),
   ]);
   const n = (counted!.results[0] as { n: number }).n;
-  return { message: u.name + ' を消しました（グループのメンバーの行 ' + n + ' 件も消しました）。Discord サーバーにいれば、次に開いたときにまた入れます。' };
+  return { message: u.name + 'を消しました（グループのメンバーの行' + n + '件も消しました）。Discordサーバーにいれば、次に開いたときにまた入れます。' };
 }

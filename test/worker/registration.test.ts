@@ -24,7 +24,7 @@ const setOpen = async (open: boolean) => {
 const me = async (sid?: string) => (await call('/api/me', { sid })).json<MeResponse>();
 const users = () => env.DB.prepare('SELECT count(*) AS n FROM users').first<number>('n');
 
-/** Discord でログインする（OAuth を通す）。戻り先を返す */
+/** Discordでログインする（OAuthを通す）。戻り先を返す */
 async function discordLogin(id: string) {
   mockDiscord({ user: { id, username: 'u' + id, global_name: '名前' + id }, guilds: [] });
   const login = await call('/auth/login');
@@ -48,13 +48,13 @@ test('初めは受け付ける。運営者が止める・戻すと、様子と�
 describe('受付を止めているとき', () => {
   beforeEach(() => setOpen(false));
 
-  test('初めての人は Discord でログインできず、記録も残らない。もう使っている人と運営者は入れる', async () => {
+  test('初めての人はDiscordでログインできず、記録も残らない。もう使っている人と運営者は入れる', async () => {
     const before = await users();
     expect(await discordLogin('500')).toBe('/?login=closed');
     expect(await users()).toBe(before);
     await loginAs({ id: '501', name: 'もう使っている人' }, []);
     expect(await discordLogin('501')).toBe('/');
-    // 運営者の ID なら、初めてでも入れる
+    // 運営者のIDなら、初めてでも入れる
     expect(await discordLogin('400000000000000099')).toBe('/');
   });
 

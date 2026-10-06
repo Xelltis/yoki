@@ -1,4 +1,4 @@
-/* 部品（components の層）。いくつもの画面で使う形。場面ごとの調整は、Tailwind のクラスで足す（クラスは部品に勝つ） */
+/* 部品（componentsの層）。いくつもの画面で使う形。場面ごとの調整は、Tailwindのクラスで足す（クラスは部品に勝つ） */
 
 /* アイコン（SVG。<Icon name>）。大きさは文字の大きさ（1em）、色は文字の色。飾りなので読み上げない（aria-hidden） */
 .ic { display: inline-block; width: 1em; height: 1em; font-size: 20px; flex-shrink: 0; vertical-align: -5px; user-select: none; }
@@ -42,7 +42,7 @@ p.hint { max-width: 62em; margin: 8px 0 12px; }
 .btn.on { background: var(--accent-soft); border-color: var(--accent-line); color: var(--accent-text); }
 .btn:disabled { opacity: .45; cursor: not-allowed; }
 
-/* ボタンの並び。danger のボタンは右へ寄せる */
+/* ボタンの並び。dangerのボタンは右へ寄せる */
 .btns { display: flex; gap: 8px; margin-top: 14px; align-items: center; flex-wrap: wrap; }
 .btns > label { display: inline-flex; align-items: center; gap: 8px; margin: 0; font-weight: normal; }
 .btns .danger { margin-left: auto; }
@@ -67,11 +67,11 @@ td.c, th.c { text-align: center; }
 td.nw { white-space: nowrap; }
 tr.r-past td { background: var(--warn); }
 
-/* ボタンや欄の文字を、まわりと同じにする（ボタンと欄はブラウザの既定の文字を持つため）。大きさ・太さは、Tailwind のクラスで上書きする */
+/* ボタンや欄の文字を、まわりと同じにする（ボタンと欄はブラウザの既定の文字を持つため）。大きさ・太さは、Tailwindのクラスで上書きする */
 .font-inherit { font: inherit; }
 
-/* 窓の箱（<Modal> の中の .box）。PC は中央、スマホは下から出るシート。wide は卓の登録など広い窓、confirm は確かめる窓。
- * 窓の中の名前・欄・ボタンの並びの決まりも、ここに置く（.modal は <Modal> が付ける） */
+/* 窓の箱（<Modal> の中の .box）。PCは中央、スマホは下から出るシート。wideは卓の登録など広い窓、confirmは確かめる窓。
+ * 窓の中の名前・欄・ボタンの並びの決まりも、ここに置く（.modalは <Modal> が付ける） */
 .modal .box { background: var(--card); color: var(--text); border-radius: var(--radius-xl); padding: 20px 22px; width: 100%; max-width: 440px; max-height: 92dvh; overflow: auto; overscroll-behavior: contain; box-shadow: var(--elev-lg); animation: rise var(--dur) ease-out; }
 .modal .box:focus { outline: none; }
 .modal h3 { margin: 0 0 8px; font-size: 17px; }

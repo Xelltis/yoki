@@ -1,5 +1,5 @@
 // 画面とサーバーの約束（POST /api/g/:groupId/:fn）。画面（src/client）とサーバー（src/worker）の両方から読む。
-// ブラウザの型も Workers の型も使わない（どちらからも読めるように）
+// ブラウザの型もWorkersの型も使わない（どちらからも読めるように）
 
 /**
  * 卓の状態。募集 → 調整中 → 開催 → 終了 と進み、中止は別。
@@ -11,7 +11,7 @@
 export const STATUS = { RECRUIT: '募集', ADJUSTING: '調整中', HELD: '開催', DONE: '終了', CANCELED: '中止' } as const;
 export type Status = (typeof STATUS)[keyof typeof STATUS];
 
-/** 画面から呼べる関数の名前。getConsoleData は画面のデータを読む。ほかはサーバーの routes/rpc.ts の一覧と同じ */
+/** 画面から呼べる関数の名前。getConsoleDataは画面のデータを読む。ほかはサーバーのroutes/rpc.tsの一覧と同じ */
 export const RPC_FUNCS = [
   'getConsoleData', 'sendDiscordStep', 'setDayNote', 'setInterest', 'bulkUpdateSessions', 'setAvailability', 'setAvailabilityBulk', 'setAvailNote',
   'saveSession', 'deleteSession', 'saveMember', 'deleteMember', 'saveConsoleSettings', 'saveSeriesNotify', 'renameGroup', 'startPoll', 'setPollVote',
@@ -22,7 +22,7 @@ export type RpcName = (typeof RPC_FUNCS)[number];
 
 /** 画面のデータの卓 */
 export type ConsoleSession = {
-  /** S001 の形 */
+  /** S001の形 */
   id: string;
   name: string;
   gm: string;
@@ -34,7 +34,7 @@ export type ConsoleSession = {
   status: Status;
   place: string;
   memo: string;
-  /** 開催前の知らせを送った日時（2026/09/15（火） 21:23 の形）。送っていなければ空 */
+  /** 開催前の知らせを送った日時（2026/09/15（火）21:23の形）。送っていなければ空 */
   notified: string;
   editor: string;
   want: string[];
@@ -43,7 +43,7 @@ export type ConsoleSession = {
   asked: string;
   series: string;
   seriesEnd: string;
-  /** 期間（募集の開きたい期間・調整中の候補の期間）。2026/10/03〜2026/10/17 の形 */
+  /** 期間（募集の開きたい期間・調整中の候補の期間）。2026/10/03〜2026/10/17の形 */
   window: string;
   windowFrom: string;
   windowTo: string;
@@ -52,7 +52,7 @@ export type ConsoleSession = {
   windowKey: string;
   /** 日程調整の候補日 */
   candidates: string[];
-  /** 日程調整の回答 { 'YYYY-MM-DD': { 名前: '◯' | '×' } } */
+  /** 日程調整の回答{ 'YYYY-MM-DD': { 名前: '◯' | '×' } } */
   votes: Record<string, Record<string, string>>;
 };
 
@@ -61,17 +61,17 @@ export type ConsoleMember = {
   discordId: string;
   note: string;
   hasDiscord: boolean;
-  /** Discord のユーザー ID が 17〜20 桁の数字か（空も可） */
+  /** DiscordのユーザーIDが17〜20桁の数字か（空も可） */
   idOk: boolean;
-  /** Discord でログインしたことがある */
+  /** Discordでログインしたことがある */
   linked: boolean;
   admin: boolean;
 };
 
-/** シリーズごとの知らせ。channelId が空なら、基本のチャンネルへ送る */
+/** シリーズごとの知らせ。channelIdが空なら、基本のチャンネルへ送る */
 export type SeriesNotifyView = { series: string; channelId: string; alsoBase: boolean; days: number | null; hour: number | null };
 
-/** 画面のデータ（getConsoleData の返事。書き込みの返事の data にも付く） */
+/** 画面のデータ（getConsoleDataの返事。書き込みの返事のdataにも付く） */
 export type ConsoleData = {
   title: string;
   /** ログインした本人 */
@@ -86,22 +86,22 @@ export type ConsoleData = {
   members: ConsoleMember[];
   statuses: Status[];
   sessions: ConsoleSession[];
-  /** メンバーの予定 { 'YYYY-MM-DD': { 名前: '△' | '×' } } */
+  /** メンバーの予定{ 'YYYY-MM-DD': { 名前: '△' | '×' } } */
   avail: Record<string, Record<string, string>>;
   /** 日付のメモ */
   notes: Record<string, { text: string; by: string; at: string }>;
-  /** 予定のメモ { 'YYYY-MM-DD': { 名前: { text, at } } } */
+  /** 予定のメモ{ 'YYYY-MM-DD': { 名前: { text, at } } } */
   availNotes: Record<string, Record<string, { text: string; at: string }>>;
   log: { at: string; kind: string; target: string; result: string }[];
-  /** 卓に入っている日 { 'YYYY-MM-DD': { 名前: '参' | 'GM' } } */
+  /** 卓に入っている日{ 'YYYY-MM-DD': { 名前: '参' | 'GM' } } */
   booked: Record<string, Record<string, string>>;
   /** 予定表に出す日（今日から） */
   availDays: string[];
-  /** 知らせのチャンネル（Discord のチャンネルの ID）が決まっているか。基本と、種類ごと */
+  /** 知らせのチャンネル（DiscordのチャンネルのID）が決まっているか。基本と、種類ごと */
   channelSet: boolean;
   remindChannelSet: boolean;
   recruitChannelSet: boolean;
-  /** 知らせを送る Bot。ready: サーバーに Bot のトークンがある（運営者の設定）。inviteUrl: このグループのサーバーに Bot を招く URL */
+  /** 知らせを送るBot。ready: サーバーにBotのトークンがある（運営者の設定）。inviteUrl: このグループのサーバーにBotを招くURL */
   bot: { ready: boolean; inviteUrl: string };
   notifyDefault: boolean;
   /** 開催前の知らせを有効にした人（無効なら空） */
@@ -125,30 +125,30 @@ export type ConsoleData = {
   seriesNotify: SeriesNotifyView[];
   /** カレンダーとの連携（本人のぶん） */
   calendar: CalendarView;
-  /** Google カレンダーの予定から入れた印 { 'YYYY-MM-DD': [名前] }（本人が入れた印と見分けるため） */
+  /** Googleカレンダーの予定から入れた印{ 'YYYY-MM-DD': [名前] }（本人が入れた印と見分けるため） */
   availGoogle: Record<string, string[]>;
-  /** Google でのログイン（本人のぶん）。ready は運営者が Google の値を設定しているか、email は結びつけた Google アカウント（無ければ空） */
+  /** Googleでのログイン（本人のぶん）。readyは運営者がGoogleの値を設定しているか、emailは結びつけたGoogleアカウント（無ければ空） */
   googleLogin: { ready: boolean; email: string };
 };
 
-/** 購読 URL に載せる卓。mine は自分が GM か参加者として入っている卓、all はグループの卓すべて */
+/** 購読URLに載せる卓。mineは自分がGMか参加者として入っている卓、allはグループの卓すべて */
 export type FeedScope = 'mine' | 'all';
 
 /** カレンダーとの連携の様子（本人のぶん） */
 export type CalendarView = {
-  /** 購読 URL（このグループ。作っていなければ null） */
+  /** 購読URL（このグループ。作っていなければnull） */
   feed: { url: string; scope: FeedScope } | null;
-  /** Google 連携を使えるか（運営者が Google の値を設定している） */
+  /** Google連携を使えるか（運営者がGoogleの値を設定している） */
   googleReady: boolean;
-  /** Google 連携（していなければ null）。write: 卓を書き込む、read: 予定から印を入れる、from / to: 印を決める時間帯 */
+  /** Google連携（していなければnull）。write: 卓を書き込む、read: 予定から印を入れる、from / to: 印を決める時間帯 */
   google: { email: string; write: boolean; read: boolean; from: string; to: string; syncedAt: string; busyAt: string; error: string } | null;
 };
 
-/** 送り先に選べる Discord のチャンネル（getDiscordChannels の返事）。category はカテゴリーの名前（無ければ空） */
+/** 送り先に選べるDiscordのチャンネル（getDiscordChannelsの返事）。categoryはカテゴリーの名前（無ければ空） */
 export type DiscordChannel = { id: string; name: string; category: string };
 export type DiscordChannelsResult = { ok: true; botReady: boolean; inGuild: boolean; channels: DiscordChannel[] };
 
-/** 呼び出しの返事（書き込み）。message は画面の吹き出しに出す。ほかは呼び出しごとに付く */
+/** 呼び出しの返事（書き込み）。messageは画面の吹き出しに出す。ほかは呼び出しごとに付く */
 export type RpcResult = {
   ok?: boolean;
   message: string;
@@ -161,14 +161,14 @@ export type RpcResult = {
   label?: string;
   /** 日程調整の回答がそろった */
   ready?: boolean;
-  /** サーバーが Discord に送れたか（false なら画面から送り直す） */
+  /** サーバーがDiscordに送れたか（falseなら画面から送り直す） */
   notified?: boolean;
 };
 
 /** 届かなかった理由 */
 export type DiscordReason = { kind: string; label: string; toolFault: boolean; text: string; advice: string };
 
-/** Discord に 1 回送った返事（sendDiscordStep） */
+/** Discordに1回送った返事（sendDiscordStep） */
 export type DiscordStepResult = {
   ok: boolean;
   code: number;
@@ -179,7 +179,7 @@ export type DiscordStepResult = {
   reason: DiscordReason | null;
   attempt: number;
   maxTries: number;
-  /** 送り先の何番目か（0 から）と、送り先の数・名前 */
+  /** 送り先の何番目か（0から）と、送り先の数・名前 */
   to: number;
   targetCount: number;
   targetLabel: string;
@@ -190,13 +190,13 @@ export type DiscordStepResult = {
 
 /** 入口の画面が読む返事（GET /api/me） */
 export type MeResponse = {
-  /** Discord でログインできるか（Discord アプリの値が入っている） */
+  /** Discordでログインできるか（Discordアプリの値が入っている） */
   discord: boolean;
   /** 開発用ログイン（開発サーバーで、手元から開いたときだけ） */
   dev: { users: string[] } | null;
   /** 新規登録を受け付けているか（止めていると、新しいグループの作成と初めての人のログインを断る。運営者は別） */
   registration: boolean;
-  /** Google でもログインできるか（運営者が Google の値を設定している。初めてのときは Discord と結びつける） */
+  /** Googleでもログインできるか（運営者がGoogleの値を設定している。初めてのときはDiscordと結びつける） */
   google: boolean;
 } & (
   | { loggedIn: false }
@@ -207,12 +207,12 @@ export type MeResponse = {
       operator: boolean;
       /** 入れるグループ */
       groups: { id: string; title: string; guildName: string; guildIcon: string | null }[];
-      /** グループを作れる Discord サーバー（管理できるサーバー） */
+      /** グループを作れるDiscordサーバー（管理できるサーバー） */
       creatable: { guildId: string; name: string; icon: string | null }[];
       /** 入っているサーバーの控えが古い（読み直しを勧める） */
       stale: boolean;
     }
 );
 
-/** グループを作った返事（POST /api/groups）。失敗なら { error } */
+/** グループを作った返事（POST /api/groups）。失敗なら{ error } */
 export type CreateGroupResult = { ok: true; id: string; url: string };

@@ -10,23 +10,23 @@
 <link rel="manifest" href="/manifest.webmanifest">
 <meta name="theme-color" content="#2d2afe">
 <!-- リンクを貼ったときの見た目（OGP）。%APP_ORIGIN% は、組み立てのときに公開するアドレスになる（vite.config.ts）。
-     グループの画面などのリンクは、Worker がこのタグを道ごとの文に書き換える（src/worker/routes/og.ts と同じ文） -->
-<meta name="description" content="TRPG の卓の予定を、Discord サーバーの仲間と管理する Web アプリ。みんなの都合・募集・日程調整・Discord への知らせを 1 か所で。">
+     グループの画面などのリンクは、Workerがこのタグを道ごとの文に書き換える（src/worker/routes/og.tsと同じ文） -->
+<meta name="description" content="TRPGの卓の予定を、Discordサーバーの仲間と管理するWebアプリ。みんなの都合・募集・日程調整・Discordへの知らせを1か所で。">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="卓予定">
 <meta property="og:title" content="卓予定">
-<meta property="og:description" content="TRPG の卓の予定を、Discord サーバーの仲間と管理する Web アプリ。みんなの都合・募集・日程調整・Discord への知らせを 1 か所で。">
+<meta property="og:description" content="TRPGの卓の予定を、Discordサーバーの仲間と管理するWebアプリ。みんなの都合・募集・日程調整・Discordへの知らせを1か所で。">
 <meta property="og:url" content="%APP_ORIGIN%/">
 <meta property="og:image" content="%APP_ORIGIN%/og.png">
 <meta property="og:image:width" content="1600">
 <meta property="og:image:height" content="900">
 <meta name="twitter:card" content="summary_large_image">
-<!-- アイコンは SVG で JS に入っている（src/client/ui/icons.ts）。Google Fonts から読むのは文字だけ -->
+<!-- アイコンはSVGでJSに入っている（src/client/ui/icons.ts）。Google Fontsから読むのは文字だけ -->
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<!-- 文字は Noto Sans JP（太さは 400〜700）。どの端末でも同じ見た目にする。読めるまでは端末の字で出す -->
+<!-- 文字はNoto Sans JP（太さは400〜700）。どの端末でも同じ見た目にする。読めるまでは端末の字で出す -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400..700&display=swap">
 <script>
-  // この端末で選んだ見た目（ライト／ダーク）と文字の大きさを、描く前に当てる。無ければ OS の設定（prefers-color-scheme）に任せる
+  // この端末で選んだ見た目（ライト／ダーク）と文字の大きさを、描く前に当てる。無ければOSの設定（prefers-color-scheme）に任せる
   (function () {
     try { var t = localStorage.getItem('taku.theme'); if (t === 'dark' || t === 'light') document.documentElement.setAttribute('data-theme', t); } catch (e) {}
     try {

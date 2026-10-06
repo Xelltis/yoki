@@ -1,5 +1,5 @@
-// 画面の道（TanStack Router。道はコードで書き、生成ファイルは使わない）。末尾はいつも /（Worker の道と同じ形）。
-// ページごとの JS は分けて読む（lazyRouteComponent）。入口・グループの画面・運営の管理画面のあいだも、読み直さずに移る
+// 画面の道（TanStack Router。道はコードで書き、生成ファイルは使わない）。末尾はいつも /（Workerの道と同じ形）。
+// ページごとのJSは分けて読む（lazyRouteComponent）。入口・グループの画面・運営の管理画面のあいだも、読み直さずに移る
 import type { QueryClient } from '@tanstack/react-query';
 import { createRootRouteWithContext, createRoute, createRouter, lazyRouteComponent, Link, notFound, Outlet, redirect } from '@tanstack/react-router';
 import { ADMIN_PANES, type AdminPane, OPERATOR_PANES, type OperatorPane } from '../shared/routes';
@@ -18,7 +18,7 @@ function NotFound() {
       <main className="mx-auto max-w-560 px-20 pt-48 pb-48 max-sm:px-14 max-sm:pt-24">
         <div className="card px-26 py-28 text-center">
           <h1 className="m-0 text-22">ページが見つかりません</h1>
-          <p className="hint mx-auto mt-8 mb-18 text-13">URL が違うか、ページが無くなったのかもしれません。</p>
+          <p className="hint mx-auto mt-8 mb-18 text-13">URLが違うか、ページが無くなったのかもしれません。</p>
           <Link className="btn primary xl" to="/"><Icon name="arrow_back" />入口へ戻る</Link>
         </div>
       </main>
@@ -56,7 +56,7 @@ const homeRoute = createRoute({
   component: lazyRouteComponent(() => import('./features/home/Home'), 'Home'),
 });
 
-/* グループの画面（/g/:id/ とタブ）。外枠は ConsoleLayout */
+/* グループの画面（/g/:id/ とタブ）。外枠はConsoleLayout */
 /** グループの画面を初めて開いたか。初めてだけ、そのグループで前に見ていたタブ（募集・調整かメンバーの予定）へ移る。作ったばかりのグループはカレンダー */
 let firstVisit = true;
 const groupRoute = createRoute({
@@ -86,12 +86,12 @@ const adminRoute = createRoute({
   path: 'admin',
   component: lazyRouteComponent(() => import('./features/console/admin/AdminLayout'), 'AdminLayout'),
 });
-/** /g/:id/admin/ は区分へ移る。前の画面の #members などの # が付いていればそれ、無ければ前に見ていた区分、それも無ければメンバー */
+/** /g/:id/admin/ は区分へ移る。前の画面の #membersなどの # が付いていればそれ、無ければ前に見ていた区分、それも無ければメンバー */
 const adminIndexRoute = createRoute({
   getParentRoute: () => adminRoute,
   path: '/',
   beforeLoad: ({ location, params }) => {
-    const old = (p: string) => (p === 'admin' ? 'admins' : p);   // 前の画面の管理者の区分は admin
+    const old = (p: string) => (p === 'admin' ? 'admins' : p);   // 前の画面の管理者の区分はadmin
     const fromHash = old(location.hash.replace(/^#/, '')), saved = old(load('adminPane'));
     const pane: AdminPane = isPane(fromHash) ? fromHash : isPane(saved) ? saved : 'members';
     throw redirect({ to: '/g/$groupId/admin/$pane/', params: { groupId: params.groupId, pane }, hash: '' });
@@ -104,14 +104,14 @@ const adminPaneRoute = createRoute({
   component: lazyRouteComponent(() => import('./features/console/admin/AdminPaneView'), 'AdminPaneView'),
 });
 
-/* 運営者の管理画面（/admin/<区分>/）。Worker が運営者かを確かめてから、この画面を返す */
+/* 運営者の管理画面（/admin/<区分>/）。Workerが運営者かを確かめてから、この画面を返す */
 const isOpPane = (p: string): p is OperatorPane => (OPERATOR_PANES as readonly string[]).includes(p);
 const operatorRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/admin',
   component: lazyRouteComponent(() => import('./features/operator/OperatorLayout'), 'OperatorLayout'),
 });
-/** /admin/ は区分へ移る。前の画面の #legal などの # が付いていればそれ、無ければ前に見ていた区分、それも無ければ様子 */
+/** /admin/ は区分へ移る。前の画面の #legalなどの # が付いていればそれ、無ければ前に見ていた区分、それも無ければ様子 */
 const operatorIndexRoute = createRoute({
   getParentRoute: () => operatorRoute,
   path: '/',
@@ -136,7 +136,7 @@ const routeTree = rootRoute.addChildren([
   operatorRoute.addChildren([operatorIndexRoute, operatorPaneRoute]),
 ]);
 
-/** 検索の文字（?login=… など）は、文字のまま読み書きする（TanStack Router の既定は JSON として読むので、数字や引用符が変わる） */
+/** 検索の文字（?login=… など）は、文字のまま読み書きする（TanStack Routerの既定はJSONとして読むので、数字や引用符が変わる） */
 function parseSearch(search: string): Record<string, string> {
   return Object.fromEntries(new URLSearchParams(search));
 }

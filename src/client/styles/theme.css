@@ -1,16 +1,16 @@
-/* 見た目のトークン（Tailwind の @theme と、明るい・ダークで変わる色の変数） */
+/* 見た目のトークン（Tailwindの @theme と、明るい・ダークで変わる色の変数） */
 
-/* ---- Tailwind のトークン。既定のもの（色の一覧・rem の寸法）は使わず、ここに置いたものだけを使う ---- */
+/* ---- Tailwindのトークン。既定のもの（色の一覧・remの寸法）は使わず、ここに置いたものだけを使う ---- */
 @theme {
   --*: initial;
-  /* 寸法は px で数える（p-10 は 10px）。文字の大きさの設定（body の zoom）は、px のまま効く */
+  /* 寸法はpxで数える（p-10は10px）。文字の大きさの設定（bodyのzoom）は、pxのまま効く */
   --spacing: 1px;
-  /* 幅の区切り（sm: は 601px 以上、max-sm: は 600px 以下） */
+  /* 幅の区切り（sm: は601px以上、max-sm: は600px以下） */
   --breakpoint-xs: 401px; --breakpoint-sm: 601px; --breakpoint-md: 701px; --breakpoint-tab: 761px; --breakpoint-lg: 901px; --breakpoint-xl: 1061px; --breakpoint-2xl: 1201px;
   --text-10: 10px; --text-11: 11px; --text-12: 12px; --text-13: 13px; --text-14: 14px; --text-15: 15px;
   --text-16: 16px; --text-17: 17px; --text-18: 18px; --text-20: 20px; --text-22: 22px; --text-24: 24px; --text-26: 26px; --text-28: 28px; --text-30: 30px;
   --font-weight-normal: 400; --font-weight-medium: 500; --font-weight-semibold: 600; --font-weight-bold: 700;
-  /* 文字は Noto Sans JP（index.html で Google Fonts から読む）。読めないあいだは端末の字 */
+  /* 文字はNoto Sans JP（index.htmlでGoogle Fontsから読む）。読めないあいだは端末の字 */
   --font-sans: "Noto Sans JP", system-ui, -apple-system, "Hiragino Sans", "Yu Gothic UI", Meiryo, sans-serif;
   --color-white: #fff; --color-black: #000;
   /* サービスアイコンの色（明るい・ダークで変えない。飾りに使う） */
@@ -25,11 +25,11 @@
 @keyframes sheet-up { from { opacity: 0; transform: translateY(48px); } }
 @keyframes spin { to { transform: rotate(360deg); } }
 @keyframes pulse { 50% { opacity: .5; } }
-/* 部品の CSS も var(--radius-…) で読むので、使っていなくても出す */
+/* 部品のCSSもvar(--radius-…) で読むので、使っていなくても出す */
 @theme static {
   --radius-sm: 8px; --radius-md: 12px; --radius-lg: 16px; --radius-xl: 20px;
 }
-/* 色と影は、明るい・ダークで変わる（下の :root の変数）。クラスは変数をそのまま読む（bg-card は var(--card)） */
+/* 色と影は、明るい・ダークで変わる（下の :rootの変数）。クラスは変数をそのまま読む（bg-cardはvar(--card)） */
 @theme inline {
   --color-primary: var(--primary); --color-primary-ink: var(--primary-ink); --color-accent: var(--accent);
   --color-accent-strong: var(--accent-strong); --color-accent-ink: var(--accent-ink); --color-accent-soft: var(--accent-soft);
@@ -48,7 +48,7 @@
   --color-fg: var(--text); --color-page: var(--bg);
   --shadow-card: var(--elev-sm); --shadow-pop: var(--elev-lg);
 }
-/* ダーク（data-theme="dark" か、明るいを選んでいない OS のダーク）。色は変数で変わるので、たいていは要らない */
+/* ダーク（data-theme="dark" か、明るいを選んでいないOSのダーク）。色は変数で変わるので、たいていは要らない */
 @custom-variant dark {
   &:where([data-theme="dark"], [data-theme="dark"] *) { @slot; }
   @media (prefers-color-scheme: dark) {
@@ -57,8 +57,8 @@
 }
 
 /* ---- 色。サービスアイコンの青（#2D2AFE）を帯と大事なボタンに大きく使い、オレンジ・ピンク・黄を差し色にする。
- * ライトが基本。ダークは紺の地に、明るめの青。ヘッダーの月・太陽のボタンか設定タブで切り替え、未設定なら OS に従う。
- * オレンジは白い地の小さな字には使わない（読みにくい）。字に使うときは濃いオレンジ（--soon-text。--soon の地と組む）にする ---- */
+ * ライトが基本。ダークは紺の地に、明るめの青。ヘッダーの月・太陽のボタンか設定タブで切り替え、未設定ならOSに従う。
+ * オレンジは白い地の小さな字には使わない（読みにくい）。字に使うときは濃いオレンジ（--soon-text。--soonの地と組む）にする ---- */
 @layer theme {
   :root {
     color-scheme: light;
@@ -125,7 +125,7 @@
     --dur-fast: 120ms; --dur: 180ms;
   }
   @media (pointer: coarse) { :root { --h-control: 40px; --h-control-sm: 34px; } }
-  /* 上の帯とスマホの下のタブの高さ（貼り付けた要素の位置に使う）。2 段になるのはタブレットの幅だけ。管理画面と運営の管理画面は 1 段で、下のタブが無い */
+  /* 上の帯とスマホの下のタブの高さ（貼り付けた要素の位置に使う）。2段になるのはタブレットの幅だけ。管理画面と運営の管理画面は1段で、下のタブが無い */
   @media (width >= 901px) { :root { --appbar-h: 56px; } }
   @media (width < 601px) { :root { --appbar-h: 56px; --nav-h: 64px; } }
   body[data-area="admin"], body[data-area="operator"] { --appbar-h: 56px; --nav-h: 0px; }

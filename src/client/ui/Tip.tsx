@@ -1,8 +1,8 @@
 import { Icon } from './Icon';
 
 /**
- * 項目ごとの説明の「？」。マウスを載せるか押すと、吹き出し（TipLayer）に text が出る（tip と data-tip は TipLayer が探す印）。
- * className は置く場所の余白（既定は左に 4px）
+ * 項目ごとの説明の「？」。マウスを載せるか押すと、吹き出し（TipLayer）にtextが出る（tipとdata-tipはTipLayerが探す印）。
+ * classNameは置く場所の余白（既定は左に4px）
  */
 export function Tip({ text, label, className = 'ml-4' }: { text: string; label: string; className?: string }) {
   return (

@@ -1,5 +1,5 @@
-// 知らせの見回り（GAS 版 Notify.js の dailyNotify・sendTomorrow_・sendUrge_・sendStartingSoon_）。cron が 5 分おきに呼ぶ。
-//   毎時の仕事（開催前の知らせ・期間前の催促・過ぎた卓の自動終了）は、meta の印で 1 時間に 1 回だけ回す
+// 知らせの見回り（GAS版Notify.jsのdailyNotify・sendTomorrow_・sendUrge_・sendStartingSoon_）。cronが5分おきに呼ぶ。
+//   毎時の仕事（開催前の知らせ・期間前の催促・過ぎた卓の自動終了）は、metaの印で1時間に1回だけ回す
 //   開始直前の知らせは毎回見る
 // 送る前に卓の「送った」印を取り（UPDATE … WHERE … IS NULL）、取れた卓だけを送る。重なって動いても二重には送らない。
 // 全部の送り先で失敗したら印を戻し、次の回で送り直す
@@ -17,7 +17,7 @@ import { loadGroup } from './load';
 import { aheadText, notifyHourOf, notifyYmdOf } from './notify';
 import type { Ctx, Session } from './types';
 
-/** 1 通に載せる卓の数（Discord の embed は 1 通に 10 個まで） */
+/** 1通に載せる卓の数（Discordのembedは1通に10個まで） */
 const EMBEDS_PER_MESSAGE = 10;
 const KEEP_LOG_ROWS = 500;
 const KEEP_AVAIL_DAYS = 90;
@@ -25,12 +25,12 @@ const KEEP_DAY_NOTE_DAYS = 365;
 
 type Deps = { sleep: Sleep };
 
-/** 見回りの様子（meta の patrol）。運営者の管理画面が読む */
+/** 見回りの様子（metaのpatrol）。運営者の管理画面が読む */
 export type { PatrolRecord };
 
 /**
- * 見回りを回し、その様子を meta に残す（patrol: 最後の回の結果、patrol_ok_at: 最後にうまくいった時刻）。
- * 失敗は記録してから投げ直す（Cloudflare の cron の失敗としても残す）。run はテストで差し替える
+ * 見回りを回し、その様子をmetaに残す（patrol: 最後の回の結果、patrol_ok_at: 最後にうまくいった時刻）。
+ * 失敗は記録してから投げ直す（Cloudflareのcronの失敗としても残す）。runはテストで差し替える
  */
 export async function runPatrol(env: Bindings, scheduledTime: number, deps: Deps = { sleep: realSleep }, run = patrol): Promise<void> {
   const t0 = Date.now();
@@ -88,14 +88,14 @@ export async function patrol(env: Bindings, scheduledTime: number, deps: Deps): 
     p.ymd,
   )) await sendStartingSoon(await load(id), deps);
 
-  // Google カレンダーとの同期（連携している人を、長く回っていない人から少しずつ）
+  // Googleカレンダーとの同期（連携している人を、長く回っていない人から少しずつ）
   const google = await googleDeps(env, appBase || 'http://localhost');
   if (google) await patrolGoogle(db, google, now);
 
   if (p.hour >= 4 && (await claim(db, 'daily', p.ymd))) await cleanup(db, now);
 }
 
-/** meta の印を value に進める。進められたら（この時刻の仕事をまだしていなければ）true */
+/** metaの印をvalueに進める。進められたら（この時刻の仕事をまだしていなければ）true */
 async function claim(db: D1Database, key: string, value: string): Promise<boolean> {
   const r = await db
     .prepare('INSERT INTO meta (key, value) VALUES (?1, ?2) ON CONFLICT (key) DO UPDATE SET value = excluded.value WHERE meta.value <> excluded.value RETURNING value')
@@ -104,7 +104,7 @@ async function claim(db: D1Database, key: string, value: string): Promise<boolea
   return !!r;
 }
 
-/** 卓の送った印を取る。取れた卓（まだ誰も送っていない卓）の id を返す */
+/** 卓の送った印を取る。取れた卓（まだ誰も送っていない卓）のidを返す */
 async function claimMark(ctx: Ctx, column: 'notified_at' | 'urged_at' | 'soon_at', sessions: Session[]): Promise<Set<number>> {
   if (!sessions.length) return new Set();
   const r = await ctx.db
@@ -126,8 +126,8 @@ async function releaseMark(ctx: Ctx, column: 'notified_at' | 'urged_at' | 'soon_
 const logTo = (ctx: Ctx) => ({ db: ctx.db, groupId: ctx.group.id, token: ctx.bot.token });
 
 /**
- * 開催前の知らせ。今日が知らせの日（開催日の N 日前）で、送る時刻（シリーズか基本の時刻）を過ぎた卓を送る。
- * 送り先と「あと何日」ごとに 1 通にまとめ（10 卓ごとに分ける）、どこか 1 か所に届いた卓を送った扱いにする
+ * 開催前の知らせ。今日が知らせの日（開催日のN日前）で、送る時刻（シリーズか基本の時刻）を過ぎた卓を送る。
+ * 送り先と「あと何日」ごとに1通にまとめ（10卓ごとに分ける）、どこか1か所に届いた卓を送った扱いにする
  */
 export async function sendReminders(ctx: Ctx, hour: number, deps: Deps): Promise<void> {
   const kind = '開催前の知らせ';
@@ -164,7 +164,7 @@ export async function sendReminders(ctx: Ctx, hour: number, deps: Deps): Promise
   await releaseMark(ctx, 'notified_at', mine.filter((s) => !delivered.has(s.rowId)).map((s) => s.rowId));
 }
 
-/** 期間前の催促。募集中・調整中のまま、期間の始まりが明日に迫った卓を GM に知らせる。送る時刻は開催前の知らせと同じ */
+/** 期間前の催促。募集中・調整中のまま、期間の始まりが明日に迫った卓をGMに知らせる。送る時刻は開催前の知らせと同じ */
 export async function sendUrges(ctx: Ctx, hour: number, deps: Deps): Promise<void> {
   const kind = '期間前の催促';
   const tomorrow = addDays(ctx.today, 1);
@@ -183,7 +183,7 @@ export async function sendUrges(ctx: Ctx, hour: number, deps: Deps): Promise<voi
 }
 
 /**
- * 開始直前の知らせ。今日の卓の開始が近づいたら（開始の N 分前を過ぎた最初の見回りで）GM と参加者に知らせる。
+ * 開始直前の知らせ。今日の卓の開始が近づいたら（開始のN分前を過ぎた最初の見回りで）GMと参加者に知らせる。
  * 開始を大きく過ぎた卓には送らない
  */
 export async function sendStartingSoon(ctx: Ctx, deps: Deps): Promise<void> {
@@ -200,13 +200,13 @@ export async function sendStartingSoon(ctx: Ctx, deps: Deps): Promise<void> {
     if (!targets.length) { await appendLog(logTo(ctx), kind, s.name, '送らず: 送り先のチャンネルが未設定'); continue; }
     if (!(await claimMark(ctx, 'soon_at', [s])).size) continue;
     const mentions = mentionsOf(ctx, [s]);
-    const head = left <= 0 ? '⏰ まもなく「' + s.name + '」が始まります。' : '⏰ あと ' + left + ' 分で「' + s.name + '」が始まります。';
+    const head = left <= 0 ? '⏰ まもなく「' + s.name + '」が始まります。' : '⏰ あと' + left + '分で「' + s.name + '」が始まります。';
     const payload = { content: head + (mentions ? ' ' + mentions : ''), embeds: [sessionEmbed(ctx, s)] };
     if (!(await postToTargets(logTo(ctx), payload, kind, s.name, targets, deps.sleep))) await releaseMark(ctx, 'soon_at', [s.rowId]);
   }
 }
 
-/** 毎日 1 回の片付け: 期限切れのログイン、古い送信記録・予定・メモ、Google の古い記録 */
+/** 毎日1回の片付け: 期限切れのログイン、古い送信記録・予定・メモ、Googleの古い記録 */
 export async function cleanup(db: D1Database, now: Date): Promise<void> {
   const today = jst(now).ymd;
   await db.batch([
@@ -216,7 +216,7 @@ export async function cleanup(db: D1Database, now: Date): Promise<void> {
     db.prepare('DELETE FROM avail_notes WHERE date < ?').bind(addDays(today, -KEEP_AVAIL_DAYS)),
     db.prepare('DELETE FROM day_notes WHERE date < ?').bind(addDays(today, -KEEP_DAY_NOTE_DAYS)),
     db.prepare('DELETE FROM google_dismissed WHERE date < ?').bind(addDays(today, -KEEP_AVAIL_DAYS)),
-    // 連携が無くなった人（運営者が利用者を消したなど）と、触らなくなった過ぎた卓の、書いた予定の控え。Google の予定は残る
+    // 連携が無くなった人（運営者が利用者を消したなど）と、触らなくなった過ぎた卓の、書いた予定の控え。Googleの予定は残る
     db.prepare('DELETE FROM google_events WHERE user_id NOT IN (SELECT user_id FROM google_links) OR date < ?').bind(addDays(today, -WRITE_PAST_DAYS)),
   ]);
 }

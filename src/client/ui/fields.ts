@@ -1,4 +1,4 @@
-// 設定の画面（設定のタブ・グループの管理画面・運営の管理画面）の欄の見た目（Tailwind のクラス）
+// 設定の画面（設定のタブ・グループの管理画面・運営の管理画面）の欄の見た目（Tailwindのクラス）
 
 /** 欄の名前（欄の上に置く） */
 export const fieldLabel = 'mt-12 mb-6 block text-13 font-semibold';

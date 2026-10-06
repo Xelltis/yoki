@@ -1,5 +1,5 @@
-// 上の帯とタブ。左はグループの名前（押すと、入れるグループに切り替えられる。グループの一覧と、運営者には運営の管理画面へも移れる）、真ん中はふだんの 3 画面のタブ。
-// 右は、更新・ヘルプ（はじめの 3 ステップ・使い方）・管理（管理者だけ）・あなた（設定・見た目・ログアウト）
+// 上の帯とタブ。左はグループの名前（押すと、入れるグループに切り替えられる。グループの一覧と、運営者には運営の管理画面へも移れる）、真ん中はふだんの3画面のタブ。
+// 右は、更新・ヘルプ（はじめの3ステップ・使い方）・管理（管理者だけ）・あなた（設定・見た目・ログアウト）
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import type { ConsoleData } from '../../../../shared/api';
@@ -31,7 +31,7 @@ const loadedAt = 'inline-flex items-center gap-6 whitespace-nowrap pl-4 text-12 
 /** 読み込んだ時刻。自動更新が止まっていれば赤い印 */
 function LoadedAt({ d, v }: { d: ConsoleData | undefined; v: SyncView }) {
   if (!d) return <span className={loadedAt + 'before:bg-live-off'} id="loadedAt" />;
-  const title = (v.failed ? '自動更新で読み込めませんでした。通信を確かめてください。' : '') + d.loadedAt + ' に読み込みました。自動更新: ' + (v.autoMin ? v.autoMin + ' 分ごと' : 'しない');
+  const title = (v.failed ? '自動更新で読み込めませんでした。通信を確かめてください。' : '') + d.loadedAt + 'に読み込みました。自動更新: ' + (v.autoMin ? v.autoMin + '分ごと' : 'しない');
   const dot = v.failed ? 'before:bg-live-err' : v.autoMin ? 'before:bg-live before:shadow-[0_0_0_3px_color-mix(in_srgb,var(--live)_22%,transparent)]' : 'before:bg-live-off';
   return (
     <span className={loadedAt + dot} id="loadedAt" title={title}>
@@ -46,12 +46,12 @@ const tabBtn = 'relative inline-flex flex-[0_0_auto] cursor-pointer items-center
   + 'max-sm:h-auto max-sm:min-w-0 max-sm:flex-col max-sm:gap-2 max-sm:rounded-none max-sm:px-2 max-sm:pt-4 max-sm:pb-0 max-sm:text-[clamp(10px,2.5vw,12px)] max-sm:bg-transparent! '
   + 'max-sm:before:absolute max-sm:before:top-0 max-sm:before:left-1/2 max-sm:before:-ml-28 max-sm:before:h-30 max-sm:before:w-56 max-sm:before:rounded-[15px] max-sm:before:content-[""] '
   + 'max-sm:before:transition-[background-color] max-sm:before:duration-(--dur-fast) max-sm:before:ease-out ';
-/** 帯が 1 段になるうち、狭い幅（901〜1200px）では、右の操作の字を隠してアイコンだけにする（タブとグループの名前の場所を残す） */
+/** 帯が1段になるうち、狭い幅（901〜1200px）では、右の操作の字を隠してアイコンだけにする（タブとグループの名前の場所を残す） */
 const btxtRow = btxt + ' lg:max-2xl:hidden!';
 /** その幅で、字を隠したボタンを丸くする */
 const iconRow = ' lg:max-2xl:w-(--h-control) lg:max-2xl:p-0';
 
-/** ログアウト。この端末の控えを消し、サーバーのログインを消して、入口へ戻る（素の POST） */
+/** ログアウト。この端末の控えを消し、サーバーのログインを消して、入口へ戻る（素のPOST） */
 export function useLogout(): () => void {
   const { sync } = useConsole();
   return () => askConfirm({ title: 'ログアウトしますか？', message: 'このブラウザのログインを消します。次に開くときは、もう一度ログインします。', ok: 'ログアウト', danger: true }, () => {
@@ -77,11 +77,11 @@ export function Header({ tab }: { tab: Tab }) {
   const logout = useLogout();
   const dark = currentTheme() === 'dark';
   const shown = d ? guideShown(d, guide) : false;
-  /** グループが消された・ログインし直せなかった。タブ・はじめの 3 ステップ・設定は出さない（移る先が無い） */
+  /** グループが消された・ログインし直せなかった。タブ・はじめの3ステップ・設定は出さない（移る先が無い） */
   const dead = v.phase === 'gone' || v.phase === 'relogin';
-  /** はじめの 3 ステップを出せるのは、ふだんの区域でグループが読めているときだけ */
+  /** はじめの3ステップを出せるのは、ふだんの区域でグループが読めているときだけ */
   const guideOk = !!d && !admin && !dead;
-  /** 要る準備（仲間・卓）が済むまでは、？に印を付けて、はじめの 3 ステップがあることを知らせる。閉じたら付けない（Discord は任意なので待たない） */
+  /** 要る準備（仲間・卓）が済むまでは、？に印を付けて、はじめの3ステップがあることを知らせる。閉じたら付けない（Discordは任意なので待たない） */
   const nudge = guideOk && !setupDone(d) && guide !== 'closed';
   /** 「募集・調整」の印は、あなたの番の日程調整の数（答える・開催日を選ぶ）。済んだら消える */
   const turns = d ? myTurns(d).length : 0;
@@ -90,7 +90,7 @@ export function Header({ tab }: { tab: Tab }) {
   const groups = me.data && me.data.loggedIn ? me.data.groups : [];
   /** 運営者か（グループの中からも、運営の管理画面へ移れるようにする） */
   const operator = !!me.data && me.data.loggedIn && me.data.operator;
-  /* はじめの 3 ステップ。カレンダーで出ていれば閉じ、それ以外は出す（押すたびに切り替わる）。出したら、ページの頭まで戻す */
+  /* はじめの3ステップ。カレンダーで出ていれば閉じ、それ以外は出す（押すたびに切り替わる）。出したら、ページの頭まで戻す */
   const toggleGuide = () => {
     if (tab === 'cal' && shown) { closeGuide(ui, groupId); return; }
     ui.set((s) => ({ ...s, guide: 'open', guideFocus: s.guideFocus + 1 }));
@@ -99,7 +99,7 @@ export function Header({ tab }: { tab: Tab }) {
   };
   return (
     <header className={appbar}>
-      {/* グループの名前。押すと、入れるグループが Discord のサーバーの一覧のように頭文字の札つきで並び、切り替えられる */}
+      {/* グループの名前。押すと、入れるグループがDiscordのサーバーの一覧のように頭文字の札つきで並び、切り替えられる */}
       <Menu id="groupMenu" buttonId="groupMenuBtn" className="relative flex min-w-0 [grid-area:brand]" buttonClass={brand + ' ' + brandBtn} align="start"
         label={(d ? d.title : 'グループ') + '（グループを切り替える）'} title="グループを切り替える" onOpen={() => { void me.refetch(); }}
         button={<>
@@ -137,15 +137,15 @@ export function Header({ tab }: { tab: Tab }) {
             <Icon name="refresh" size="sm" className={hbtnIcon + (v.busy ? ' animate-spin' : '')} /><span className={btxtRow}>更新</span>
           </button>
         </span>
-        {/* 手引き: はじめの 3 ステップ・使い方。済んでいない準備があるあいだは、印を付ける */}
+        {/* 手引き: はじめの3ステップ・使い方。済んでいない準備があるあいだは、印を付ける */}
         <Menu id="helpMenu" buttonId="helpBtn" className={'relative inline-flex' + (admin ? ' max-sm:hidden' : '')} buttonClass={hbtn() + ' relative max-sm:w-(--h-control) max-sm:p-0' + iconRow}
-          label={nudge ? 'ヘルプ（はじめの 3 ステップが残っています）' : 'ヘルプ'} title={nudge ? 'はじめの 3 ステップ・使い方（済んでいない準備があります）' : 'はじめの 3 ステップ・使い方'}
+          label={nudge ? 'ヘルプ（はじめの3ステップが残っています）' : 'ヘルプ'} title={nudge ? 'はじめの3ステップ・使い方（済んでいない準備があります）' : 'はじめの3ステップ・使い方'}
           button={<>
             <Icon name="help" size="sm" className={hbtnIcon} /><span className={btxtRow}>ヘルプ</span>
             <span className={'absolute top-4 right-4 h-8 w-8 rounded-full bg-chrome-accent ' + (nudge ? 'block' : 'hidden')} id="helpNudge" />
           </>}>
           <button type="button" role="menuitem" id="guideBtn" className={menuItem} hidden={!guideOk} aria-controls="setupGuide" onClick={toggleGuide}>
-            <Icon name="flag" size="sm" className="text-accent-text" />{tab === 'cal' && shown ? 'はじめの 3 ステップを閉じる' : 'はじめの 3 ステップ'}
+            <Icon name="flag" size="sm" className="text-accent-text" />{tab === 'cal' && shown ? 'はじめの3ステップを閉じる' : 'はじめの3ステップ'}
           </button>
           <a role="menuitem" id="helpLink" className={menuItem} href={HELP_URL} target="_blank" rel="noopener">
             <Icon name="menu_book" size="sm" />使い方<Icon name="open_in_new" size="xs" className="ml-auto text-muted" />
@@ -167,7 +167,7 @@ export function Header({ tab }: { tab: Tab }) {
             <b className="max-w-[12em] truncate text-14 font-semibold max-sm:sr-only" id="me" hidden={!d}>{d ? d.me.name : ''}</b>
             <Icon name="expand_more" size="sm" className={hbtnIcon + ' opacity-80 max-sm:hidden'} />
           </>}>
-          {d && <p className={menuHead + ' truncate'}>{d.me.name + ' としてログイン中'}</p>}
+          {d && <p className={menuHead + ' truncate'}>{d.me.name + 'としてログイン中'}</p>}
           <button type="button" role="menuitem" id="toSettings" className={menuItem} hidden={dead} onClick={() => goTab('settings')}>
             <Icon name="settings" size="sm" />設定（名前・カレンダー・この端末）
           </button>
@@ -180,7 +180,7 @@ export function Header({ tab }: { tab: Tab }) {
           </button>
         </Menu>
       </div>
-      {/* tabs は e2e が探す印。管理画面と、グループが消された・ログインし直せなかったときは出さない */}
+      {/* tabsはe2eが探す印。管理画面と、グループが消された・ログインし直せなかったときは出さない */}
       <nav className={'tabs -mx-6 min-w-0 items-center gap-2 overflow-x-auto px-6 [grid-area:tabs] max-lg:mt-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden '
         + (admin || dead ? 'hidden! ' : 'flex ')
         + 'max-sm:fixed max-sm:inset-x-0 max-sm:bottom-0 max-sm:z-(--z-appbar) max-sm:m-0 max-sm:grid max-sm:grid-cols-3 max-sm:gap-0 max-sm:overflow-visible max-sm:border-t max-sm:border-chrome-line max-sm:bg-chrome '

@@ -18,7 +18,7 @@ beforeEach(async () => {
 });
 afterEach(() => vi.restoreAllMocks());
 
-/** そのメンバーとして、グループのデータを読み込む（Bot のトークンも渡し、送るときは本当に送ろうとするようにする） */
+/** そのメンバーとして、グループのデータを読み込む（Botのトークンも渡し、送るときは本当に送ろうとするようにする） */
 async function ctxAs(name: string, isAdmin: boolean) {
   const m = await env.DB.prepare('SELECT id, user_id FROM members WHERE group_id = ? AND name = ?').bind(G.id, name).first<{ id: number; user_id: string | null }>();
   const actor: Actor = { memberId: m!.id, name, isAdmin, userId: m!.user_id ?? '' };
@@ -49,9 +49,9 @@ test('開催日を決めた直後に、ほかの人が卓を中止にしてい�
   expect(fetchSpy).not.toHaveBeenCalled();
 });
 
-test('ログインに結びついていないメンバーの行でも、管理者のほかは Discord ID を変えられない', async () => {
+test('ログインに結びついていないメンバーの行でも、管理者のほかはDiscord IDを変えられない', async () => {
   await ok(G.admin, G.id, 'saveMember', { name: 'エマ', discordId: '123456789012345678' });
-  // ふだん、ログインした人の行には user_id が入っている。入っていない行を、本人として直したことにする
+  // ふだん、ログインした人の行にはuser_idが入っている。入っていない行を、本人として直したことにする
   const r = await saveMember(await ctxAs('エマ', false), { oldName: 'エマ', name: 'エマ', discordId: '987654321098765432', note: 'よろしく' });
   expect(r.message).toBe('更新しました: エマ');
   expect(await env.DB.prepare("SELECT discord_id, note FROM members WHERE name = 'エマ'").first()).toEqual({ discord_id: '123456789012345678', note: 'よろしく' });

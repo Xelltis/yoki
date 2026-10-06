@@ -1,4 +1,4 @@
-// React の画面の入口。道（router.tsx）に合わせて、ページの部品を分けて読む
+// Reactの画面の入口。道（router.tsx）に合わせて、ページの部品を分けて読む
 import './index.css';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider } from '@tanstack/react-router';
@@ -7,7 +7,7 @@ import { createRoot } from 'react-dom/client';
 import { queryClient } from './app/queryClient';
 import { router } from './router';
 
-// 公開し直して古い JS が無くなったまま開いていたタブは、分けた JS を読めない。1 分に 1 度まで、読み直して新しい JS にする
+// 公開し直して古いJSが無くなったまま開いていたタブは、分けたJSを読めない。1分に1度まで、読み直して新しいJSにする
 window.addEventListener('vite:preloadError', (ev) => {
   const KEY = 'taku.chunkReloadAt';
   let last = 0;

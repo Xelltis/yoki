@@ -1,4 +1,4 @@
-// 購読 URL（/cal/<token>.ics）と、iCalendar の文の作り方
+// 購読URL（/cal/<token>.ics）と、iCalendarの文の作り方
 import { env } from 'cloudflare:test';
 import { beforeEach, describe, expect, test } from 'vitest';
 import { calendarItem, calendarSessions } from '../../src/worker/domain/calendar';
@@ -6,22 +6,22 @@ import { buildCalendar, escapeText, fold, jstMs, sessionSpan, utcStamp } from '.
 import { addDays } from '../../src/worker/lib/jst';
 import { call, ok, setupGroup, today } from './helpers';
 
-describe('iCalendar の文', () => {
+describe('iCalendarの文', () => {
   test('テキストの \\ ; , と改行を逃がす', () => {
     expect(escapeText('a\\b;c,d\ne\r\nf')).toBe('a\\\\b\\;c\\,d\\ne\\nf');
   });
 
-  test('75 オクテットで折り返し、続きの行は空白で始める。日本語の文字の途中では切らない', () => {
+  test('75オクテットで折り返し、続きの行は空白で始める。日本語の文字の途中では切らない', () => {
     expect(fold('a'.repeat(75))).toBe('a'.repeat(75));
     expect(fold('a'.repeat(76))).toBe('a'.repeat(75) + '\r\n a');
-    const jp = 'あ'.repeat(30); // 1 文字 3 オクテット
+    const jp = 'あ'.repeat(30); // 1文字3オクテット
     const lines = fold('SUMMARY:' + jp).split('\r\n');
     expect(lines.length).toBe(2);
     for (const [i, l] of lines.entries()) expect(new TextEncoder().encode(l).length).toBeLessThanOrEqual(i ? 75 : 75);
     expect(lines.map((l, i) => (i ? l.slice(1) : l)).join('')).toBe('SUMMARY:' + jp);
   });
 
-  test('卓の期間: 開始時刻が無ければ終日、終わりが無ければ 3 時間、終わりが開始より前なら次の日', () => {
+  test('卓の期間: 開始時刻が無ければ終日、終わりが無ければ3時間、終わりが開始より前なら次の日', () => {
     expect(sessionSpan('2026-10-10', '', '')).toEqual({ allDay: true, date: '2026-10-10', endDate: '2026-10-11' });
     expect(sessionSpan('2026-10-10', '未定', '23:00')).toEqual({ allDay: true, date: '2026-10-10', endDate: '2026-10-11' });
     expect(sessionSpan('2026-10-10', '20:00', '')).toEqual({ allDay: false, startMs: jstMs('2026-10-10', 1200), endMs: jstMs('2026-10-10', 1380) });
@@ -53,7 +53,7 @@ describe('載せる卓と中身', () => {
   } as const;
   const s = (o: Record<string, unknown>) => ({ ...base, name: 'A', gm: 'ひより', members: ['ソラ'], date: '2026-10-10', status: '開催', ...o }) as any;
 
-  test('開催と終了だけ。過ぎた卓は 180 日前まで。名前を渡せば、その人が GM か参加者の卓だけ', () => {
+  test('開催と終了だけ。過ぎた卓は180日前まで。名前を渡せば、その人がGMか参加者の卓だけ', () => {
     const sessions = [
       s({ rowId: 1 }), s({ rowId: 2, status: '終了', date: '2026-04-10' }), s({ rowId: 3, status: '中止' }),
       s({ rowId: 4, status: '募集', date: null }), s({ rowId: 5, gm: 'こまち', members: [] }), s({ rowId: 6, status: '終了', date: '2026-04-01' }),
@@ -64,14 +64,14 @@ describe('載せる卓と中身', () => {
     expect(calendarSessions(ctx, 'こまち').map((x) => x.rowId)).toEqual([5]);
   });
 
-  test('説明に GM・参加者・メモ・グループの画面の URL。いなければ行ごと書かない', () => {
+  test('説明にGM・参加者・メモ・グループの画面のURL。いなければ行ごと書かない', () => {
     const ctx = { appUrl: 'https://yoki.test/g/grp/', group: { title: 'テストの卓' } as any };
     expect(calendarItem(ctx, s({ memo: '持ち物: ダイス' })).description).toBe('GM: ひより\n参加: ソラ\n\n持ち物: ダイス\n\nテストの卓（卓予定）: https://yoki.test/g/grp/');
     expect(calendarItem(ctx, s({ gm: '', members: [] })).description).toBe('テストの卓（卓予定）: https://yoki.test/g/grp/');
   });
 });
 
-describe('購読 URL', () => {
+describe('購読URL', () => {
   let G: Awaited<ReturnType<typeof setupGroup>>;
   let T: (n: number) => string;
   beforeEach(async () => {
@@ -85,9 +85,9 @@ describe('購読 URL', () => {
   const feedUrl = (body: any) => body.data.calendar.feed?.url as string;
   const fetchFeed = (url: string) => call(new URL(url).pathname);
 
-  test('作ると URL が出る。自分の卓だけなら、自分が入る開催の卓だけが載る', async () => {
+  test('作るとURLが出る。自分の卓だけなら、自分が入る開催の卓だけが載る', async () => {
     const r = await ok(G.sora, G.id, 'saveCalendarFeed', { scope: 'mine' });
-    expect(r.message).toBe('購読 URL を作りました。');
+    expect(r.message).toBe('購読URLを作りました。');
     expect(r.data.calendar.feed.scope).toBe('mine');
     expect(feedUrl(r)).toMatch(/^https:\/\/yoki\.test\/cal\/[A-Za-z0-9_-]{43}\.ics$/);
     const res = await fetchFeed(feedUrl(r));
@@ -103,10 +103,10 @@ describe('購読 URL', () => {
     expect(fetched).not.toBeNull();
   });
 
-  test('載せる卓を変えると URL はそのままで中身が変わる。作り直すと URL が変わり、前の URL は 404', async () => {
+  test('載せる卓を変えるとURLはそのままで中身が変わる。作り直すとURLが変わり、前のURLは404', async () => {
     const first = feedUrl(await ok(G.sora, G.id, 'saveCalendarFeed', { scope: 'mine' }));
     const all = await ok(G.sora, G.id, 'saveCalendarFeed', { scope: 'all' });
-    expect(all.message).toBe('購読 URL に載せる卓を「グループの卓すべて」にしました。');
+    expect(all.message).toBe('購読URLに載せる卓を「グループの卓すべて」にしました。');
     expect(feedUrl(all)).toBe(first);
     const text = await (await fetchFeed(first)).text();
     expect(text).toContain('X-WR-CALNAME:テストの卓（卓予定）');
@@ -118,7 +118,7 @@ describe('購読 URL', () => {
     expect((await fetchFeed(feedUrl(renewed))).status).toBe(200);
   });
 
-  test('止めると URL は 404。画面には出なくなる', async () => {
+  test('止めるとURLは404。画面には出なくなる', async () => {
     const url = feedUrl(await ok(G.sora, G.id, 'saveCalendarFeed', {}));
     const r = await ok(G.sora, G.id, 'deleteCalendarFeed');
     expect(r.message).toContain('止めました');
@@ -126,23 +126,23 @@ describe('購読 URL', () => {
     expect((await fetchFeed(url)).status).toBe(404);
   });
 
-  test('URL は人とグループごと。ほかの人の画面には出ない', async () => {
+  test('URLは人とグループごと。ほかの人の画面には出ない', async () => {
     await ok(G.sora, G.id, 'saveCalendarFeed', {});
     const other = await ok(G.komachi, G.id, 'getConsoleData');
     expect(other.calendar.feed).toBeNull();
-    // テストは開発の形で動き、Google の値が空なので、開発用の偽の Google が使える
+    // テストは開発の形で動き、Googleの値が空なので、開発用の偽のGoogleが使える
     expect(other.calendar.googleReady).toBe(true);
     expect(other.calendar.google).toBeNull();
     expect(other.availGoogle).toEqual({});
   });
 
-  test('形の違う URL・知らない token は 404', async () => {
+  test('形の違うURL・知らないtokenは404', async () => {
     expect((await call('/cal/short.ics')).status).toBe(404);
     expect((await call('/cal/' + 'a'.repeat(43))).status).toBe(404);
     expect((await call('/cal/' + 'a'.repeat(43) + '.ics')).status).toBe(404);
   });
 
-  test('メンバーから外された・締め出された・サーバーの控えが無い人の URL は 404', async () => {
+  test('メンバーから外された・締め出された・サーバーの控えが無い人のURLは404', async () => {
     const url = feedUrl(await ok(G.sora, G.id, 'saveCalendarFeed', {}));
     await env.DB.prepare("DELETE FROM user_guilds WHERE user_id = '400000000000000011'").run();
     expect((await fetchFeed(url)).status).toBe(404);

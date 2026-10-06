@@ -1,5 +1,5 @@
 // グループの画面（/g/:id/ とタブ、管理の区域 /g/:id/admin/）の外枠。上の帯・タブ・本文（道の中身）・窓・吹き出しを置く。
-// データの読み書きは ConsoleSync（api/sync.ts）。データが届くまでは読み込み中の骨組みを出す
+// データの読み書きはConsoleSync（api/sync.ts）。データが届くまでは読み込み中の骨組みを出す
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Outlet, useNavigate, useParams, useRouterState } from '@tanstack/react-router';
 import { useEffect, useMemo, useState } from 'react';
@@ -23,7 +23,7 @@ import { Header } from './Header';
 import { Loading } from './Loading';
 import { guideClosedKey, type MainTab, TAB_TO, tabOf } from './nav';
 
-/** 確かめとスクリーンショットのスクリプトが使う（React の中の値は、外から見えないため） */
+/** 確かめとスクリーンショットのスクリプトが使う（Reactの中の値は、外から見えないため） */
 type YokiHook = { readonly D: ConsoleData | undefined; selectDay: (k: string) => void; showTab: (t: string) => void };
 
 /** グループの画面の外枠。上の帯でグループを切り替えたら、読み込み（ConsoleSync）と画面の状態ごと作り直す */
@@ -51,8 +51,8 @@ function ConsoleShell() {
 
   useEffect(() => sync.start(), [sync]);
   useEffect(() => watchSystemTheme(), []);
-  // 区域とタブを body に置く（見た目の出し分けに使う）。ふだんの 3 画面のタブは、次にこのグループを開いたときのために控える
-  // （設定は控えない。グループの URL を開いて設定が出るのは不自然なため）
+  // 区域とタブをbodyに置く（見た目の出し分けに使う）。ふだんの3画面のタブは、次にこのグループを開いたときのために控える
+  // （設定は控えない。グループのURLを開いて設定が出るのは不自然なため）
   useEffect(() => {
     document.body.setAttribute('data-area', area);
     document.body.setAttribute('data-tab', tab);
@@ -75,7 +75,7 @@ function ConsoleShell() {
       <main className={mainArea(tab === 'cal' ? 'cal' : 'tabs')}>{view.phase === 'ready' && d ? <Outlet /> : <Loading view={view} sync={sync} />}</main>
       {d && (
         <>
-          {/* 入力の候補（GM の名前・シリーズの名前）。候補は値だけで、名前は持たない */}
+          {/* 入力の候補（GMの名前・シリーズの名前）。候補は値だけで、名前は持たない */}
           {/* oxlint-disable-next-line jsx-a11y/control-has-associated-label */}
           <datalist id="memberList">{d.members.map((m) => <option key={m.name} value={m.name} />)}</datalist>
           {/* oxlint-disable-next-line jsx-a11y/control-has-associated-label */}

@@ -1,4 +1,4 @@
-// 卓の場所。URL だけなら、押すと新しいタブで開くリンクにする（ボイスチャンネルやオンセのルームの URL を書くことが多いため）
+// 卓の場所。URLだけなら、押すと新しいタブで開くリンクにする（ボイスチャンネルやオンセのルームのURLを書くことが多いため）
 const URL_ONLY = /^https?:\/\/\S+$/;
 
 export function Place({ place, className }: { place: string; className?: string }) {

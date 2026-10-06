@@ -7,7 +7,7 @@ import type { GroupRow, Session } from '../../src/worker/domain/types';
 const CH = (n: number) => '12345678901234567' + n;
 const group = (o: Partial<GroupRow>) => ({ channel_id: '', remind_channel_id: '', recruit_channel_id: '', notify_days: 1, notify_hour: 20, ...o }) as GroupRow;
 
-// 基本のチャンネルと募集のチャンネルがある。開催前の知らせは基本の値で前日の 20 時台
+// 基本のチャンネルと募集のチャンネルがある。開催前の知らせは基本の値で前日の20時台
 const ctx = {
   group: group({ channel_id: CH(1), recruit_channel_id: CH(2) }),
   seriesNotify: {
@@ -21,7 +21,7 @@ const ctx = {
 const s = (o: Partial<Session>) => ({ series: '', date: null, status: '開催', ...o }) as Session;
 
 describe('送り先', () => {
-  test('シリーズの専用チャンネルと、基本にも送るなら種類のチャンネル。同じチャンネルなら 1 つだけ', () => {
+  test('シリーズの専用チャンネルと、基本にも送るなら種類のチャンネル。同じチャンネルなら1つだけ', () => {
     const port = discordTargets(ctx, '港', 'recruit');
     expect(port.map((t) => [t.channelId, t.label])).toEqual([[CH(3), 'シリーズ「港」のチャンネル'], [CH(2), '募集のチャンネル']]);
     expect(discordTargets(ctx, '古城', '').map((t) => t.channelId)).toEqual([CH(1)]);
@@ -76,7 +76,7 @@ describe('開催前の知らせの日時', () => {
   });
 
   test('日時の言い方と、開催日まで何日あるかの言い方', () => {
-    expect([notifyWhenText(0, 12), notifyWhenText(1, 20), notifyWhenText(3, 9)]).toEqual(['当日の 12 時台', '前日の 20 時台', '3 日前の 9 時台']);
-    expect([-1, 0, 1, 2, 5].map(aheadText)).toEqual(['今日', '今日', '明日', 'あさって', '5 日後']);
+    expect([notifyWhenText(0, 12), notifyWhenText(1, 20), notifyWhenText(3, 9)]).toEqual(['当日の12時台', '前日の20時台', '3日前の9時台']);
+    expect([-1, 0, 1, 2, 5].map(aheadText)).toEqual(['今日', '今日', '明日', 'あさって', '5日後']);
   });
 });

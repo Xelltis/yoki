@@ -1,4 +1,4 @@
-// 運営者の API（/api/admin/*）: 入れる人の確かめ・様子・グループ（管理者と Discord サーバーの付け替え・消す）・利用者（ログインを切る・締め出す）
+// 運営者のAPI（/api/admin/*）: 入れる人の確かめ・様子・グループ（管理者とDiscordサーバーの付け替え・消す）・利用者（ログインを切る・締め出す）
 import { env } from 'cloudflare:test';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import type { AdminGroupDetail, AdminGroupRow, AdminOverview, AdminUserRow } from '../../src/shared/admin';
@@ -29,7 +29,7 @@ describe('入れる人', () => {
   const reads = ['/api/admin/overview', '/api/admin/groups', '/api/admin/groups/grp', '/api/admin/users', '/api/admin/legal'];
   const writes = ['/api/admin/groups/grp/admins', '/api/admin/groups/grp/guild', '/api/admin/groups/grp/delete', '/api/admin/users/x/logout', '/api/admin/users/x/ban', '/api/admin/users/x/delete', '/api/admin/registration', '/api/admin/legal'];
 
-  test('ログインしていなければ AUTH:、運営者でなければ 403。グループの管理者でも入れない', async () => {
+  test('ログインしていなければAUTH:、運営者でなければ403。グループの管理者でも入れない', async () => {
     const { admin } = await setupGroup();
     for (const p of reads) {
       const anon = await call(p);
@@ -57,7 +57,7 @@ describe('入れる人', () => {
     expect(await count("SELECT count(*) AS n FROM groups WHERE id = 'grp'")).toBe(1);
   });
 
-  test('入口の /api/me で、運営者かが分かる', async () => {
+  test('入口の /api/meで、運営者かが分かる', async () => {
     const me = (sid: string) => call('/api/me', { sid }).then((r) => r.json() as Promise<{ operator: boolean }>);
     const { admin } = await setupGroup();
     expect((await me(op)).operator).toBe(true);
@@ -72,7 +72,7 @@ describe('様子', () => {
     const log = (at: string, result: string) => env.DB.prepare("INSERT INTO notify_log (group_id, at, kind, target, result) VALUES ('grp', ?, '開催前の知らせ', '卓', ?)").bind(at, result).run();
     await log(iso(60_000), '送信失敗（チャンネル）: HTTP 404');
     await log(iso(2 * 86400_000), '送らず: 送り先のチャンネルが未設定');
-    await log(iso(30_000), 'HTTP 429 …（1 回目、3 秒後に送り直し）');
+    await log(iso(30_000), 'HTTP 429 …（1回目、3秒後に送り直し）');
     await log(iso(10_000), 'OK (200)');
     await log(iso(10 * 86400_000), '送信失敗（古い）');
     await env.DB.prepare("INSERT INTO meta (key, value) VALUES ('patrol', ?), ('hourly', '2026-10-10T20')").bind(JSON.stringify({ at: iso(60_000), ms: 12, ok: true, error: '' })).run();
@@ -87,7 +87,7 @@ describe('様子', () => {
     expect(o.patrol.last?.ok).toBe(true);
   });
 
-  test('見回りの記録が無いか、15 分より前なら止まっているかも', async () => {
+  test('見回りの記録が無いか、15分より前なら止まっているかも', async () => {
     expect((await get<AdminOverview>('/api/admin/overview')).body.patrol.stale).toBe(true);
     await env.DB.prepare("INSERT INTO meta (key, value) VALUES ('patrol', ?)").bind(JSON.stringify({ at: new Date(Date.now() - 20 * 60_000).toISOString(), ms: 1, ok: true, error: '' })).run();
     expect((await get<AdminOverview>('/api/admin/overview')).body.patrol.stale).toBe(true);
@@ -103,7 +103,7 @@ describe('グループ', () => {
     expect(list[0]).toMatchObject({ id: 'grp', title: 'テストの卓', guildId: GUILD, memberCount: 3, linkedCount: 3, adminCount: 0 });
     const { body: d, res } = await get<AdminGroupDetail>('/api/admin/groups/grp');
     expect(d.channelSet).toBe(true);
-    // チャンネルの ID も Bot のトークンも出さない
+    // チャンネルのIDもBotのトークンも出さない
     for (const json of [JSON.stringify(list), JSON.stringify(d)]) {
       expect(json).not.toContain('123456789012345678');
       expect(json).not.toContain('test-bot-token');
@@ -115,12 +115,12 @@ describe('グループ', () => {
     expect((await get('/api/admin/groups/none')).status).toBe(404);
   });
 
-  test('管理者を付け替える。印が 0 人になる外し方は断る', async () => {
+  test('管理者を付け替える。印が0人になる外し方は断る', async () => {
     await setupGroup();
     const { body: d } = await get<AdminGroupDetail>('/api/admin/groups/grp');
     const sora = d.members.find((m) => m.name === 'ソラ')!, komachi = d.members.find((m) => m.name === 'こまち')!;
     expect((await post('/api/admin/groups/grp/admins', { memberId: sora.id, admin: true })).status).toBe(200);
-    expect((await post('/api/admin/groups/grp/admins', { memberId: sora.id, admin: false })).body.error).toMatch(/0 人/);
+    expect((await post('/api/admin/groups/grp/admins', { memberId: sora.id, admin: false })).body.error).toMatch(/0人/);
     expect((await post('/api/admin/groups/grp/admins', { memberId: komachi.id, admin: true })).status).toBe(200);
     expect((await post('/api/admin/groups/grp/admins', { memberId: sora.id, admin: false })).status).toBe(200);
     expect(await count("SELECT count(*) AS n FROM members WHERE group_id = 'grp' AND is_admin = 1")).toBe(1);
@@ -129,7 +129,7 @@ describe('グループ', () => {
     expect((await rpc(await loginAs({ id: '400000000000000012', name: 'こまち' }, [{ id: GUILD, name: 'T' }]), 'grp', 'getConsoleData')).body.isAdmin).toBe(true);
   });
 
-  test('まだ開いていない人を、Discord ID で管理者として足せる。初めて開いたときにその行に結びつく', async () => {
+  test('まだ開いていない人を、Discord IDで管理者として足せる。初めて開いたときにその行に結びつく', async () => {
     await setupGroup();
     expect((await post('/api/admin/groups/grp/admins', { discordId: '123', name: 'ダン', admin: true })).status).toBe(400);
     expect((await post('/api/admin/groups/grp/admins', { discordId: '500000000000000001', admin: true })).body.error).toMatch(/名前/);
@@ -138,11 +138,11 @@ describe('グループ', () => {
     const d = (await rpc(dan, 'grp', 'getConsoleData')).body;
     expect(d.me.name).toBe('ダン');
     expect(d.isAdmin).toBe(true);
-    // すでにいる人を Discord ID で指すと、その人に印を付ける
+    // すでにいる人をDiscord IDで指すと、その人に印を付ける
     expect((await post('/api/admin/groups/grp/admins', { discordId: '400000000000000011', admin: true })).body.message).toMatch(/ソラ/);
   });
 
-  test('Discord サーバーを付け替える。ID の形・同じサーバー・名前の分からないサーバーを確かめる。知らせのチャンネルはいつも外す', async () => {
+  test('Discordサーバーを付け替える。IDの形・同じサーバー・名前の分からないサーバーを確かめる。知らせのチャンネルはいつも外す', async () => {
     await setupGroup();
     /** 基本・種類ごと・シリーズのチャンネルを決めておく */
     const setChannels = () => env.DB.batch([
@@ -165,7 +165,7 @@ describe('グループ', () => {
     expect(await channels()).toEqual({ base: '123456789012345678', remind: '123456789012345679', recruit: '123456789012345680', series: '123456789012345681' });
     let r = await post('/api/admin/groups/grp/guild', { guildId: '700000000000000001', guildName: '新しいサーバー' });
     expect(r.status).toBe(200);
-    expect(r.body.message).toBe('「テストの卓」を Discord サーバー「新しいサーバー」に結び直しました。知らせのチャンネルは外したので、新しいサーバーに Bot を招いて選び直してください。');
+    expect(r.body.message).toBe('「テストの卓」をDiscordサーバー「新しいサーバー」に結び直しました。知らせのチャンネルは外したので、新しいサーバーにBotを招いて選び直してください。');
     expect(await env.DB.prepare("SELECT guild_id || ' ' || guild_name AS v FROM groups WHERE id = 'grp'").first('v')).toBe('700000000000000001 新しいサーバー');
     expect(await channels()).toEqual(cleared);
     expect((await get<AdminGroupDetail>('/api/admin/groups/grp')).body.channelSet).toBe(false);
@@ -178,7 +178,7 @@ describe('グループ', () => {
     await setChannels();
     await loginAs({ id: '600', name: 'イブ' }, [{ id: '700000000000000002', name: '控えのサーバー', canManage: true }]);
     r = await post('/api/admin/groups/grp/guild', { guildId: '700000000000000002' });
-    expect(r.body.message).toMatch(/^「テストの卓」を Discord サーバー「控えのサーバー」に結び直しました。知らせのチャンネルは外した/);
+    expect(r.body.message).toMatch(/^「テストの卓」をDiscordサーバー「控えのサーバー」に結び直しました。知らせのチャンネルは外した/);
     expect(await channels()).toEqual(cleared);
   });
 
@@ -204,16 +204,16 @@ describe('グループ', () => {
 describe('利用者', () => {
   test('一覧。入っているグループ・有効なログインの数・運営者が分かる', async () => {
     await setupGroup();
-    await loginAs({ id: '400000000000000011', name: 'ソラ' }, [{ id: GUILD, name: 'T' }]);   // 2 つ目のログイン
+    await loginAs({ id: '400000000000000011', name: 'ソラ' }, [{ id: GUILD, name: 'T' }]);   // 2つ目のログイン
     const { body } = await get<AdminUserRow[]>('/api/admin/users');
     const sora = body.find((u) => u.id === '400000000000000011')!;
     expect(sora).toMatchObject({ name: 'ソラ', logins: 2, groups: [{ id: 'grp', title: 'テストの卓' }], bannedAt: '', operator: false });
     expect(body.find((u) => u.id === OP.id)!.operator).toBe(true);
   });
 
-  test('ログインを切る。Discord でログインし直せば、また入れる', async () => {
+  test('ログインを切る。Discordでログインし直せば、また入れる', async () => {
     const { sora } = await setupGroup();
-    expect((await post('/api/admin/users/400000000000000011/logout', {})).body.message).toMatch(/1 件/);
+    expect((await post('/api/admin/users/400000000000000011/logout', {})).body.message).toMatch(/1件/);
     expect((await rpc(sora, 'grp', 'getConsoleData')).status).toBe(401);
     expect(await count("SELECT count(*) AS n FROM users WHERE id = '400000000000000011' AND banned_at IS NULL")).toBe(1);
     expect((await post('/api/admin/users/none/logout', {})).status).toBe(404);
@@ -241,12 +241,12 @@ describe('利用者', () => {
     await env.DB.batch([
       env.DB.prepare("INSERT INTO poll_votes (session_id, date, member_id, vote, updated_at) VALUES (?, '2026-12-01', ?, '◯', '')").bind(sid, soraId),
       env.DB.prepare("INSERT INTO availability (member_id, date, mark) VALUES (?, '2026-12-01', '×')").bind(soraId),
-      // ソラが作った別のグループ。そこでは、まだ開いていない人として Discord ID で先に登録されていた
+      // ソラが作った別のグループ。そこでは、まだ開いていない人としてDiscord IDで先に登録されていた
       env.DB.prepare("INSERT INTO groups (id, guild_id, guild_name, title, created_by, created_at) VALUES ('g2', 'guild-2', 'S2', '二つ目', ?, '2026-10-01T00:00:00Z')").bind(SORA),
       env.DB.prepare("INSERT INTO members (group_id, name, discord_id, created_at) VALUES ('g2', 'そら', ?, '')").bind(SORA),
     ]);
     const r = await post('/api/admin/users/' + SORA + '/delete', {});
-    expect(r.body.message).toBe('ソラ を消しました（グループのメンバーの行 2 件も消しました）。Discord サーバーにいれば、次に開いたときにまた入れます。');
+    expect(r.body.message).toBe('ソラを消しました（グループのメンバーの行2件も消しました）。Discordサーバーにいれば、次に開いたときにまた入れます。');
     for (const sql of ['SELECT count(*) AS n FROM users WHERE id = ?1', 'SELECT count(*) AS n FROM auth_sessions WHERE user_id = ?1', 'SELECT count(*) AS n FROM user_guilds WHERE user_id = ?1', 'SELECT count(*) AS n FROM members WHERE user_id = ?1 OR discord_id = ?1']) {
       expect(await count(sql, SORA), sql).toBe(0);
     }
@@ -260,9 +260,9 @@ describe('利用者', () => {
     expect(logs.filter((l) => l.includes('"audit":"operator"')).map((l) => JSON.parse(l))).toEqual([{ audit: 'operator', by: OP.id, action: 'deleteUser', target: SORA }]);
   });
 
-  test('運営者と、締め出している人は消せない。いない人は 404', async () => {
+  test('運営者と、締め出している人は消せない。いない人は404', async () => {
     await setupGroup();
-    expect((await post('/api/admin/users/' + OP.id + '/delete', {})).body.error).toBe('運営者は消せません（OPERATOR_IDS から外してからにしてください）。');
+    expect((await post('/api/admin/users/' + OP.id + '/delete', {})).body.error).toBe('運営者は消せません（OPERATOR_IDSから外してからにしてください）。');
     await post('/api/admin/users/400000000000000012/ban', { banned: true });
     expect((await post('/api/admin/users/400000000000000012/delete', {})).body.error).toMatch(/^締め出している人は消せません。/);
     expect(await count("SELECT count(*) AS n FROM users WHERE id = '400000000000000012'")).toBe(1);
@@ -286,7 +286,7 @@ describe('端の場合', () => {
     expect(g.lastUsedAt).toBe(g.createdAt);
   });
 
-  test('グループやメンバーが無ければ 404。Discord ID では外せない。使えない名前・同じ名前では足せない', async () => {
+  test('グループやメンバーが無ければ404。Discord IDでは外せない。使えない名前・同じ名前では足せない', async () => {
     await setupGroup();
     expect((await post('/api/admin/groups/none/admins', { memberId: 1, admin: true })).status).toBe(404);
     expect((await post('/api/admin/groups/none/guild', { guildId: '700000000000000001', guildName: 'S' })).status).toBe(404);

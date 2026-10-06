@@ -1,6 +1,6 @@
-// 画面で使うアイコン。Material Symbols Rounded（Google。Apache License 2.0）の線の形を、unplugin-icons が組み立てのときに SVG の React の部品にする
-// （vite.config.ts。画像やフォントは読まない）。使う名前だけを import するので、使うときはここに足す（名前のアルファベット順）。
-// <Icon name> の名前は型で確かめる。集まりのライセンスは tools/icons.ts の ALLOWED_ICON_SETS（test/client/contract.test.js が確かめる）
+// 画面で使うアイコン。Material Symbols Rounded（Google。Apache License 2.0）の線の形を、unplugin-iconsが組み立てのときにSVGのReactの部品にする
+// （vite.config.ts。画像やフォントは読まない）。使う名前だけをimportするので、使うときはここに足す（名前のアルファベット順）。
+// <Icon name> の名前は型で確かめる。集まりのライセンスはtools/icons.tsのALLOWED_ICON_SETS（test/client/contract.test.jsが確かめる）
 import type { ComponentType, SVGProps } from 'react';
 import IAdd from '~icons/material-symbols/add-outline-rounded';
 import IArrowBack from '~icons/material-symbols/arrow-back-outline-rounded';

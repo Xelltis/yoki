@@ -1,13 +1,13 @@
 // ランダムな値とハッシュ（Web Crypto）
 const BASE32 = 'abcdefghijklmnopqrstuvwxyz234567';
 
-/** 小文字の base32 で n 文字（グループの ID など） */
+/** 小文字のbase32でn文字（グループのIDなど） */
 export function randomId(n: number): string {
   const bytes = crypto.getRandomValues(new Uint8Array(n));
   return Array.from(bytes, (b) => BASE32[b % 32]).join('');
 }
 
-/** cookie に入れる値（32 バイト、base64url） */
+/** cookieに入れる値（32バイト、base64url） */
 export function randomToken(): string {
   const bytes = crypto.getRandomValues(new Uint8Array(32));
   return btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');

@@ -1,18 +1,18 @@
-// 運営者が書く本文（利用規約・プライバシーポリシー）を HTML にする。書けるのは、見出し・箇条書き・番号付き・段落・リンクだけ。
-// HTML のタグは使えない（そのまま文字で出す）
-//   ## 見出し / ### 小見出し      「#」1〜2 個は h2、3 個からは h3
+// 運営者が書く本文（利用規約・プライバシーポリシー）をHTMLにする。書けるのは、見出し・箇条書き・番号付き・段落・リンクだけ。
+// HTMLのタグは使えない（そのまま文字で出す）
+//   ## 見出し / ### 小見出し      「#」1〜2個はh2、3個からはh3
 //   - 項目 / * 項目               箇条書き
 //   1. 項目 / 1) 項目             番号付き
 //   空行                          段落を分ける（続けて書いた行は、段落の中の改行になる）
-//   [文字](URL)                   リンク（URL は https:// http:// mailto: か、/ で始まるこのサイトの道）
+//   [文字](URL)                   リンク（URLは https:// http:// mailto: か、/ で始まるこのサイトの道）
 //   https://… と メールアドレス     そのままリンクになる
 const ESC: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
 export const esc = (s: string) => s.replace(/[&<>"']/g, (ch) => ESC[ch]!);
 
-/** [文字](URL)・URL・メールアドレス。URL とメールアドレスは英数字と記号だけ（後ろに続く日本語を巻き込まない） */
+/** [文字](URL)・URL・メールアドレス。URLとメールアドレスは英数字と記号だけ（後ろに続く日本語を巻き込まない） */
 const LINK = /\[([^\]\n]+)\]\(((?:https?:\/\/|mailto:|\/(?!\/))[^\s()]*)\)|https?:\/\/[\w\-.~:/?#@!$&*+,;=%]+|[\w.%+-]+@[\w-]+(?:\.[\w-]+)*\.[A-Za-z]{2,}/g;
 
-/** 1 行の中の文字。リンクのほかは逃がす */
+/** 1行の中の文字。リンクのほかは逃がす */
 export function inline(text: string): string {
   let out = '', last = 0;
   for (const m of text.matchAll(LINK)) {
@@ -32,7 +32,7 @@ export function inline(text: string): string {
 
 type List = { tag: 'ul' | 'ol'; items: string[] };
 
-/** 本文を HTML にする */
+/** 本文をHTMLにする */
 export function renderDoc(text: string): string {
   const out: string[] = [];
   let para: string[] = [];

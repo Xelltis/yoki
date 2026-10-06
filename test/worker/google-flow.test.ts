@@ -1,4 +1,4 @@
-// Google カレンダーとの連携の流れ: 連携する（OAuth）、設定を変える・今すぐ同期する・外す、予定の手入力と Google の印、見回りと片付け
+// Googleカレンダーとの連携の流れ: 連携する（OAuth）、設定を変える・今すぐ同期する・外す、予定の手入力とGoogleの印、見回りと片付け
 import { env } from 'cloudflare:test';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { app } from '../../src/worker/app';
@@ -52,7 +52,7 @@ describe('連携する（OAuth）', () => {
     expect(decodeURIComponent((await start(G.sora, 'https://evil.example/')).cookie)).toMatch(/\|\/$/);
   });
 
-  test('同意の画面へ送り、戻ってきたら refresh token を暗号化して置く。返事のあとで同期する', async () => {
+  test('同意の画面へ送り、戻ってきたらrefresh tokenを暗号化して置く。返事のあとで同期する', async () => {
     await ok(G.admin, G.id, 'saveSession', { name: 'ソラの卓', gm: 'ひより', members: ['ソラ'], date: T(3), status: '開催' });
     const s = await start(G.sora);
     expect(s.res.headers.get('Location')).toMatch(/^https:\/\/yoki\.test\/dev\/google\/authorize\?/);
@@ -70,7 +70,7 @@ describe('連携する（OAuth）', () => {
     expect(JSON.stringify(await ok(G.sora, G.id, 'getConsoleData'))).not.toContain(row.refresh_token);
   });
 
-  test('断られたら戻り先へ。途中の情報が無い・別の人・state が違う・code が無いときは受け取らない', async () => {
+  test('断られたら戻り先へ。途中の情報が無い・別の人・stateが違う・codeが無いときは受け取らない', async () => {
     const s = await start(G.sora);
     expect((await callback('error=access_denied', G.sora, s.cookie)).headers.get('Location')).toBe(back + '?google=cancelled');
     expect((await call('/auth/google/callback?code=x&state=' + s.state, { sid: G.sora })).status).toBe(400);
@@ -81,12 +81,12 @@ describe('連携する（OAuth）', () => {
     expect(await linkRow()).toBeNull();
   });
 
-  test('cookie の戻り先が画面の道でなければ、入口へ戻す', async () => {
+  test('cookieの戻り先が画面の道でなければ、入口へ戻す', async () => {
     const forged = encodeURIComponent('st|' + SORA + '|https://evil.example/');
     expect((await callback('error=access_denied', G.sora, forged)).headers.get('Location')).toBe('/?google=cancelled');
   });
 
-  test('別の Google アカウントで連携し直すと、前のアカウントに書いた予定を消す', async () => {
+  test('別のGoogleアカウントで連携し直すと、前のアカウントに書いた予定を消す', async () => {
     await ok(G.admin, G.id, 'saveSession', { name: 'ソラの卓', gm: 'ひより', members: ['ソラ'], date: T(3), status: '開催' });
     await link({ email: 'old@example.com' });
     await ok(G.sora, G.id, 'syncGoogleNow');
@@ -101,13 +101,13 @@ describe('連携する（OAuth）', () => {
   test('運営者が設定していなければ、案内を出す', async () => {
     const res = await app.request(ORIGIN + '/auth/google/start', { headers: { Cookie: SID + '=' + G.sora } }, { ...env, GOOGLE_CLIENT_ID: 'id-only' });
     expect(res.status).toBe(500);
-    expect(await res.text()).toContain('Google 連携の設定がありません');
+    expect(await res.text()).toContain('Google連携の設定がありません');
   });
 });
 
 describe('設定・同期・外す', () => {
   test('連携していなければ断る。運営者が設定していなければ断る', async () => {
-    expect((await fail(G.sora, G.id, 'syncGoogleNow')).error).toBe('Google と連携していません。');
+    expect((await fail(G.sora, G.id, 'syncGoogleNow')).error).toBe('Googleと連携していません。');
     const ctx = { google: {} } as any;
     await expect(saveGoogleSettings(ctx, {}, { google: null } as any)).rejects.toThrow('運営者が設定していない');
   });
@@ -115,23 +115,23 @@ describe('設定・同期・外す', () => {
   test('時間帯を確かめる', async () => {
     await link();
     const base = { write: true, read: true };
-    expect((await fail(G.sora, G.id, 'saveGoogleSettings', { ...base, from: '夜', to: '23:00' })).error).toContain('19:00 のように');
+    expect((await fail(G.sora, G.id, 'saveGoogleSettings', { ...base, from: '夜', to: '23:00' })).error).toContain('19:00のように');
     expect((await fail(G.sora, G.id, 'saveGoogleSettings', { ...base, from: '23:00', to: '19:00' })).error).toContain('始まりより後');
     const r = await ok(G.sora, G.id, 'saveGoogleSettings', { ...base, from: '9', to: '24:00' });
-    expect(r.message).toBe('Google 連携の設定を保存しました。');
+    expect(r.message).toBe('Google連携の設定を保存しました。');
     expect(r.data.calendar.google).toMatchObject({ from: '09:00', to: '24:00' });
   });
 
-  test('書き込みをやめると書いた予定を消す。読み込みをやめると Google の印を消す', async () => {
+  test('書き込みをやめると書いた予定を消す。読み込みをやめるとGoogleの印を消す', async () => {
     await ok(G.admin, G.id, 'saveSession', { name: 'ソラの卓', gm: 'ひより', members: ['ソラ'], date: T(3), status: '開催' });
     await link();
     await writeFake(env.DB, { seq: 0, events: {}, revoked: [], busy: [{ start: T(1) + 'T09:00:00Z', end: T(1) + 'T15:00:00Z' }] });
     const synced = await ok(G.sora, G.id, 'syncGoogleNow');
-    expect(synced.message).toBe('Google カレンダーと同期しました。');
+    expect(synced.message).toBe('Googleカレンダーと同期しました。');
     expect(synced.data.availGoogle).toEqual({ [T(1)]: ['ソラ'] });
     expect((await events()).length).toBe(1);
     const off = await ok(G.sora, G.id, 'saveGoogleSettings', { write: false, read: false, from: '19:00', to: '23:00' });
-    expect(off.message).toBe('Google 連携の設定を保存しました。書き込んだ予定を 1 件消しました。');
+    expect(off.message).toBe('Google連携の設定を保存しました。書き込んだ予定を1件消しました。');
     expect(await events()).toEqual([]);
     expect(off.data.avail[T(1)]).toBeUndefined();
     expect(off.data.calendar.google).toMatchObject({ write: false, read: false });
@@ -147,13 +147,13 @@ describe('設定・同期・外す', () => {
     expect((await ok(G.sora, G.id, 'getConsoleData')).calendar.google.error).toBe(REVOKED_MESSAGE);
   });
 
-  test('外すと、書いた予定・Google の印・連携の行を消し、許可を取り消す', async () => {
+  test('外すと、書いた予定・Googleの印・連携の行を消し、許可を取り消す', async () => {
     await ok(G.admin, G.id, 'saveSession', { name: 'ソラの卓', gm: 'ひより', members: ['ソラ'], date: T(3), status: '開催' });
     await link();
     await writeFake(env.DB, { seq: 0, events: {}, revoked: [], busy: [{ start: T(1) + 'T09:00:00Z', end: T(1) + 'T15:00:00Z' }] });
     await ok(G.sora, G.id, 'syncGoogleNow');
     const r = await ok(G.sora, G.id, 'unlinkGoogle');
-    expect(r.message).toBe('Google との連携を外しました。書き込んだ予定を 1 件消しました。');
+    expect(r.message).toBe('Googleとの連携を外しました。書き込んだ予定を1件消しました。');
     expect(r.data.calendar.google).toBeNull();
     expect(r.data.availGoogle).toEqual({});
     expect(await events()).toEqual([]);
@@ -163,13 +163,13 @@ describe('設定・同期・外す', () => {
 
   test('連携の行が先に消えていても、外せる', async () => {
     const ctx = { db: env.DB, actor: { userId: SORA }, google: {}, now: new Date() } as any;
-    expect((await unlinkGoogle(ctx, {}, { google: deps } as any)).message).toBe('Google との連携を外しました。');
+    expect((await unlinkGoogle(ctx, {}, { google: deps } as any)).message).toBe('Googleとの連携を外しました。');
   });
 
-  test('鍵が替わって token が読めなくても、外せる', async () => {
+  test('鍵が替わってtokenが読めなくても、外せる', async () => {
     await link();
     await env.DB.prepare("UPDATE google_links SET refresh_token = 'broken'").run();
-    expect((await ok(G.sora, G.id, 'unlinkGoogle')).message).toBe('Google との連携を外しました。');
+    expect((await ok(G.sora, G.id, 'unlinkGoogle')).message).toBe('Googleとの連携を外しました。');
     expect(await linkRow()).toBeNull();
   });
 });
@@ -189,7 +189,7 @@ describe('運営者が利用者を消す', () => {
     expect(await googleEvents()).toBe(0);
   });
 
-  test('運営者が Google の値を外していれば、連携の行と書いた予定の控えだけを消す（Google 側には残る）', async () => {
+  test('運営者がGoogleの値を外していれば、連携の行と書いた予定の控えだけを消す（Google側には残る）', async () => {
     await ok(G.admin, G.id, 'saveSession', { name: 'ソラの卓', gm: 'ひより', members: ['ソラ'], date: T(3), status: '開催' });
     await link();
     await ok(G.sora, G.id, 'syncGoogleNow');
@@ -211,7 +211,7 @@ describe('卓を変えたら書き直す', () => {
   });
 });
 
-describe('予定の手入力と Google の印', () => {
+describe('予定の手入力とGoogleの印', () => {
   const marks = async () =>
     Object.fromEntries(
       (await env.DB.prepare("SELECT a.date, a.mark, a.source FROM availability a JOIN members m ON m.id = a.member_id WHERE m.name = 'ソラ' ORDER BY a.date").all<{ date: string; mark: string; source: string }>())
@@ -223,7 +223,7 @@ describe('予定の手入力と Google の印', () => {
     for (const n of [1, 2, 3, 4]) await env.DB.prepare("INSERT INTO availability (member_id, date, mark, source) VALUES (?, ?, '×', 'google')").bind(id, T(n)).run();
   });
 
-  test('1 マス: 印を入れれば本人の印になり、消せばその日を覚える。本人の印を消しても覚えない', async () => {
+  test('1マス: 印を入れれば本人の印になり、消せばその日を覚える。本人の印を消しても覚えない', async () => {
     await ok(G.sora, G.id, 'setAvailability', { name: 'ソラ', ymd: T(1), mark: '△' });
     await ok(G.sora, G.id, 'setAvailability', { name: 'ソラ', ymd: T(2), mark: '' });
     await ok(G.sora, G.id, 'setAvailability', { name: 'ソラ', ymd: T(1), mark: '' });
@@ -233,7 +233,7 @@ describe('予定の手入力と Google の印', () => {
     expect(d.availGoogle).toEqual({ [T(3)]: ['ソラ'], [T(4)]: ['ソラ'] });
   });
 
-  test('まとめて: 印を入れれば本人の印、空欄にすれば Google の印の日を覚える', async () => {
+  test('まとめて: 印を入れれば本人の印、空欄にすればGoogleの印の日を覚える', async () => {
     await ok(G.sora, G.id, 'setAvailabilityBulk', { name: 'ソラ', from: T(1), to: T(2), mark: '△' });
     await ok(G.sora, G.id, 'setAvailabilityBulk', { name: 'ソラ', from: T(2), to: T(4), mark: '' });
     expect(await marks()).toEqual({ [T(1)]: '△' });

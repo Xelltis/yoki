@@ -1,11 +1,11 @@
-// 返事を待たずに見せる形（押した瞬間の仮の反映）。データ d を受け取り、変えた新しい d を返す（d は書き換えない）。
-// 仮の卓の ID は '__tmp__'（何日かまとめて登録するときは '__tmp__0'・'__tmp__1'…）。返事のデータで本物に置き換わる
+// 返事を待たずに見せる形（押した瞬間の仮の反映）。データdを受け取り、変えた新しいdを返す（dは書き換えない）。
+// 仮の卓のIDは '__tmp__'（何日かまとめて登録するときは '__tmp__0'・'__tmp__1'…）。返事のデータで本物に置き換わる
 import type { ConsoleData, ConsoleSession } from '../../../../shared/api';
 
 export const TMP = '__tmp__';
 export const isTmp = (id: string) => String(id).indexOf(TMP) === 0;
 
-/** 卓を足すか、同じ ID の卓を置き換える。list を渡すと、まとめて足す */
+/** 卓を足すか、同じIDの卓を置き換える。listを渡すと、まとめて足す */
 export function withSessions(d: ConsoleData, list: ConsoleSession[]): ConsoleData {
   let sessions = d.sessions.slice();
   list.forEach((t) => {

@@ -1,4 +1,4 @@
-// Discord のサーバーでの権限。オーナーか、管理者（ADMINISTRATOR）・サーバー管理（MANAGE_GUILD）の権限があれば、
+// Discordのサーバーでの権限。オーナーか、管理者（ADMINISTRATOR）・サーバー管理（MANAGE_GUILD）の権限があれば、
 // そのサーバーにグループを作れ、そのグループでは常に管理者になる
 const ADMINISTRATOR = 0x8n;
 const MANAGE_GUILD = 0x20n;

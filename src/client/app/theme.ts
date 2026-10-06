@@ -1,4 +1,4 @@
-// この端末だけの見た目（ライト・ダークと文字の大きさ）。描く前の決め方は index.html の小さなスクリプト
+// この端末だけの見た目（ライト・ダークと文字の大きさ）。描く前の決め方はindex.htmlの小さなスクリプト
 import { createStore } from '../ui/store';
 import { store } from './storage';
 
@@ -15,7 +15,7 @@ export function chosenTheme(): '' | 'light' | 'dark' {
   const t = document.documentElement.getAttribute('data-theme');
   return t === 'dark' || t === 'light' ? t : '';
 }
-/** t は 'light' か 'dark'。空なら端末の設定に合わせる */
+/** tは 'light' か 'dark'。空なら端末の設定に合わせる */
 export function setTheme(t: string): void {
   if (t === 'dark' || t === 'light') document.documentElement.setAttribute('data-theme', t); else document.documentElement.removeAttribute('data-theme');
   store('theme', t || '');

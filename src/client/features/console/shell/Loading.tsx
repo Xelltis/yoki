@@ -1,9 +1,9 @@
-// 読み込み中の骨組みと、読めなかったとき・グループが消えたときの案内（#loading。e2e が「見つかりません」の文を見る）
+// 読み込み中の骨組みと、読めなかったとき・グループが消えたときの案内（#loading。e2eが「見つかりません」の文を見る）
 import { Link } from '@tanstack/react-router';
 import { Icon } from '../../../ui/Icon';
 import type { ConsoleSync, SyncView } from '../api/sync';
 
-/** 骨組みの 1 本（明るさが行き来する） */
+/** 骨組みの1本（明るさが行き来する） */
 const skelBase = 'block bg-head animate-pulse motion-reduce:animate-none';
 const skel = skelBase + ' rounded-sm';
 

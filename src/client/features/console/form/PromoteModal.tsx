@@ -1,4 +1,4 @@
-// 募集をやめるとき（開催・調整中にするとき）の確認。興味ありの人を参加者にするか、取り下げるかを GM が決める
+// 募集をやめるとき（開催・調整中にするとき）の確認。興味ありの人を参加者にするか、取り下げるかをGMが決める
 import { useState } from 'react';
 import type { ConsoleSession } from '../../../../shared/api';
 import { Modal } from '../../../ui/Modal';
@@ -7,14 +7,14 @@ import { checkPill, checkPills } from '../styles';
 
 export type PromoteAsk = { s: ConsoleSession; status: string };
 
-/** 決めたら onDone(参加者にする人) を呼ぶ。やめたら onDone(null) */
+/** 決めたらonDone(参加者にする人) を呼ぶ。やめたらonDone(null) */
 export function PromoteModal({ ask, onDone }: { ask: PromoteAsk | null; onDone: (picked: string[] | null) => void }) {
   const [picked, setPicked] = useState<string[]>([]);
   const [seen, setSeen] = useState<PromoteAsk | null>(null);
   // 開くたびに、チェックを外した状態から始める
   if (ask !== seen) { setSeen(ask); setPicked([]); }
   const s = ask?.s;
-  const lead = s ? '「' + s.name + '」を「' + ask!.status + '」にします。' + (s.want.length ? '参加希望の ' + s.want.join('、') + ' は参加者に入ります。' : '') +
+  const lead = s ? '「' + s.name + '」を「' + ask!.status + '」にします。' + (s.want.length ? '参加希望の' + s.want.join('、') + 'は参加者に入ります。' : '') +
     '興味ありの人は、参加者にする人だけチェックしてください。チェックしない人は一覧から外れます。' : '';
   return (
     <Modal id="promoteModal" open={!!ask} onClose={() => onDone(null)} backdropClose>

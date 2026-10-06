@@ -1,5 +1,5 @@
-// 運営者の API（/api/admin/*）。運営者（OPERATOR_IDS）だけが使える。読むものは GET、変えるものは POST（JSON）。
-// 変えた操作は、JSON 1 行の記録として log に出す（Cloudflare の observability で後から追える）
+// 運営者のAPI（/api/admin/*）。運営者（OPERATOR_IDS）だけが使える。読むものはGET、変えるものはPOST（JSON）。
+// 変えた操作は、JSON 1行の記録としてlogに出す（Cloudflareのobservabilityで後から追える）
 import { Hono } from 'hono';
 import type { AdminResult } from '../../shared/admin';
 import type { AppEnv } from '../app';
@@ -64,7 +64,7 @@ adminRoutes.post('/api/admin/update', async (c) => {
   const op = await requireOperator(c);
   const version = await startUpdate(c.env.DB, updateDeps(c.env));
   audit(op, 'update', 'v' + version, { from: 'v' + APP_VERSION });
-  return c.json(done('v' + version + ' への更新を始めました。GitHub の Actions が取り込んで公開します（数分かかります）。'));
+  return c.json(done('v' + version + 'への更新を始めました。GitHubのActionsが取り込んで公開します（数分かかります）。'));
 });
 
 adminRoutes.get('/api/admin/groups', async (c) => {

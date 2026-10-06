@@ -1,5 +1,5 @@
-// Discord への送信。送り先が何か所かあれば（シリーズのチャンネルと基本のチャンネル）、1 か所ずつ順に送る。
-// 1 か所ごとにサーバーへ 1 回ずつ頼み（sendDiscordStep）、429 や 5xx なら秒を数えながら送り直す
+// Discordへの送信。送り先が何か所かあれば（シリーズのチャンネルと基本のチャンネル）、1か所ずつ順に送る。
+// 1か所ごとにサーバーへ1回ずつ頼み（sendDiscordStep）、429や5xxなら秒を数えながら送り直す
 import type { DiscordReason, DiscordStepResult } from '../../../../shared/api';
 import type { ConsoleSync } from './sync';
 
@@ -13,7 +13,7 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const KEEP = ['data', 'asked', 'notified'] as const;
 
 /**
- * 送る。status(文) に進み具合が届く。ok は、すべての送り先に届いたとき true。
+ * 送る。status(文) に進み具合が届く。okは、すべての送り先に届いたときtrue。
  * 返事にデータが付いていれば、画面のデータに当てる（sync.write）
  */
 export async function discordSend(sync: ConsoleSync, form: Record<string, unknown>, status: (t: string) => void): Promise<{ ok: boolean; r: SendResult }> {
@@ -24,19 +24,19 @@ export async function discordSend(sync: ConsoleSync, form: Record<string, unknow
     const out: SendResult = { ...r, sent, failed, partial: sent.length > 0 && failed.length > 0 };
     KEEP.forEach((k) => { if (got[k] !== undefined && out[k] === undefined) Object.assign(out, { [k]: got[k] }); });
     if (count > 1) {
-      if (!failed.length) status('Discord の ' + count + ' か所に送りました（' + sent.join('、') + '）。');
-      else status((sent.length ? sent.join('、') + ' には届きました。' : '') + failed.map((f) => f.label + ' には届きませんでした（' + (f.reason ? f.reason.label : f.text) + '）').join('。') + '。');
+      if (!failed.length) status('Discordの' + count + 'か所に送りました（' + sent.join('、') + '）。');
+      else status((sent.length ? sent.join('、') + 'には届きました。' : '') + failed.map((f) => f.label + 'には届きませんでした（' + (f.reason ? f.reason.label : f.text) + '）').join('。') + '。');
     }
     return { ok: !failed.length, r: out };
   };
   for (;;) {
-    status(where() + 'Discord に送信中…（' + attempt + ' 回目／最大 ' + maxTries + ' 回）');
+    status(where() + 'Discordに送信中…（' + attempt + '回目／最大' + maxTries + '回）');
     let r: DiscordStepResult;
     try {
       r = await sync.write<DiscordStepResult>('sendDiscordStep', { ...form, attempt, to }, { quiet: true });
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      status(where() + 'Discord に送れませんでした: ' + msg);
+      status(where() + 'Discordに送れませんでした: ' + msg);
       failed.push({ label: labels[to] || 'Discord', reason: null, text: msg });
       return finish({ result: msg });
     }
@@ -48,11 +48,11 @@ export async function discordSend(sync: ConsoleSync, form: Record<string, unknow
       if (r.ok) {
         sent.push(name);
         KEEP.forEach((k) => { if (r[k] !== undefined) Object.assign(got, { [k]: r[k] }); });
-        status(where() + 'Discord に送りました' + (attempt > 1 ? '（' + attempt + ' 回目で成功）' : '') + '。');
+        status(where() + 'Discordに送りました' + (attempt > 1 ? '（' + attempt + '回目で成功）' : '') + '。');
       } else {
         const rs = r.reason || { kind: '', label: '原因不明', text: '', advice: '', toolFault: true };
         status(where() + '送信失敗（' + rs.label + '）: ' + rs.text + ' ' + rs.advice + (rs.toolFault ? '' : '　このツールの不具合ではありません。') +
-          '　［詳細: ' + (r.raw || r.result) + '、' + attempt + ' 回試行］');
+          '　［詳細: ' + (r.raw || r.result) + '、' + attempt + '回試行］');
         failed.push({ label: name, reason: rs, text: r.raw || r.result });
       }
       if (to + 1 < count) { to++; attempt = 1; continue; }
@@ -63,11 +63,11 @@ export async function discordSend(sync: ConsoleSync, form: Record<string, unknow
     const why = rs.label + 'のため、受け取りを断られました' + (rs.toolFault ? '' : '（ツールの不具合ではありません）');
     let left = Math.max(1, Math.ceil((r.waitMs || 3000) / 1000));
     attempt++;
-    status(where() + why + '。' + left + ' 秒後に ' + attempt + ' 回目を送ります…');
+    status(where() + why + '。' + left + '秒後に' + attempt + '回目を送ります…');
     while (left > 0) {
       await sleep(1000);
       left--;
-      if (left > 0) status(where() + why + '。' + left + ' 秒後に ' + attempt + ' 回目を送ります…');
+      if (left > 0) status(where() + why + '。' + left + '秒後に' + attempt + '回目を送ります…');
     }
   }
 }
@@ -76,7 +76,7 @@ export async function discordSend(sync: ConsoleSync, form: Record<string, unknow
 export function failToast(r: SendResult): string {
   const f = r && r.failed && r.failed[0], part = !!(r && r.partial);
   const rs = f ? f.reason : r && r.reason;
-  if (!rs) return (part && f ? f.label + ' に届きませんでした: ' : '送信失敗: ') + ((f && f.text) || (r && (r.raw || r.result)) || '不明');
-  return (part && f ? f.label + ' に届きませんでした（' : '送信失敗（') + rs.label + '）' + (rs.toolFault ? '' : '。ツールの不具合ではありません') +
-    (part ? '。' + r.sent.join('、') + ' には届きました' : '。管理画面の「送信の記録」に詳細があります');
+  if (!rs) return (part && f ? f.label + 'に届きませんでした: ' : '送信失敗: ') + ((f && f.text) || (r && (r.raw || r.result)) || '不明');
+  return (part && f ? f.label + 'に届きませんでした（' : '送信失敗（') + rs.label + '）' + (rs.toolFault ? '' : '。ツールの不具合ではありません') +
+    (part ? '。' + r.sent.join('、') + 'には届きました' : '。管理画面の「送信の記録」に詳細があります');
 }

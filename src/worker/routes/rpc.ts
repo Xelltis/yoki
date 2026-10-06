@@ -1,6 +1,6 @@
-// 画面からの呼び出し（POST /api/g/:groupId/:fn）。form と返事の形は GAS 版のまま。
-// 呼べる関数はここの一覧だけ。名前は画面と共有する（src/shared/api.ts の RPC_FUNCS。足りなくても多すぎても型の確認で止まる）。
-// 管理者だけの関数は admin に「何ができるのは管理者だけか」を書く
+// 画面からの呼び出し（POST /api/g/:groupId/:fn）。formと返事の形はGAS版のまま。
+// 呼べる関数はここの一覧だけ。名前は画面と共有する（src/shared/api.tsのRPC_FUNCS。足りなくても多すぎても型の確認で止まる）。
+// 管理者だけの関数はadminに「何ができるのは管理者だけか」を書く
 import { Hono } from 'hono';
 import type { AppEnv } from '../app';
 import { groupAccess } from '../auth/guard';
@@ -31,9 +31,9 @@ type Entry = {
   admin?: string;
   /** 返事に最新の画面データ（data）を付けるか。付ければ画面は読み直さずに済む */
   data?: boolean;
-  /** 卓（Google カレンダーに書く中身）を変えるか。変えたら、返事のあとで、連携している人の予定を書き直す */
+  /** 卓（Googleカレンダーに書く中身）を変えるか。変えたら、返事のあとで、連携している人の予定を書き直す */
   calendar?: boolean;
-  /** Google との連携の一式（io.google）を使うか */
+  /** Googleとの連携の一式（io.google）を使うか */
   google?: boolean;
 };
 
@@ -65,11 +65,11 @@ export const RPC: Record<Exclude<RpcName, 'getConsoleData'>, Entry> = {
   syncGoogleNow: { run: syncGoogleNow, data: true, google: true },
   unlinkGoogle: { run: unlinkGoogle, data: true, google: true },
   unlinkGoogleLogin: { run: unlinkGoogleLogin, data: true },
-  // 消したあとは画面のデータを読めないので data を付けない
+  // 消したあとは画面のデータを読めないのでdataを付けない
   deleteGroup: { run: deleteGroup, admin: 'グループを消すこと' },
 };
 
-/** 最後に使われた日時（運営者の管理画面に出す）。書き込みを減らすため、10 分に 1 回まで書き換える */
+/** 最後に使われた日時（運営者の管理画面に出す）。書き込みを減らすため、10分に1回まで書き換える */
 const TOUCH_MS = 10 * 60_000;
 async function touchGroup(db: D1Database, groupId: string, now = new Date()): Promise<void> {
   await db.prepare('UPDATE groups SET last_used_at = ?1 WHERE id = ?2 AND (last_used_at IS NULL OR last_used_at < ?3)')
@@ -87,7 +87,7 @@ rpcRoutes.post('/api/g/:groupId/:fn', async (c) => {
   const access = await groupAccess(c.env.DB, await currentViewer(c), groupId, c.env.DISCORD_BOT_TOKEN);
   if (!access.ok) {
     if (access.reason === 'notfound') throw goneError();
-    if (access.reason === 'forbidden') throw new AppError(403, 'このグループの Discord サーバーのメンバーではありません。');
+    if (access.reason === 'forbidden') throw new AppError(403, 'このグループのDiscordサーバーのメンバーではありません。');
     throw authError('ログインし直してください。');
   }
   await touchGroup(c.env.DB, groupId);
@@ -99,11 +99,11 @@ rpcRoutes.post('/api/g/:groupId/:fn', async (c) => {
   if (entry.admin && !access.actor.isAdmin) throw adminError(entry.admin);
   const form = await readForm(c.req);
   const google = entry.google || entry.calendar ? await googleDeps(c.env, appOrigin(c.env, c.req.url)) : null;
-  // 裏の仕事（Google との同期）は、失敗を自分で連携の印に残すので、ここでは拾わない
+  // 裏の仕事（Googleとの同期）は、失敗を自分で連携の印に残すので、ここでは拾わない
   const defer = (work: Promise<unknown>) => c.executionCtx.waitUntil(work);
   const io: Io = { reload: load, data: async () => consoleData(await load()), sleep: realSleep, google, defer };
   const result = await entry.run(ctx, form, io);
-  // 卓が変わったら、このグループで Google に書き込んでいる人がいるときだけ、返事のあとで予定を書き直す
+  // 卓が変わったら、このグループでGoogleに書き込んでいる人がいるときだけ、返事のあとで予定を書き直す
   if (entry.calendar && google && (await hasGoogleWriters(c.env.DB, groupId))) defer(syncGroupWrites(c.env.DB, google, groupId, new Date()));
   if (entry.data) result.data = await io.data();
   return c.json(result);

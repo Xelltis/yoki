@@ -7,14 +7,14 @@ import { seedSample } from '../../src/worker/seed/sample';
 import { makeGroup, ok, setupGroup, today } from './helpers';
 
 describe('日本時間の小道具', () => {
-  test('UTC の 15:00 は日本時間の翌日 0 時', () => {
+  test('UTCの15:00は日本時間の翌日0時', () => {
     expect(jst(new Date('2026-09-30T15:00:00Z'))).toMatchObject({ ymd: '2026-10-01', hour: 0, minute: 0, dow: 4 });
   });
   test('日付の計算と書き方', () => {
     expect(addDays('2026-12-31', 1)).toBe('2027-01-01');
     expect(daysBetween('2026-10-03', '2026-10-17')).toBe(14);
     expect(fmtDateJa('2026-10-03')).toBe('10/3（土）');
-    expect(stampText('2026-09-15T12:23:00Z')).toBe('2026/09/15（火） 21:23');
+    expect(stampText('2026-09-15T12:23:00Z')).toBe('2026/09/15（火）21:23');
     expect(parseYmd('2026/2/31')).toBeNull();
     expect(parseYmd('2026年10月3日')).toBe('2026-10-03');
     expect(normTime('9')).toBe('09:00');
@@ -23,7 +23,7 @@ describe('日本時間の小道具', () => {
 });
 
 describe('画面データ', () => {
-  test('形は GAS 版のまま（外したものと足したもの以外）', async () => {
+  test('形はGAS版のまま（外したものと足したもの以外）', async () => {
     const G = await setupGroup();
     const d = await ok(G.sora, G.id, 'getConsoleData');
     expect(Object.keys(d).sort()).toEqual([
@@ -37,13 +37,13 @@ describe('画面データ', () => {
     expect((await ok(G.admin, G.id, 'getConsoleData')).isAdmin).toBe(true);
   });
 
-  test('知らせのチャンネルと Bot。チャンネルは ID のまま渡し、Bot はトークンがあるかと、招く URL だけを渡す', async () => {
+  test('知らせのチャンネルとBot。チャンネルはIDのまま渡し、Botはトークンがあるかと、招くURLだけを渡す', async () => {
     const G = await setupGroup();
     let d = await ok(G.sora, G.id, 'getConsoleData');
     expect(d).toMatchObject({ channelSet: false, remindChannelSet: false, recruitChannelSet: false, seriesNotify: [] });
     expect(d.settings).toMatchObject({ channelId: '', remindChannelId: '', recruitChannelId: '' });
     expect(d.bot.ready).toBe(true);
-    // 招く URL は、このグループのサーバーを選んだ形
+    // 招くURLは、このグループのサーバーを選んだ形
     const invite = new URL(d.bot.inviteUrl);
     expect(invite.searchParams.get('client_id')).toBe('test-client');
     expect(invite.searchParams.get('guild_id')).toBe('guild-t');
@@ -58,7 +58,7 @@ describe('画面データ', () => {
     expect(d.seriesNotify).toEqual([{ series: '港', channelId: '123456789012345681', alsoBase: false, days: 3, hour: null }]);
   });
 
-  test('開催日が過ぎた「開催」の卓は、読み込んだときに「終了」になる（設定が ON のとき）', async () => {
+  test('開催日が過ぎた「開催」の卓は、読み込んだときに「終了」になる（設定がONのとき）', async () => {
     const G = await setupGroup();
     await ok(G.admin, G.id, 'saveSession', { name: '昨日の卓', gm: 'ひより', date: addDays(await today(), -1), status: '開催' });
     await ok(G.admin, G.id, 'saveSession', { name: '今日の卓', gm: 'ひより', date: await today(), status: '開催' });
@@ -68,9 +68,9 @@ describe('画面データ', () => {
 });
 
 describe('画面データの細かいところ', () => {
-  test('開催前の知らせが ON で、ON にした人の控えが無ければ「有効」と出す', async () => {
+  test('開催前の知らせがONで、ONにした人の控えが無ければ「有効」と出す', async () => {
     const G = await setupGroup();
-    // DB を手で直したときなど
+    // DBを手で直したときなど
     await env.DB.prepare("UPDATE groups SET remind_enabled = 1, remind_set_by = ''").run();
     const d = await ok(G.sora, G.id, 'getConsoleData');
     expect(d.notifySetter).toBe('有効');
@@ -90,7 +90,7 @@ describe('画面データの細かいところ', () => {
 });
 
 describe('サンプルデータ', () => {
-  test('メンバー 6 人と卓 11 件ができ、画面データが組める', async () => {
+  test('メンバー6人と卓11件ができ、画面データが組める', async () => {
     await makeGroup('sample', 'dev-guild');
     await seedSample(env.DB, 'sample', 'https://yoki.test/g/sample/');
     const n = (sql: string) => env.DB.prepare(sql).first('n');

@@ -1,4 +1,4 @@
-// グループに入れるかを、Bot がいるサーバーでは Bot で確かめ直す（控えが古い・控えにサーバーが無いとき）
+// グループに入れるかを、BotがいるサーバーではBotで確かめ直す（控えが古い・控えにサーバーが無いとき）
 import { env } from 'cloudflare:test';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import { groupAccess } from '../../src/worker/auth/guard';
@@ -8,12 +8,12 @@ import { loginAs, makeGroup, mockBotGuilds } from './helpers';
 
 afterEach(() => vi.restoreAllMocks());
 
-describe('サーバーにいるかを Bot で確かめ直す', () => {
+describe('サーバーにいるかをBotで確かめ直す', () => {
   const viewer = (id: string, checkedAt: Date): Viewer => ({ id, username: 'u', globalName: 'ユーザー', avatar: null, guildsCheckedAt: checkedAt.toISOString() });
   const old = new Date(Date.now() - 25 * 3600_000);
   const ug = (userId: string) => env.DB.prepare('SELECT can_manage, checked_at FROM user_guilds WHERE user_id = ?').bind(userId).first<{ can_manage: number; checked_at: string | null }>();
 
-  test('控えが古くても、Bot が「いる」と言えば入れ、確かめた日時を残す（次の 24 時間は聞かない）。管理できるかも読む', async () => {
+  test('控えが古くても、Botが「いる」と言えば入れ、確かめた日時を残す（次の24時間は聞かない）。管理できるかも読む', async () => {
     await makeGroup('b1', '111');
     await loginAs({ id: '501', name: 'A' }, [{ id: '111', name: 'S' }], { checkedAt: old });
     const bot = mockBotGuilds({ 111: { members: { 501: ['r-admin'] }, owner: '0', roles: { 111: '0', 'r-admin': '8' } } });
@@ -26,7 +26,7 @@ describe('サーバーにいるかを Bot で確かめ直す', () => {
     expect(bot.calls.length).toBe(n);
   });
 
-  test('控えにサーバーが無くても、Bot が「いる」と言えば入れる（オーナーは管理できる）。「いない」なら 403 で、控えからも外す', async () => {
+  test('控えにサーバーが無くても、Botが「いる」と言えば入れる（オーナーは管理できる）。「いない」なら403で、控えからも外す', async () => {
     await makeGroup('b2', '222');
     await loginAs({ id: '502', name: 'A' }, []);
     mockBotGuilds({ 222: { members: { 502: [] }, owner: '502', roles: { 222: '0' } } });
@@ -36,7 +36,7 @@ describe('サーバーにいるかを Bot で確かめ直す', () => {
     expect(await ug('503')).toBeNull();
   });
 
-  test('管理できるかが読めなければ、控えの値のまま。Bot がいない・Discord に届かないときは、今までどおり聞き直す', async () => {
+  test('管理できるかが読めなければ、控えの値のまま。Botがいない・Discordに届かないときは、今までどおり聞き直す', async () => {
     await makeGroup('b3', '333');
     await loginAs({ id: '504', name: 'C' }, [{ id: '333', name: 'S', canManage: true }], { checkedAt: old });
     mockBotGuilds({ 333: { members: { 504: [] } } });

@@ -1,27 +1,27 @@
-// GitHub の API（運営の管理画面の「更新」が使う）。元のリポジトリの最新の Release、2 つの版のあいだに変わったファイル、
+// GitHubのAPI（運営の管理画面の「更新」が使う）。元のリポジトリの最新のRelease、2つの版のあいだに変わったファイル、
 // 公開しているリポジトリの更新のワークフローを呼ぶことと、その実行の一覧。トークンは呼ぶときに渡し、ここでは覚えない
 
-/** 元のリポジトリの Release */
+/** 元のリポジトリのRelease */
 export type Release = { tag: string; name: string; url: string; publishedAt: string; body: string };
 /** 更新のワークフローの実行 */
 export type UpdateRun = { id: number; status: string; conclusion: string; createdAt: string; url: string };
 
 export interface UpdateApi {
-  /** 最新の Release。まだ無ければ null */
+  /** 最新のRelease。まだ無ければnull */
   latestRelease(repo: string): Promise<Release | null>;
-  /** base から head までに変わったファイルの名前 */
+  /** baseからheadまでに変わったファイルの名前 */
   changedFiles(repo: string, base: string, head: string): Promise<string[]>;
-  /** ワークフローを main で動かす（workflow_dispatch） */
+  /** ワークフローをmainで動かす（workflow_dispatch） */
   dispatch(repo: string, token: string, workflow: string, inputs: Record<string, string>): Promise<void>;
-  /** ワークフローの最近の実行（新しい順に 5 件） */
+  /** ワークフローの最近の実行（新しい順に5件） */
   runs(repo: string, token: string, workflow: string): Promise<UpdateRun[]>;
 }
 
 const API = 'https://api.github.com';
 
-/** GitHub が断ったときの文。権限・名前の誤りなら、確かめることを添える */
+/** GitHubが断ったときの文。権限・名前の誤りなら、確かめることを添える */
 function refused(status: number): Error {
-  return new Error('GitHub が ' + status + ' を返しました' + (status === 401 || status === 403 || status === 404 ? '。トークンの権限と、リポジトリの名前を確かめてください' : ''));
+  return new Error('GitHubが' + status + 'を返しました' + (status === 401 || status === 403 || status === 404 ? '。トークンの権限と、リポジトリの名前を確かめてください' : ''));
 }
 
 async function gh(path: string, token = '', init: { method?: string; body?: unknown } = {}): Promise<Response> {

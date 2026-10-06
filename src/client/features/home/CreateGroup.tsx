@@ -30,14 +30,14 @@ export function CreateGroup({ creatable, closed }: { creatable: Creatable; close
         <Icon name="add" />
         グループを作る
       </h2>
-      <p className={hint + ' mt-0'}>グループは Discord サーバーに結びつきます。入れるのは、そのサーバーにいる人だけです。作れるのは、サーバーのオーナーか、サーバー管理の権限がある人です。作った人が最初の管理者になります。</p>
+      <p className={hint + ' mt-0'}>グループはDiscordサーバーに結びつきます。入れるのは、そのサーバーにいる人だけです。作れるのは、サーバーのオーナーか、サーバー管理の権限がある人です。作った人が最初の管理者になります。</p>
       {closed ? (
         <p className={hint} id="createClosed">今は新しいグループの受付を止めています。</p>
       ) : (
         <form id="createForm" onSubmit={(ev) => { ev.preventDefault(); create.mutate({ guildId, title }); }}>
           <div className={row}>
             <label className={label}>
-              Discord サーバー
+              Discordサーバー
               <select className={field} id="cGuild" required value={guildId} onChange={(ev) => setGuildId(ev.target.value)}>
                 {creatable.map((g) => <option key={g.guildId} value={g.guildId}>{g.name}</option>)}
               </select>

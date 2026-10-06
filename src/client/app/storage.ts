@@ -1,4 +1,4 @@
-// この端末に控える（localStorage。キーの頭に taku. を付ける。使えない端末では何もしない）
+// この端末に控える（localStorage。キーの頭にtaku. を付ける。使えない端末では何もしない）
 
 export function store(k: string, v: string): void {
   try { localStorage.setItem('taku.' + k, v); } catch { /* 使えない端末 */ }

@@ -1,4 +1,4 @@
-// Discord に送る文面。データを読まずに、作った卓をそのまま渡して文を確かめる
+// Discordに送る文面。データを読まずに、作った卓をそのまま渡して文を確かめる
 import { describe, expect, test } from 'vitest';
 import {
   announcePayload, askPayload, bulkPayload, changePayload, decidedPayload, mentionsOf, pollPayload, pollReadyPayload, recruitLink, sessionEmbed, testPayload, whenText,
@@ -8,7 +8,7 @@ import type { Ctx, GroupRow, Member, Session } from '../../src/worker/domain/typ
 const URL_ = 'https://yoki.test/g/grp/';
 const TODAY = '2026-10-10';   // 土曜
 
-// ひよりとソラは Discord ID あり、こまちは無し。名簿に無い名前（ゲスト）も卓に入れられる
+// ひよりとソラはDiscord IDあり、こまちは無し。名簿に無い名前（ゲスト）も卓に入れられる
 const MEMBERS: Member[] = [
   { id: 1, name: 'ひより', discordId: '400000000000000010', note: '', isAdmin: true, userId: null },
   { id: 2, name: 'ソラ', discordId: '400000000000000011', note: '', isAdmin: false, userId: null },
@@ -36,10 +36,10 @@ function session(o: Partial<Session> = {}): Session {
 describe('日時と卓の埋め込み', () => {
   test('日時は、開催日・募集の期間・調整の候補日と期間の順に見る', () => {
     expect(whenText(session({ date: '2026-10-17', start: '20:00', end: '23:00' }))).toBe('10/17（土） 20:00〜23:00');
-    expect(whenText(session({ status: '募集', windowFrom: '2026-10-17', windowTo: '2026-10-12' }))).toBe('10/12（月）〜10/17（土） に開催予定（募集中）');
+    expect(whenText(session({ status: '募集', windowFrom: '2026-10-17', windowTo: '2026-10-12' }))).toBe('10/12（月）〜10/17（土）に開催予定（募集中）');
     expect(whenText(session({ status: '募集' }))).toBe('時期未定（募集中）');
     expect(whenText(session({ status: '調整中', candidates: ['2026-10-12', '2026-10-13'] }))).toBe('候補日: 10/12（月）、10/13（火）（日程調整中）');
-    expect(whenText(session({ status: '調整中', windowFrom: '2026-10-12', windowTo: '2026-10-17' }))).toBe('10/12（月）〜10/17（土） のどこか（調整中）');
+    expect(whenText(session({ status: '調整中', windowFrom: '2026-10-12', windowTo: '2026-10-17' }))).toBe('10/12（月）〜10/17（土）のどこか（調整中）');
     expect(whenText(session({ status: '調整中' }))).toBe('期間未定（調整中）');
     expect(whenText(session({ status: '終了' }))).toBe('日程未定');
   });
@@ -61,14 +61,14 @@ describe('日時と卓の埋め込み', () => {
 });
 
 describe('メンションと案内の行', () => {
-  test('メンションは Discord ID のある人だけ。いくつかの卓で重なっても 1 回', () => {
+  test('メンションはDiscord IDのある人だけ。いくつかの卓で重なっても1回', () => {
     const a = session({ gm: 'ひより', members: ['こまち', 'ゲスト'] });
     const b = session({ gm: 'ソラ', members: ['ひより'] });
     expect(mentionsOf(ctxOf(), [a, b])).toBe('<@400000000000000010> <@400000000000000011>');
     expect(mentionsOf(ctxOf(), [session({ gm: 'こまち', members: ['ゲスト'] })])).toBe('');
   });
 
-  test('募集と調整の卓にだけ、卓予定への案内を添える（URL が無ければ添えない）', () => {
+  test('募集と調整の卓にだけ、卓予定への案内を添える（URLが無ければ添えない）', () => {
     expect(recruitLink(ctxOf(), session({ status: '募集' }))).toBe('\n🔗 参加希望は卓予定の「募集・調整」タブから: ' + URL_);
     expect(recruitLink(ctxOf(), session({ status: '調整中' }))).toBe('\n🔗 日程調整は卓予定の「募集・調整」タブから: ' + URL_);
     expect(recruitLink(ctxOf(), session({ status: '開催' }))).toBe('');
@@ -98,17 +98,17 @@ describe('登録・変更・削除と案内', () => {
 });
 
 describe('参加確認', () => {
-  test('興味ありの人を呼ぶ。Discord ID の無い人は名前で。一言が無ければ送った人を最後に添える', () => {
+  test('興味ありの人を呼ぶ。Discord IDの無い人は名前で。一言が無ければ送った人を最後に添える', () => {
     const s = session({ status: '募集', gm: 'ひより', interest: ['こまち', 'ソラ', 'ゲスト'], windowFrom: '2026-10-12', windowTo: '2026-10-17' });
     const p = askPayload(ctxOf(), s, 'ひより', '  ');
     expect(p.content).toBe(
-      '❓ 「港」（10/12（月）〜10/17（土） に開催予定）に参加できそうですか？ <@400000000000000011> こまち さん ゲスト さん\n' +
+      '❓ 「港」（10/12（月）〜10/17（土）に開催予定）に参加できそうですか？ <@400000000000000011> こまちさん ゲストさん\n' +
       '参加希望であれば、卓予定の「募集・調整」タブで「参加希望」を押してください。　by ひより\n' + URL_,
     );
     expect(p.embeds).toHaveLength(1);
   });
 
-  test('一言は 💬 の行に。送った人が分からなければ名前を付けない。URL が無ければ書かない', () => {
+  test('一言は 💬 の行に。送った人が分からなければ名前を付けない。URLが無ければ書かない', () => {
     const s = session({ status: '募集', interest: ['ソラ'] });
     expect(askPayload(ctxOf({ appUrl: '' }), s, '', 'ボイスあり').content).toBe(
       '❓ 「港」（時期未定）に参加できそうですか？ <@400000000000000011>\n💬 ボイスあり\n参加希望であれば、卓予定の「募集・調整」タブで「参加希望」を押してください。',
@@ -117,25 +117,25 @@ describe('参加確認', () => {
 });
 
 describe('日程調整の知らせ', () => {
-  test('始めたときは GM と参加者を呼び、候補日と時間を書く', () => {
+  test('始めたときはGMと参加者を呼び、候補日と時間を書く', () => {
     const s = session({ status: '調整中', gm: 'ひより', members: ['こまち', 'ソラ'], candidates: ['2026-10-12', '2026-10-13'], start: '20:00', end: '23:00' });
     const p = pollPayload(ctxOf(), s, 'ひより');
     expect(p.content).toBe(
-      '🗓️ 「港」の日程を決めます。<@400000000000000010> <@400000000000000011> こまち さん\n' +
+      '🗓️ 「港」の日程を決めます。<@400000000000000010> <@400000000000000011> こまちさん\n' +
       '候補日: 10/12（月）、10/13（火）　20:00〜23:00\n' +
-      '卓予定の「募集・調整」タブで、候補日ごとに ◯ か × を押してください。全員の回答がそろったら、GM が開催日を選びます。　by ひより\n' + URL_,
+      '卓予定の「募集・調整」タブで、候補日ごとに ◯ か × を押してください。全員の回答がそろったら、GMが開催日を選びます。　by ひより\n' + URL_,
     );
     expect(p.embeds![0]!.title).toBe('港（調整中）');
   });
 
-  test('時間が未定なら時間を書かない。送った人と URL が無ければ添えない', () => {
+  test('時間が未定なら時間を書かない。送った人とURLが無ければ添えない', () => {
     const s = session({ status: '調整中', gm: 'こまち', candidates: ['2026-10-12'] });
     expect(pollPayload(ctxOf({ appUrl: '' }), s, '').content).toBe(
-      '🗓️ 「港」の日程を決めます。こまち さん\n候補日: 10/12（月）\n卓予定の「募集・調整」タブで、候補日ごとに ◯ か × を押してください。全員の回答がそろったら、GM が開催日を選びます。',
+      '🗓️ 「港」の日程を決めます。こまちさん\n候補日: 10/12（月）\n卓予定の「募集・調整」タブで、候補日ごとに ◯ か × を押してください。全員の回答がそろったら、GMが開催日を選びます。',
     );
   });
 
-  test('回答がそろったら GM だけを呼び、これからの候補日ごとに ◯ の数を並べる', () => {
+  test('回答がそろったらGMだけを呼び、これからの候補日ごとに ◯ の数を並べる', () => {
     const s = session({ status: '調整中', gm: 'ひより', members: ['ソラ'], candidates: ['2026-10-09', '2026-10-12', '2026-10-13'] });
     const votes = new Map([[1, { '2026-10-09': { ひより: '◯', ソラ: '◯' }, '2026-10-12': { ひより: '◯', ソラ: '◯' }, '2026-10-13': { ひより: '◯', ソラ: '×' } }]]);
     expect(pollReadyPayload(ctxOf({ votes }), s).content).toBe(
@@ -145,16 +145,16 @@ describe('日程調整の知らせ', () => {
     );
   });
 
-  test('GM に Discord ID が無ければ名前で、GM がいなければ呼ばない。回答が無ければ ◯ は 0。Discord の無い人とゲストは数えない', () => {
+  test('GMにDiscord IDが無ければ名前で、GMがいなければ呼ばない。回答が無ければ ◯ は0。Discordの無い人とゲストは数えない', () => {
     const s = session({ status: '調整中', gm: 'こまち', members: ['ソラ', 'ゲスト'], candidates: ['2026-10-12'] });
     expect(pollReadyPayload(ctxOf({ appUrl: '' }), s).content).toBe(
-      '📝 「港」の日程調整の回答がそろいました。こまち さん\n・10/12（月）　◯ 0/1\n卓予定の「募集・調整」タブで、開催日を選んでください。',
+      '📝 「港」の日程調整の回答がそろいました。こまちさん\n・10/12（月）　◯ 0/1\n卓予定の「募集・調整」タブで、開催日を選んでください。',
     );
     const noGm = session({ status: '調整中', members: ['ソラ'], candidates: ['2026-10-12'] });
     expect(pollReadyPayload(ctxOf(), noGm).content.split('\n')[0]).toBe('📝 「港」の日程調整の回答がそろいました。');
   });
 
-  test('日程が決まった知らせ。呼べる人も URL も無ければ、決まった日時だけ', () => {
+  test('日程が決まった知らせ。呼べる人もURLも無ければ、決まった日時だけ', () => {
     const s = session({ gm: 'こまち', date: '2026-10-17', start: '20:00', end: '23:00' });
     expect(decidedPayload(ctxOf({ appUrl: '' }), s).content).toBe('✅ 「港」の日程が決まりました: 10/17（土） 20:00〜23:00');
     expect(decidedPayload(ctxOf(), session({ gm: 'ソラ', date: '2026-10-17' })).content).toBe(

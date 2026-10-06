@@ -1,9 +1,9 @@
-// サーバーの呼び出し（POST /api/g/:id/:fn）。失敗は RpcError で投げる
+// サーバーの呼び出し（POST /api/g/:id/:fn）。失敗はRpcErrorで投げる
 import type { RpcName } from '../../../../shared/api';
 
 /**
- * 失敗の種類。auth はログインが切れた（ログインし直す）、gone はグループが消された、
- * fail はサーバーが断った（ADMIN: の頭は外して文だけにする）、timeout は返事が無い、network は通信できない
+ * 失敗の種類。authはログインが切れた（ログインし直す）、goneはグループが消された、
+ * failはサーバーが断った（ADMIN: の頭は外して文だけにする）、timeoutは返事が無い、networkは通信できない
  */
 export type RpcKind = 'auth' | 'gone' | 'fail' | 'timeout' | 'network';
 
@@ -20,8 +20,8 @@ const API_WAIT = 45000;
 export type Rpc = <R>(groupId: string, name: RpcName, form?: object, signal?: AbortSignal) => Promise<R>;
 
 /**
- * サーバーを呼ぶ。返事の型 R は、読み込み（getConsoleData）なら ConsoleData、Discord への送信なら DiscordStepResult、ほかは RpcResult。
- * signal で取り消すと、AbortError をそのまま投げる（呼んだ側が取り消したことを分かるように）
+ * サーバーを呼ぶ。返事の型Rは、読み込み（getConsoleData）ならConsoleData、Discordへの送信ならDiscordStepResult、ほかはRpcResult。
+ * signalで取り消すと、AbortErrorをそのまま投げる（呼んだ側が取り消したことを分かるように）
  */
 export const rpc: Rpc = async <R,>(groupId: string, name: RpcName, form: object = {}, signal?: AbortSignal): Promise<R> => {
   const timeout = AbortSignal.timeout(API_WAIT);

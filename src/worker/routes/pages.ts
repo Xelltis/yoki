@@ -1,10 +1,10 @@
-// 画面のページ。入れる人には画面の骨組み（静的ファイル。1 つの SPA で、どの道でも同じ）を返す。データは画面が API で読む
+// 画面のページ。入れる人には画面の骨組み（静的ファイル。1つのSPAで、どの道でも同じ）を返す。データは画面がAPIで読む
 //   /g/:id/ と /g/:id/<タブ>/                 グループの予定の画面
 //   /g/:id/admin/ と /g/:id/admin/<区分>/      グループの管理画面（グループの管理者だけ）
 //   /admin/ と /admin/<区分>/                  運営者の管理画面（運営者（OPERATOR_IDS）だけ）
-//   /terms /privacy                            利用規約とプライバシーポリシー。だれでも読める。その場で HTML にして返す
-// 道の一覧（タブ・区分）は src/shared/routes.ts。末尾の / が無ければ付けた道へ移す。
-// ここの確かめは道を示すためのもの。データの読み書きの確かめは API の側（routes/rpc.ts・routes/admin.ts）でする
+//   /terms /privacy                            利用規約とプライバシーポリシー。だれでも読める。その場でHTMLにして返す
+// 道の一覧（タブ・区分）はsrc/shared/routes.ts。末尾の / が無ければ付けた道へ移す。
+// ここの確かめは道を示すためのもの。データの読み書きの確かめはAPIの側（routes/rpc.ts・routes/admin.ts）でする
 import type { Context } from 'hono';
 import { Hono } from 'hono';
 import { ADMIN_PANES, OPERATOR_PANES, TAB_PATHS } from '../../shared/routes';
@@ -19,12 +19,12 @@ import { isPreviewBot, type OgPage, SITE_DESCRIPTION, withOg } from './og';
 
 export const pageRoutes = new Hono<AppEnv>();
 
-/** 画面の骨組み（'/' の index.html）。どの道も、画面の中の道（src/client/router.tsx）が中身を決める */
+/** 画面の骨組み（'/' のindex.html）。どの道も、画面の中の道（src/client/router.tsx）が中身を決める */
 const shell = (c: Context<AppEnv>) => c.env.ASSETS.fetch(new URL('/', c.req.url));
 
 /**
- * リンクの中身を読みに来たもの（Discord など。routes/og.ts）に返す、画面の骨組み。OGP をこの道の文にする。
- * 骨組みにはグループの中身が入っていない（中身は、ログインした人が API で読む）ので、ログインしていなくても返してよい
+ * リンクの中身を読みに来たもの（Discordなど。routes/og.ts）に返す、画面の骨組み。OGPをこの道の文にする。
+ * 骨組みにはグループの中身が入っていない（中身は、ログインした人がAPIで読む）ので、ログインしていなくても返してよい
  */
 async function previewShell(c: Context<AppEnv>, page: Omit<OgPage, 'url'>) {
   const origin = appOrigin(c.env, c.req.url);
@@ -32,14 +32,14 @@ async function previewShell(c: Context<AppEnv>, page: Omit<OgPage, 'url'>) {
   return c.html(withOg(html, origin, { ...page, url: origin + c.req.path }));
 }
 
-/** ログインしに行く（Discord の設定が無い手元では入口へ）。戻り先は開こうとした道。リンクの中身を読みに来たものには、卓予定の見た目を返す */
+/** ログインしに行く（Discordの設定が無い手元では入口へ）。戻り先は開こうとした道。リンクの中身を読みに来たものには、卓予定の見た目を返す */
 const toLogin = (c: Context<AppEnv>, preview: Omit<OgPage, 'url'>) => {
   if (isPreviewBot(c.req.header('User-Agent'))) return previewShell(c, preview);
   const path = c.req.path;
   return c.redirect(c.env.DISCORD_CLIENT_ID ? '/auth/login?return_to=' + encodeURIComponent(path) : '/?return_to=' + encodeURIComponent(path));
 };
 /** グループの画面のリンクの見た目。グループの名前は出さない（ログインしていない人には、グループのことを見せない） */
-const GROUP_PREVIEW = { title: '卓予定のグループ', description: 'Discord でログインすると、このグループの卓の予定・メンバーの都合・募集・日程調整を見られます。' };
+const GROUP_PREVIEW = { title: '卓予定のグループ', description: 'Discordでログインすると、このグループの卓の予定・メンバーの都合・募集・日程調整を見られます。' };
 /** 末尾の / が無い道は、付けた道へ移す */
 const withSlash = (c: Context<AppEnv>) => c.redirect(c.req.path + '/', 301);
 
@@ -54,11 +54,11 @@ async function groupPage(c: Context<AppEnv>, admin: boolean) {
   }
   switch (access.reason) {
     case 'notfound':
-      return c.html(noticePage('グループが見つかりません', 'URL が違うか、グループが無くなっています。', { href: '/', label: '入口へ' }), 404);
+      return c.html(noticePage('グループが見つかりません', 'URLが違うか、グループが無くなっています。', { href: '/', label: '入口へ' }), 404);
     case 'forbidden':
-      return c.html(noticePage('このグループには入れません', 'このグループの Discord サーバーのメンバーではありません。サーバーに入ってから、もう一度開いてください。', { href: '/', label: '入口へ' }), 403);
+      return c.html(noticePage('このグループには入れません', 'このグループのDiscordサーバーのメンバーではありません。サーバーに入ってから、もう一度開いてください。', { href: '/', label: '入口へ' }), 403);
     default:
-      // ログインしていない・参加しているサーバーの控えが古い。Discord に聞いて戻ってくる
+      // ログインしていない・参加しているサーバーの控えが古い。Discordに聞いて戻ってくる
       return toLogin(c, GROUP_PREVIEW);
   }
 }

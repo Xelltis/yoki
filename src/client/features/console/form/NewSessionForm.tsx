@@ -104,16 +104,16 @@ export function NewSessionForm({ req, onClose, reopen }: { req: FormReq; onClose
                 ))}
               </div>
               <button type="button" className="btn small" id="addDate" onClick={() => set({ more: f.more.concat({ key: ++keyRef.current, v: '' }) })}><Icon name="add" size="sm" />日を足す（何日かまとめて登録）</button>
-              <span className="hint" id="moreDatesHint">{nDates > 1 ? nDates + ' 日分をまとめて登録します。名前は末尾の数字を進めます（「#1」→「#2」）。数字が無ければ「名前 #1」「名前 #2」' : ''}</span>
+              <span className="hint" id="moreDatesHint">{nDates > 1 ? nDates + '日分をまとめて登録します。名前は末尾の数字を進めます（「#1」→「#2」）。数字が無ければ「名前 #1」「名前 #2」' : ''}</span>
             </div>
           </>
         ) : <WindowRow f={f} set={set} />}
         <PeopleFields f={f} set={set} />
         <PlaceMemo f={f} set={set} />
-        <NotifyCheck f={f} set={set} label="Discord に知らせる" />
+        <NotifyCheck f={f} set={set} label="Discordに知らせる" />
         <div className={formActions}>
           <div className="btns mt-0">
-            <button type="submit" className="btn primary" id="save">{st === '調整中' ? '登録して候補日を選ぶ' : nDates > 1 ? nDates + ' 日分を登録' : '登録'}</button>
+            <button type="submit" className="btn primary" id="save">{st === '調整中' ? '登録して候補日を選ぶ' : nDates > 1 ? nDates + '日分を登録' : '登録'}</button>
           </div>
           <FormMsg msg={msg} />
         </div>

@@ -15,10 +15,10 @@ import { useLogout } from '../shell/Header';
 import { CalendarCard } from './CalendarCard';
 import { LoginCard } from './LoginCard';
 
-/** Google との連携から戻ってきたときの知らせ（?google=…） */
+/** Googleとの連携から戻ってきたときの知らせ（?google=…） */
 const GOOGLE_RESULT: Record<string, string> = {
-  linked: 'Google カレンダーと連携しました。', cancelled: 'Google カレンダーとの連携を取りやめました。',
-  'login-linked': 'Google でもログインできるようになりました。', 'login-cancelled': 'Google でのログインの設定を取りやめました。',
+  linked: 'Googleカレンダーと連携しました。', cancelled: 'Googleカレンダーとの連携を取りやめました。',
+  'login-linked': 'Googleでもログインできるようになりました。', 'login-cancelled': 'Googleでのログインの設定を取りやめました。',
 };
 
 export function SettingsTab() {
@@ -49,7 +49,7 @@ export function SettingsTab() {
   return (
     <section id="tab-settings" className="max-w-1120">
       <PageHead title="設定" lead="あなたの名前・ログインの方法・カレンダー連携・この端末の見た目です。どれも、あなただけの設定です。グループの設定（メンバー・知らせ・管理者）は、管理者が管理画面で変えます。" />
-      {/* 管理者には、グループの設定の入口を 1 行で出す（あなたの設定の邪魔をしない） */}
+      {/* 管理者には、グループの設定の入口を1行で出す（あなたの設定の邪魔をしない） */}
       {d.isAdmin && (
         <div className="card flex flex-wrap items-center gap-x-12 gap-y-8 border-accent-line py-12" id="adminEntry">
           <Icon name="shield" size="sm" className="text-accent-text" />
@@ -64,7 +64,7 @@ export function SettingsTab() {
           <div><label className={fieldLabel} htmlFor="meName">名前</label><input type="text" className={field} id="meName" required value={name} onChange={(ev) => setDraft({ name: ev.target.value, note })} /></div>
           <div><label className={fieldLabel} htmlFor="meNote">備考</label><input type="text" className={field} id="meNote" value={note} onChange={(ev) => setDraft({ name, note: ev.target.value })} /></div>
         </div>
-        <p className="hint" id="meDiscord">{m && m.linked ? 'Discord でログインしています。Discord の ID は自動で入るので、知らせでメンションが付きます。' : ''}</p>
+        <p className="hint" id="meDiscord">{m && m.linked ? 'Discordでログインしています。DiscordのIDは自動で入るので、知らせでメンションが付きます。' : ''}</p>
         {/* 書き換えるまでは押せない */}
         <div className="btns"><button type="submit" className="btn primary" id="meSave" disabled={me.saving || !draft || (draft.name === (m ? m.name : d.me.name) && draft.note === (m ? m.note : ''))}>保存</button><span className="hint" id="meMsg">{me.msg}</span></div>
       </form>
@@ -79,9 +79,9 @@ export function SettingsTab() {
             <select className={field} id="stAutoRefresh" value={String(view.autoMin)} onChange={(ev) => {
               const v = ev.target.value;
               sync.setAutoMinutes(+v);
-              toast(+v ? '自動更新を ' + v + ' 分ごとにしました（この端末だけ）' : '自動更新を止めました（この端末だけ）');
+              toast(+v ? '自動更新を' + v + '分ごとにしました（この端末だけ）' : '自動更新を止めました（この端末だけ）');
             }}>
-              <option value="0">しない</option><option value="1">1 分ごと</option><option value="3">3 分ごと</option><option value="5">5 分ごと</option><option value="10">10 分ごと</option>
+              <option value="0">しない</option><option value="1">1分ごと</option><option value="3">3分ごと</option><option value="5">5分ごと</option><option value="10">10分ごと</option>
             </select>
           </div>
           <div>

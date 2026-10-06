@@ -1,10 +1,10 @@
-// Google でログインする（Discord のアカウントに結びつけた、もう 1 つの入り口）。利用者そのものは今までどおり Discord のアカウント。
-//   結びついている Google のアカウントなら、そのままログインする
-//   初めての Google のアカウントなら、だれのものかを暗号にした cookie に 10 分だけ控え、続けて Discord でログインしてもらって結びつける。
-//   結びつけるのは、入口の「Discord でログイン」（?link_google=1）と開発用ログインで、結びつけるために押したときだけ
-//   （黙って行う聞き直しのログインでは使わない。共用の端末で、前の人の Google が次の人に結びつかないように）
-//   ログインしている人は、設定の画面から自分の Google のアカウントを結びつけ、外せる
-// グループに入れるかは、今までどおりサーバーの一覧の控えで決める（控えが古ければ Bot か Discord に聞き直す。auth/guard.ts）
+// Googleでログインする（Discordのアカウントに結びつけた、もう1つの入り口）。利用者そのものは今までどおりDiscordのアカウント。
+//   結びついているGoogleのアカウントなら、そのままログインする
+//   初めてのGoogleのアカウントなら、だれのものかを暗号にしたcookieに10分だけ控え、続けてDiscordでログインしてもらって結びつける。
+//   結びつけるのは、入口の「Discordでログイン」（?link_google=1）と開発用ログインで、結びつけるために押したときだけ
+//   （黙って行う聞き直しのログインでは使わない。共用の端末で、前の人のGoogleが次の人に結びつかないように）
+//   ログインしている人は、設定の画面から自分のGoogleのアカウントを結びつけ、外せる
+// グループに入れるかは、今までどおりサーバーの一覧の控えで決める（控えが古ければBotかDiscordに聞き直す。auth/guard.ts）
 import type { Context } from 'hono';
 import { deleteCookie, getCookie, setCookie } from 'hono/cookie';
 import type { AppEnv } from '../app';
@@ -14,8 +14,8 @@ import { appOrigin } from './origin';
 import { isLocalHttp } from './session';
 
 /**
- * 初めての Google のアカウントを控える cookie（Discord のログインの戻り先と開発用ログインで読むので、道は / ）。
- * セッションの cookie と同じく __Host- を付け、ほかのサブドメインなどから差し込めないようにする（手元の http では付けられない）
+ * 初めてのGoogleのアカウントを控えるcookie（Discordのログインの戻り先と開発用ログインで読むので、道は / ）。
+ * セッションのcookieと同じく __Host- を付け、ほかのサブドメインなどから差し込めないようにする（手元のhttpでは付けられない）
  */
 export function pendingCookie(url: URL): string {
   return isLocalHttp(url) ? 'yoki_glink' : '__Host-yoki_glink';
@@ -25,7 +25,7 @@ export const PENDING_MS = 600_000;
 
 type Pending = { sub: string; email: string; at: string };
 
-/** 結びつける。その人の前の Google のアカウントは外す。ほかの人に結びついている Google のアカウントなら結びつけずに false */
+/** 結びつける。その人の前のGoogleのアカウントは外す。ほかの人に結びついているGoogleのアカウントなら結びつけずにfalse */
 export async function linkGoogleLogin(db: D1Database, userId: string, sub: string, email: string, now: Date): Promise<boolean> {
   const owner = await db.prepare('SELECT user_id FROM google_logins WHERE google_sub = ?').bind(sub).first<string>('user_id');
   if (owner && owner !== userId) return false;
@@ -36,7 +36,7 @@ export async function linkGoogleLogin(db: D1Database, userId: string, sub: strin
   return true;
 }
 
-/** 初めての Google のアカウントを控える（暗号にして、書き換えられないようにする） */
+/** 初めてのGoogleのアカウントを控える（暗号にして、書き換えられないようにする） */
 export async function rememberGoogle(c: Context<AppEnv>, key: CryptoKey, sub: string, email: string, now: Date): Promise<void> {
   const value = await seal(key, JSON.stringify({ sub, email, at: now.toISOString() } satisfies Pending));
   const url = new URL(c.req.url);
@@ -50,8 +50,8 @@ export function forgetGoogleLink(c: Context<AppEnv>): void {
 }
 
 /**
- * 結びつけるために Discord でログインしたあとに呼ぶ。控えた Google のアカウントがあれば、その人に結びつけて控えを消す。結びつけたら true。
- * 控えが無い・読めない・古い・ほかの人の Google のアカウント、なら何もしない
+ * 結びつけるためにDiscordでログインしたあとに呼ぶ。控えたGoogleのアカウントがあれば、その人に結びつけて控えを消す。結びつけたらtrue。
+ * 控えが無い・読めない・古い・ほかの人のGoogleのアカウント、なら何もしない
  */
 export async function consumeGoogleLink(c: Context<AppEnv>, userId: string, now = new Date()): Promise<boolean> {
   const value = getCookie(c, pendingCookie(new URL(c.req.url)));

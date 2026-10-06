@@ -1,4 +1,4 @@
-// Discord のチャンネルと Bot: ID の形・招く URL・API の読み方・チャンネルの一覧、知らせのチャンネルを選ぶときの確かめ、一覧を読む呼び出し
+// DiscordのチャンネルとBot: IDの形・招くURL・APIの読み方・チャンネルの一覧、知らせのチャンネルを選ぶときの確かめ、一覧を読む呼び出し
 import { env } from 'cloudflare:test';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import type { Actor } from '../../src/worker/auth/guard';
@@ -13,7 +13,7 @@ afterEach(() => vi.restoreAllMocks());
 
 type Call = { method: string; url: string; auth: string | null };
 
-/** Discord の API の返事を差し替える。reply が URL から返事を決める。呼んだ先と Authorization を記録する */
+/** DiscordのAPIの返事を差し替える。replyがURLから返事を決める。呼んだ先とAuthorizationを記録する */
 function mockApi(reply: (url: string) => Response) {
   const calls: Call[] = [];
   vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
@@ -24,15 +24,15 @@ function mockApi(reply: (url: string) => Response) {
   return calls;
 }
 
-describe('チャンネルの ID と、Bot を招く URL', () => {
-  test('チャンネルの ID は 17〜20 桁の数字だけ', () => {
+describe('チャンネルのIDと、Botを招くURL', () => {
+  test('チャンネルのIDは17〜20桁の数字だけ', () => {
     for (const id of ['12345678901234567', CH(1), '12345678901234567890']) expect(isChannelId(id), id).toBe(true);
     for (const id of ['', '1234567890123456', '123456789012345678901', '12345678901234567a', ' ' + CH(1), 'https://discord.com/api/webhooks/123456789012345678/x']) {
       expect(isChannelId(id), id).toBe(false);
     }
   });
 
-  test('招く URL は、グループのサーバーを選んだ形で、見る・送る・埋め込みの権限を求める。Client ID が無ければ空', () => {
+  test('招くURLは、グループのサーバーを選んだ形で、見る・送る・埋め込みの権限を求める。Client IDが無ければ空', () => {
     expect(BOT_PERMISSIONS).toBe(1024 + 2048 + 16384);
     const u = new URL(botInviteUrl('app-1', GUILD));
     expect(u.origin + u.pathname).toBe('https://discord.com/oauth2/authorize');
@@ -41,15 +41,15 @@ describe('チャンネルの ID と、Bot を招く URL', () => {
   });
 });
 
-describe('Discord の API を Bot で読む', () => {
-  test('Bot のトークンを添えて読み、状態と本文を返す。JSON でない本文は null', async () => {
+describe('DiscordのAPIをBotで読む', () => {
+  test('Botのトークンを添えて読み、状態と本文を返す。JSONでない本文はnull', async () => {
     const calls = mockApi((url) => (url.endsWith('/a') ? Response.json({ x: 1 }) : new Response('<html>Bad Gateway</html>', { status: 502 })));
     expect(await botGet('tok', '/a')).toEqual({ status: 200, body: { x: 1 } });
     expect(await botGet('tok', '/b')).toEqual({ status: 502, body: null });
     expect(calls).toEqual([{ method: 'GET', url: API + '/a', auth: 'Bot tok' }, { method: 'GET', url: API + '/b', auth: 'Bot tok' }]);
   });
 
-  test('チャンネルの一覧は、送れる種類（テキストとアナウンス）だけを、カテゴリーごとに Discord の並び順で返す', async () => {
+  test('チャンネルの一覧は、送れる種類（テキストとアナウンス）だけを、カテゴリーごとにDiscordの並び順で返す', async () => {
     const ch = (id: string, name: string, type: number, position: number, parent_id: string | null = null) => ({ id, name, type, position, parent_id, guild_id: GUILD });
     const calls = mockApi(() =>
       Response.json([
@@ -77,7 +77,7 @@ describe('Discord の API を Bot で読む', () => {
     expect(calls).toEqual([{ method: 'GET', url: API + '/guilds/' + GUILD + '/channels', auth: 'Bot tok' }]);
   });
 
-  test('Bot がサーバーにいない・見られないときは null。そのほかの失敗は投げる', async () => {
+  test('Botがサーバーにいない・見られないときはnull。そのほかの失敗は投げる', async () => {
     const replies = [
       Response.json({ message: 'Missing Access', code: 50001 }, { status: 403 }),
       Response.json({ message: 'Unknown Guild', code: 10004 }, { status: 404 }),
@@ -87,12 +87,12 @@ describe('Discord の API を Bot で読む', () => {
     mockApi(() => replies.shift()!);
     expect(await listChannels('tok', GUILD)).toBeNull();
     expect(await listChannels('tok', GUILD)).toBeNull();
-    await expect(listChannels('tok', GUILD)).rejects.toThrow('Discord のチャンネルの一覧を読めませんでした（HTTP 500）');
+    await expect(listChannels('tok', GUILD)).rejects.toThrow('Discordのチャンネルの一覧を読めませんでした（HTTP 500）');
     // 一覧でない返事も読めないことにする
     await expect(listChannels('tok', GUILD)).rejects.toThrow('（HTTP 200）');
   });
 
-  test('1 つのチャンネルを読む。送れない種類・見られない・読めない返事なら null', async () => {
+  test('1つのチャンネルを読む。送れない種類・見られない・読めない返事ならnull', async () => {
     const replies: Record<string, Response> = {
       [CH(1)]: Response.json({ id: CH(1), name: '卓の知らせ', type: 0, position: 0, parent_id: null, guild_id: GUILD }),
       [CH(2)]: Response.json({ id: CH(2), name: 'お知らせ', type: 5, position: 0, parent_id: null }),
@@ -102,7 +102,7 @@ describe('Discord の API を Bot で読む', () => {
     };
     const calls = mockApi((url) => replies[url.split('/').at(-1)!]!);
     expect(await getChannel('tok', CH(1))).toEqual({ id: CH(1), name: '卓の知らせ', guildId: GUILD });
-    // サーバーの ID が無い返事は、どのサーバーのチャンネルでもないことにする
+    // サーバーのIDが無い返事は、どのサーバーのチャンネルでもないことにする
     expect(await getChannel('tok', CH(2))).toEqual({ id: CH(2), name: 'お知らせ', guildId: '' });
     for (const n of [3, 4, 5]) expect(await getChannel('tok', CH(n)), CH(n)).toBeNull();
     expect(calls[0]).toEqual({ method: 'GET', url: API + '/channels/' + CH(1), auth: 'Bot tok' });
@@ -114,7 +114,7 @@ describe('知らせのチャンネルを選ぶ', () => {
   let calls: Call[];
   beforeEach(async () => {
     G = await setupGroup();
-    // CH(1)〜CH(2) はこのグループのサーバーのチャンネル。CH(3) はほかのサーバー。CH(4) はボイス。CH(5) は Bot が見られない。ほかは無い
+    // CH(1)〜CH(2) はこのグループのサーバーのチャンネル。CH(3) はほかのサーバー。CH(4) はボイス。CH(5) はBotが見られない。ほかは無い
     const channels: Record<string, object> = {
       [CH(1)]: { name: '卓の知らせ', type: 0, guild_id: GUILD },
       [CH(2)]: { name: 'お知らせ', type: 5, guild_id: GUILD },
@@ -131,10 +131,10 @@ describe('知らせのチャンネルを選ぶ', () => {
 
   const save = (form: Record<string, unknown>) => ok(G.admin, G.id, 'saveConsoleSettings', form);
   const refuse = async (fn: string, form: Record<string, unknown>) => (await fail(G.admin, G.id, fn, form)).error;
-  const NOT_SEEN = 'Bot がそのチャンネルを見られません。サーバーに Bot を招き、チャンネルの権限を確かめてください。';
-  const OTHER = 'このグループの Discord サーバーのチャンネルではありません。';
+  const NOT_SEEN = 'Botがそのチャンネルを見られません。サーバーにBotを招き、チャンネルの権限を確かめてください。';
+  const OTHER = 'このグループのDiscordサーバーのチャンネルではありません。';
 
-  test('基本のチャンネルを選ぶと、Bot で確かめて名前を返事に出す。空にすると外す', async () => {
+  test('基本のチャンネルを選ぶと、Botで確かめて名前を返事に出す。空にすると外す', async () => {
     let r = await save({ channelId: CH(1) });
     expect(r.message).toBe('保存しました: 基本のチャンネルを「#卓の知らせ」に');
     expect(r.data).toMatchObject({ channelSet: true, settings: { channelId: CH(1) } });
@@ -142,7 +142,7 @@ describe('知らせのチャンネルを選ぶ', () => {
     r = await save({ channelId: '' });
     expect(r.message).toBe('保存しました: 基本のチャンネルを外す');
     expect(r.data).toMatchObject({ channelSet: false, settings: { channelId: '' } });
-    // 外すときは Discord に聞かない
+    // 外すときはDiscordに聞かない
     expect(calls).toHaveLength(1);
   });
 
@@ -156,32 +156,32 @@ describe('知らせのチャンネルを選ぶ', () => {
     expect(await refuse('saveConsoleSettings', { kindChannel: { kind: 'soon', channelId: CH(1) } })).toBe('知らせの種類が不正です: soon');
   });
 
-  test('今と同じチャンネルを送っても、Discord に聞かず、変更に数えない', async () => {
+  test('今と同じチャンネルを送っても、Discordに聞かず、変更に数えない', async () => {
     await save({ channelId: CH(1), kindChannel: { kind: 'remind', channelId: CH(2) } });
     expect(calls).toHaveLength(2);
     expect((await save({ channelId: CH(1), kindChannel: { kind: 'remind', channelId: CH(2) } })).message).toBe('変更はありません。');
     // 選んでいない種類のチャンネルを空にしても、外したことにしない
     expect((await save({ kindChannel: { kind: 'recruit', channelId: '' } })).message).toBe('変更はありません。');
     // ほかの項目が変わったときは、その項目だけを知らせる
-    expect((await save({ channelId: CH(1), urge: false })).message).toBe('保存しました: 期間前の催促 OFF');
+    expect((await save({ channelId: CH(1), urge: false })).message).toBe('保存しました: 期間前の催促をOFF');
     expect(calls).toHaveLength(2);
     expect((await save({ channelId: '' })).message).toBe('保存しました: 基本のチャンネルを外す');
     expect((await save({ channelId: '' })).message).toBe('変更はありません。');
     expect(calls).toHaveLength(2);
   });
 
-  test('ID の形でなければ、Discord に聞かずに断る', async () => {
+  test('IDの形でなければ、Discordに聞かずに断る', async () => {
     for (const id of ['abc', '1234', 'https://discord.com/api/webhooks/123456789012345678/x']) {
-      expect(await refuse('saveConsoleSettings', { channelId: id }), id).toBe('チャンネルの ID が正しくありません。');
+      expect(await refuse('saveConsoleSettings', { channelId: id }), id).toBe('チャンネルのIDが正しくありません。');
     }
-    expect(await refuse('saveConsoleSettings', { kindChannel: { kind: 'recruit', channelId: '#募集' } })).toBe('チャンネルの ID が正しくありません。');
-    expect(await refuse('saveSeriesNotify', { series: '港', channelId: '港' })).toBe('チャンネルの ID が正しくありません。');
+    expect(await refuse('saveConsoleSettings', { kindChannel: { kind: 'recruit', channelId: '#募集' } })).toBe('チャンネルのIDが正しくありません。');
+    expect(await refuse('saveSeriesNotify', { series: '港', channelId: '港' })).toBe('チャンネルのIDが正しくありません。');
     expect(calls).toEqual([]);
   });
 
-  test('Bot が見られないチャンネル・送れない種類・無いチャンネル・ほかのサーバーのチャンネルは断り、何も保存しない', async () => {
+  test('Botが見られないチャンネル・送れない種類・無いチャンネル・ほかのサーバーのチャンネルは断り、何も保存しない', async () => {
     for (const n of [4, 5, 9]) expect(await refuse('saveConsoleSettings', { channelId: CH(n) }), CH(n)).toBe(NOT_SEEN);
-    // Bot はほかのサーバーにもいるので、そのチャンネルには送らせない
+    // Botはほかのサーバーにもいるので、そのチャンネルには送らせない
     expect(await refuse('saveConsoleSettings', { channelId: CH(3), urge: false })).toBe(OTHER);
     expect(await refuse('saveConsoleSettings', { kindChannel: { kind: 'recruit', channelId: CH(3) } })).toBe(OTHER);
     expect(await refuse('saveSeriesNotify', { series: '港', channelId: CH(3) })).toBe(OTHER);
@@ -191,7 +191,7 @@ describe('知らせのチャンネルを選ぶ', () => {
 
   test('シリーズのチャンネルは、送らなければ今のまま。空なら外して基本のチャンネルへ', async () => {
     let r = await ok(G.admin, G.id, 'saveSeriesNotify', { series: '港', channelId: CH(1), alsoBase: true });
-    expect(r.message).toBe('「港」の通知を保存しました: 専用のチャンネルへ（基本のチャンネルにも）、基本と同じ日時（開催日の前日の 20 時台）に送ります。');
+    expect(r.message).toBe('「港」の通知を保存しました: 専用のチャンネルへ（基本のチャンネルにも）、基本と同じ日時（開催日の前日の20時台）に送ります。');
     r = await ok(G.admin, G.id, 'saveSeriesNotify', { series: '港', days: '2' });
     expect(r.data.seriesNotify).toEqual([{ series: '港', channelId: CH(1), alsoBase: true, days: 2, hour: null }]);
     // 今と同じチャンネルを送り直しても、確かめ直さない
@@ -201,17 +201,17 @@ describe('知らせのチャンネルを選ぶ', () => {
     expect(r.data.seriesNotify).toEqual([{ series: '港', channelId: CH(2), alsoBase: false, days: 2, hour: null }]);
     expect(calls.map((c) => c.url)).toEqual([API + '/channels/' + CH(1), API + '/channels/' + CH(2)]);
     r = await ok(G.admin, G.id, 'saveSeriesNotify', { series: '港', channelId: '', alsoBase: true });
-    expect(r.message).toBe('「港」の通知を保存しました: 基本のチャンネルへ、開催日の2 日前の 20 時台に送ります。');
+    expect(r.message).toBe('「港」の通知を保存しました: 基本のチャンネルへ、開催日の2日前の20時台に送ります。');
     expect(r.data.seriesNotify).toEqual([{ series: '港', channelId: '', alsoBase: true, days: 2, hour: null }]);
   });
 
-  test('Bot が設定されていなければ、新しいチャンネルは確かめられないので断る。今のままにする・外すことはできる', async () => {
+  test('Botが設定されていなければ、新しいチャンネルは確かめられないので断る。今のままにする・外すことはできる', async () => {
     await env.DB.prepare('UPDATE groups SET channel_id = ? WHERE id = ?').bind(CH(1), G.id).run();
     const m = await env.DB.prepare("SELECT id FROM members WHERE group_id = ? AND name = 'ひより'").bind(G.id).first<{ id: number }>();
     const actor: Actor = { memberId: m!.id, name: 'ひより', isAdmin: true, userId: '400000000000000010' };
-    // Bot を渡さずに読み込むと、トークンは空
+    // Botを渡さずに読み込むと、トークンは空
     const ctx = await loadGroup(env.DB, G.id, actor, '', new Date());
-    const why = '卓予定の Bot が設定されていないので、チャンネルを確かめられません。運営者に知らせてください。';
+    const why = '卓予定のBotが設定されていないので、チャンネルを確かめられません。運営者に知らせてください。';
     await expect(saveConsoleSettings(ctx, { channelId: CH(2) })).rejects.toThrow(why);
     await expect(saveConsoleSettings(ctx, { kindChannel: { kind: 'recruit', channelId: CH(2) } })).rejects.toThrow(why);
     await expect(saveSeriesNotify(ctx, { series: '港', channelId: CH(2) })).rejects.toThrow(why);
@@ -228,7 +228,7 @@ describe('送り先に選べるチャンネルの一覧（getDiscordChannels）'
     G = await setupGroup();
   });
 
-  test('Bot がサーバーにいれば、送れるチャンネルの一覧を返す', async () => {
+  test('Botがサーバーにいれば、送れるチャンネルの一覧を返す', async () => {
     const calls = mockApi(() =>
       Response.json([
         { id: CH(9), name: '卓', type: 4, position: 0, parent_id: null },
@@ -243,7 +243,7 @@ describe('送り先に選べるチャンネルの一覧（getDiscordChannels）'
     expect(r.data).toBeUndefined();
   });
 
-  test('Bot がサーバーにいなければ inGuild: false（画面は招く URL を出す）', async () => {
+  test('BotがサーバーにいなければinGuild: false（画面は招くURLを出す）', async () => {
     mockApi(() => Response.json({ message: 'Missing Access', code: 50001 }, { status: 403 }));
     expect(await ok(G.admin, G.id, 'getDiscordChannels')).toEqual({ ok: true, botReady: true, inGuild: false, channels: [] });
   });
@@ -255,7 +255,7 @@ describe('送り先に選べるチャンネルの一覧（getDiscordChannels）'
     expect(calls).toEqual([]);
   });
 
-  test('Bot が設定されていなければ botReady: false。Discord には聞かない', async () => {
+  test('Botが設定されていなければbotReady: false。Discordには聞かない', async () => {
     const calls = mockApi(() => Response.json([]));
     const actor: Actor = { memberId: 1, name: 'ひより', isAdmin: true, userId: '400000000000000010' };
     const ctx = await loadGroup(env.DB, G.id, actor, '', new Date());

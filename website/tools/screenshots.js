@@ -1,6 +1,6 @@
-// サイトに載せるアプリのスクリーンショットを website/public/screenshots/ に撮る（吹き出し・スクロールバー・ログアウトは写さない。PC は 2 倍、スマホは 3 倍の解像度）
+// サイトに載せるアプリのスクリーンショットをwebsite/public/screenshots/ に撮る（吹き出し・スクロールバー・ログアウトは写さない。PCは2倍、スマホは3倍の解像度）
 //   npm run screenshots   （開発サーバーをこの場で立て、開発用ログインでサンプルのグループを写す）
-//   npm run screenshots -- --out <フォルダ>   見比べる用に、別のフォルダへ撮る（読み込んだ時刻は写さない。website/tools/compare-shots.js で比べる）
+//   npm run screenshots -- --out <フォルダ>   見比べる用に、別のフォルダへ撮る（読み込んだ時刻は写さない。website/tools/compare-shots.jsで比べる）
 // 撮った画像はリポジトリに入れる（サイトの組み立てでは撮らない）。アプリの見た目を変えたら撮り直す
 // 初めて使う前に、ブラウザを入れておく: npx playwright install chromium
 import fs from 'node:fs';
@@ -17,7 +17,7 @@ const out = compare ? path.resolve(process.argv[outArg + 1]) : path.join(here, '
 fs.mkdirSync(out, { recursive: true });
 const HIDE = '#toast, #logoutBtn, #stLogout { display: none !important; } html { scrollbar-width: none; } ::-webkit-scrollbar { display: none; }' +
   (compare ? ' #loadedAt { visibility: hidden !important; }' : '');
-/** 手元には Bot が無いので、知らせのチャンネルを撮るときは、Bot がサーバーにいることにして返事を差し替える（サンプルのチャンネルは ID が全部 0） */
+/** 手元にはBotが無いので、知らせのチャンネルを撮るときは、Botがサーバーにいることにして返事を差し替える（サンプルのチャンネルはIDが全部0） */
 const CHANNELS = [
   { id: '000000000000000000', name: '卓の知らせ', category: 'TRPG' },
   { id: '100000000000000001', name: '募集', category: 'TRPG' },
@@ -80,9 +80,9 @@ await withDevServer(async (base) => {
       await shot(pg, 'pc-admin.png');
       await pg.click('#setNav button[data-set=notify]'); await pg.waitForTimeout(400);
       await shot(pg, 'pc-admin-notify.png');
-      // 知らせのチャンネル（Bot を招く・チャンネルを選ぶ）
+      // 知らせのチャンネル（Botを招く・チャンネルを選ぶ）
       await pg.evaluate(() => { document.getElementById('chFold').open = true; });
-      await pg.waitForSelector('#botState >> text=Bot はサーバーにいます');
+      await pg.waitForSelector('#botState >> text=Botはサーバーにいます');
       await pg.evaluate(() => { document.getElementById('chFold').scrollIntoView(); window.scrollBy(0, -88); });
       await pg.waitForTimeout(300);
       await shot(pg, 'pc-admin-channels.png');

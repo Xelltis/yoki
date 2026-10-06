@@ -1,4 +1,4 @@
-// Discord でログイン・ログアウト。初めての Google のアカウントで来た人は、ここでログインしたあとに結びつける（auth/google-login.ts）
+// Discordでログイン・ログアウト。初めてのGoogleのアカウントで来た人は、ここでログインしたあとに結びつける（auth/google-login.ts）
 import { Hono } from 'hono';
 import { isReturnPath } from '../../shared/routes';
 import { deleteCookie, getCookie, setCookie } from 'hono/cookie';
@@ -16,20 +16,20 @@ const STATE_COOKIE = 'yoki_oauth';
 
 export const authRoutes = new Hono<AppEnv>();
 
-/** Discord から戻ってくる先。公開のアドレスで作る（Discord アプリの Redirects に書いたものと同じにする） */
+/** Discordから戻ってくる先。公開のアドレスで作る（DiscordアプリのRedirectsに書いたものと同じにする） */
 const callbackUrl = (env: { APP_URL?: string }, reqUrl: string) => appOrigin(env, reqUrl) + '/auth/callback';
 
 authRoutes.get('/auth/login', (c) => {
   if (!c.env.DISCORD_CLIENT_ID) {
-    return c.html(noticePage('Discord ログインの設定がありません', 'DISCORD_CLIENT_ID が設定されていません（手元では .dev.vars、本番では wrangler.jsonc）。', { href: '/', label: '入口へ戻る' }), 500);
+    return c.html(noticePage('Discordログインの設定がありません', 'DISCORD_CLIENT_IDが設定されていません（手元では .dev.vars、本番ではwrangler.jsonc）。', { href: '/', label: '入口へ戻る' }), 500);
   }
   const url = new URL(c.req.url);
   const want = c.req.query('return_to') ?? '/';
   // 戻ってよいのは、画面の道の一覧（src/shared/routes.ts）にある道だけ
   const returnTo = isReturnPath(want) ? want : '/';
-  // 初めは prompt=none（許可済みなら画面を出さずに戻る）。Discord が断ったら一度だけ consent でやり直す
+  // 初めはprompt=none（許可済みなら画面を出さずに戻る）。Discordが断ったら一度だけconsentでやり直す
   const consent = c.req.query('consent') === '1';
-  // 初めての Google のアカウントを結びつけるために押したか（入口の「Discord でログイン」が付ける）。mode の後ろに g を付けて控える
+  // 初めてのGoogleのアカウントを結びつけるために押したか（入口の「Discordでログイン」が付ける）。modeの後ろにgを付けて控える
   const linkGoogle = c.req.query('link_google') === '1';
   const state = randomToken();
   setCookie(c, STATE_COOKIE, [state, (consent ? 'c' : 'n') + (linkGoogle ? 'g' : ''), returnTo].join('|'), {
@@ -48,7 +48,7 @@ authRoutes.get('/auth/callback', async (c) => {
   deleteCookie(c, STATE_COOKIE, { path: '/auth', secure: !isLocalHttp(url) });
   const retry = { href: '/auth/login', label: 'ログインをやり直す' };
   if (!saved) return c.html(noticePage('ログインをやり直してください', 'ログインの途中の情報が見つかりませんでした（時間が経ちすぎたか、別のタブで開いた可能性があります）。', retry), 400);
-  // split は少なくとも 1 つを返す。途中の情報が欠けていたら、戻り先は入口
+  // splitは少なくとも1つを返す。途中の情報が欠けていたら、戻り先は入口
   const [state, mode = '', returnTo = '/'] = saved.split('|') as [string, string?, string?];
   const linkGoogle = mode.endsWith('g');
   const error = c.req.query('error');
@@ -67,14 +67,14 @@ authRoutes.get('/auth/callback', async (c) => {
   await saveProfile(c.env.DB, user, guilds);
   await startSession(c, user.id);
   const back = isReturnPath(returnTo) ? returnTo : '/';
-  // 初めての Google のアカウントを結びつけるために来ていたら、この人に結びつける（入口へ戻るなら、そのことを知らせる）
+  // 初めてのGoogleのアカウントを結びつけるために来ていたら、この人に結びつける（入口へ戻るなら、そのことを知らせる）
   if (linkGoogle && (await consumeGoogleLink(c, user.id)) && back === '/') return c.redirect('/?login=google-linked');
   return c.redirect(back);
 });
 
 authRoutes.post('/auth/logout', async (c) => {
   await endSession(c);
-  // 結びつけを待っている Google のアカウントの控えも消す（共用の端末で、次の人に結びつかないように）
+  // 結びつけを待っているGoogleのアカウントの控えも消す（共用の端末で、次の人に結びつかないように）
   forgetGoogleLink(c);
   return c.redirect('/', 303);
 });
