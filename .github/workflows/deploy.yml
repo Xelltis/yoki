@@ -61,6 +61,16 @@ jobs:
           YOKI_REPOSITORY: ${{ github.repository }}
           YOKI_UPSTREAM: ${{ vars.YOKI_UPSTREAM }}
 
+      # 表を変える前の地点（bookmark）を控える。更新で困ったら、wrangler d1 time-travel restore で戻す（README の「新しい版に上げる」）
+      - name: 表を変える前の地点を控える（D1 の Time Travel）
+        run: |
+          {
+            echo '### 表を変える前の D1 の地点'
+            echo '```'
+            npx wrangler d1 time-travel info DB --config dist/yoki/wrangler.json 2>&1 || echo '控えられませんでした（公開は続けます）'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: 本番の D1 に表の変更を当てる
         run: npx wrangler d1 migrations apply DB --remote --config dist/yoki/wrangler.json
 
