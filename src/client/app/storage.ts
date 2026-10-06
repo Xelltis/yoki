@@ -11,3 +11,6 @@ export function load(k: string): string {
 export function reducedMotion(): boolean {
   return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
 }
+
+/** 前に見ていたタブを、グループごとに控えるキー（グループを開いたら、そのタブへ移る。router.tsx） */
+export const lastTabKey = (groupId: string) => 'tab:' + groupId;
