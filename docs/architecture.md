@@ -200,7 +200,7 @@ TypeScript と React 19 で書き、Vite が組み立てる。1 つの SPA で�
 | 道 | 中身 |
 |---|---|
 | `/` | 入口（`features/home/`）。ログイン・グループの一覧・グループを作る |
-| `/g/:id/`・`/g/:id/recruit/`・`avail/`・`settings/` | グループの画面のタブ。`/g/:id/` を初めて開いたときだけ、前に見ていたタブへ移る |
+| `/g/:id/`・`/g/:id/recruit/`・`avail/`・`settings/` | グループの画面のタブ。`/g/:id/` を初めて開いたときだけ、そのグループで前に見ていたタブ（募集・調整かメンバーの予定。設定は控えない）へ移る |
 | `/g/:id/admin/<区分>/` | 管理の区域。区分は `members`・`ops`・`notify`・`table`・`admins`・`log`・`danger`。`/g/:id/admin/` は前に開いていた区分へ移る |
 | `/admin/<区分>/` | 運営の管理画面。区分は `overview`・`groups`・`users`・`legal`。開いているグループは `?open=<ID>` |
 

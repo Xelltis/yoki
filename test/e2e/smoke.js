@@ -73,6 +73,16 @@ await withDevServer(async (base) => {
       await page.waitForSelector('#setupGuide', { state: 'hidden', timeout: 15000 });
     });
 
+    await step('グループを開き直すと、そのグループで前に見ていたタブから始まる（設定は控えない）', async () => {
+      await tab('avail');
+      await main();
+      assert.match(page.url(), /\/g\/sample\/avail\/$/);
+      await tab('settings');
+      await main();
+      assert.match(page.url(), /\/g\/sample\/avail\/$/, '設定を開いたあとでも、前のタブから始まる');
+      await tab('cal');
+    });
+
     await step('カレンダーで日を選ぶと内訳が出て、月を送れる', async () => {
       const s = (await D()).sessions.find((x) => x.name === '連れて帰る');
       await page.evaluate((k) => window.yoki.selectDay(k), s.date);

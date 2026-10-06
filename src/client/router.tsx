@@ -4,7 +4,7 @@ import type { QueryClient } from '@tanstack/react-query';
 import { createRootRouteWithContext, createRoute, createRouter, lazyRouteComponent, Link, notFound, Outlet, redirect } from '@tanstack/react-router';
 import { ADMIN_PANES, type AdminPane, OPERATOR_PANES, type OperatorPane } from '../shared/routes';
 import { queryClient } from './app/queryClient';
-import { load } from './app/storage';
+import { lastTabKey, load } from './app/storage';
 import { Icon } from './ui/Icon';
 
 /** 知らない道。入口と同じ青い帯の下に、カードで知らせる */
@@ -57,7 +57,7 @@ const homeRoute = createRoute({
 });
 
 /* グループの画面（/g/:id/ とタブ）。外枠は ConsoleLayout */
-/** グループの画面を初めて開いたか。初めてだけ、前に見ていたタブへ移る（前の画面と同じ） */
+/** グループの画面を初めて開いたか。初めてだけ、そのグループで前に見ていたタブ（募集・調整かメンバーの予定）へ移る。作ったばかりのグループはカレンダー */
 let firstVisit = true;
 const groupRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -70,8 +70,8 @@ const calRoute = createRoute({
   path: '/',
   beforeLoad: ({ context, params }) => {
     if (!context.firstVisit) return;
-    const t = load('tab');
-    if (t === 'recruit' || t === 'avail' || t === 'settings') throw redirect({ to: `/g/$groupId/${t}/`, params });
+    const t = load(lastTabKey(params.groupId));
+    if (t === 'recruit' || t === 'avail') throw redirect({ to: `/g/$groupId/${t}/`, params });
   },
   component: lazyRouteComponent(() => import('./features/console/calendar/CalendarTab'), 'CalendarTab'),
 });

@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Outlet, useNavigate, useParams, useRouterState } from '@tanstack/react-router';
 import { useEffect, useMemo, useState } from 'react';
 import type { ConsoleData } from '../../../../shared/api';
-import { load, store } from '../../../app/storage';
+import { lastTabKey, load, store } from '../../../app/storage';
 import { watchSystemTheme } from '../../../app/theme';
 import { mainArea } from '../../../ui/chrome';
 import { ConfirmDialog } from '../../../ui/confirm';
@@ -51,12 +51,13 @@ function ConsoleShell() {
 
   useEffect(() => sync.start(), [sync]);
   useEffect(() => watchSystemTheme(), []);
-  // 区域とタブを body に置く（見た目の出し分けに使う）。ふだんの画面のタブは、次に開いたときのために控える
+  // 区域とタブを body に置く（見た目の出し分けに使う）。ふだんの 3 画面のタブは、次にこのグループを開いたときのために控える
+  // （設定は控えない。グループの URL を開いて設定が出るのは不自然なため）
   useEffect(() => {
     document.body.setAttribute('data-area', area);
     document.body.setAttribute('data-tab', tab);
-    if (area === 'main') store('tab', tab);
-  }, [area, tab]);
+    if (area === 'main' && tab !== 'settings') store(lastTabKey(groupId), tab);
+  }, [area, tab, groupId]);
   useEffect(() => () => { document.body.removeAttribute('data-area'); document.body.removeAttribute('data-tab'); }, []);
   useEffect(() => { if (d) document.title = d.title + ' - 卓予定'; }, [d]);
   useEffect(() => {
