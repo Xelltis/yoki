@@ -51,7 +51,7 @@ describe('設定', () => {
     expect(u.origin + u.pathname).toBe('https://accounts.google.com/o/oauth2/v2/auth');
     expect(Object.fromEntries(u.searchParams)).toMatchObject({
       client_id: 'cid', redirect_uri: 'https://yoki.example/auth/google/callback', response_type: 'code', access_type: 'offline', prompt: 'consent', state: 'st',
-      scope: 'openid email https://www.googleapis.com/auth/calendar.events',
+      scope: 'openid email https://www.googleapis.com/auth/calendar.events.owned',
     });
     expect(await googleDeps({ ...base, GOOGLE_CLIENT_ID: 'cid' }, 'x')).toBeNull();
   });

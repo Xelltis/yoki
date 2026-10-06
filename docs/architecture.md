@@ -153,7 +153,7 @@ Worker 1 つで、次の 3 つを受け持つ。
 
 **Google との連携**（`google/`・`domain/google.ts`・`routes/google.ts`）。
 
-- OAuth2 の認可コードの流れ。scope は `openid`・`email`・`https://www.googleapis.com/auth/calendar.events`。refresh token を受け取るため、`access_type=offline`・`prompt=consent` で同意の画面を出す。state は HttpOnly の cookie（`/auth/google` だけ、10 分）に、連携を始めた人の ID と戻り先と一緒に入れ、戻ってきた人が同じでなければ受け取らない
+- OAuth2 の認可コードの流れ。scope は `openid`・`email`・`https://www.googleapis.com/auth/calendar.events.owned`（本人が持つカレンダーの予定だけ。使うのはメインのカレンダーだけなので、共有されたカレンダーにも届く `calendar.events` より狭いものにする）。refresh token を受け取るため、`access_type=offline`・`prompt=consent` で同意の画面を出す。state は HttpOnly の cookie（`/auth/google` だけ、10 分）に、連携を始めた人の ID と戻り先と一緒に入れ、戻ってきた人が同じでなければ受け取らない
 - **refresh token は持つ**（Discord のトークンを持たないのとは違う）。本人が画面を開いていないときにも、卓を書き直し、予定を読むため。`GOOGLE_TOKEN_KEY`（Worker の secret）で AES-GCM の暗号にして `google_links` に置き、画面・ログ・運営者の API には出さない。本人が連携を外すときと、運営者が利用者を消すときは、書き込んだ予定・Google の予定から入れた印・連携の行を消し、Google の許可も取り消す（`forgetGoogle`）。別の Google アカウントで連携し直したら、前のアカウントに書いた予定を消す
 - 書き込み: 本人が GM か参加者として入っている、開催と終了の卓。あるべき予定と `google_events` を比べ、足りない・変わった・要らなくなったものだけ Google を呼ぶ。開催日から 7 日より前の卓は、もう触らない（書いた予定は Google に残る）。卓の中身が変わる呼び出しは、返事のあとで（`waitUntil`）そのグループで書き込んでいる人を書き直す
 - 読み込み: 本人のメインのカレンダーの予定から、決めた時間帯（既定は 19:00〜23:00。30 分刻みで、終わりは 24:00 まで）が全部埋まれば ×、一部なら △ を入れる。数えないのは、卓予定が書いた予定・「予定なし」・欠席した予定・取り消された予定。終日の予定は、日本時間の 0 時から次の日の 0 時まで埋まっているとみる。本人が入れた印・本人が消した日・卓に入っている日には入れない。受け取るのは時間を決める欄だけで、予定の名前・場所・説明は受け取らない（`fields`）

@@ -95,7 +95,7 @@ Discord のメールアドレスは受け取りません。Discord から受け�
 
 ### Google から受け取るもの（Google カレンダーと連携した人だけ）
 
-利用者が設定の画面で「Google と連携する」を選んだときだけ、Google から次を受け取ります（Google の権限の「openid」「email」と、Google カレンダーの予定を読み書きする「calendar.events」）。
+利用者が設定の画面で「Google と連携する」を選んだときだけ、Google から次を受け取ります（Google の権限の「openid」「email」と、本人が持つ Google カレンダーの予定を読み書きする「calendar.events.owned」）。
 
 - Google のアカウントのメールアドレス（どのアカウントと連携しているかを、本人に見せるため）
 - Google カレンダーに問い合わせるための鍵（refresh token）。暗号にして保存します

@@ -1,8 +1,9 @@
 // Google の API（OAuth とカレンダー）。本物（realGoogle）と、開発用の偽物（dev.ts の fakeGoogle）が同じ形を持つ。
-// 使うのは本人のメインのカレンダー（primary）だけ。scope は calendar.events（予定を書く・読む）と、だれの連携かを知る openid email
+// 使うのは本人のメインのカレンダー（primary）だけ。scope は calendar.events.owned（本人が持つカレンダーの予定を書く・読む。共有されたほかの人の
+// カレンダーには届かない、いちばん狭いもの）と、だれの連携かを知る openid email
 import { jstMs } from '../lib/ics';
 
-export const GOOGLE_SCOPE = 'openid email https://www.googleapis.com/auth/calendar.events';
+export const GOOGLE_SCOPE = 'openid email https://www.googleapis.com/auth/calendar.events.owned';
 /** Google でログインするときの scope（だれかを知るだけ。カレンダーには触らない） */
 export const GOOGLE_LOGIN_SCOPE = 'openid email';
 
