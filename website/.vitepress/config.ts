@@ -1,4 +1,4 @@
-// 卓予定のサイト（GitHub Pages）。紹介と使い方を載せる
+// Yokiのサイト（GitHub Pages）。紹介と使い方を載せる
 //   npm run site         手元で開く（http://localhost:5174/yoki/）
 //   npm run site:build   組み立てる（website/.vitepress/dist/）
 import Icons from 'unplugin-icons/vite';
@@ -13,7 +13,7 @@ const base = new URL(SITE_URL).pathname;
 
 export default defineConfig({
   lang: 'ja',
-  title: '卓予定',
+  title: 'Yoki',
   description: 'TRPGの卓の予定を、Discordサーバーの仲間と決めるWebアプリ。',
   base,
   cleanUrls: true,
@@ -37,7 +37,7 @@ export default defineConfig({
     // 文字はアプリと同じNoto Sans JP（アイコンはSVGでJSに入っている。theme/icons.ts）
     ['link', { rel: 'stylesheet', href: 'https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400..700&display=swap' }],
     ['meta', { property: 'og:type', content: 'website' }],
-    ['meta', { property: 'og:site_name', content: '卓予定' }],
+    ['meta', { property: 'og:site_name', content: 'Yoki' }],
     ['meta', { property: 'og:image', content: SITE_URL + 'og.png' }],
     ['meta', { name: 'twitter:card', content: 'summary_large_image' }],
   ],
@@ -89,7 +89,7 @@ export default defineConfig({
         },
         { text: '困ったとき', items: [{ text: 'よくある質問', link: '/guide/faq' }] },
       ],
-      // 卓予定を自分のCloudflareに設置する運営者向け
+      // Yokiを自分のCloudflareに設置する運営者向け
       '/setup/': [
         { text: '設置する', items: [{ text: '設置の手順', link: '/setup/' }] },
         {

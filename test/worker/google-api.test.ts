@@ -71,7 +71,7 @@ function mockFetch(route: (url: string, init: RequestInit) => Response | Promise
 /** JWTの形（中身はUTF-8のJSONをbase64urlに） */
 const idToken = (claims: Record<string, unknown>) =>
   'h.' + btoa(String.fromCharCode(...new TextEncoder().encode(JSON.stringify(claims)))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '') + '.s';
-const body = { summary: 'A', location: '', description: '', start: { date: '2026-10-10' }, end: { date: '2026-10-11' }, source: { title: '卓予定', url: 'u' }, extendedProperties: { private: { yoki: '1' as const, session: 'g-1' } } };
+const body = { summary: 'A', location: '', description: '', start: { date: '2026-10-10' }, end: { date: '2026-10-11' }, source: { title: 'Yoki', url: 'u' }, extendedProperties: { private: { yoki: '1' as const, session: 'g-1' } } };
 
 describe('本物のGoogleでログイン', () => {
   const g = realGoogle('cid', 'secret');
@@ -178,7 +178,7 @@ describe('本物のGoogleの呼び方', () => {
     await expect(g.busy('at', 0, 1)).rejects.toThrow('読み込み');
   });
 
-  test('数える予定: 取り消し・予定なし・卓予定が書いた予定・欠席・時刻の無い予定は数えない。終日は日本時間の0時から', () => {
+  test('数える予定: 取り消し・予定なし・Yokiが書いた予定・欠席・時刻の無い予定は数えない。終日は日本時間の0時から', () => {
     expect(toBusy({ status: 'cancelled', start: { date: '2026-10-10' }, end: { date: '2026-10-11' } })).toBeNull();
     expect(toBusy({ transparency: 'transparent', start: { date: '2026-10-10' }, end: { date: '2026-10-11' } })).toBeNull();
     expect(toBusy({ extendedProperties: { private: { yoki: '1' } }, start: { date: '2026-10-10' }, end: { date: '2026-10-11' } })).toBeNull();

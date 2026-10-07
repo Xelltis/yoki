@@ -17,7 +17,7 @@ const COLORS = ':root { color-scheme: light dark; --bg: #f3f4ff; --card: #fff; -
 export function noticePage(title: string, message: string, link: { href: string; label: string }): string {
   return `<!doctype html>
 <html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>${esc(title)} - 卓予定</title>${HEAD_ICONS}
+<title>${esc(title)} - Yoki</title>${HEAD_ICONS}
 <style>
   ${COLORS}
   body { min-height: 100vh; display: grid; place-items: center; font-size: 15px; line-height: 1.7; }
@@ -33,10 +33,10 @@ export function noticePage(title: string, message: string, link: { href: string;
 export function legalPage(kind: LegalKind, legal: AdminLegal, origin: string): string {
   const doc = legal[kind], title = LEGAL_TITLES[kind];
   const unset = '<span class="unset">まだ設定されていません</span>';
-  const links = LEGAL_KINDS.map((k) => (k === kind ? '<span>' + LEGAL_TITLES[k] + '</span>' : '<a href="/' + k + '">' + LEGAL_TITLES[k] + '</a>')).join('') + '<a href="/">卓予定の入口へ</a>';
+  const links = LEGAL_KINDS.map((k) => (k === kind ? '<span>' + LEGAL_TITLES[k] + '</span>' : '<a href="/' + k + '">' + LEGAL_TITLES[k] + '</a>')).join('') + '<a href="/">Yokiの入口へ</a>';
   return `<!doctype html>
 <html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>${title} - 卓予定</title>${HEAD_ICONS}${ogTags(origin, { title: title + ' - 卓予定', description: '卓予定（TRPGの卓の予定を、Discordサーバーの仲間と管理するWebアプリ）の' + title + 'です。', url: origin + '/' + kind })}
+<title>${title} - Yoki</title>${HEAD_ICONS}${ogTags(origin, { title: title + ' - Yoki', description: 'Yoki（TRPGの卓の予定を、Discordサーバーの仲間と管理するWebアプリ）の' + title + 'です。', url: origin + '/' + kind })}
 <style>
   ${COLORS}
   body { font-size: 15px; line-height: 1.8; }
@@ -59,7 +59,7 @@ export function legalPage(kind: LegalKind, legal: AdminLegal, origin: string): s
   nav span { color: var(--muted); }
   @media (max-width: 600px) { .card { padding: 20px 18px; } dl.who { grid-template-columns: 1fr; } dl.who dd { margin-bottom: 6px; } }
 </style></head>
-<body><header><a class="brand" href="/"><img src="/icon-192.png" alt="">卓予定</a></header><main>
+<body><header><a class="brand" href="/"><img src="/icon-192.png" alt="">Yoki</a></header><main>
 <article class="card">
 <h1>${title}</h1>
 <dl class="who"><dt>運営者</dt><dd>${legal.operator ? esc(legal.operator) : unset}</dd><dt>問い合わせ先</dt><dd>${legal.contact ? inline(legal.contact) : unset}</dd><dt>更新日</dt><dd>${fmtDateLong(doc.updatedAt)}</dd></dl>

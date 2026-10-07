@@ -211,7 +211,7 @@ describe('知らせのチャンネルを選ぶ', () => {
     const actor: Actor = { memberId: m!.id, name: 'ひより', isAdmin: true, userId: '400000000000000010' };
     // Botを渡さずに読み込むと、トークンは空
     const ctx = await loadGroup(env.DB, G.id, actor, '', new Date());
-    const why = '卓予定のBotが設定されていないので、チャンネルを確かめられません。運営者に知らせてください。';
+    const why = 'YokiのBotが設定されていないので、チャンネルを確かめられません。運営者に知らせてください。';
     await expect(saveConsoleSettings(ctx, { channelId: CH(2) })).rejects.toThrow(why);
     await expect(saveConsoleSettings(ctx, { kindChannel: { kind: 'recruit', channelId: CH(2) } })).rejects.toThrow(why);
     await expect(saveSeriesNotify(ctx, { series: '港', channelId: CH(2) })).rejects.toThrow(why);

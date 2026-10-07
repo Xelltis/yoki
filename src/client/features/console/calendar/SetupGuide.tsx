@@ -68,7 +68,7 @@ export function SetupGuide({ d }: { d: ConsoleData }) {
           {nActive > 0 && <span className="hint mr-6">{nActive + '件の卓があります'}</span>}
           <button type="button" className={'btn mt-2 ' + (nActive > 0 ? 'small' : now === 1 ? 'primary' : '')} data-go="new" onClick={() => openForm(ui, { date: selDay || undefined })}><Icon name="add" size="sm" />卓を登録</button>
         </Step>
-        <Step n={3} state={state(2)} title="Discordに知らせる" optional text="卓予定のBotをDiscordサーバーに招き、知らせのチャンネルを選ぶと、卓の案内と開催前の知らせが届きます。無くても使えます。">
+        <Step n={3} state={state(2)} title="Discordに知らせる" optional text="YokiのBotをDiscordサーバーに招き、知らせのチャンネルを選ぶと、卓の案内と開催前の知らせが届きます。無くても使えます。">
           {hasDiscord && <span className="hint mr-6">設定してあります</span>}
           {d.isAdmin
             ? <button type="button" className={'btn mt-2 ' + (hasDiscord ? 'small' : now === 2 ? 'primary' : '')} data-go="discord" onClick={() => goPane('notify')}><Icon name="notifications" size="sm" />{hasDiscord ? '開く' : 'Discordを設定'}</button>

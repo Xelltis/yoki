@@ -13,7 +13,7 @@ function NotFound() {
     <>
       <header className="flex items-center gap-10 bg-chrome px-24 py-12 text-18 font-bold text-chrome-text max-sm:px-14 max-sm:py-10">
         <img className="block h-36 w-36 rounded-[10px] ring-2 ring-white/90" src="/icon-192.png" alt="" width={36} height={36} />
-        卓予定
+        Yoki
       </header>
       <main className="mx-auto max-w-560 px-20 pt-48 pb-48 max-sm:px-14 max-sm:pt-24">
         <div className="card px-26 py-28 text-center">

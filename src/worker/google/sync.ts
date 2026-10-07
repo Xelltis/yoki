@@ -2,7 +2,7 @@
 //   書き込み … GMか参加者として入っている開催の卓を、本人のカレンダーに書く。変われば書き直し、外れたら（中止・日程の取り消し・
 //             参加者から外れた・卓を消した）消す。開催日からWRITE_PAST_DAYS日より前の卓は、もう触らない
 //   読み込み … 本人の予定から、決めた時間帯が埋まっていれば ×、一部なら △ を、予定表に入れる。本人が入れた印・本人が消した日・
-//             卓に入っている日には入れない。卓予定が書いた予定は数えない
+//             卓に入っている日には入れない。Yokiが書いた予定は数えない
 // Googleを呼ぶ回数はbudgetで数え、使い切ったらやめる（残りは次の回。どちらも、あるべき形に合わせ直す作りなので、途中でやめてよい）
 import { SYSTEM_ACTOR } from '../auth/guard';
 import { calendarItem, calendarSessions } from '../domain/calendar';
@@ -49,7 +49,7 @@ export function eventBody(ctx: Ctx, s: Session & { date: string }): GoogleEventB
     location: item.location,
     description: item.description,
     ...when,
-    source: { title: '卓予定', url: item.url },
+    source: { title: 'Yoki', url: item.url },
     extendedProperties: { private: { yoki: '1', session: ctx.group.id + '-' + s.rowId } },
   };
 }

@@ -25,7 +25,7 @@ export function googleAddUrl(s: ConsoleSession, groupTitle: string, appUrl: stri
     if (end <= start) end += 1440;
     dates = stamp(s.date, start) + '/' + stamp(addDaysYmd(s.date, Math.floor(end / 1440)), end % 1440);
   }
-  const details = [s.gm ? 'GM: ' + s.gm : '', s.members.length ? '参加: ' + s.members.join('、') : '', s.memo, groupTitle + '（卓予定）: ' + appUrl].filter(Boolean).join('\n');
+  const details = [s.gm ? 'GM: ' + s.gm : '', s.members.length ? '参加: ' + s.members.join('、') : '', s.memo, groupTitle + '（Yoki）: ' + appUrl].filter(Boolean).join('\n');
   const q = new URLSearchParams({ action: 'TEMPLATE', text: s.name, dates, details, location: s.place, ctz: 'Asia/Tokyo' });
   return 'https://calendar.google.com/calendar/render?' + q.toString();
 }

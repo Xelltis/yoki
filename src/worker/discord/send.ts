@@ -1,4 +1,4 @@
-// Discordへ送る（GAS版discordAttempt_・postDiscord_・classifyDiscordFailure_）。卓予定のBotで、チャンネルにメッセージを書く。
+// Discordへ送る（GAS版discordAttempt_・postDiscord_・classifyDiscordFailure_）。YokiのBotで、チャンネルにメッセージを書く。
 // 429と5xx・通信の切れは、少し待って最大3回まで送り直す。1回ごとに送信記録（notify_log）に1行残す
 import { DISCORD_API } from '../auth/oauth';
 import { isChannelId } from './channel';
@@ -51,7 +51,7 @@ export function classifyFailure(code: number, errText: string): Reason {
   if (code >= 500) return { kind: 'discord_down', label: 'Discord側の不調', toolFault: false, text: 'Discordが一時的に応答できていません。', advice: '時間をおいて送り直してください。' };
   if (code === 401 || (!code && errText === NO_BOT)) {
     return { kind: 'bad_bot', label: 'Botの設定', toolFault: false,
-      text: code ? '卓予定のBotのトークンが正しくありません。' : '卓予定のBotが設定されていません。', advice: '卓予定を公開している運営者に知らせてください。' };
+      text: code ? 'YokiのBotのトークンが正しくありません。' : 'YokiのBotが設定されていません。', advice: 'Yokiを設置した運営者に知らせてください。' };
   }
   if (code === 403) {
     return { kind: 'no_permission', label: 'チャンネルの権限', toolFault: false, text: 'Botがそのチャンネルを見られないか、書き込めません。',

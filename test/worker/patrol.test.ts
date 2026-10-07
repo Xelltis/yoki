@@ -119,7 +119,7 @@ describe('期間前の催促と開始直前の知らせ', () => {
     await addSession({ name: '古城', status: '募集', windowFrom: addDays(DAY, 1), windowTo: addDays(DAY, 10), gm: 'ひより' });
     await patrol(env, at('20:00'), noWait);
     expect(posts).toHaveLength(1);
-    expect(posts[0]!.content).toBe('⏳ 明日から「古城」の募集の期間です。まだ参加者を集めている途中です。 <@400000000000000010>\n🔗 参加希望は卓予定の「募集・調整」タブから: https://yoki.test/g/g/');
+    expect(posts[0]!.content).toBe('⏳ 明日から「古城」の募集の期間です。まだ参加者を集めている途中です。 <@400000000000000010>\n🔗 参加希望はYokiの「募集・調整」タブから: https://yoki.test/g/g/');
     expect(await mark('古城', 'urged_at')).not.toBeNull();
     await patrol(env, at('21:00'), noWait);
     expect(posts).toHaveLength(1);

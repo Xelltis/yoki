@@ -16,7 +16,7 @@ const MAX_PAGES = 4;
 
 type When = { date: string } | { dateTime: string; timeZone: string };
 
-/** 書き込む予定。extendedProperties.private.yoki = '1' が卓予定の書いた印（読むときに除く） */
+/** 書き込む予定。extendedProperties.private.yoki = '1' がYokiの書いた印（読むときに除く） */
 export type GoogleEventBody = {
   summary: string;
   location: string;
@@ -56,7 +56,7 @@ export type GoogleApi = {
   updateEvent(accessToken: string, eventId: string, body: GoogleEventBody): Promise<'ok' | 'gone'>;
   /** 消す。もう無ければそのまま */
   deleteEvent(accessToken: string, eventId: string): Promise<void>;
-  /** 予定ありの時間（卓予定が書いた予定・予定なしの予定・欠席の予定は除く） */
+  /** 予定ありの時間（Yokiが書いた予定・予定なしの予定・欠席の予定は除く） */
   busy(accessToken: string, fromMs: number, toMs: number): Promise<Busy[]>;
 };
 

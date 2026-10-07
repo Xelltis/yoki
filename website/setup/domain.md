@@ -1,10 +1,10 @@
 ---
-description: 設置した卓予定を、自分のドメインで公開する手順（任意）。
+description: 設置したYokiを、自分のドメインで公開する手順（任意）。
 ---
 
 # 独自のドメインで公開する
 
-設置した卓予定を、workers.devではなく自分のドメイン（`https://yoki.example.com` など）で公開する手順です。先に[設置する](./)の手順で、workers.devのアドレスで公開しておいてください。
+設置したYokiを、workers.devではなく自分のドメイン（`https://yoki.example.com` など）で公開する手順です。先に[設置する](./)の手順で、workers.devのアドレスで公開しておいてください。
 
 やり方は、ドメインのDNSをどこに置くかで2つに分かれます。
 
@@ -23,7 +23,7 @@ Workersに独自のドメインを直接付けるには、ドメインのDNSがC
 
 ドメインのDNSをRoute 53に残したまま公開するときは、前にAWS CloudFrontを置き、CloudFrontからworkers.devのアドレスへ渡します。
 
-Workerに届く要求のアドレスは、workers.devのままです。卓予定は、自分のアドレス（Discordログインの戻り先・知らせのリンク・不正な送信の確かめ）を、Workerのsecretの `APP_URL` で決めるので、そのまま動きます。workers.devは有効のままにしてください（CloudFrontの行き先になります）。
+Workerに届く要求のアドレスは、workers.devのままです。Yokiは、自分のアドレス（Discordログインの戻り先・知らせのリンク・不正な送信の確かめ）を、Workerのsecretの `APP_URL` で決めるので、そのまま動きます。workers.devは有効のままにしてください（CloudFrontの行き先になります）。
 
 ### 1. 証明書を作る
 
@@ -57,7 +57,7 @@ workers.devのアドレスも開けますが、ログインの戻り先とcookie
 
 | 直すところ | 直し方 |
 |---|---|
-| 卓予定のWorkerのsecret | `APP_URL` を `https://yoki.example.com` にする（下の表） |
+| YokiのWorkerのsecret | `APP_URL` を `https://yoki.example.com` にする（下の表） |
 | DiscordアプリのOAuth2 | Redirectsに `https://yoki.example.com/auth/callback` を足す |
 | GoogleのOAuthクライアント（連携しているとき） | 承認済みのリダイレクトURIに `https://yoki.example.com/auth/google/callback` を足す |
 | 利用規約・プライバシーポリシーのアドレス | Discord Developer PortalとGoogleの同意画面のアドレスを、新しいドメインに直す |

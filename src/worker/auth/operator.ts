@@ -1,4 +1,4 @@
-// 運営者（卓予定を公開している人）。WorkerのsecretのOPERATOR_IDSに、DiscordのユーザーIDを書く
+// 運営者（Yokiを設置した人）。WorkerのsecretのOPERATOR_IDSに、DiscordのユーザーIDを書く
 import type { Context } from 'hono';
 import type { AppEnv } from '../app';
 import { AppError, authError } from '../lib/errors';

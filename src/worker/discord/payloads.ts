@@ -44,10 +44,10 @@ export function mentionsOf(ctx: PayloadCtx, sessions: Session[]): string {
   return [...ids].join(' ');
 }
 
-/** 募集・調整の知らせに添える、卓予定への案内の行（GAS版recruitLink_） */
+/** 募集・調整の知らせに添える、Yokiへの案内の行（GAS版recruitLink_） */
 export function recruitLink(ctx: PayloadCtx, s: Session): string {
   const what = s.status === STATUS.RECRUIT ? '参加希望' : s.status === STATUS.ADJUSTING ? '日程調整' : '';
-  return what && ctx.appUrl ? '\n🔗 ' + what + 'は卓予定の「募集・調整」タブから: ' + ctx.appUrl : '';
+  return what && ctx.appUrl ? '\n🔗 ' + what + 'はYokiの「募集・調整」タブから: ' + ctx.appUrl : '';
 }
 
 /** 登録・変更・削除。削除は本文だけ（卓はもう無い）。登録のときはGMと参加者をメンションする */
@@ -77,7 +77,7 @@ export function askPayload(ctx: PayloadCtx, s: Session, me: string, message: str
   const lines = ['❓ 「' + s.name + '」（' + (label(s) ? label(s) + 'に開催予定' : '時期未定') + '）に参加できそうですか？ ' + withId.concat(noId).join(' ')];
   const msg = message.trim();
   if (msg) lines.push('💬 ' + msg + (me ? '（' + me + '）' : ''));
-  lines.push('参加希望であれば、卓予定の「募集・調整」タブで「参加希望」を押してください。' + (me && !msg ? '　by ' + me : '') + (ctx.appUrl ? '\n' + ctx.appUrl : ''));
+  lines.push('参加希望であれば、Yokiの「募集・調整」タブで「参加希望」を押してください。' + (me && !msg ? '　by ' + me : '') + (ctx.appUrl ? '\n' + ctx.appUrl : ''));
   return { content: lines.join('\n'), embeds: [sessionEmbed(ctx, s)] };
 }
 
@@ -88,7 +88,7 @@ export function pollPayload(ctx: PayloadCtx, s: Session, me: string): Payload {
   const lines = [
     '🗓️ 「' + s.name + '」の日程を決めます。' + call,
     '候補日: ' + s.candidates.map(fmtDateJa).join('、') + (s.start || s.end ? '　' + timeRange(s) : ''),
-    '卓予定の「募集・調整」タブで、候補日ごとに ◯ か × を押してください。全員の回答がそろったら、GMが開催日を選びます。' + (me ? '　by ' + me : '') + (ctx.appUrl ? '\n' + ctx.appUrl : ''),
+    'Yokiの「募集・調整」タブで、候補日ごとに ◯ か × を押してください。全員の回答がそろったら、GMが開催日を選びます。' + (me ? '　by ' + me : '') + (ctx.appUrl ? '\n' + ctx.appUrl : ''),
   ];
   return { content: lines.join('\n'), embeds: [sessionEmbed(ctx, s)] };
 }
@@ -106,15 +106,15 @@ export function pollReadyPayload(ctx: PayloadCtx, s: Session): Payload {
       return '・' + fmtDateJa(k) + '　◯ ' + ok.length + '/' + voters.length + (ok.length === voters.length ? '（全員 ◯）' : '');
     });
   return {
-    content: ['📝 「' + s.name + '」の日程調整の回答がそろいました。' + call, days.join('\n'), '卓予定の「募集・調整」タブで、開催日を選んでください。' + (ctx.appUrl ? '\n' + ctx.appUrl : '')].join('\n'),
+    content: ['📝 「' + s.name + '」の日程調整の回答がそろいました。' + call, days.join('\n'), 'Yokiの「募集・調整」タブで、開催日を選んでください。' + (ctx.appUrl ? '\n' + ctx.appUrl : '')].join('\n'),
   };
 }
 
-/** 日程が決まった。卓予定のURLを添える。開催日のある卓だけに使う（step.tsとpolls.tsが確かめてから呼ぶ） */
+/** 日程が決まった。YokiのURLを添える。開催日のある卓だけに使う（step.tsとpolls.tsが確かめてから呼ぶ） */
 export function decidedPayload(ctx: PayloadCtx, s: Session): Payload {
   const mentions = mentionsOf(ctx, [s]);
   return {
-    content: '✅ 「' + s.name + '」の日程が決まりました: ' + fmtDateJa(s.date!) + ' ' + timeRange(s) + (mentions ? '\n' + mentions : '') + (ctx.appUrl ? '\n🔗 卓予定: ' + ctx.appUrl : ''),
+    content: '✅ 「' + s.name + '」の日程が決まりました: ' + fmtDateJa(s.date!) + ' ' + timeRange(s) + (mentions ? '\n' + mentions : '') + (ctx.appUrl ? '\n🔗 Yoki: ' + ctx.appUrl : ''),
     embeds: [sessionEmbed(ctx, s)],
   };
 }
@@ -125,5 +125,5 @@ export function bulkPayload(label: string, me: string, names: string[], mentions
 }
 
 export function testPayload(title: string, where = ''): Payload {
-  return { content: '✅ 卓予定管理から接続テスト（' + title + (where ? ' / ' + where : '') + '）' };
+  return { content: '✅ Yokiから接続テスト（' + title + (where ? ' / ' + where : '') + '）' };
 }

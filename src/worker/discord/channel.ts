@@ -1,4 +1,4 @@
-// DiscordのチャンネルとBot（卓予定のDiscordアプリ）。送り先はチャンネルのIDで持ち、Botのトークンで読む・送る。
+// DiscordのチャンネルとBot（YokiのDiscordアプリ）。送り先はチャンネルのIDで持ち、Botのトークンで読む・送る。
 // Gatewayには繋がず、RESTだけを使う。トークンはWorkerのsecret（DISCORD_BOT_TOKEN）
 import { DISCORD_API } from '../auth/oauth';
 

@@ -1,18 +1,18 @@
 ---
-description: 卓予定を「Deploy to Cloudflare」のボタンで自分のCloudflareに設置し、運営者として公開するまでの手順。
+description: Yokiを「Deploy to Cloudflare」のボタンで自分のCloudflareに設置し、運営者として公開するまでの手順。
 ---
 
 # 設置する
 
-卓予定は、だれでも自分のCloudflareに設置して公開できます。設置した人は、その卓予定の運営者になります。
+Yokiは、だれでも自分のCloudflareに設置して公開できます。設置した人は、そのYokiの運営者になります。
 
-設置に使うのは、「Deploy to Cloudflare」のボタンです。ボタンを押すと、Cloudflareがあなたのアカウントにデータベースを作り、あなたのGitHubに卓予定のコードを写して、公開まで済ませます。コードを書いたり、手元でコマンドを打ったりしなくてかまいません。
+設置に使うのは、「Deploy to Cloudflare」のボタンです。ボタンを押すと、Cloudflareがあなたのアカウントにデータベースを作り、あなたのGitHubにYokiのコードを写して、公開まで済ませます。コードを書いたり、手元でコマンドを打ったりしなくてかまいません。
 
 ## 要るもの
 
 | 要るもの | 使い道 | 費用 |
 |---|---|---|
-| GitHubのアカウント | 卓予定のコードを置く。新しい版への更新もここで動く | 無料 |
+| GitHubのアカウント | Yokiのコードを置く。新しい版への更新もここで動く | 無料 |
 | Cloudflareのアカウント | アプリ（Workers）とデータ（D1）を置く | 無料のプランで動く |
 | Discordのアカウント | ログインと知らせに使うDiscordアプリを作る | 無料 |
 | Googleのアカウント（任意） | Googleでのログインと、Googleカレンダーとの連携 | 無料 |
@@ -26,14 +26,14 @@ Cloudflareは、無料のプランのまま使えます。グループが増え�
 | 1 | Discordアプリを作る | Discord Developer Portal |
 | 2 | ボタンを押して設置する | Cloudflare |
 | 3 | 公開のアドレスをDiscordアプリに入れる | Discord Developer Portal |
-| 4 | ログインして確かめる | 卓予定 |
-| 5 | 利用規約とプライバシーポリシーを整える | 卓予定・Discord Developer Portal |
+| 4 | ログインして確かめる | Yoki |
+| 5 | 利用規約とプライバシーポリシーを整える | Yoki・Discord Developer Portal |
 
 手順1で控えた値は、手順2の入力欄に入れます。トークンとシークレットは、ほかの人に見せてはいけません。
 
 ## 1. Discordアプリを作る
 
-[Discord Developer Portal](https://discord.com/developers/applications) で「New Application」を押し、アプリを作ります。名前は、ログインの画面とBotの名前に出ます（「卓予定」など）。ログインと知らせ（Bot）の両方に、この1つのアプリを使います。
+[Discord Developer Portal](https://discord.com/developers/applications) で「New Application」を押し、アプリを作ります。名前は、ログインの画面とBotの名前に出ます（「Yoki」など）。ログインと知らせ（Bot）の両方に、この1つのアプリを使います。
 
 左の項目ごとに、次のように設定してください。
 
@@ -43,7 +43,7 @@ Cloudflareは、無料のプランのまま使えます。グループが増え�
 | Bot | 「Reset Token」でトークンを作って控える。「Public Bot」はONにする。Privileged Gateway Intentsは全部OFFのまま |
 | Installation | Install Linkを「None」にする |
 
-Public BotをONにするのは、グループの管理者が卓予定の画面から、自分のDiscordサーバーにBotを招くためです。卓予定はGatewayにつながないので、Privileged Gateway Intentsは要りません。Botを招くURLは卓予定が作るので、Install Linkも要りません（求める権限は「チャンネルを見る」「メッセージを送信」「埋め込みリンク」です）。
+Public BotをONにするのは、グループの管理者がYokiの画面から、自分のDiscordサーバーにBotを招くためです。YokiはGatewayにつながないので、Privileged Gateway Intentsは要りません。Botを招くURLはYokiが作るので、Install Linkも要りません（求める権限は「チャンネルを見る」「メッセージを送信」「埋め込みリンク」です）。
 
 あわせて、あなたのDiscordユーザーIDも控えてください。Discordの設定の「詳細設定」で開発者モードをONにし、自分のアイコンを右クリックして「ユーザーIDをコピー」で取れます。
 
@@ -70,7 +70,7 @@ Cloudflareにログインし、GitHubとつなぐと、設置の画面が開き�
 
 | Cloudflareがすること | 中身 |
 |---|---|
-| リポジトリを作る | あなたのGitHubに、卓予定のコードを写したリポジトリを作る（フォークではない、あなたのリポジトリ） |
+| リポジトリを作る | あなたのGitHubに、Yokiのコードを写したリポジトリを作る（フォークではない、あなたのリポジトリ） |
 | データベースを作る | D1のデータベースを作り、そのIDをリポジトリの `wrangler.jsonc` に書き込む |
 | 公開する | 組み立て、データベースの表を作って、公開する |
 | 自動で公開し直す | これからは、リポジトリのmainが変わるたびに、Cloudflareが組み立てて公開し直す（Workers Builds） |
@@ -101,7 +101,7 @@ Discord Developer Portalのアプリの「OAuth2」を開き、Redirectsに `htt
 
 公開のアドレスの `/terms` に利用規約が、`/privacy` にプライバシーポリシーが出ます。運営の管理画面の「規約」で、運営者の名前と問い合わせ先を入れ、本文を確かめてください。
 
-既定の文は、このリポジトリのままの卓予定に合わせてあります。前に別のサービスを置くなど、公開のしかたを変えたときは、本文も直してください。
+既定の文は、このリポジトリのままのYokiに合わせてあります。前に別のサービスを置くなど、公開のしかたを変えたときは、本文も直してください。
 
 Discord Developer Portalの「General Information」のTerms of Service URLとPrivacy Policy URLにも、この2つのアドレスを入れます。
 
@@ -118,4 +118,4 @@ Discord Developer Portalの「General Information」のTerms of Service URLとPr
 
 ## GitHub Actionsで公開する
 
-ボタンを使わずに、卓予定のリポジトリをフォークし、GitHub Actionsで公開するやり方もあります。コードに手を入れながら使いたい人向けで、値をGitHubに入れるなど、手順が多いやり方です。手順は、リポジトリのREADMEの「GitHub Actionsで公開する」にあります。
+ボタンを使わずに、Yokiのリポジトリをフォークし、GitHub Actionsで公開するやり方もあります。コードに手を入れながら使いたい人向けで、値をGitHubに入れるなど、手順が多いやり方です。手順は、リポジトリのREADMEの「GitHub Actionsで公開する」にあります。

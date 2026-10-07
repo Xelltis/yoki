@@ -5,7 +5,7 @@ import Shot from './Shot.vue';
 
 <template>
   <div class="home-shots">
-    <Shot class="pc" name="pc-calendar" themed alt="PCで開いた卓予定。カレンダーに卓の予定と、全員が空いている日の色が並ぶ" />
-    <Shot class="phone" name="phone-calendar" themed phone alt="スマホで開いた卓予定のカレンダー" />
+    <Shot class="pc" name="pc-calendar" themed alt="PCで開いたYoki。カレンダーに卓の予定と、全員が空いている日の色が並ぶ" />
+    <Shot class="phone" name="phone-calendar" themed phone alt="スマホで開いたYokiのカレンダー" />
   </div>
 </template>

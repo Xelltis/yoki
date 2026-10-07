@@ -1,12 +1,12 @@
 ---
 layout: home
-title: 卓予定
+title: Yoki
 titleTemplate: TRPGの卓の予定をDiscordの仲間と決める
 
 hero:
   name: Yoki
   text: 集まる日が、<br>すぐ決まる。
-  tagline: 卓予定は、TRPGの卓の予定をDiscordサーバーの仲間と決めるWebアプリです。みんなの都合から全員が空いている日を見つけ、募集・日程調整・Discordへの知らせまでを1か所で済ませます。
+  tagline: Yokiは、TRPGの卓の予定をDiscordサーバーの仲間と決めるWebアプリです。みんなの都合から全員が空いている日を見つけ、募集・日程調整・Discordへの知らせまでを1か所で済ませます。
   actions:
     - theme: brand
       text: 始め方を見る

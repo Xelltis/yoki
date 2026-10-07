@@ -46,12 +46,12 @@ describe('グループのページ（/g/:id/）', () => {
     expect(res.headers.get('Location')).toBe('/auth/login?return_to=%2Fg%2Fp1%2F');
   });
 
-  test('リンクの中身を読みに来たもの（Discordなど）には、ログインへ送らずに、卓予定の見た目（OGP）の骨組みを返す。グループの名前は出さない', async () => {
+  test('リンクの中身を読みに来たもの（Discordなど）には、ログインへ送らずに、Yokiの見た目（OGP）の骨組みを返す。グループの名前は出さない', async () => {
     await makeGroup('p9', 'gz');
     const res = await call('/g/p9/', { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Discordbot/2.0; +https://discordapp.com)' } });
     expect(res.status).toBe(200);
     const html = await res.text();
-    expect(html).toContain('<meta property="og:title" content="卓予定のグループ">');
+    expect(html).toContain('<meta property="og:title" content="Yokiのグループ">');
     expect(html).toContain('<meta property="og:url" content="https://yoki.test/g/p9/">');
     expect(html).toContain('<meta property="og:image" content="https://yoki.test/og.png">');
     // 骨組みにあったOGPのタグは、置き換えて1つずつにする
@@ -68,7 +68,7 @@ describe('グループのページ（/g/:id/）', () => {
     const sid = await loginAs({ id: '20', name: 'レン' }, [{ id: 'gq', name: 'Q' }]);
     const res = await call('/g/p2/', { sid });
     expect(res.status).toBe(200);
-    expect(await res.text()).toContain('<title>卓予定</title>');
+    expect(await res.text()).toContain('<title>Yoki</title>');
     expect(await member('p2', '20')).toEqual({ name: 'レン', is_admin: 0, discord_id: '20' });
   });
 
@@ -141,7 +141,7 @@ describe('グループの管理画面（/g/:id/admin/）', () => {
     const { admin, sora } = await setupGroup();
     const ok = await call('/g/grp/admin/', { sid: admin });
     expect(ok.status).toBe(200);
-    expect(await ok.text()).toContain('<title>卓予定</title>');
+    expect(await ok.text()).toContain('<title>Yoki</title>');
     const ng = await call('/g/grp/admin/', { sid: sora });
     expect(ng.status).toBe(403);
     expect(await ng.text()).toContain('href="/g/grp/"');

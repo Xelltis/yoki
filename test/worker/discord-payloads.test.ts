@@ -68,9 +68,9 @@ describe('メンションと案内の行', () => {
     expect(mentionsOf(ctxOf(), [session({ gm: 'こまち', members: ['ゲスト'] })])).toBe('');
   });
 
-  test('募集と調整の卓にだけ、卓予定への案内を添える（URLが無ければ添えない）', () => {
-    expect(recruitLink(ctxOf(), session({ status: '募集' }))).toBe('\n🔗 参加希望は卓予定の「募集・調整」タブから: ' + URL_);
-    expect(recruitLink(ctxOf(), session({ status: '調整中' }))).toBe('\n🔗 日程調整は卓予定の「募集・調整」タブから: ' + URL_);
+  test('募集と調整の卓にだけ、Yokiへの案内を添える（URLが無ければ添えない）', () => {
+    expect(recruitLink(ctxOf(), session({ status: '募集' }))).toBe('\n🔗 参加希望はYokiの「募集・調整」タブから: ' + URL_);
+    expect(recruitLink(ctxOf(), session({ status: '調整中' }))).toBe('\n🔗 日程調整はYokiの「募集・調整」タブから: ' + URL_);
     expect(recruitLink(ctxOf(), session({ status: '開催' }))).toBe('');
     expect(recruitLink(ctxOf({ appUrl: '' }), session({ status: '募集' }))).toBe('');
   });
@@ -87,7 +87,7 @@ describe('登録・変更・削除と案内', () => {
 
   test('登録で呼べる人がいなければ、メンションの行を足さない。変えた人が分からなければ名前を付けない', () => {
     const s = session({ gm: 'こまち', status: '調整中' });
-    expect(changePayload(ctxOf(), s, '登録', '').content).toBe('🆕 卓の予定が登録されました\n🔗 日程調整は卓予定の「募集・調整」タブから: ' + URL_);
+    expect(changePayload(ctxOf(), s, '登録', '').content).toBe('🆕 卓の予定が登録されました\n🔗 日程調整はYokiの「募集・調整」タブから: ' + URL_);
   });
 
   test('案内は、送った人とメンションがあれば添える', () => {
@@ -103,7 +103,7 @@ describe('参加確認', () => {
     const p = askPayload(ctxOf(), s, 'ひより', '  ');
     expect(p.content).toBe(
       '❓ 「港」（10/12（月）〜10/17（土）に開催予定）に参加できそうですか？ <@400000000000000011> こまちさん ゲストさん\n' +
-      '参加希望であれば、卓予定の「募集・調整」タブで「参加希望」を押してください。　by ひより\n' + URL_,
+      '参加希望であれば、Yokiの「募集・調整」タブで「参加希望」を押してください。　by ひより\n' + URL_,
     );
     expect(p.embeds).toHaveLength(1);
   });
@@ -111,7 +111,7 @@ describe('参加確認', () => {
   test('一言は 💬 の行に。送った人が分からなければ名前を付けない。URLが無ければ書かない', () => {
     const s = session({ status: '募集', interest: ['ソラ'] });
     expect(askPayload(ctxOf({ appUrl: '' }), s, '', 'ボイスあり').content).toBe(
-      '❓ 「港」（時期未定）に参加できそうですか？ <@400000000000000011>\n💬 ボイスあり\n参加希望であれば、卓予定の「募集・調整」タブで「参加希望」を押してください。',
+      '❓ 「港」（時期未定）に参加できそうですか？ <@400000000000000011>\n💬 ボイスあり\n参加希望であれば、Yokiの「募集・調整」タブで「参加希望」を押してください。',
     );
   });
 });
@@ -123,7 +123,7 @@ describe('日程調整の知らせ', () => {
     expect(p.content).toBe(
       '🗓️ 「港」の日程を決めます。<@400000000000000010> <@400000000000000011> こまちさん\n' +
       '候補日: 10/12（月）、10/13（火）　20:00〜23:00\n' +
-      '卓予定の「募集・調整」タブで、候補日ごとに ◯ か × を押してください。全員の回答がそろったら、GMが開催日を選びます。　by ひより\n' + URL_,
+      'Yokiの「募集・調整」タブで、候補日ごとに ◯ か × を押してください。全員の回答がそろったら、GMが開催日を選びます。　by ひより\n' + URL_,
     );
     expect(p.embeds![0]!.title).toBe('港（調整中）');
   });
@@ -131,7 +131,7 @@ describe('日程調整の知らせ', () => {
   test('時間が未定なら時間を書かない。送った人とURLが無ければ添えない', () => {
     const s = session({ status: '調整中', gm: 'こまち', candidates: ['2026-10-12'] });
     expect(pollPayload(ctxOf({ appUrl: '' }), s, '').content).toBe(
-      '🗓️ 「港」の日程を決めます。こまちさん\n候補日: 10/12（月）\n卓予定の「募集・調整」タブで、候補日ごとに ◯ か × を押してください。全員の回答がそろったら、GMが開催日を選びます。',
+      '🗓️ 「港」の日程を決めます。こまちさん\n候補日: 10/12（月）\nYokiの「募集・調整」タブで、候補日ごとに ◯ か × を押してください。全員の回答がそろったら、GMが開催日を選びます。',
     );
   });
 
@@ -141,14 +141,14 @@ describe('日程調整の知らせ', () => {
     expect(pollReadyPayload(ctxOf({ votes }), s).content).toBe(
       '📝 「港」の日程調整の回答がそろいました。<@400000000000000010>\n' +
       '・10/12（月）　◯ 2/2（全員 ◯）\n・10/13（火）　◯ 1/2\n' +
-      '卓予定の「募集・調整」タブで、開催日を選んでください。\n' + URL_,
+      'Yokiの「募集・調整」タブで、開催日を選んでください。\n' + URL_,
     );
   });
 
   test('GMにDiscord IDが無ければ名前で、GMがいなければ呼ばない。回答が無ければ ◯ は0。Discordの無い人とゲストは数えない', () => {
     const s = session({ status: '調整中', gm: 'こまち', members: ['ソラ', 'ゲスト'], candidates: ['2026-10-12'] });
     expect(pollReadyPayload(ctxOf({ appUrl: '' }), s).content).toBe(
-      '📝 「港」の日程調整の回答がそろいました。こまちさん\n・10/12（月）　◯ 0/1\n卓予定の「募集・調整」タブで、開催日を選んでください。',
+      '📝 「港」の日程調整の回答がそろいました。こまちさん\n・10/12（月）　◯ 0/1\nYokiの「募集・調整」タブで、開催日を選んでください。',
     );
     const noGm = session({ status: '調整中', members: ['ソラ'], candidates: ['2026-10-12'] });
     expect(pollReadyPayload(ctxOf(), noGm).content.split('\n')[0]).toBe('📝 「港」の日程調整の回答がそろいました。');
@@ -158,7 +158,7 @@ describe('日程調整の知らせ', () => {
     const s = session({ gm: 'こまち', date: '2026-10-17', start: '20:00', end: '23:00' });
     expect(decidedPayload(ctxOf({ appUrl: '' }), s).content).toBe('✅ 「港」の日程が決まりました: 10/17（土） 20:00〜23:00');
     expect(decidedPayload(ctxOf(), session({ gm: 'ソラ', date: '2026-10-17' })).content).toBe(
-      '✅ 「港」の日程が決まりました: 10/17（土） 時間未定\n<@400000000000000011>\n🔗 卓予定: ' + URL_,
+      '✅ 「港」の日程が決まりました: 10/17（土） 時間未定\n<@400000000000000011>\n🔗 Yoki: ' + URL_,
     );
   });
 });
@@ -170,7 +170,7 @@ describe('まとめての変更と接続テスト', () => {
   });
 
   test('接続テストは、送り先が分かればそれも書く', () => {
-    expect(testPayload('テストの卓').content).toBe('✅ 卓予定管理から接続テスト（テストの卓）');
-    expect(testPayload('テストの卓', '募集のチャンネル').content).toBe('✅ 卓予定管理から接続テスト（テストの卓 / 募集のチャンネル）');
+    expect(testPayload('テストの卓').content).toBe('✅ Yokiから接続テスト（テストの卓）');
+    expect(testPayload('テストの卓', '募集のチャンネル').content).toBe('✅ Yokiから接続テスト（テストの卓 / 募集のチャンネル）');
   });
 });

@@ -41,7 +41,7 @@ const FEATURES: [IconName, string, string, string][] = [
 
 export function Home() {
   const me = useQuery({ queryKey: ME_KEY, queryFn: fetchMe });
-  useEffect(() => { document.title = '卓予定'; }, []);
+  useEffect(() => { document.title = 'Yoki'; }, []);
   const q = new URLSearchParams(location.search);
   const say = NOTICE[q.get('login') || ''] || (q.get('deleted') === '1' ? NOTICE.deleted : null);
   return (
@@ -49,7 +49,7 @@ export function Home() {
       <header className="flex items-center justify-between gap-12 bg-chrome px-24 py-12 text-chrome-text max-sm:px-14 max-sm:py-10">
         <div className="flex items-center gap-10 text-18 font-bold tracking-[.02em]">
           <img className="block h-36 w-36 rounded-[10px] ring-2 ring-white/90" src="/icon-192.png" alt="" width={36} height={36} />
-          卓予定
+          Yoki
         </div>
         {me.data?.loggedIn && <Who me={me.data} />}
       </header>

@@ -179,7 +179,7 @@ export function NotifyPane() {
   );
 }
 
-/** 卓予定のBot。サーバーにいるかと、招く・読み直す */
+/** YokiのBot。サーバーにいるかと、招く・読み直す */
 function BotCard() {
   const d = useData();
   const { sync } = useConsole();
@@ -189,8 +189,8 @@ function BotCard() {
   const state = botStateText(d, ch);
   return (
     <div className={foldInner(true)} id="botCard">
-      <h3>卓予定のBot</h3>
-      <p className="hint">知らせは、卓予定のBotがチャンネルに書き込みます。はじめに、このグループのDiscordサーバーにBotを招きます（サーバーの管理の権限が要ります）。</p>
+      <h3>YokiのBot</h3>
+      <p className="hint">知らせは、YokiのBotがチャンネルに書き込みます。はじめに、このグループのDiscordサーバーにBotを招きます（サーバーの管理の権限が要ります）。</p>
       <p className={'hint' + (state.bad ? ' text-err-text' : '')} id="botState">{state.text}</p>
       <div className="btns">
         <a className="btn primary" id="botInvite" href={d.bot.inviteUrl || '#'} target="_blank" rel="noopener" hidden={!d.bot.inviteUrl}><Icon name="add" size="sm" />Botをサーバーに招く</a>

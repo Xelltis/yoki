@@ -1,6 +1,6 @@
-# Yoki（卓予定）
+# Yoki
 
-TRPGの卓の予定を、Discordサーバーの仲間と管理するWebアプリ。卓の登録、メンバーの予定（△×）、募集、日程調整を画面で行い、知らせは卓予定のBotがDiscordのチャンネルに送る。卓はカレンダーのアプリにも出せる（購読URL・Googleカレンダーとの連携）。
+TRPGの卓の予定を、Discordサーバーの仲間と管理するWebアプリ。卓の登録、メンバーの予定（△×）、募集、日程調整を画面で行い、知らせはYokiのBotがDiscordのチャンネルに送る。卓はカレンダーのアプリにも出せる（購読URL・Googleカレンダーとの連携）。
 
 サーバーはCloudflare Workers、データはD1（SQLite）、ログインはDiscord。
 
@@ -113,7 +113,7 @@ miniflareが固定している `sharp`（画像の部品）は、npm auditに指
 
 | しかた | 向いている人 | 公開する仕組み |
 |---|---|---|
-| 「Deploy to Cloudflare」のボタン（おすすめ） | 卓予定を自分のCloudflareに立てたい人 | Cloudflareの組み立て（Workers Builds） |
+| 「Deploy to Cloudflare」のボタン（おすすめ） | Yokiを自分のCloudflareに立てたい人 | Cloudflareの組み立て（Workers Builds） |
 | GitHub Actions | 元のリポジトリ（Xelltis/yoki）と、コードに手を入れながら使う人 | `.github/workflows/deploy.yml` |
 
 どちらでも、手元から `wrangler deploy` はしない。公開するCloudflareごとに違う値（D1のID・Discordアプリの値・運営者のIDなど）は、リポジトリに置かない。
@@ -155,9 +155,9 @@ Cloudflareだけなら `https://yoki.<アカウントのサブドメイン>.work
 
 OAuth2: Redirectsに `https://<公開するアドレス>/auth/callback` と `http://localhost:5173/auth/callback` を足す。Client IDとClient Secretを控える。
 
-Bot: 「Reset Token」でトークンを作って控える。「Public Bot」はON（グループの管理者が、卓予定の画面から自分のサーバーに招く）。Privileged Gateway Intentsは全部OFFのまま（Gatewayには繋がない）。
+Bot: 「Reset Token」でトークンを作って控える。「Public Bot」はON（グループの管理者が、Yokiの画面から自分のサーバーに招く）。Privileged Gateway Intentsは全部OFFのまま（Gatewayには繋がない）。
 
-Installation: Install Linkは「None」（Botを招くURLは卓予定が作る。求める権限は「チャンネルを見る」「メッセージを送信」「埋め込みリンク」）。
+Installation: Install Linkは「None」（Botを招くURLはYokiが作る。求める権限は「チャンネルを見る」「メッセージを送信」「埋め込みリンク」）。
 
 #### 3. CloudflareでD1とAPIトークンを作る
 
@@ -200,7 +200,7 @@ mainにアプリの変更（`src/`・`migrations/`・設定）をpushすると�
 
 #### 6. 利用規約とプライバシーポリシーを整える
 
-公開したアドレスの `/terms` と `/privacy` に出る。運営の管理画面（`/admin/`）の「規約」で、運営者の名前と問い合わせ先を入れ、本文を確かめる。既定の文は、このリポジトリのままの卓予定に合わせてある。前にCDNを置くなど、公開のしかたが違えば直す。Discordの開発者ポータルの「General Information」のTerms of Service URLとPrivacy Policy URLにも、この2つのアドレスを入れる。
+公開したアドレスの `/terms` と `/privacy` に出る。運営の管理画面（`/admin/`）の「規約」で、運営者の名前と問い合わせ先を入れ、本文を確かめる。既定の文は、このリポジトリのままのYokiに合わせてある。前にCDNを置くなど、公開のしかたが違えば直す。Discordの開発者ポータルの「General Information」のTerms of Service URLとPrivacy Policy URLにも、この2つのアドレスを入れる。
 
 ### Googleでのログインと、Googleカレンダーとの連携（任意）
 
@@ -218,7 +218,7 @@ Googleでのログインと、Googleカレンダーとの連携は、同じOAuth
 
 #### 2. OAuth同意画面を作る
 
-アプリ名・サポートのメール・アプリのホームページ（公開するアドレス）・プライバシーポリシー（`<公開するアドレス>/privacy`）・利用規約（`/terms`）を入れる。スコープは `openid`・`email`・`https://www.googleapis.com/auth/calendar.events.owned`（本人が持つカレンダーの予定だけ。卓予定はメインのカレンダーしか触らないので、共有されたカレンダーにも届く `calendar.events` は求めない）。
+アプリ名・サポートのメール・アプリのホームページ（公開するアドレス）・プライバシーポリシー（`<公開するアドレス>/privacy`）・利用規約（`/terms`）を入れる。スコープは `openid`・`email`・`https://www.googleapis.com/auth/calendar.events.owned`（本人が持つカレンダーの予定だけ。Yokiはメインのカレンダーしか触らないので、共有されたカレンダーにも届く `calendar.events` は求めない）。
 
 #### 3. OAuthクライアントIDを作る
 
@@ -244,11 +244,11 @@ Googleでログインした人がグループに入れるかは、Discordのサ�
 
 ### 新しい版に上げる（更新）
 
-元のリポジトリ（[Xelltis/yoki](https://github.com/Xelltis/yoki)）は、版（`v1.4.0` など）をGitHubのReleaseとして出す（下の「版を出す」）。設置した卓予定は、運営の管理画面の「更新」で新しい版と変わったことを見て、ボタンかGitHubの画面で取り込む。コードを触らずに追いつける。設置する人向けの手順は、サイトの「[新しい版に上げる](https://xelltis.github.io/yoki/setup/update)」。
+元のリポジトリ（[Xelltis/yoki](https://github.com/Xelltis/yoki)）は、版（`v1.4.0` など）をGitHubのReleaseとして出す（下の「版を出す」）。設置したYokiは、運営の管理画面の「更新」で新しい版と変わったことを見て、ボタンかGitHubの画面で取り込む。コードを触らずに追いつける。設置する人向けの手順は、サイトの「[新しい版に上げる](https://xelltis.github.io/yoki/setup/update)」。
 
 **新しい版を知る**: 運営の管理画面の「様子」のいちばん上と、「更新」の区分に出る。元のリポジトリのReleaseを、1時間に1回まで読む（トークンは要らない）。表（D1）の変更を含む版は、そう出る。トークンなしで読むので、元のリポジトリが非公開だと読めず、その理由が出る。
 
-**更新する**: 「更新」の区分のボタンか、GitHubのActionsの「卓予定を更新する」（`.github/workflows/update.yml`）の「Run workflow」。ワークフローは、設置した人のリポジトリの作り方で、取り込み方を変える。
+**更新する**: 「更新」の区分のボタンか、GitHubのActionsの「Yokiを更新する」（`.github/workflows/update.yml`）の「Run workflow」。ワークフローは、設置した人のリポジトリの作り方で、取り込み方を変える。
 
 | リポジトリ | 見分け方 | 取り込み方 | 公開 |
 |---|---|---|---|
@@ -357,11 +357,11 @@ Cloudflareは無料のプランで動く。グループが増えて、知らせ�
 
 前の版のタグから後のコミット（Conventional Commits）を見て、`feat` は小さい版（1.1.0 → 1.2.0）、`fix`・`perf`・`revert` はいちばん小さい版（1.1.0 → 1.1.1）、`!` 付き（互換を壊す変更）は大きい版（2.0.0）を上げる。`docs`・`ci` などだけなら、版は出さない。
 
-版を出すときは、`package.json` と `package-lock.json` の `version` を新しい版にしてコミットし（`chore(release): vX.Y.Z [skip ci]`）、mainにpushする（`tools/release/commit-version.mjs`）。そのコミットにタグ `vX.Y.Z` が付き、GitHubのRelease（変わったことの一覧。`feat`・`fix`・`perf`・`revert` だけ）ができる。各地の卓予定の「更新」に、変わったこととして出る。最後に `release` のブランチをそのコミットに合わせる（ボタンが指す先）。mainに保護（PRを必須にするなど）を付けると、このpushが止まるので付けない。
+版を出すときは、`package.json` と `package-lock.json` の `version` を新しい版にしてコミットし（`chore(release): vX.Y.Z [skip ci]`）、mainにpushする（`tools/release/commit-version.mjs`）。そのコミットにタグ `vX.Y.Z` が付き、GitHubのRelease（変わったことの一覧。`feat`・`fix`・`perf`・`revert` だけ）ができる。各地のYokiの「更新」に、変わったこととして出る。最後に `release` のブランチをそのコミットに合わせる（ボタンが指す先）。mainに保護（PRを必須にするなど）を付けると、このpushが止まるので付けない。
 
 アプリに入れる版は、`package.json` の `version` から読む（`vite.config.ts`）。ボタンで作ったリポジトリには、元の履歴とタグが無いため。`version` は手で書き換えない。公開のワークフローは、版を出したあとのmainを取って組み立てる。変わったことの一覧は、ファイルに書かずGitHubのReleasesに置く。
 
-コミットのtypeが版の上げ方を決めるので、typeを正しく付ける。各地の卓予定は、版を飛ばして上げることがある。表の変更（`migrations/`）は、前の版から順に当たれば動くように書く。
+コミットのtypeが版の上げ方を決めるので、typeを正しく付ける。各地のYokiは、版を飛ばして上げることがある。表の変更（`migrations/`）は、前の版から順に当たれば動くように書く。
 
 `semantic-release` と、見出しを日本語にする `conventional-changelog-conventionalcommits` は開発用の依存に入れる。手元で `GITHUB_TOKEN=$(gh auth token) npx semantic-release --dry-run --no-ci` とすると、次の版と変わったことの一覧を、何も作らずに確かめられる。`conventional-changelog-conventionalcommits` は、semantic-releaseが使う書き出しの部品と同じ世代（今は9）にそろえる（10はsemantic-release 25では動かない）。
 

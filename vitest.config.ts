@@ -39,7 +39,7 @@ export default defineConfig(async (): Promise<ViteUserConfig> => {
                 // 画面の静的ファイルの代わり（テストでは組み立てない）。画面の骨組み（1つのSPA）だけ返す
                 serviceBindings: {
                   ASSETS: (request: Request) => new URL(request.url).pathname === '/'
-                    ? new Response('<!doctype html><html><head><title>卓予定</title><meta name="description" content="x"><meta property="og:title" content="卓予定">'
+                    ? new Response('<!doctype html><html><head><title>Yoki</title><meta name="description" content="x"><meta property="og:title" content="Yoki">'
                       + '<meta property="og:image" content="/og.png"><meta name="twitter:card" content="summary_large_image"></head><body><div id="root"></div></body></html>', { headers: { 'Content-Type': 'text/html' } })
                     : new Response('not found', { status: 404 }),
                 },

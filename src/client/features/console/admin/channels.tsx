@@ -45,7 +45,7 @@ export function canPick(s: ChannelState): boolean { return !!(s.list && s.list.i
 /** Botの様子の文。読めないときや、Botがサーバーにいないときはbad */
 export function botStateText(d: ConsoleData, s: ChannelState): { text: string; bad: boolean } {
   const { list, loading, failed } = s;
-  const text = !d.bot.ready ? '卓予定を公開している運営者が、Botをまだ設定していません。Discordへの知らせは送れません。'
+  const text = !d.bot.ready ? 'このYokiの運営者が、Botをまだ設定していません。Discordへの知らせは送れません。'
     : loading ? 'Botとチャンネルの一覧を読んでいます…'
       : failed ? 'チャンネルの一覧を読めませんでした: ' + failed
         : !list ? '「読み直す」を押すと、Botがサーバーにいるかと、チャンネルの一覧を確かめます。'

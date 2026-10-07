@@ -76,7 +76,7 @@ function apiShape(): string {
 }
 
 /**
- * 卓予定の版。package.jsonのversionから読む（元のリポジトリでは、semantic-releaseが版を出すときに書き換えてコミットする。
+ * Yokiの版。package.jsonのversionから読む（元のリポジトリでは、semantic-releaseが版を出すときに書き換えてコミットする。
  * tools/release/commit-version.mjs）。Gitのタグには頼らない（ボタンで設置したリポジトリには、元の履歴とタグが無いため）。
  * Workerに __APP_VERSION__ として入れ、運営の管理画面の「更新」で新しい版と比べる
  */

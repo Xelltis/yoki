@@ -66,8 +66,8 @@ describe('載せる卓と中身', () => {
 
   test('説明にGM・参加者・メモ・グループの画面のURL。いなければ行ごと書かない', () => {
     const ctx = { appUrl: 'https://yoki.test/g/grp/', group: { title: 'テストの卓' } as any };
-    expect(calendarItem(ctx, s({ memo: '持ち物: ダイス' })).description).toBe('GM: ひより\n参加: ソラ\n\n持ち物: ダイス\n\nテストの卓（卓予定）: https://yoki.test/g/grp/');
-    expect(calendarItem(ctx, s({ gm: '', members: [] })).description).toBe('テストの卓（卓予定）: https://yoki.test/g/grp/');
+    expect(calendarItem(ctx, s({ memo: '持ち物: ダイス' })).description).toBe('GM: ひより\n参加: ソラ\n\n持ち物: ダイス\n\nテストの卓（Yoki）: https://yoki.test/g/grp/');
+    expect(calendarItem(ctx, s({ gm: '', members: [] })).description).toBe('テストの卓（Yoki）: https://yoki.test/g/grp/');
   });
 });
 
@@ -109,7 +109,7 @@ describe('購読URL', () => {
     expect(all.message).toBe('購読URLに載せる卓を「グループの卓すべて」にしました。');
     expect(feedUrl(all)).toBe(first);
     const text = await (await fetchFeed(first)).text();
-    expect(text).toContain('X-WR-CALNAME:テストの卓（卓予定）');
+    expect(text).toContain('X-WR-CALNAME:テストの卓（Yoki）');
     expect(text).toContain('SUMMARY:こまちの卓');
     const renewed = await ok(G.sora, G.id, 'saveCalendarFeed', { scope: 'all', renew: true });
     expect(renewed.message).toContain('作り直しました');

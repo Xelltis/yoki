@@ -116,7 +116,7 @@ export type AdminLegal = { operator: string; contact: string; terms: LegalDoc; p
 export type AdminUpdateRun = { id: number; status: string; conclusion: string; createdAt: string; url: string };
 
 /**
- * 卓予定の版と更新（GET /api/admin/update。?refresh=1ならGitHubを読み直す）。POSTは最新の版への更新を始める（本文は要らない）。
+ * Yokiの版と更新（GET /api/admin/update。?refresh=1ならGitHubを読み直す）。POSTは最新の版への更新を始める（本文は要らない）。
  * 新しい版は、元のリポジトリのGitHubのReleaseから読む（1時間に1回まで）
  */
 export type AdminUpdate = {

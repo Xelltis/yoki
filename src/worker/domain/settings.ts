@@ -36,7 +36,7 @@ const KIND = { remind: { col: 'remind_channel_id', label: '開催前の知らせ
  */
 async function checkChannel(ctx: Ctx, channelId: string): Promise<string> {
   if (!isChannelId(channelId)) throw badRequest('チャンネルのIDが正しくありません。');
-  if (!ctx.bot.token) throw badRequest('卓予定のBotが設定されていないので、チャンネルを確かめられません。運営者に知らせてください。');
+  if (!ctx.bot.token) throw badRequest('YokiのBotが設定されていないので、チャンネルを確かめられません。運営者に知らせてください。');
   const ch = await getChannel(ctx.bot.token, channelId);
   if (!ch) throw badRequest('Botがそのチャンネルを見られません。サーバーにBotを招き、チャンネルの権限を確かめてください。');
   if (ch.guildId !== ctx.group.guild_id) throw badRequest('このグループのDiscordサーバーのチャンネルではありません。');

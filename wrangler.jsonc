@@ -1,4 +1,4 @@
-// 卓予定（Yoki）のWorkerの設定。npm run devとnpm run build（Vite）がこれを読む。
+// YokiのWorkerの設定。npm run devとnpm run build（Vite）がこれを読む。
 // 公開するCloudflareごとに違う値は、ここに書かない。
 //   D1のID: 「Deploy to Cloudflare」のボタンで設置すると、Cloudflareが作ったD1のIDを、設置した人のリポジトリのこのファイルに書き込む。
 //           GitHub Actions（.github/workflows/deploy.yml）で公開するときは、組み立てた設定にYOKI_D1_DATABASE_IDから入れる（vite.config.ts）

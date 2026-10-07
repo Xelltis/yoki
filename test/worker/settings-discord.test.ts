@@ -89,11 +89,11 @@ describe('sendDiscordStep', () => {
     return posts;
   }
 
-  test('接続テストは基本のチャンネルへ、卓予定のBotで送る。送信記録に残る', async () => {
+  test('接続テストは基本のチャンネルへ、YokiのBotで送る。送信記録に残る', async () => {
     const posts = await withChannels();
     const r = await ok(G.sora, G.id, 'sendDiscordStep', { kind: 'test', attempt: 1 });
     expect(r).toMatchObject({ ok: true, code: 200, to: 0, targetCount: 1, targetLabel: '基本のチャンネル' });
-    expect(posts[0]).toEqual({ channel: CH(1), auth: 'Bot test-bot-token', content: '✅ 卓予定管理から接続テスト（テストの卓）', mentions: { parse: ['users'] } });
+    expect(posts[0]).toEqual({ channel: CH(1), auth: 'Bot test-bot-token', content: '✅ Yokiから接続テスト（テストの卓）', mentions: { parse: ['users'] } });
     const d = await ok(G.sora, G.id, 'getConsoleData');
     expect(d.log[0]).toMatchObject({ kind: '接続テスト', target: '-', result: 'OK (200)' });
   });
@@ -117,7 +117,7 @@ describe('sendDiscordStep', () => {
     expect(posts[0]!.content).toBe('🆕 卓の予定が登録されました（ひより）\n<@400000000000000010> <@400000000000000011>');
     await ok(G.admin, G.id, 'sendDiscordStep', { kind: 'change', verb: '登録', id: 'S002' });
     expect(posts[1]!.channel).toBe(CH(2));
-    expect(posts[1]!.content).toContain('🔗 参加希望は卓予定の「募集・調整」タブから: https://yoki.test/g/grp/');
+    expect(posts[1]!.content).toContain('🔗 参加希望はYokiの「募集・調整」タブから: https://yoki.test/g/grp/');
   });
 
   test('参加確認を送ると、卓に「確認文を送りました」の日時が付く', async () => {

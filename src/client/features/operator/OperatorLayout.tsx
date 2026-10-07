@@ -23,7 +23,7 @@ export function OperatorLayout() {
   const pane = OPERATOR_PANES.find((p) => pathname === '/admin/' + p + '/');
   useEffect(() => {
     document.body.setAttribute('data-area', 'operator');
-    document.title = '運営の管理画面 - 卓予定';
+    document.title = '運営の管理画面 - Yoki';
     // 開いたら、どの区分のデータも先に読んでおく（区分を移ってもすぐ出る）
     Object.values(ADMIN_READS).forEach((r) => { void qc.prefetchQuery(adminQuery(r.queryKey, r.path)); });
     return () => document.body.removeAttribute('data-area');
@@ -35,7 +35,7 @@ export function OperatorLayout() {
   return (
     <>
       <header className={appbar}>
-        <Link className={brand} to="/" title="入口へ"><img className={logo} src="/icon-192.png" alt="" width="32" height="32" /><span>卓予定</span><span className={areaBadge + ' inline-block'}>運営</span></Link>
+        <Link className={brand} to="/" title="入口へ"><img className={logo} src="/icon-192.png" alt="" width="32" height="32" /><span>Yoki</span><span className={areaBadge + ' inline-block'}>運営</span></Link>
         <div className={actions}>
           <Link className={hbtn()} to="/" title="入口（グループの一覧）へ"><Icon name="arrow_back" size="sm" className={hbtnIcon} /><span className={btxt}>入口へ</span></Link>
           <button type="button" id="reload" className={hbtn() + ' max-sm:w-(--h-control) max-sm:p-0'} title="読み直す" onClick={reload}><Icon name="refresh" size="sm" className={hbtnIcon} /><span className={btxt}>更新</span></button>

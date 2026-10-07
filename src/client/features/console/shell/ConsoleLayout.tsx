@@ -59,7 +59,7 @@ function ConsoleShell() {
     if (area === 'main' && tab !== 'settings') store(lastTabKey(groupId), tab);
   }, [area, tab, groupId]);
   useEffect(() => () => { document.body.removeAttribute('data-area'); document.body.removeAttribute('data-tab'); }, []);
-  useEffect(() => { if (d) document.title = d.title + ' - 卓予定'; }, [d]);
+  useEffect(() => { if (d) document.title = d.title + ' - Yoki'; }, [d]);
   useEffect(() => {
     const hook: YokiHook = {
       get D() { return sync.data(); },

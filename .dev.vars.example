@@ -8,7 +8,7 @@ DISCORD_BOT_TOKEN=
 # 運営者（/admin/）のDiscordユーザーID。カンマで区切って何人でも書ける。手元の開発用ログインでは、空でもひよりが運営者になる
 OPERATOR_IDS=
 
-# ここから下は任意。ボタンで聞かれないように、コメントにしてある（使うときは # を外す。公開した卓予定では、Workerのsecretに足す）
+# ここから下は任意。ボタンで聞かれないように、コメントにしてある（使うときは # を外す。設置したYokiでは、Workerのsecretに足す）
 # 公開のアドレス。CDN（CloudFrontなど）を前に置くときだけ要る。無ければ、届いた要求のアドレスを使う
 # APP_URL=
 # Googleでのログインと、Googleカレンダーとの連携（Google CloudのOAuthクライアント）。3つとも空なら、手元では開発用の偽のGoogle（/dev/google/*）で試せる。

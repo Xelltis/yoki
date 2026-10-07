@@ -33,14 +33,14 @@ async function previewShell(c: Context<AppEnv>, page: Omit<OgPage, 'url'>) {
   return c.html(withOg(html, origin, { ...page, url: origin + c.req.path }));
 }
 
-/** ログインしに行く（Discordの設定が無い手元では入口へ）。戻り先は開こうとした道。リンクの中身を読みに来たものには、卓予定の見た目を返す */
+/** ログインしに行く（Discordの設定が無い手元では入口へ）。戻り先は開こうとした道。リンクの中身を読みに来たものには、Yokiの見た目を返す */
 const toLogin = (c: Context<AppEnv>, preview: Omit<OgPage, 'url'>) => {
   if (isPreviewBot(c.req.header('User-Agent'))) return previewShell(c, preview);
   const path = c.req.path;
   return c.redirect(c.env.DISCORD_CLIENT_ID ? '/auth/login?return_to=' + encodeURIComponent(path) : '/?return_to=' + encodeURIComponent(path));
 };
 /** グループの画面のリンクの見た目。グループの名前は出さない（ログインしていない人には、グループのことを見せない） */
-const GROUP_PREVIEW = { title: '卓予定のグループ', description: 'Discordでログインすると、このグループの卓の予定・メンバーの都合・募集・日程調整を見られます。' };
+const GROUP_PREVIEW = { title: 'Yokiのグループ', description: 'Discordでログインすると、このグループの卓の予定・メンバーの都合・募集・日程調整を見られます。' };
 /** 末尾の / が無い道は、付けた道へ移す */
 const withSlash = (c: Context<AppEnv>) => c.redirect(c.req.path + '/', 301);
 
@@ -66,9 +66,9 @@ async function groupPage(c: Context<AppEnv>, admin: boolean) {
 
 async function operatorPage(c: Context<AppEnv>) {
   const viewer = await currentViewer(c);
-  if (!viewer) return toLogin(c, { title: '卓予定', description: SITE_DESCRIPTION });
+  if (!viewer) return toLogin(c, { title: 'Yoki', description: SITE_DESCRIPTION });
   if (!isOperator(c.env, viewer.id, new URL(c.req.url))) {
-    return c.html(noticePage('運営者だけが開けます', 'この画面は、卓予定を公開している運営者だけが使えます。', { href: '/', label: '入口へ' }), 403);
+    return c.html(noticePage('運営者だけが開けます', 'この画面は、このYokiを設置した運営者だけが使えます。', { href: '/', label: '入口へ' }), 403);
   }
   const res = await shell(c);
   const out = new Response(res.body, res);
@@ -83,7 +83,7 @@ const PANE = oneOf('pane', ADMIN_PANES);
 const OP_PANE = oneOf('pane', OPERATOR_PANES);
 
 // 入口。画面の骨組みのOGPのタグはアドレスを持たない（組み立てのときには、公開のアドレスが分からない）ので、ここで入れて返す
-pageRoutes.get('/', (c) => previewShell(c, { title: '卓予定', description: SITE_DESCRIPTION }));
+pageRoutes.get('/', (c) => previewShell(c, { title: 'Yoki', description: SITE_DESCRIPTION }));
 for (const p of ['/g/:id', `/g/:id/${TAB}`, '/g/:id/admin', `/g/:id/admin/${PANE}`, '/admin', `/admin/${OP_PANE}`]) pageRoutes.get(p, withSlash);
 for (const p of ['/g/:id/', `/g/:id/${TAB}/`]) pageRoutes.get(p, (c) => groupPage(c, false));
 for (const p of ['/g/:id/admin/', `/g/:id/admin/${PANE}/`]) pageRoutes.get(p, (c) => groupPage(c, true));

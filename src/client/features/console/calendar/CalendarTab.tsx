@@ -1,4 +1,4 @@
-// カレンダーのタブ: 左にカレンダー、右に選んだ日の内訳と卓予定。上に、はじめの3ステップ
+// カレンダーのタブ: 左にカレンダー、右に選んだ日の内訳と卓の予定。上に、はじめの3ステップ
 import { store, reducedMotion } from '../../../app/storage';
 import { Icon } from '../../../ui/Icon';
 import type { IconName } from '../../../ui/icons';

@@ -58,7 +58,7 @@ test('favicon.icoは16・32・48pxのPNGを持つ', () => {
 
 test('manifestのアイコンがあり、大きさが合う。maskableも1つある', () => {
   const m = JSON.parse(read(PUBLIC + '/manifest.webmanifest'));
-  expect(m).toMatchObject({ name: '卓予定', start_url: '/', display: 'browser' });
+  expect(m).toMatchObject({ name: 'Yoki', start_url: '/', display: 'browser' });
   for (const icon of m.icons) {
     const [w, h] = pngSize(fs.readFileSync(path.join(root, PUBLIC, icon.src)));
     expect(icon.sizes, icon.src).toBe(w + 'x' + h);

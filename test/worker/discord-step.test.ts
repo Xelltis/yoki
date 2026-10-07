@@ -48,14 +48,14 @@ const send = (sid: string, form: Record<string, unknown>) => ok(sid, G.id, 'send
 const refuse = async (form: Record<string, unknown>) => (await fail(G.admin, G.id, 'sendDiscordStep', form)).error;
 
 describe('接続テスト', () => {
-  test('基本のチャンネルへ、卓予定のBotで送る。メンションは人だけにする', async () => {
+  test('基本のチャンネルへ、YokiのBotで送る。メンションは人だけにする', async () => {
     const r = await send(G.sora, { kind: 'test', attempt: 1 });
     expect(r).toMatchObject({ ok: true, code: 200, result: 'OK (200)', to: 0, targetCount: 1, targetLabel: '基本のチャンネル' });
     expect(bot.calls.at(-1)).toEqual({
       method: 'POST',
       url: 'https://discord.com/api/v10/channels/' + CH(1) + '/messages',
       auth: 'Bot test-bot-token',
-      body: { content: '✅ 卓予定管理から接続テスト（テストの卓）', allowed_mentions: { parse: ['users'] } },
+      body: { content: '✅ Yokiから接続テスト（テストの卓）', allowed_mentions: { parse: ['users'] } },
     });
     expect(await lastLog()).toEqual({ kind: '接続テスト', target: '-', result: 'OK (200)' });
   });
@@ -65,7 +65,7 @@ describe('接続テスト', () => {
     await ok(G.admin, G.id, 'saveSeriesNotify', { series: '迷宮', days: '2' });
     const r = await send(G.sora, { kind: 'test', series: '港' });
     expect(r).toMatchObject({ ok: true, targetCount: 1, targetLabel: 'シリーズ「港」のチャンネル' });
-    expect(bot.posts()).toEqual([{ channel: CH(3), content: '✅ 卓予定管理から接続テスト（テストの卓 / シリーズ「港」）', embeds: 0 }]);
+    expect(bot.posts()).toEqual([{ channel: CH(3), content: '✅ Yokiから接続テスト（テストの卓 / シリーズ「港」）', embeds: 0 }]);
     expect(await lastLog()).toEqual({ kind: '接続テスト', target: '-（シリーズ「港」のチャンネル）', result: 'OK (200)' });
     expect(await refuse({ kind: 'test', series: '古城' })).toBe('シリーズ「古城」には専用のチャンネルがありません。');
     // 日時だけ変えたシリーズにも、専用のチャンネルは無い
@@ -75,13 +75,13 @@ describe('接続テスト', () => {
   test('知らせの種類のチャンネルを選べば、そこへ送る。そのチャンネルが無ければ断る（基本のチャンネルへは回さない）', async () => {
     const r = await send(G.sora, { kind: 'test', channel: 'recruit' });
     expect(r.targetLabel).toBe('募集のチャンネル');
-    expect(bot.posts()[0]).toEqual({ channel: CH(2), content: '✅ 卓予定管理から接続テスト（テストの卓 / 募集のチャンネル）', embeds: 0 });
+    expect(bot.posts()[0]).toEqual({ channel: CH(2), content: '✅ Yokiから接続テスト（テストの卓 / 募集のチャンネル）', embeds: 0 });
     expect((await lastLog())!.target).toBe('-（募集のチャンネル）');
     expect(await refuse({ kind: 'test', channel: 'remind' })).toBe('開催前の知らせのチャンネルが決まっていません。');
 
     await ok(G.admin, G.id, 'saveConsoleSettings', { kindChannel: { kind: 'remind', channelId: CH(4) } });
     await send(G.sora, { kind: 'test', channel: 'remind' });
-    expect(bot.posts()[1]).toEqual({ channel: CH(4), content: '✅ 卓予定管理から接続テスト（テストの卓 / 開催前の知らせのチャンネル）', embeds: 0 });
+    expect(bot.posts()[1]).toEqual({ channel: CH(4), content: '✅ Yokiから接続テスト（テストの卓 / 開催前の知らせのチャンネル）', embeds: 0 });
 
     await ok(G.admin, G.id, 'saveConsoleSettings', { channelId: '', kindChannel: { kind: 'recruit', channelId: '' } });
     expect(await refuse({ kind: 'test', channel: 'recruit' })).toBe('募集のチャンネルが決まっていません。');
@@ -146,7 +146,7 @@ describe('日程調整の知らせ', () => {
     expect(bot.posts()[0]!.content).toBe(
       '🗓️ 「迷宮」の日程を決めます。' + ID.ひより + ' ' + ID.ソラ + '\n' +
       '候補日: ' + fmtDateJa(T(5)) + '、' + fmtDateJa(T(6)) + '　20:00〜23:00\n' +
-      '卓予定の「募集・調整」タブで、候補日ごとに ◯ か × を押してください。全員の回答がそろったら、GMが開催日を選びます。　by ひより\nhttps://yoki.test/g/grp/',
+      'Yokiの「募集・調整」タブで、候補日ごとに ◯ か × を押してください。全員の回答がそろったら、GMが開催日を選びます。　by ひより\nhttps://yoki.test/g/grp/',
     );
     expect(await lastLog()).toMatchObject({ kind: '日程調整', target: '迷宮' });
 
@@ -156,7 +156,7 @@ describe('日程調整の知らせ', () => {
       '📝 「迷宮」の日程調整の回答がそろいました。' + ID.ひより,
       '・' + fmtDateJa(T(5)) + '　◯ 1/2',
       '・' + fmtDateJa(T(6)) + '　◯ 1/2',
-      '卓予定の「募集・調整」タブで、開催日を選んでください。',
+      'Yokiの「募集・調整」タブで、開催日を選んでください。',
       'https://yoki.test/g/grp/',
     ]);
     expect(ready.embeds).toBe(0);
@@ -168,7 +168,7 @@ describe('日程調整の知らせ', () => {
     await send(G.admin, { kind: 'decided', id: 'S002' });
     expect(bot.posts()[0]).toEqual({
       channel: CH(1),
-      content: '✅ 「港」の日程が決まりました: ' + fmtDateJa(T(3)) + ' 時間未定\n' + ID.ひより + '\n🔗 卓予定: https://yoki.test/g/grp/',
+      content: '✅ 「港」の日程が決まりました: ' + fmtDateJa(T(3)) + ' 時間未定\n' + ID.ひより + '\n🔗 Yoki: https://yoki.test/g/grp/',
       embeds: 1,
     });
     expect(await lastLog()).toMatchObject({ kind: '日程決定', target: '港' });

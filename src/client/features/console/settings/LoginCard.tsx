@@ -25,7 +25,7 @@ export function LoginCard() {
   return (
     <div className="card" id="loginCard">
       <h3><Icon name="login" size="sm" />ログインの方法</h3>
-      <p className="hint">卓予定の利用者は、Discordのアカウントで決まります。Googleのアカウントを結びつけると、Googleでもログインできます。</p>
+      <p className="hint">Yokiの利用者は、Discordのアカウントで決まります。Googleのアカウントを結びつけると、Googleでもログインできます。</p>
       <div>
         <div className={row}>
           <b className="min-w-[6em]">Discord</b>

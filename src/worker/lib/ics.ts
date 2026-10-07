@@ -92,7 +92,7 @@ export function buildCalendar(name: string, events: IcsEvent[], now: Date): stri
   const lines = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
-    'PRODID:-//Yoki//卓予定//JA',
+    'PRODID:-//Yoki//Yoki//JA',
     'CALSCALE:GREGORIAN',
     'METHOD:PUBLISH',
     'X-WR-CALNAME:' + escapeText(name),

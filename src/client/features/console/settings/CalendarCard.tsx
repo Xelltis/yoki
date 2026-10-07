@@ -43,7 +43,7 @@ export function CalendarCard() {
   return (
     <div className="card" id="calendarCard">
       <h3><Icon name="event" size="sm" />カレンダー連携</h3>
-      <p className="hint">卓予定の卓を、ふだん使っているカレンダーに出します。ここの設定は、あなただけのものです。</p>
+      <p className="hint">Yokiの卓を、ふだん使っているカレンダーに出します。ここの設定は、あなただけのものです。</p>
 
       <h4 className={sub}>購読URL（iCal）</h4>
       <p className="hint">

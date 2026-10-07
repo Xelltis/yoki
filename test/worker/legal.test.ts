@@ -71,7 +71,7 @@ describe('ページ', () => {
     const t = await page('/terms');
     expect(t.status).toBe(200);
     expect(t.type).toContain('text/html');
-    expect(t.html).toContain('<title>利用規約 - 卓予定</title>');
+    expect(t.html).toContain('<title>利用規約 - Yoki</title>');
     expect(t.html).toContain('<h1>利用規約</h1>');
     expect(t.html).toContain('<dt>運営者</dt><dd><span class="unset">まだ設定されていません</span></dd>');
     expect(t.html).toContain('<dt>更新日</dt><dd>2026年10月6日</dd>');
@@ -79,7 +79,7 @@ describe('ページ', () => {
     // もう一方のページへの道。いまのページはリンクにしない
     expect(t.html).toContain('<span>利用規約</span><a href="/privacy">プライバシーポリシー</a>');
     // リンクを貼ったときの見た目
-    expect(t.html).toContain('<meta property="og:title" content="利用規約 - 卓予定">');
+    expect(t.html).toContain('<meta property="og:title" content="利用規約 - Yoki">');
     expect(t.html).toContain('<meta property="og:url" content="https://yoki.test/terms">');
     expect(t.html).toContain('<meta property="og:image" content="https://yoki.test/og.png">');
     const p = await page('/privacy');

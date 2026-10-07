@@ -51,7 +51,7 @@ export async function fetchDiscordProfile(env: Bindings, code: string, redirectU
 }
 
 /**
- * ログインした人と、控えるサーバーを書く。控えるのは、卓予定のグループがあるサーバーと、本人が管理できるサーバーだけ
+ * ログインした人と、控えるサーバーを書く。控えるのは、Yokiのグループがあるサーバーと、本人が管理できるサーバーだけ
  * （ほかのサーバーは覚えない）。問い合わせはサーバーの数によらず4回
  */
 export async function saveProfile(db: D1Database, user: DiscordUser, guilds: DiscordGuild[], now = new Date()): Promise<void> {

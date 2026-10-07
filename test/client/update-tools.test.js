@@ -39,7 +39,7 @@ test('更新でwrangler.jsoncを入れ替えるとき、Workerの名前とD1の�
   const v = parseJsonc(out);
   expect(v.name).toBe('my-yoki');
   expect(v.d1_databases).toEqual([{ binding: 'DB', database_name: 'my-db', database_id: 'abc-123', migrations_dir: './migrations' }]);
-  expect(out).toContain('// 卓予定（Yoki）のWorkerの設定');
+  expect(out).toContain('// YokiのWorkerの設定');
   // 新しい版にIDの行があれば、値だけを替える。もう一度引き継いでも同じ
   expect(carry(current, out)).toBe(out);
   // D1が無い（引き継ぐものが無い）なら、名前だけ

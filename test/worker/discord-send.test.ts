@@ -50,8 +50,8 @@ describe('失敗の種類分け', () => {
   });
 
   test('Botとチャンネルの問題は、送らなかったときとDiscordに断られたときで、説明を分ける', () => {
-    expect(classifyFailure(401, '')).toMatchObject({ kind: 'bad_bot', label: 'Botの設定', text: '卓予定のBotのトークンが正しくありません。' });
-    expect(classifyFailure(0, 'DiscordのBotが設定されていません')).toMatchObject({ kind: 'bad_bot', label: 'Botの設定', text: '卓予定のBotが設定されていません。' });
+    expect(classifyFailure(401, '')).toMatchObject({ kind: 'bad_bot', label: 'Botの設定', text: 'YokiのBotのトークンが正しくありません。' });
+    expect(classifyFailure(0, 'DiscordのBotが設定されていません')).toMatchObject({ kind: 'bad_bot', label: 'Botの設定', text: 'YokiのBotが設定されていません。' });
     expect(classifyFailure(403, '')).toMatchObject({ kind: 'no_permission', label: 'チャンネルの権限', text: 'Botがそのチャンネルを見られないか、書き込めません。' });
     expect(classifyFailure(404, '')).toMatchObject({ kind: 'no_channel', label: 'チャンネル', text: 'チャンネルが見つかりません（消されたか、Botがサーバーから外されています）。' });
     expect(classifyFailure(0, 'チャンネルのIDが正しくありません')).toMatchObject({ kind: 'no_channel', label: 'チャンネル', text: 'チャンネルのIDが正しくありません。' });
@@ -102,7 +102,7 @@ describe('1回だけ送る', () => {
     expect(posts).toHaveLength(0);
     expect(r).toMatchObject({ ok: false, code: 0, retryable: false, raw: 'ERROR DiscordのBotが設定されていません' });
     expect(r.reason!.kind).toBe('bad_bot');
-    expect(r.result).toBe('送信失敗（Botの設定）: ERROR DiscordのBotが設定されていません（1回目）　→ 卓予定のBotが設定されていません。卓予定を公開している運営者に知らせてください。　このツールの不具合ではありません。');
+    expect(r.result).toBe('送信失敗（Botの設定）: ERROR DiscordのBotが設定されていません（1回目）　→ YokiのBotが設定されていません。Yokiを設置した運営者に知らせてください。　このツールの不具合ではありません。');
   });
 
   test('チャンネルのIDの形でないもの（前のWebhook URLなど）には送らない', async () => {
@@ -126,7 +126,7 @@ describe('1回だけ送る', () => {
     );
     const r2 = await discordAttempt(LOG, P, '案内', '港', 1, CH(1));
     expect(r2).toMatchObject({ ok: false, code: 401, retryable: false });
-    expect(r2.result).toBe('送信失敗（Botの設定）: HTTP 401（1回目）　→ 卓予定のBotのトークンが正しくありません。卓予定を公開している運営者に知らせてください。　このツールの不具合ではありません。');
+    expect(r2.result).toBe('送信失敗（Botの設定）: HTTP 401（1回目）　→ YokiのBotのトークンが正しくありません。Yokiを設置した運営者に知らせてください。　このツールの不具合ではありません。');
   });
 
   test('本文を断られたら（400）送り直さない。ツールの不具合かもしれないので、ツールのせいではないとは書かない', async () => {

@@ -1,4 +1,4 @@
-# 卓予定を新しい版に上げる（設置した人のリポジトリで動かす。元のリポジトリでは何もしない）。
+# Yokiを新しい版に上げる（設置した人のリポジトリで動かす。元のリポジトリでは何もしない）。
 # 元のリポジトリ（vars の YOKI_UPSTREAM。無ければ Xelltis/yoki）の Release の版を main に取り込む。取り込み方は、リポジトリの作り方で変わる。
 #   「Deploy to Cloudflare」のボタンで作ったリポジトリ（元の履歴とつながっていない）: 取り込む版のファイルで入れ替える。
 #     設置したときに Cloudflare が wrangler.jsonc に書いた値（Worker の名前・D1 の名前と ID）は引き継ぐ（tools/update/carry-wrangler.mjs）。
@@ -9,7 +9,7 @@
 #   main を変えずに PR を作って止まるとき: フォークでマージがぶつかったとき。ボタンで作ったリポジトリのコードを、設置した人が変えていたとき
 #   元のリポジトリが .github/workflows/ を変えた版は、GITHUB_TOKEN では main に書き込めない。そのときは Actions の secret に
 #   UPDATE_PUSH_TOKEN（このリポジトリの Contents と Workflows を書ける fine-grained token）を入れる（サイトの「新しい版に上げる」）
-name: 卓予定を更新する
+name: Yokiを更新する
 
 on:
   workflow_dispatch:
@@ -46,7 +46,7 @@ jobs:
       - name: 上げる版を決める
         id: ver
         run: |
-          if [ "$GITHUB_REPOSITORY" = "$UPSTREAM" ]; then echo '::error::元のリポジトリでは動かしません（設置した卓予定のリポジトリで動かします）'; exit 1; fi
+          if [ "$GITHUB_REPOSITORY" = "$UPSTREAM" ]; then echo '::error::元のリポジトリでは動かしません（設置したYokiのリポジトリで動かします）'; exit 1; fi
           tag="$WANT"
           if [ -z "$tag" ]; then tag=$(gh release view --repo "$UPSTREAM" --json tagName --jq .tagName); fi
           tag="v${tag#v}"
@@ -65,7 +65,7 @@ jobs:
           # PR を作って止まる（main は変えない）。$1 は PR の本文
           stop_with_pr() {
             git push --force origin "HEAD:refs/heads/$branch"
-            gh pr create --base main --head "$branch" --title "chore: 卓予定 $TAG を取り込む" --body "$1" \
+            gh pr create --base main --head "$branch" --title "chore: Yokiの${TAG}を取り込む" --body "$1" \
               || echo '::warning::PR を作れませんでした（Settings → Actions の「Allow GitHub Actions to create and approve pull requests」を入れるか、手で作ってください）'
             echo "::error::$TAG を main に入れずに、$branch を PR にしました。GitHub の画面で確かめてマージしてください"
             exit 1
@@ -78,7 +78,7 @@ jobs:
               echo 'pushed=no' >> "$GITHUB_OUTPUT"
               exit 0
             fi
-            if ! git merge --no-edit -m "chore: 卓予定 $TAG を取り込む" "$TAG"; then
+            if ! git merge --no-edit -m "chore: Yokiの${TAG}を取り込む" "$TAG"; then
               git merge --abort
               git checkout -q -B "$branch" "$TAG^{commit}"
               stop_with_pr "元のリポジトリの $TAG を取り込もうとして、このリポジトリの変更とぶつかりました。ぶつかったところを直してマージすると、公開されます。"
@@ -102,7 +102,7 @@ jobs:
             git checkout "$TAG" -- .
             node tools/update/carry-wrangler.mjs "$RUNNER_TEMP/wrangler.jsonc" wrangler.jsonc
             git add -A
-            git commit -q -m "chore: 卓予定 $TAG を取り込む"
+            git commit -q -m "chore: Yokiの${TAG}を取り込む"
             if [ "$changed" = yes ]; then
               stop_with_pr "このリポジトリのコードが、元のリポジトリの $now から変わっています。新しい版の $TAG のファイルで入れ替えると、その変更は消えます。差分を確かめて、残したい変更が無ければマージしてください（マージすると公開されます）。"
             fi

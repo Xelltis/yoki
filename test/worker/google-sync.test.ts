@@ -55,12 +55,12 @@ describe('小さな決まり', () => {
     expect(windowMinutes('夜')).toBeNull();
   });
 
-  test('卓を予定にする。時刻があれば日時、無ければ終日。卓予定の印を付ける', () => {
+  test('卓を予定にする。時刻があれば日時、無ければ終日。Yokiの印を付ける', () => {
     const ctx = { appUrl: 'https://yoki.test/g/grp/', group: { id: 'grp', title: 'テストの卓' } } as any;
     const s = { rowId: 7, name: 'A', gm: 'ひより', members: [], date: '2026-10-10', start: '20:00', end: '23:00', place: 'ユドナリウム', memo: '', updatedAt: '' } as any;
     expect(eventBody(ctx, s)).toMatchObject({
       summary: 'A', location: 'ユドナリウム', start: { dateTime: '2026-10-10T11:00:00.000Z', timeZone: 'Asia/Tokyo' }, end: { dateTime: '2026-10-10T14:00:00.000Z' },
-      source: { title: '卓予定', url: 'https://yoki.test/g/grp/' }, extendedProperties: { private: { yoki: '1', session: 'grp-7' } },
+      source: { title: 'Yoki', url: 'https://yoki.test/g/grp/' }, extendedProperties: { private: { yoki: '1', session: 'grp-7' } },
     });
     expect(eventBody(ctx, { ...s, start: '' })).toMatchObject({ start: { date: '2026-10-10' }, end: { date: '2026-10-11' } });
   });

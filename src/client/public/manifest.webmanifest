@@ -1,6 +1,6 @@
 {
-  "name": "卓予定",
-  "short_name": "卓予定",
+  "name": "Yoki",
+  "short_name": "Yoki",
   "description": "TRPGの卓の予定を、Discordサーバーの仲間と決めるWebアプリ",
   "lang": "ja",
   "start_url": "/",

@@ -7,7 +7,7 @@ export type Bindings = Env & {
   /** DiscordアプリのClient ID。無ければDiscordでログインできない（手元では開発用ログインだけで動く） */
   DISCORD_CLIENT_ID?: string;
   DISCORD_CLIENT_SECRET?: string;
-  /** 知らせを送るBot（卓予定のDiscordアプリ）のトークン。無ければDiscordに送れない */
+  /** 知らせを送るBot（YokiのDiscordアプリ）のトークン。無ければDiscordに送れない */
   DISCORD_BOT_TOKEN?: string;
   /** 運営者のDiscordユーザーID（カンマか空白で区切る）。公開のActionsのログに出さないように、varsではなくsecretにする */
   OPERATOR_IDS?: string;

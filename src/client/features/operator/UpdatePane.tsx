@@ -1,4 +1,4 @@
-// 運営者の管理画面の「更新」。動いている卓予定の版と、元のリポジトリの最新の版・変わったこと・表の変更があるかを出す。
+// 運営者の管理画面の「更新」。動いているYokiの版と、元のリポジトリの最新の版・変わったこと・表の変更があるかを出す。
 // 更新は、公開しているリポジトリの更新のワークフロー（GitHubのActions）がする。トークンがあればボタンで動かし、無ければGitHubの画面を開く
 import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
@@ -67,7 +67,7 @@ export function UpdatePane() {
   return (
     <div data-pane="update">
       <div className="card" id="opUpdate">
-        <h3><Icon name="upgrade" size="sm" />卓予定の版</h3>
+        <h3><Icon name="upgrade" size="sm" />Yokiの版</h3>
         <p className={stateCls(tone)} id="opUpdateState">{say}</p>
         {u.error && <p className="hint text-err-text" id="opUpdateError">{u.error}</p>}
         <dl className={dl}>

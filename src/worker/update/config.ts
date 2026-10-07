@@ -8,7 +8,7 @@ import type { Bindings } from '../env';
 import { realGitHub, type UpdateApi } from './api';
 import { fakeGitHub } from './dev';
 
-/** 元のリポジトリ（卓予定の本家） */
+/** 元のリポジトリ（Yokiの本家） */
 export const DEFAULT_UPSTREAM = 'Xelltis/yoki';
 /** 更新のワークフロー */
 export const UPDATE_WORKFLOW = 'update.yml';

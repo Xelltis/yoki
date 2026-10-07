@@ -22,7 +22,7 @@ export function calendarItem(ctx: Pick<Ctx, 'appUrl' | 'group'>, s: Session & { 
   if (s.gm) lines.push('GM: ' + s.gm);
   if (s.members.length) lines.push('参加: ' + s.members.join('、'));
   if (s.memo) lines.push('', s.memo);
-  lines.push('', ctx.group.title + '（卓予定）: ' + ctx.appUrl);
+  lines.push('', ctx.group.title + '（Yoki）: ' + ctx.appUrl);
   return {
     span: sessionSpan(s.date, s.start, s.end),
     summary: s.name,
@@ -48,7 +48,7 @@ export function feedText(ctx: Ctx, scope: FeedScope, who: string): string {
     uid: ctx.group.id + '-' + s.rowId + '@yoki',
     ...calendarItem(ctx, s),
   }));
-  const name = ctx.group.title + (scope === 'mine' ? '（自分の卓）' : '（卓予定）');
+  const name = ctx.group.title + (scope === 'mine' ? '（自分の卓）' : '（Yoki）');
   return buildCalendar(name, events, ctx.now);
 }
 

@@ -83,7 +83,7 @@ export type Ctx = {
   actor: Actor;
   /** このグループの画面のURL（Discordの文に使う） */
   appUrl: string;
-  /** 知らせを送るBot（卓予定のDiscordアプリ）。tokenが空なら送れない。clientIdはBotを招くURLに使う */
+  /** 知らせを送るBot（YokiのDiscordアプリ）。tokenが空なら送れない。clientIdはBotを招くURLに使う */
   bot: Bot;
   /** 本人の購読URL（このグループ。作っていなければnull） */
   feed: { token: string; scope: FeedScope } | null;

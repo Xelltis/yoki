@@ -49,7 +49,7 @@ describe('アドレスがworkers.devのまま届いても、公開のアドレ�
     expect(res.status).toBe(200);
     const html = await res.text();
     expect(html).toContain('<meta property="og:image" content="' + APP + '/og.png">');
-    expect(html).toContain('<meta property="og:title" content="卓予定">');
+    expect(html).toContain('<meta property="og:title" content="Yoki">');
     // 骨組みの、アドレスを省いたタグは残さない
     expect(html).not.toContain('content="/og.png"');
   });
