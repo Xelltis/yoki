@@ -37,7 +37,7 @@ export type IcsEvent = {
 
 /** テキストの値に書けない文字（\ ; , と改行）を逃がす */
 export function escapeText(s: string): string {
-  return s.replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n');
+  return s.replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r\n|\r|\n/g, '\\n');
 }
 
 /** 1行を75オクテットまでで折り返す（続きの行は空白1つで始める）。UTF-8の文字の途中では切らない */

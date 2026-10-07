@@ -9,6 +9,8 @@ import { call, ok, setupGroup, today } from './helpers';
 describe('iCalendarの文', () => {
   test('テキストの \\ ; , と改行を逃がす', () => {
     expect(escapeText('a\\b;c,d\ne\r\nf')).toBe('a\\\\b\\;c\\,d\\ne\\nf');
+    // CRだけの改行も、行を切らないように\nにする
+    expect(escapeText('g\rh')).toBe('g\\nh');
   });
 
   test('75オクテットで折り返し、続きの行は空白で始める。日本語の文字の途中では切らない', () => {
