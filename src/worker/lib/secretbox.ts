@@ -9,6 +9,15 @@ function b64Decode(s: string): Uint8Array {
   return Uint8Array.from(bin, (c) => c.charCodeAt(0));
 }
 
+/** 鍵の形（32バイトをbase64にしたもの）か。読めない文字があっても投げずに偽 */
+export function isKey(base64: string): boolean {
+  try {
+    return b64Decode(base64.trim()).length === 32;
+  } catch {
+    return false;
+  }
+}
+
 /** 鍵を読む。32バイトでなければ投げる（設定の誤りに早く気づけるように） */
 export async function importKey(base64: string): Promise<CryptoKey> {
   const raw = b64Decode(base64.trim());

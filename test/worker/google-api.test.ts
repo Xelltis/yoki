@@ -1,13 +1,14 @@
 // Google連携の部品: 暗号化、設定、本物のGoogleの呼び方（fetchを差し替える）、開発用の偽のGoogle
 import { env, SELF } from 'cloudflare:test';
 import { afterEach, describe, expect, test, vi } from 'vitest';
+import { app } from '../../src/worker/app';
 import type { Bindings } from '../../src/worker/env';
 import { emailOfIdToken, GoogleHttpError, GoogleRevoked, realGoogle, toBusy } from '../../src/worker/google/api';
 import { googleConfigured, googleDeps } from '../../src/worker/google/config';
 import { fakeGoogle, readFake, writeFake } from '../../src/worker/google/dev';
 import { jstMs } from '../../src/worker/lib/ics';
 import { importKey, open, seal } from '../../src/worker/lib/secretbox';
-import { call } from './helpers';
+import { call, ORIGIN, setupGroup, SID } from './helpers';
 
 const KEY = btoa(String.fromCharCode(...new Uint8Array(32).fill(7)));
 const OTHER = btoa(String.fromCharCode(...new Uint8Array(32).fill(9)));
@@ -39,6 +40,19 @@ describe('設定', () => {
     expect(googleConfigured({ ...base, GOOGLE_CLIENT_ID: 'id' })).toBe(false);
     expect(googleConfigured({ ...base, GOOGLE_CLIENT_ID: 'id', GOOGLE_CLIENT_SECRET: 's' })).toBe(false);
     expect(googleConfigured({ ...base, GOOGLE_CLIENT_ID: 'id', GOOGLE_CLIENT_SECRET: 's', GOOGLE_TOKEN_KEY: KEY })).toBe(true);
+    // 鍵の形が違う（24バイト・base64でない）なら、使えないことにする
+    expect(googleConfigured({ ...base, GOOGLE_CLIENT_ID: 'id', GOOGLE_CLIENT_SECRET: 's', GOOGLE_TOKEN_KEY: btoa('x'.repeat(24)) })).toBe(false);
+    expect(googleConfigured({ ...base, GOOGLE_CLIENT_ID: 'id', GOOGLE_CLIENT_SECRET: 's', GOOGLE_TOKEN_KEY: '#'.repeat(44) })).toBe(false);
+  });
+
+  test('鍵の形が違っても、Googleに関わる操作（卓の保存など）は止まらない', async () => {
+    const { admin } = await setupGroup();
+    const bad = { ...env, GOOGLE_CLIENT_ID: 'cid', GOOGLE_CLIENT_SECRET: 's', GOOGLE_TOKEN_KEY: btoa('x'.repeat(24)) };
+    const res = await app.request(ORIGIN + '/api/g/grp/saveSession', {
+      method: 'POST', headers: { Origin: ORIGIN, 'Content-Type': 'application/json', Cookie: SID + '=' + admin }, body: JSON.stringify({ name: '鍵の誤り', status: '募集' }),
+    }, bad);
+    expect(res.status).toBe(200);
+    expect((await res.json<{ message: string }>()).message).toContain('鍵の誤り');
   });
 
   test('一式: 偽のGoogleは /dev/google/authorize、本物はaccounts.google.com。設定が無ければnull。アドレスはAPP_URLを正とする', async () => {

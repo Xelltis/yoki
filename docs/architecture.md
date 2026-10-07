@@ -214,7 +214,7 @@ OAuth2の認可コードの流れ。scopeは `openid`・`email`・`https://www.g
 
 Googleを呼ぶのは1回の要求で40回まで。残りは次の回（見回り）に回す。どちらも、あるべき形に合わせ直す作りなので、途中でやめてよい。
 
-本番は `GOOGLE_CLIENT_ID`（vars）・`GOOGLE_CLIENT_SECRET`・`GOOGLE_TOKEN_KEY`（secret）の3つがそろったときだけ使う。無ければ画面に「使えません」と出す（購読URLと追加のボタンは使える）。
+本番は `GOOGLE_CLIENT_ID`・`GOOGLE_CLIENT_SECRET`・`GOOGLE_TOKEN_KEY`（どれもsecret）の3つがそろい、`GOOGLE_TOKEN_KEY` が32バイトの鍵（base64）のときだけ使う（`googleConfigured`）。無ければ画面に「使えません」と出す（購読URLと追加のボタンは使える）。鍵の形が違っても、卓の保存や見回りは止めない。
 
 開発サーバーで `GOOGLE_CLIENT_ID` が空なら、開発用の偽のGoogle（`google/dev.ts`）を使う。同意の画面を出さずに許可したことにし、書き込んだ予定と「予定あり」の時間は `meta` の `dev_google` に置く。`app.ts` と `google/config.ts` が `import.meta.env.DEV` のときだけ使うので、本番の組み立てには入らない（`vite.config.ts` の `noDevLogin` が `/dev/google` も確かめる）。
 
