@@ -29,7 +29,7 @@ Yoki。TRPGの卓の予定を、Discordサーバーの仲間と管理するWeb�
 | `npm run icons` | `brand/yoki.png` からファビコンなどのアイコンを書き出す |
 | `npm run notices` | 第三者のライセンスの断り書き（`THIRD_PARTY_NOTICES.md`）を書き出す |
 
-アプリの公開はGitHub Actions（`.github/workflows/deploy.yml`）が、mainにアプリの変更がpushされたときに行う。PRは `ci.yml` が確かめる。手元から `wrangler deploy` や本番のD1へのマイグレーションはしない。mainへのpushは本番への公開になるので、頼まれたときだけ、確かめてからpushする。
+アプリの公開はGitHub Actions（`.github/workflows/deploy.yml`）が、mainにアプリの変更がpushされたときに、テスト（型・lint・カバレッジ・e2e）が全部通ってから行う。PRは `ci.yml` が確かめる。手元から `wrangler deploy` や本番のD1へのマイグレーションはしない。mainへのpushは本番への公開になるので、頼まれたときだけ、確かめてからpushする。
 
 ## 変えたら確かめること
 

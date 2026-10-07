@@ -17,7 +17,7 @@ Yokiを自分のCloudflareに公開する仕組みと、新しい版に上げる
 
 [![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/Xelltis/yoki/tree/release)
 
-ボタンは `release` のブランチを指す。`release` は、版を出すたびにその版のコミットに合わせる（[CONTRIBUTING.md](../CONTRIBUTING.md) の「版を出す」）。なので設置する人は、いつも版を出したときの中身を受け取る。
+ボタンは `release` のブランチを指す。`release` は、版を出すたびにその版のコミットに合わせる（[CONTRIBUTING.md](../CONTRIBUTING.md) の「版を出す」）。なので設置する人は、いつも版を出したときの中身を受け取る。版を出すのは、元のリポジトリの公開のワークフローで、テスト（型・lint・カバレッジ・e2e）が全部通ったときだけ。Workers Buildsはテストを動かさないが、ボタンでの設置も更新も、テストを通った版だけを受け取る。
 
 ボタンを押すと、Cloudflareが次をする。
 

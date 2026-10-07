@@ -2,7 +2,8 @@
 # 動くのは、元のリポジトリ（Xelltis/yoki）と、Actions で公開すると決めたリポジトリ（Repository variables の YOKI_DEPLOY_WITH_ACTIONS が true）だけ。
 # フォークも、決めなければ動かない（PR を出すためのフォークで、公開しようとして止まらないように）。
 # 「Deploy to Cloudflare」のボタンで設置したリポジトリは、Cloudflare の組み立て（Workers Builds）が公開するので、ここは動かない。
-# main にアプリの変更が入ったときと、Actions の画面から手で動かしたときに動く。確かめる → 版を出す（元のリポジトリだけ）→ 公開する、の順に進む。
+# main にアプリの変更が入ったときと、Actions の画面から手で動かしたときに動く。確かめる（型・lint・テストとカバレッジ・e2e）→ 版を出す（元のリポジトリだけ）→ 公開する、の順に進む。
+# テストが1つでも通らなければ、版も出さず公開もしない
 # 版は、元のリポジトリでは semantic-release（設定は .releaserc.json）が main のコミットから決め、package.json の version を書き換えてコミットし、
 # タグ vX.Y.Z と GitHub の Release を作る。アプリに入れる版は package.json から読む（vite.config.ts）
 # 公開する Cloudflare ごとの値はリポジトリに置かず、GitHub の environment「production」に置く（書き方は docs/deployment.md の「GitHub Actions で公開する」）
@@ -56,9 +57,26 @@ jobs:
       - run: npm run lint
       - run: npm run test:coverage
 
+  # ブラウザで通しで確かめる（e2e。開発サーバーと手元の D1 で動かす）。通らなければ、版も出さず公開もしない
+  e2e:
+    if: github.repository == (vars.YOKI_UPSTREAM || 'Xelltis/yoki') || vars.YOKI_DEPLOY_WITH_ACTIONS == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - run: npm ci
+      - name: ブラウザを入れる（Chromium）
+        run: npx playwright install --with-deps chromium
+      - name: 手元の D1 に表を作る
+        run: npm run db:migrate:local
+      - run: npm run e2e
+
   # 版を出す（元のリポジトリだけ。フォークでは動かさない）。feat・fix・perf などがあれば、次の版のタグと GitHub の Release を作る
   release:
-    needs: check
+    needs: [check, e2e]
     if: github.repository == (vars.YOKI_UPSTREAM || 'Xelltis/yoki')
     runs-on: ubuntu-latest
     permissions:
@@ -85,9 +103,9 @@ jobs:
         run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
   deploy:
-    needs: [check, release]
-    # 版を出さなかった（フォーク・出す変更が無い）ときも公開する
-    if: ${{ !cancelled() && needs.check.result == 'success' && (needs.release.result == 'success' || needs.release.result == 'skipped') }}
+    needs: [check, e2e, release]
+    # テストが全部通ったときだけ公開する。版を出さなかった（フォーク・出す変更が無い）ときも公開する
+    if: ${{ !cancelled() && needs.check.result == 'success' && needs.e2e.result == 'success' && (needs.release.result == 'success' || needs.release.result == 'skipped') }}
     runs-on: ubuntu-latest
     environment:
       name: production
