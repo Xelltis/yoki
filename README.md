@@ -77,6 +77,4 @@ http://localhost:5173/ を開き、「開発用ログイン」を押すと、サ
 
 [MIT](LICENSE)
 
-画面とサイトのアイコンは [Material Symbols](https://github.com/google/material-design-icons)（Google。[Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0)）を使っています。組み立てたアプリとサイトには、使ったアイコンのSVGだけが入ります。
-
-日本語の検査に使う `tools/yomiyasu/yomiyasu_lint.py` は、[yomiyasu](https://github.com/nanaism/yomiyasu)（nanaism。MIT License。`tools/yomiyasu/LICENSE`）のものをそのまま置いています。
+使っている第三者のソフトウェアと素材（Reactなどの部品・Material Symbolsのアイコン・日本語の検査のyomiyasuなど）と、そのライセンスは、[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) にまとめてあります。

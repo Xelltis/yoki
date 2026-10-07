@@ -29,7 +29,8 @@
     "screenshots": "node website/tools/screenshots.js",
     "compare-shots": "node website/tools/compare-shots.js",
     "og-image": "node website/tools/og-image.js",
-    "icons": "node website/tools/icons.js"
+    "icons": "node website/tools/icons.js",
+    "notices": "node tools/third-party.mjs"
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "^1.62.5",

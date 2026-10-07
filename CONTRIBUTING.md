@@ -64,11 +64,14 @@ vite.config.ts     開発サーバーと組み立て。公開のときに、Clou
 tools/icons.ts     アイコン（unplugin-icons）の決まり。使ってよい集まりとライセンス、SVG を React の部品にする変換（アプリとサイトで使う）
 tools/release/     版を出すときに package.json の版を書き換えてコミットする（semantic-release のプラグイン）
 tools/update/      更新のワークフローが、ボタンで設置したリポジトリの wrangler.jsonc の値を引き継ぐ
+tools/licenses/    第三者のライセンスの本文（THIRD_PARTY_NOTICES.md に載せる）
+tools/third-party.mjs 第三者のライセンスの断り書き（THIRD_PARTY_NOTICES.md）を書き出す（npm run notices）
 vitest.config.ts   テスト
 lefthook.yml       Git のフック（コミットの前の確認）
 commitlint.config.js コミットの説明の決まり（Conventional Commits）
 CLAUDE.md          Claude Code で作業するときの決まり（コミットの書き方など）
 LICENSE            ライセンス（MIT）
+THIRD_PARTY_NOTICES.md 第三者のソフトウェアと素材のライセンス（npm run notices が書き出す）
 ```
 
 ## テスト
@@ -111,6 +114,7 @@ miniflareが固定している `sharp`（画像の部品）は、npm auditに指
 | `npm run screenshots` | サイトに載せるアプリのスクリーンショットを `website/public/screenshots/` に撮る（開発サーバーをその場で立てる） |
 | `npm run og-image` | SNSやDiscordにリンクを貼ったときに出る画像を、`website/public/og.png` とアプリの `src/client/public/og.png` に書き出す（同じもの） |
 | `npm run icons` | `brand/yoki.png` から、ファビコン（`favicon.ico`）・ホーム画面と上の帯のロゴ（`icon-192.png`）・iPhoneとAndroidのアイコンを、`src/client/public/` と `website/public/` に書き出す。元の絵を変えたら回して、出したファイルをコミットする |
+| `npm run notices` | 第三者のライセンスの断り書き（`THIRD_PARTY_NOTICES.md`）を、今の依存から書き出す。実行時の依存・アイコンの集まり・サイトの部品を変えたら回して、コミットする（テストが確かめる） |
 
 ## 使い方のサイト
 

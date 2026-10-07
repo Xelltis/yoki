@@ -27,6 +27,7 @@ Yoki。TRPGの卓の予定を、Discordサーバーの仲間と管理するWeb�
 | `npm run site` / `npm run site:build` | サイトを手元で開く・組み立てる |
 | `npm run screenshots` | サイトに載せるアプリのスクリーンショットを撮り直す |
 | `npm run icons` | `brand/yoki.png` からファビコンなどのアイコンを書き出す |
+| `npm run notices` | 第三者のライセンスの断り書き（`THIRD_PARTY_NOTICES.md`）を書き出す |
 
 アプリの公開はGitHub Actions（`.github/workflows/deploy.yml`）が、mainにアプリの変更がpushされたときに行う。手元から `wrangler deploy` や本番のD1へのマイグレーションはしない。mainへのpushは本番への公開になるので、頼まれたときだけ、確かめてからpushする。
 
@@ -43,6 +44,8 @@ Yoki。TRPGの卓の予定を、Discordサーバーの仲間と管理するWeb�
 Markdownの文書を変えたら: `npm run lint:ja`。yomiyasuの指摘（比喩の動詞・同じ文末の3つの続き・箇条書きの多すぎ・英単語の前後の空白など）が1件でもあれば止まる。直すときは、意味を変えずに言い回しを変える（文をつなぐ・文末を「です」「ください」にするなど）。
 
 サービスアイコン（`brand/yoki.png`）を変えたら: `npm run icons` で書き出し、出したファイルもコミットする。ロゴが写るので `npm run screenshots` も撮り直す。
+
+依存（`package.json`・`package-lock.json`）・アイコンの集まり・サイトの部品を変えたら: `npm run notices` で `THIRD_PARTY_NOTICES.md` を書き出し直し、コミットする（テストが確かめる）。第三者のライセンスの断り書きは、READMEではなくこのファイルにまとめる。
 
 表（D1）を変えたら: `migrations/` に番号の続くファイルを足す。すでにあるファイルは書き換えない。
 
