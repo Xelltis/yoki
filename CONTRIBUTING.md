@@ -56,13 +56,16 @@ test/e2e/          ブラウザで通しで確かめる（npm run e2e）。開�
 brand/             サービスアイコンの元の絵（yoki.png。配らない。ファビコンなどは npm run icons で書き出す）と、配色を選んだときのデザイン案の控え（mocks/）
 website/           サイト（VitePress。GitHub Pages に公開する）。紹介と使い方
   guide/           使い方のページ（Markdown）
+  setup/           設置する人向けのページ（ボタンでの設置・Discordアプリを作る・新しい版に上げるなど）
   .vitepress/      サイトの設定と見た目・試せる例の部品
   public/          アイコン・SNS 用の画像（og.png）・アプリのスクリーンショット
   tools/           スクリーンショット・SNS 用の画像・アイコンを作る道具
-.github/workflows/ アプリを Cloudflare に（deploy.yml）、サイトを GitHub Pages に（pages.yml）公開する
-docs/              作りの説明（architecture.md）
+.github/workflows/ PR を確かめる（ci.yml）。アプリを Cloudflare に（deploy.yml）、サイトを GitHub Pages に（pages.yml）公開する。設置した Yoki を新しい版に上げる（update.yml。設置した人のリポジトリで動く）
+docs/              作りの説明（architecture.md）と、公開と更新の仕組み（deployment.md）
 wrangler.jsonc     Worker の設定（D1・cron）。公開する Cloudflare ごとの値（D1 の ID など）は書かない
 vite.config.ts     開発サーバーと組み立て。公開のときに、Cloudflare ごとの値を組み立てた設定に入れる
+tools/lint-ja.mjs  文書の日本語の検査（yomiyasu。tools/yomiyasu/ に本家のまま置いたものを動かす）
+tools/shims/       npm audit に出る部品の差し替え（package.json の overrides）
 tools/icons.ts     アイコン（unplugin-icons）の決まり。使ってよい集まりとライセンス、SVG を React の部品にする変換（アプリとサイトで使う）
 tools/release/     版を出すときに package.json の版を書き換えてコミットする（semantic-release のプラグイン）
 tools/update/      更新のワークフローが、ボタンで設置したリポジトリの wrangler.jsonc の値を引き継ぐ
@@ -72,6 +75,7 @@ vitest.config.ts   テスト
 lefthook.yml       Git のフック（コミットの前の確認）
 commitlint.config.js コミットの説明の決まり（Conventional Commits）
 CLAUDE.md          Claude Code で作業するときの決まり（コミットの書き方など）
+SECURITY.md        セキュリティの問題の知らせ方（非公開の報告）
 LICENSE            ライセンス（MIT）
 THIRD_PARTY_NOTICES.md 第三者のソフトウェアと素材のライセンス（npm run notices が書き出す）
 ```
