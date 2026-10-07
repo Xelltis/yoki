@@ -5,7 +5,8 @@
 export type PatrolRecord = { at: string; ms: number; ok: boolean; error: string };
 
 /** Discordへの送信の失敗（送信失敗・送らず）の記録 */
-export type AdminFailure = { at: string; groupId: string; groupTitle: string; kind: string; target: string; result: string };
+/** 送信の失敗。送った卓の名前（送信記録のtarget）は、グループの中身なので運営者には出さない */
+export type AdminFailure = { at: string; groupId: string; groupTitle: string; kind: string; result: string };
 
 /** 様子（GET /api/admin/overview） */
 export type AdminOverview = {

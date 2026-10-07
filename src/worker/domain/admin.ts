@@ -29,7 +29,7 @@ export async function overview(db: D1Database, now = new Date()): Promise<AdminO
     db.prepare(`SELECT (SELECT count(*) FROM notify_log l WHERE l.at > ?1 AND ${FAILED}) AS day, (SELECT count(*) FROM notify_log l WHERE l.at > ?2 AND ${FAILED}) AS week`)
       .bind(ago(now, DAY_MS), ago(now, 7 * DAY_MS)),
     db.prepare(
-      `SELECT l.at, l.group_id, g.title, l.kind, l.target, l.result FROM notify_log l JOIN groups g ON g.id = l.group_id
+      `SELECT l.at, l.group_id, g.title, l.kind, l.result FROM notify_log l JOIN groups g ON g.id = l.group_id
         WHERE ${FAILED} ORDER BY l.at DESC LIMIT 50`,
     ),
   ]);
@@ -52,8 +52,8 @@ export async function overview(db: D1Database, now = new Date()): Promise<AdminO
     failures: {
       day: f.day,
       week: f.week,
-      recent: (recent!.results as { at: string; group_id: string; title: string; kind: string; target: string; result: string }[]).map(
-        (r): AdminFailure => ({ at: r.at, groupId: r.group_id, groupTitle: r.title, kind: r.kind, target: r.target, result: r.result }),
+      recent: (recent!.results as { at: string; group_id: string; title: string; kind: string; result: string }[]).map(
+        (r): AdminFailure => ({ at: r.at, groupId: r.group_id, groupTitle: r.title, kind: r.kind, result: r.result }),
       ),
     },
     registrationOpen: m.registration !== 'closed',

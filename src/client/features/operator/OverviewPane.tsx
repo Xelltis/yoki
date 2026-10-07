@@ -93,12 +93,12 @@ function Fails({ o }: { o: AdminOverview | undefined }) {
             <tbody>
               {o.failures.recent.length ? (
                 <>
-                  <tr><th>日時</th><th>グループ</th><th>種別</th><th>対象</th><th>結果</th></tr>
+                  <tr><th>日時</th><th>グループ</th><th>種別</th><th>結果</th></tr>
                   {o.failures.recent.map((f, i) => (
                     <tr key={i}>
                       <td className="nw">{fmt(f.at)}</td>
                       <td><Link to="/admin/$pane/" params={{ pane: 'groups' }} search={{ open: f.groupId }} data-open={f.groupId}>{f.groupTitle}</Link></td>
-                      <td className="nw">{f.kind}</td><td>{f.target}</td><td>{f.result}</td>
+                      <td className="nw">{f.kind}</td><td>{f.result}</td>
                     </tr>
                   ))}
                 </>

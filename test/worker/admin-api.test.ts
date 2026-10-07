@@ -83,6 +83,8 @@ describe('様子', () => {
     expect(o.failures.week).toBe(2);
     expect(o.failures.recent.map((f) => f.result)).toEqual(['送信失敗（チャンネル）: HTTP 404', '送らず: 送り先のチャンネルが未設定', '送信失敗（古い）']);
     expect(o.failures.recent[0]).toMatchObject({ groupId: 'grp', groupTitle: 'テストの卓' });
+    // 送った卓の名前は、グループの中身なので出さない
+    expect(o.failures.recent[0]).not.toHaveProperty('target');
     expect(o.patrol).toMatchObject({ hourly: '2026-10-10T20', stale: false });
     expect(o.patrol.last?.ok).toBe(true);
   });
