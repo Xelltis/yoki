@@ -32,7 +32,7 @@ Viteは、`wrangler deploy` の行き先（`.wrangler/deploy/config.json`）を 
 
 Workerの値は、どれもsecretにする（varsにしない）。Workers Buildsは公開のたびに、設定に無いvarsを消すため。公開のアドレス（`APP_URL`）は無くてもよい。そのときは届いた要求のアドレスを使い、要求の無い見回り（cron）のために、ログインのたびにD1に控える（`auth/origin.ts`）。公開しているリポジトリの名前（運営の管理画面の「更新」）は、組み立てのときにGitのoriginから読む。
 
-写したリポジトリ（フォークではない）では、公開のワークフロー（`deploy.yml`）とサイトの公開（`pages.yml`）は動かない。更新のワークフロー（`update.yml`）は動く（下の「新しい版に上げる」）。
+写したリポジトリでは、公開のワークフロー（`deploy.yml`）とサイトの公開（`pages.yml`）は動かない。更新のワークフロー（`update.yml`）は動く（下の「新しい版に上げる」）。
 
 ## GitHub Actionsで公開する
 
@@ -62,7 +62,7 @@ APIトークン: アカウントのAPIトークンを作る（Cloudflareの画�
 
 ### 4. GitHubに値を入れる
 
-公開のワークフローが動くのは、元のリポジトリとそのフォークだけ（ボタンで作ったリポジトリでは動かない）。フォークでないリポジトリで使うときは、Settings → Secrets and variables → ActionsのRepository variablesに `YOKI_DEPLOY_WITH_ACTIONS` を `true` で入れる。
+公開のワークフローが動くのは、元のリポジトリと、GitHub Actionsで公開すると決めたリポジトリだけ。フォークでも、決めなければ動かない（PRを出すためだけのフォークで、公開しようとして止まらないように）。Settings → Secrets and variables → ActionsのRepository variablesに `YOKI_DEPLOY_WITH_ACTIONS` を `true` で入れる。
 
 リポジトリのSettings → Environmentsで「production」を作り、次を入れる。
 
@@ -146,7 +146,7 @@ Googleでログインした人がグループに入れるかは、Discordのサ�
 | リポジトリ | 見分け方 | 取り込み方 | 公開 |
 |---|---|---|---|
 | ボタンで作った | 元の履歴とつながっていない | 版のファイルで入れ替える。Cloudflareが `wrangler.jsonc` に書いた値（Workerの名前・D1の名前とID）は引き継ぐ（`tools/update/carry-wrangler.mjs`） | mainへのpushで、Workers Buildsが表の変更を当てて公開する |
-| フォーク | 元の履歴とつながっている | 版のタグをマージする | 公開のワークフローが、表を変える前のD1の地点（bookmark）をSummaryに控えてから、表の変更を当てて公開する |
+| フォーク | 元の履歴とつながっている | 版のタグをマージする | 公開のワークフローが、表を変える前のD1の地点（bookmark）をSummaryに控えてから、表の変更を当てて公開する（`YOKI_DEPLOY_WITH_ACTIONS` が `true` のとき） |
 
 **mainに入れずにPRにするとき**: ボタンで作ったリポジトリのコードが、今の版（`package.json` の版のタグ）から変わっているとき（入れ替えると、その変更が消えるため。`wrangler.jsonc` は比べない）と、フォークでマージがぶつかったとき。どちらも `update/v1.4.0` のブランチとPRを作って止まる。GitHubの画面で確かめてマージすると公開される。サーバーごとの値はsecretかenvironmentに、規約の文はD1にあるので、コードを直さずに使っていればPRにならない。
 

@@ -3,7 +3,7 @@
 #   「Deploy to Cloudflare」のボタンで作ったリポジトリ（元の履歴とつながっていない）: 取り込む版のファイルで入れ替える。
 #     設置したときに Cloudflare が wrangler.jsonc に書いた値（Worker の名前・D1 の名前と ID）は引き継ぐ（tools/update/carry-wrangler.mjs）。
 #     main に入れると、Cloudflare の組み立て（Workers Builds）が公開する
-#   フォーク（元の履歴とつながっている）: 版のタグをマージする。公開は公開のワークフロー（deploy.yml）がする
+#   フォーク（元の履歴とつながっている）: 版のタグをマージする。公開は、GitHub Actions で公開すると決めていれば（YOKI_DEPLOY_WITH_ACTIONS）公開のワークフロー（deploy.yml）がする
 # 表（D1）の変更は、公開のときに当たる（Workers Builds は package.json の deploy、deploy.yml は変える前の地点を控えてから当てる）。
 #   動かし方: 運営の管理画面の「更新」のボタン（Worker の secret に UPDATE_DISPATCH_TOKEN があるとき）か、この画面の「Run workflow」
 #   main を変えずに PR を作って止まるとき: フォークでマージがぶつかったとき。ボタンで作ったリポジトリのコードを、設置した人が変えていたとき
@@ -115,8 +115,8 @@ jobs:
           echo "$TAG を取り込みました。公開が続けて進みます。" >> "$GITHUB_STEP_SUMMARY"
           echo 'pushed=yes' >> "$GITHUB_OUTPUT"
 
-      # GitHub Actions で公開しているリポジトリ（フォークか、YOKI_DEPLOY_WITH_ACTIONS）だけ。UPDATE_PUSH_TOKEN で書き込んだときは push で公開のワークフローが動き、
+      # GitHub Actions で公開しているリポジトリ（YOKI_DEPLOY_WITH_ACTIONS）だけ。UPDATE_PUSH_TOKEN で書き込んだときは push で公開のワークフローが動き、
       # GITHUB_TOKEN のときは動かないので、ここで動かす。ボタンで作ったリポジトリは、main への push で Workers Builds が公開する
       - name: 公開する
-        if: steps.merge.outputs.pushed == 'yes' && env.UPDATE_TOKEN == '' && (github.event.repository.fork || vars.YOKI_DEPLOY_WITH_ACTIONS == 'true')
+        if: steps.merge.outputs.pushed == 'yes' && env.UPDATE_TOKEN == '' && vars.YOKI_DEPLOY_WITH_ACTIONS == 'true'
         run: gh workflow run deploy.yml --ref main

@@ -1,6 +1,7 @@
 # アプリ（Worker と D1）を GitHub Actions で Cloudflare に公開する。
-# 動くのは、元のリポジトリ（Xelltis/yoki）と、そのフォークと、Actions で公開すると決めたリポジトリ（Repository variables の YOKI_DEPLOY_WITH_ACTIONS が true）だけ。
-# 「Deploy to Cloudflare」のボタンで設置したリポジトリ（フォークではない）は、Cloudflare の組み立て（Workers Builds）が公開するので、ここは動かない。
+# 動くのは、元のリポジトリ（Xelltis/yoki）と、Actions で公開すると決めたリポジトリ（Repository variables の YOKI_DEPLOY_WITH_ACTIONS が true）だけ。
+# フォークも、決めなければ動かない（PR を出すためのフォークで、公開しようとして止まらないように）。
+# 「Deploy to Cloudflare」のボタンで設置したリポジトリは、Cloudflare の組み立て（Workers Builds）が公開するので、ここは動かない。
 # main にアプリの変更が入ったときと、Actions の画面から手で動かしたときに動く。確かめる → 版を出す（元のリポジトリだけ）→ 公開する、の順に進む。
 # 版は、元のリポジトリでは semantic-release（設定は .releaserc.json）が main のコミットから決め、package.json の version を書き換えてコミットし、
 # タグ vX.Y.Z と GitHub の Release を作る。アプリに入れる版は package.json から読む（vite.config.ts）
@@ -36,7 +37,7 @@ concurrency:
 jobs:
   # 型の確認・lint・テストとカバレッジ（100% を下回ったら止まる）。通らなければ、版も出さず公開もしない
   check:
-    if: github.repository == (vars.YOKI_UPSTREAM || 'Xelltis/yoki') || github.event.repository.fork || vars.YOKI_DEPLOY_WITH_ACTIONS == 'true'
+    if: github.repository == (vars.YOKI_UPSTREAM || 'Xelltis/yoki') || vars.YOKI_DEPLOY_WITH_ACTIONS == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7

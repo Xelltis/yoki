@@ -265,7 +265,7 @@ YokiはOSSとして、ほかの人が自分のCloudflareに設置して公開す
 
 ボタンで作ったリポジトリ（履歴がつながっていない）: 版のファイルで入れ替える。Cloudflareが設置のときに `wrangler.jsonc` に書いた値（Workerの名前・D1の名前とID）は、`tools/update/carry-wrangler.mjs` が新しい版の `wrangler.jsonc` に引き継ぐ（コメント付きの文のまま、値の行だけを書き換える）。入れ替える前に、今のコードが今の版（`package.json` の版のタグ。`wrangler.jsonc` は除く）と同じかを比べ、違えば設置した人が変えたものとして、mainを変えずにPRを作って止まる。mainへのpushで、Workers Buildsが表の変更を当てて公開する。
 
-フォーク（履歴がつながっている）: タグをmainにマージし、公開のワークフローを動かす。ぶつかったらmainを変えずに `update/vX.Y.Z` のブランチとPRを作って止まる。
+フォーク（履歴がつながっている）: タグをmainにマージし、GitHub Actionsで公開すると決めていれば（`YOKI_DEPLOY_WITH_ACTIONS`）、公開のワークフローを動かす。ぶつかったらmainを変えずに `update/vX.Y.Z` のブランチとPRを作って止まる。
 
 **2つのトークン**: 管理画面のボタンは、Workerのsecretの `UPDATE_DISPATCH_TOKEN`（そのリポジトリのActionsを動かすだけの権限）で、更新のワークフローを `workflow_dispatch` で動かし、その実行の一覧を読む。運営者のDiscordのアカウントを取られても、コードは書き換えられない。mainへの書き込みは、更新のワークフローがActionsのsecretの `UPDATE_PUSH_TOKEN`（ContentsとWorkflows）で行う。既定の `GITHUB_TOKEN` は `.github/workflows/` を書き換えられず、書き込んだpushでは公開のワークフローも動かないので、そのときは更新のワークフローが公開のワークフローを動かす。
 
@@ -411,9 +411,9 @@ Workerの値（DiscordアプリのClient IDとSecret・Botのトークン・運�
 
 Viteは `wrangler deploy` の行き先（`.wrangler/deploy/config.json`）を、root（`src/client`）の下に書く。リポジトリの直下で動く `wrangler deploy` から見えるように、組み立ての終わりに直下にも同じ行き先を書く（`vite.config.ts` の `deployRedirect`）。`wrangler d1 migrations apply` は行き先を見ないので、直下の `wrangler.jsonc`（IDが書いてある）を読む。
 
-写した先はフォークではないので、公開のワークフロー（`deploy.yml`）は動かない（動くのは、元のリポジトリ・フォーク・`YOKI_DEPLOY_WITH_ACTIONS` を入れたリポジトリ）。サイトの公開（`pages.yml`）は、元のリポジトリでだけ動く。
+写した先では、公開のワークフロー（`deploy.yml`）は動かない（動くのは、元のリポジトリと、`YOKI_DEPLOY_WITH_ACTIONS` を入れたリポジトリ。フォークも、入れなければ動かない。PRを出すためだけのフォークで、公開しようとして止まらないように）。サイトの公開（`pages.yml`）は、元のリポジトリでだけ動く。
 
-**GitHub Actions**（`.github/workflows/deploy.yml`。元のリポジトリとフォーク）。mainにアプリの変更が入ったときに公開する。PRは、確かめのワークフロー（`ci.yml`）が、公開と同じ確かめと、サイトの組み立て・コミットの説明の形を確かめる。本番の値はGitHubのenvironment「production」に置く。組み立てのとき、`vite.config.ts` がD1のID（`YOKI_D1_DATABASE_ID`）とリポジトリの名前（`YOKI_REPOSITORY`・`YOKI_UPSTREAM`）を、組み立てた設定（`dist/yoki/wrangler.json`）に入れる。`YOKI_DEPLOY=1` のときにD1のIDが無ければ、組み立てを止める。ほかの値は、公開のたびに `wrangler deploy --secrets-file` でWorkerのsecretとして版と一緒に送る。varsにしないのは、ボタンの道と置き場所をそろえるためと、varsは公開のログに出るため（公開のリポジトリでは、Actionsのログはだれでも読める）。マイグレーションと公開は、どちらも組み立てた設定（`--config dist/yoki/wrangler.json`）で行う。
+**GitHub Actions**（`.github/workflows/deploy.yml`。元のリポジトリと、`YOKI_DEPLOY_WITH_ACTIONS` を入れたリポジトリ）。mainにアプリの変更が入ったときに公開する。PRは、確かめのワークフロー（`ci.yml`）が、公開と同じ確かめと、サイトの組み立て・コミットの説明の形を確かめる。本番の値はGitHubのenvironment「production」に置く。組み立てのとき、`vite.config.ts` がD1のID（`YOKI_D1_DATABASE_ID`）とリポジトリの名前（`YOKI_REPOSITORY`・`YOKI_UPSTREAM`）を、組み立てた設定（`dist/yoki/wrangler.json`）に入れる。`YOKI_DEPLOY=1` のときにD1のIDが無ければ、組み立てを止める。ほかの値は、公開のたびに `wrangler deploy --secrets-file` でWorkerのsecretとして版と一緒に送る。varsにしないのは、ボタンの道と置き場所をそろえるためと、varsは公開のログに出るため（公開のリポジトリでは、Actionsのログはだれでも読める）。マイグレーションと公開は、どちらも組み立てた設定（`--config dist/yoki/wrangler.json`）で行う。
 
 **公開のアドレス**（`auth/origin.ts`）。`APP_URL` は無くてもよい（workers.devのまま公開するとき）。そのときは届いた要求のアドレスを使う。要求の無い見回り（cron）が知らせのリンクに使うために、Discordでログインするたびに、`meta` の `app_origin` に控える（変わったときだけ書く）。
 
