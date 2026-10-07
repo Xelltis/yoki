@@ -1,8 +1,8 @@
 // 卓の状態と、知らせの決まり（GAS版Config.js）
-import { STATUS, type Status } from '../../shared/api';
+import { SESSION_DATES_MAX, STATUS, type Status } from '../../shared/api';
 
-// 卓の状態（の名前と順番）は、画面と共有する（src/shared/api.ts）
-export { STATUS, type Status };
+// 卓の状態（の名前と順番）と、まとめて登録する日数の上限は、画面と共有する（src/shared/api.ts）
+export { SESSION_DATES_MAX, STATUS, type Status };
 export const STATUS_LIST: Status[] = [STATUS.RECRUIT, STATUS.ADJUSTING, STATUS.HELD, STATUS.DONE, STATUS.CANCELED];
 /** 開催日が要る。予定表に「参」「GM」が付く */
 export const DATED: Status[] = [STATUS.HELD];

@@ -38,6 +38,18 @@ export function replacePeople(ctx: Ctx, changes: { rowId: number; people: People
   ];
 }
 
+/**
+ * まとめて入れる卓（グループの次の番号から n 回分。番号はまだ進めていない）の関わる人を、回数によらず1文で入れる。
+ * 卓を入れる文のあと、番号を進める文の前に、同じbatchで流す
+ */
+export function insertPeopleForNext(ctx: Ctx, n: number, people: People): D1PreparedStatement {
+  const base = rows(ctx, null, people);
+  const all = Array.from({ length: n }, (_, i) => base.map((r) => ({ ...r, i }))).flat();
+  return ctx.db
+    .prepare(INSERT_FROM_JSON("(SELECT id FROM sessions WHERE group_id = ?1 AND seq = (SELECT next_session_seq FROM groups WHERE id = ?1) + json_extract(value, '$.i'))", '?2'))
+    .bind(ctx.group.id, JSON.stringify(all));
+}
+
 /** 新しく入れる卓（まだidが分からない）の関わる人。グループと番号で卓を引く */
 export function insertPeopleForSeq(ctx: Ctx, seq: number, people: People): D1PreparedStatement {
   return ctx.db

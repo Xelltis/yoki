@@ -1,5 +1,5 @@
 // 卓の登録の窓と変更の窓で共通の決まり（入力の形・サーバーへ送る形・重なりの注意・状態ごとの手順・シリーズの引き継ぎ）
-import type { ConsoleData, ConsoleSession } from '../../../../shared/api';
+import { type ConsoleData, type ConsoleSession, SESSION_DATES_MAX } from '../../../../shared/api';
 import type { IconName } from '../../../ui/icons';
 import { addDaysYmd, fmtJa } from '../model/dates';
 import { isActive, me, peopleOf, sortSessions, splitNames, STATUS_DATED } from '../model/model';
@@ -131,6 +131,7 @@ export type SessionForm = ReturnType<typeof collect>;
 export function checkForm(form: SessionForm): string {
   if (!form.name.trim()) return '卓の名前を入れてください。';
   if (!form.date && STATUS_DATED.indexOf(form.status) >= 0) return '開催日を入れてください。まだ決まっていなければ状態を「募集」か「調整中」にします。';
+  if (form.dates && form.dates.length > SESSION_DATES_MAX) return 'まとめて登録できるのは' + SESSION_DATES_MAX + '日分までです。';
   if (!!form.windowFrom !== !!form.windowTo) return '期間は、始まりと終わりの両方の日を入れてください。';
   if (form.windowFrom && form.windowTo && form.windowFrom > form.windowTo) { const wx = form.windowFrom; form.windowFrom = form.windowTo; form.windowTo = wx; }
   return '';

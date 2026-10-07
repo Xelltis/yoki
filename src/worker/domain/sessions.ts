@@ -2,11 +2,11 @@
 import { badRequest, notFound } from '../lib/errors';
 import { normTime, parseYmd } from '../lib/jst';
 import { splitNames, uniq } from '../lib/text';
-import { DATED, PROMOTE, STATUS, STATUS_LIST, type Status } from './constants';
+import { DATED, PROMOTE, SESSION_DATES_MAX, STATUS, STATUS_LIST, type Status } from './constants';
 import { type Form, list, requireSelf, str } from './form';
 import { sessionCode } from './load';
 import { findSession, peopleOf, readWindow, windowInfo } from './model';
-import { insertPeopleForSeq, type People, peopleOfSession, replacePeople } from './people';
+import { insertPeopleForNext, insertPeopleForSeq, type People, peopleOfSession, replacePeople } from './people';
 import type { Ctx } from './types';
 
 /** 状態を読む。知らない値は「開催」（旧い版の「予定」も「開催」） */
@@ -120,6 +120,7 @@ async function saveSessionDates(ctx: Ctx, form: Form, name: string, raw: string[
   if (form.id) throw badRequest('複数日をまとめて登録できるのは新規のときだけです。');
   const status = readStatus(form.status);
   if (!DATED.includes(status)) throw badRequest('複数日をまとめて登録するときは、状態を「開催」にします。');
+  if (raw.length > SESSION_DATES_MAX) throw badRequest('まとめて登録できるのは' + SESSION_DATES_MAX + '日分までです。');
   const dates = raw.map((d) => {
     const x = parseYmd(d);
     if (!x) throw badRequest('開催日の形式が読めません: ' + d);
@@ -130,15 +131,25 @@ async function saveSessionDates(ctx: Ctx, form: Form, name: string, raw: string[
   const members = uniq(splitNames(list(form.members).join('、') + '、' + str(form.extra)));
   const m = /^(.*?)(\d+)(\D*)$/.exec(name);
   const names = dates.map((_, i) => (i === 0 ? name : m ? m[1]! + (Number(m[2]) + i) + m[3]! : name + ' #' + (i + 1)));
-  const first = await allocateSeq(ctx, dates.length);
   const at = ctx.now.toISOString();
   const seriesEnd = series ? parseYmd(form.seriesEnd) : null;
   const people: People = { gm: gm ? [gm] : [], member: members, want: [], interest: [] };
-  const stmts = dates.flatMap((d, i) => [
-    ctx.db.prepare(INSERT_SESSION).bind(ctx.group.id, first + i, names[i], status, d, normTime(form.start), normTime(form.end), str(form.place), str(form.memo), series, seriesEnd, null, null, ctx.actor.name, at),
-    insertPeopleForSeq(ctx, first + i, people),
+  // 卓・関わる人・番号を、日数によらず3文で書く（D1の1回の呼び出しで使える問い合わせの数を超えないように）。
+  // 番号は、グループの次の番号から順に振り、最後に進める。1つのbatchなので、途中で失敗すれば番号も進まない
+  const [, , seq] = await ctx.db.batch([
+    ctx.db
+      .prepare(
+        `INSERT INTO sessions (group_id, seq, name, status, date, start_time, end_time, place, memo, series, series_end, window_from, window_to, candidates, editor, updated_at)
+         SELECT ?1, (SELECT next_session_seq FROM groups WHERE id = ?1) + json_extract(value, '$.i'), json_extract(value, '$.name'), ?2, json_extract(value, '$.date'),
+                ?3, ?4, ?5, ?6, ?7, ?8, NULL, NULL, '[]', ?9, ?10
+           FROM json_each(?11)`,
+      )
+      .bind(ctx.group.id, status, normTime(form.start), normTime(form.end), str(form.place), str(form.memo), series, seriesEnd, ctx.actor.name, at,
+        JSON.stringify(dates.map((d, i) => ({ i, name: names[i], date: d })))),
+    insertPeopleForNext(ctx, dates.length, people),
+    ctx.db.prepare('UPDATE groups SET next_session_seq = next_session_seq + ?2 WHERE id = ?1 RETURNING next_session_seq - ?2 AS first').bind(ctx.group.id, dates.length),
   ]);
-  await ctx.db.batch(stmts);
+  const first = (seq!.results[0] as { first: number }).first;
   const ids = dates.map((_, i) => sessionCode(first + i));
   return { ok: true, id: ids[0], ids, names, count: dates.length, message: dates.length + '回分を登録しました: ' + names.join('、') };
 }

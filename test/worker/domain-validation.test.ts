@@ -22,6 +22,16 @@ describe('卓', () => {
     expect(await count('sessions')).toBe(1);
   });
 
+  test('まとめての登録は20日分まで。超えたら断り、卓の番号も進めない。20日分なら、卓・関わる人・番号を一度に入れる', async () => {
+    const days = (n: number) => Array.from({ length: n }, (_, i) => T(i + 1));
+    expect((await fail(G.sora, G.id, 'saveSession', { name: 'C', dates: days(21), status: '開催' })).error).toBe('まとめて登録できるのは20日分までです。');
+    expect(await count('sessions')).toBe(0);
+    const r = await ok(G.sora, G.id, 'saveSession', { name: 'C', gm: 'ソラ', members: ['こまち'], dates: days(20), status: '開催' });
+    expect([r.ids[0], r.ids[19], r.count]).toEqual(['S001', 'S020', 20]);
+    expect(await count('session_people')).toBe(40);
+    expect((await ok(G.sora, G.id, 'saveSession', { name: 'D', date: T(1), status: '開催' })).id).toBe('S021');
+  });
+
   test('期間の日付が読めなければ断る', async () => {
     expect((await fail(G.sora, G.id, 'saveSession', { name: 'x', status: '募集', windowFrom: 'あした', windowTo: T(3) })).error).toBe('期間の日付が読めません: あした〜' + T(3));
   });
