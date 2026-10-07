@@ -2,6 +2,8 @@
 
 Yokiの開発に参加する人向けの説明。不具合の知らせや、こうしたいという案は、Issueに書く。コードを直すときは、mainに向けてPRを出す。マージされると元のリポジトリの版が出て、各地のYokiの「更新」に届く。
 
+セキュリティの問題（ログインを飛ばせる・ほかのグループの中身が読めるなど）は、Issueに書かない。[SECURITY.md](SECURITY.md) のとおり、GitHubの非公開の報告で知らせる。
+
 作りとそう決めた理由は [docs/architecture.md](docs/architecture.md)、公開と更新の仕組みは [docs/deployment.md](docs/deployment.md) にある。Claude Codeで作業するときの決まりは [CLAUDE.md](CLAUDE.md)。
 
 ## 手元で動かす

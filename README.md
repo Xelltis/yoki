@@ -61,6 +61,7 @@ Yokiは、TRPGの卓の予定をDiscordサーバーの仲間と管理するWeb�
 | 開発する人 | [CONTRIBUTING.md](CONTRIBUTING.md) | 手元で動かす・テスト・書くときの決まり・コミット・版を出す |
 | 開発する人 | [docs/architecture.md](docs/architecture.md) | 作りと、そう決めた理由 |
 | 開発する人 | [docs/deployment.md](docs/deployment.md) | 公開と更新の仕組み、GitHub Actionsでの公開 |
+| 弱いところを見つけた人 | [SECURITY.md](SECURITY.md) | セキュリティの問題を、Issueに書かずに非公開で知らせる方法 |
 
 ## 開発する
 
