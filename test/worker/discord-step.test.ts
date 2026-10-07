@@ -117,6 +117,9 @@ describe('卓の知らせ', () => {
     await send(G.admin, { kind: 'delete', name: '港 #1', series: '港', status: '開催' });
     await send(G.admin, { kind: 'delete', name: '単発', status: '開催' });
     expect(bot.posts().slice(1).map((p) => p.channel)).toEqual([CH(3), CH(1)]);
+    // 卓を消せるのは管理者だけなので、削除の知らせも管理者だけ
+    expect((await fail(G.sora, G.id, 'sendDiscordStep', { kind: 'delete', name: '偽の卓', status: '開催' })).error).toBe('ADMIN: 卓の削除の知らせができるのは管理者だけです。');
+    expect(bot.posts()).toHaveLength(3);
   });
 
   test('参加確認は、募集中の卓に、500文字までの一言でだけ送る', async () => {
@@ -190,6 +193,19 @@ describe('まとめての変更', () => {
     expect(await refuse({ kind: 'bulk', names: [] })).toBe('対象の卓がありません。');
     await send(G.admin, { kind: 'bulk', names: ['港 #9'], series: '港' });
     expect(bot.posts()).toEqual([{ channel: CH(3), content: '🔁 卓の予定を一括で変更（ひより）\n・港 #9', embeds: 0 }]);
+  });
+
+  test('管理者でない人は、画面の名前と見出しを使えない。送った卓のIDから名前を引き、「登録」として送る', async () => {
+    await ok(G.sora, G.id, 'saveSession', { name: '港 #1', gm: 'ソラ', date: T(3), status: '開催' });
+    await send(G.sora, { kind: 'bulk', names: ['<@400000000000000099> 偽の知らせ'], ids: ['S001'], label: '全員集合' });
+    expect(bot.posts()).toEqual([{ channel: CH(1), content: '🔁 卓の予定を一括で登録（ソラ）\n・港 #1\n' + ID.ソラ, embeds: 0 }]);
+    // 卓が無ければ送らない
+    expect((await fail(G.sora, G.id, 'sendDiscordStep', { kind: 'bulk', names: ['偽'], ids: ['S999'] })).error).toBe('対象の卓がありません。');
+  });
+
+  test('管理者が送る名前と見出しも、1行にしてメンションにならない形にする', async () => {
+    await send(G.admin, { kind: 'bulk', names: ['<@400000000000000011>\n@everyone 港'], label: '@here 状態を「中止」に' });
+    expect(bot.posts()[0]!.content).toBe('🔁 卓の予定を一括で@\u200bhere 状態を「中止」に（ひより）\n・<@\u200b400000000000000011> @\u200beveryone 港');
   });
 });
 

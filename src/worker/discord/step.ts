@@ -6,11 +6,19 @@ import { type Form, list, str } from '../domain/form';
 import { findSession } from '../domain/model';
 import { notifyYmdOf } from '../domain/notify';
 import type { Ctx, Session } from '../domain/types';
-import { badRequest } from '../lib/errors';
+import { adminError, badRequest } from '../lib/errors';
 import { stampText } from '../lib/jst';
 import { announcePayload, askPayload, bulkPayload, changePayload, mentionsOf, type Payload, pollPayload, pollReadyPayload, decidedPayload, testPayload } from './payloads';
 import { discordAttempt } from './send';
 import { discordTargets, type Kind, kindBase, sessionTargets, type Target, targetNote, unionTargets } from './targets';
+
+/** 画面から受け取った文（消した卓の名前・まとめての見出し）。1行にして長さを切り、@ のあとに見えない文字をはさんでメンションにしない */
+export function plainText(s: string, max = 100): string {
+  return s.replace(/\s+/g, ' ').trim().slice(0, max).replace(/@/g, '@\u200b');
+}
+
+/** まとめての知らせに載せる卓の数 */
+const BULK_NAMES_MAX = 50;
 
 export async function sendDiscordStep(ctx: Ctx, form: Form, io: { data: () => Promise<unknown> }) {
   const me = ctx.actor.name;
@@ -60,7 +68,9 @@ export async function sendDiscordStep(ctx: Ctx, form: Form, io: { data: () => Pr
       break;
     }
     case 'delete': {
-      const nm = str(form.name);
+      // 卓を消せるのは管理者だけ。消した卓はもう無いので、名前は画面から受け取る（メンションにならない形にする）
+      if (!ctx.actor.isAdmin) throw adminError('卓の削除の知らせ');
+      const nm = plainText(str(form.name));
       if (!nm) throw badRequest('消した卓の名前がありません。');
       payload = changePayload(ctx, { name: nm } as Session, '削除', me);
       label = '削除通知';
@@ -107,13 +117,17 @@ export async function sendDiscordStep(ctx: Ctx, form: Form, io: { data: () => Pr
       break;
     }
     case 'bulk': {
-      const names = list(form.names);
-      if (!names.length) throw badRequest('対象の卓がありません。');
       const ids = list(form.ids);
       const picked = ctx.sessions.filter((x) => ids.includes(x.id));
+      // 管理者でない人が送れるのは、複数日をまとめて登録したときだけ。名前は画面から受け取らず、卓から引く。
+      // 管理者は「卓をまとめて変える」（消した卓を含む）からも送るので、画面の名前と見出しを使う（メンションにならない形にする）
+      const admin = ctx.actor.isAdmin;
+      const names = (admin ? list(form.names).map((n) => plainText(n)).filter(Boolean) : picked.map((x) => x.name)).slice(0, BULK_NAMES_MAX);
+      if (!names.length) throw badRequest('対象の卓がありません。');
+      const what = admin ? plainText(str(form.label), 60) || '変更' : '登録';
       // 複数日をまとめて登録したときは、その回のGMと参加者をメンションする
-      const mentions = str(form.label) === '登録' && picked.length ? mentionsOf(ctx, picked) : '';
-      payload = bulkPayload(str(form.label) || '変更', me, names, mentions);
+      const mentions = what === '登録' && picked.length ? mentionsOf(ctx, picked) : '';
+      payload = bulkPayload(what, me, names, mentions);
       label = '一括変更';
       target = names.join('、');
       // 送り先は、対象の卓それぞれの送り先を合わせたもの（卓が分からなければ、シリーズか基本のチャンネル）
