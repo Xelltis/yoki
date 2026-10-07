@@ -97,7 +97,7 @@ export type Ctx = {
   availGoogle: Record<string, string[]>;
 };
 
-export type Bot = { token: string; clientId: string };
+export type Bot = { token: string; clientId?: string };
 
 /** 購読URLに載せる卓。mineは自分がGMか参加者として入っている卓、allはグループの卓すべて */
 export type FeedScope = 'mine' | 'all';

@@ -21,7 +21,7 @@ const callbackUrl = (env: { APP_URL?: string }, reqUrl: string) => appOrigin(env
 
 authRoutes.get('/auth/login', (c) => {
   if (!c.env.DISCORD_CLIENT_ID) {
-    return c.html(noticePage('Discordログインの設定がありません', 'DISCORD_CLIENT_IDが設定されていません（手元では .dev.vars、本番ではwrangler.jsonc）。', { href: '/', label: '入口へ戻る' }), 500);
+    return c.html(noticePage('Discordログインの設定がありません', 'DISCORD_CLIENT_IDが設定されていません（手元では .dev.vars、公開した卓予定ではWorkerのsecret）。', { href: '/', label: '入口へ戻る' }), 500);
   }
   const url = new URL(c.req.url);
   const want = c.req.query('return_to') ?? '/';

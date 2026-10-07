@@ -14,28 +14,24 @@ import Icons from 'unplugin-icons/vite';
 import { defineConfig, type Plugin } from 'vite';
 import { reactIconCompiler } from './tools/icons.ts';
 
-/** 公開するCloudflareごとに違う値（環境変数の名前 → 入れる先）。リポジトリのwrangler.jsoncには仮の値だけを置く */
-const DEPLOY_VALUES = ['YOKI_D1_DATABASE_ID', 'YOKI_APP_URL', 'YOKI_DISCORD_CLIENT_ID'] as const;
-
 /**
- * 組み立てのときに、公開するCloudflareごとの値を設定（dist/yoki/wrangler.json）に入れる。値は環境変数から読む
- * （deploy.ymlがGitHubのenvironment「production」から渡す）。YOKI_DEPLOY=1のときに欠けていたら、仮の値のまま公開しないように止める。
+ * 組み立てのときに、公開するCloudflareごとの値を設定（dist/yoki/wrangler.json）に入れる。
+ * D1のIDは、deploy.ymlがYOKI_D1_DATABASE_IDで渡す（YOKI_DEPLOY=1のときに無ければ、仮のIDのまま公開しないように止める）。
+ * Workerのほかの値（DiscordアプリのClient IDなど）は、ここではなく、公開のときにWorkerのsecretとして送る（deploy.yml。src/worker/env.ts）。
+ * リポジトリ（運営の管理画面の「更新」）は、毎回組み立てのときに決まるのでvarsに入れる。空なら入れない。
  * プラグインは返した値を元の設定に混ぜる（配列は足し合わせる）ので、受け取った設定をその場で書き換えて何も返さない
  */
 function deployValues(config: WorkerConfig): void {
   const env = process.env;
-  const missing = DEPLOY_VALUES.filter((k) => !env[k]);
-  if (env.YOKI_DEPLOY === '1' && missing.length) throw new Error('公開に要る値がありません: ' + missing.join('、') + '（GitHubのenvironment「production」の変数に入れる）');
+  if (env.YOKI_DEPLOY === '1' && !env.YOKI_D1_DATABASE_ID) throw new Error('公開に要る値がありません: YOKI_D1_DATABASE_ID（GitHubのenvironment「production」の変数に入れる）');
   const db = config.d1_databases.find((d) => d.binding === 'DB');
   if (db && env.YOKI_D1_DATABASE_ID) db.database_id = env.YOKI_D1_DATABASE_ID;
-  if (env.YOKI_APP_URL) config.vars.APP_URL = env.YOKI_APP_URL;
-  if (env.YOKI_DISCORD_CLIENT_ID) config.vars.DISCORD_CLIENT_ID = env.YOKI_DISCORD_CLIENT_ID;
-  // Googleカレンダーとの連携は、無くても動くのでDEPLOY_VALUES（欠けたら止まる一覧）には入れない
-  if (env.YOKI_GOOGLE_CLIENT_ID) config.vars.GOOGLE_CLIENT_ID = env.YOKI_GOOGLE_CLIENT_ID;
+  const vars: Record<string, string> = {};
   // 公開しているリポジトリ（owner/name。deploy.ymlがgithub.repositoryを渡す）。運営の管理画面の「更新」が、更新のワークフローを呼ぶ先
-  if (env.YOKI_REPOSITORY) config.vars.APP_REPOSITORY = env.YOKI_REPOSITORY;
+  if (env.YOKI_REPOSITORY) vars.APP_REPOSITORY = env.YOKI_REPOSITORY;
   // 新しい版を見に行く元のリポジトリ（無ければsrc/worker/update/config.tsの既定）。フォークのフォークで使う
-  if (env.YOKI_UPSTREAM) config.vars.UPSTREAM_REPOSITORY = env.YOKI_UPSTREAM;
+  if (env.YOKI_UPSTREAM) vars.UPSTREAM_REPOSITORY = env.YOKI_UPSTREAM;
+  config.vars = { ...config.vars, ...vars };
 }
 
 const root = path.join(import.meta.dirname, 'src/client');

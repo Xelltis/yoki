@@ -11,7 +11,7 @@ export function isChannelId(id: string): boolean {
 export const BOT_PERMISSIONS = 1024 + 2048 + 16384;
 
 /** グループのサーバーにBotを招くURL。DiscordアプリのClient IDが無ければ空 */
-export function botInviteUrl(clientId: string, guildId: string): string {
+export function botInviteUrl(clientId: string | undefined, guildId: string): string {
   if (!clientId) return '';
   const q = new URLSearchParams({ client_id: clientId, scope: 'bot', permissions: String(BOT_PERMISSIONS), guild_id: guildId, disable_guild_select: 'true' });
   return 'https://discord.com/oauth2/authorize?' + q.toString();

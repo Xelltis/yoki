@@ -8,10 +8,11 @@ export const DISCORD_API = 'https://discord.com/api/v10';
 export type DiscordUser = { id: string; username: string; global_name?: string | null; avatar?: string | null };
 export type DiscordGuild = { id: string; name: string; icon?: string | null; owner?: boolean; permissions?: string };
 
+// DISCORD_CLIENT_IDは、ログインを始めるとき（routes/auth.ts）に、あるかを確かめてある
 export function authorizeUrl(env: Bindings, redirectUri: string, state: string, prompt: 'none' | 'consent'): string {
   const q = new URLSearchParams({
     response_type: 'code',
-    client_id: env.DISCORD_CLIENT_ID,
+    client_id: env.DISCORD_CLIENT_ID!,
     scope: 'identify guilds',
     redirect_uri: redirectUri,
     state,
@@ -35,7 +36,7 @@ export async function fetchDiscordProfile(env: Bindings, code: string, redirectU
         grant_type: 'authorization_code',
         code,
         redirect_uri: redirectUri,
-        client_id: env.DISCORD_CLIENT_ID,
+        client_id: env.DISCORD_CLIENT_ID!,
         client_secret: env.DISCORD_CLIENT_SECRET ?? '',
       }),
     }),

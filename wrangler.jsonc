@@ -1,6 +1,7 @@
 // 卓予定（Yoki）のWorkerの設定。npm run devとnpm run build（Vite）がこれを読む。
-// 公開するCloudflareごとに違う値（D1のID・APP_URL・DISCORD_CLIENT_ID）は、ここには仮の値だけを置く。
-// 公開のときにGitHub Actions（.github/workflows/deploy.yml）が、environment「production」の値を組み立てた設定に入れる（vite.config.ts）
+// 公開するCloudflareごとに違う値は、ここには仮の値だけを置くか、書かない。
+//   D1のID: 仮の値。公開のときにGitHub Actions（.github/workflows/deploy.yml）が、組み立てた設定にYOKI_D1_DATABASE_IDから入れる（vite.config.ts）
+//   DiscordアプリのIDや公開のアドレスなど: Workerのsecretに置く（src/worker/env.ts）。varsにしない
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "yoki",
@@ -26,16 +27,6 @@
   "triggers": {
     // 知らせの見回り（5分おき。時刻はUTCだが、中で日本時間に直して判断する）
     "crons": ["*/5 * * * *"]
-  },
-  "vars": {
-    // Discordの文に付けるアプリのURLと、DiscordアプリのクライアントID。手元では .dev.varsで、本番では公開のときに入れる。
-    // 秘密の値（DISCORD_CLIENT_SECRET・DISCORD_BOT_TOKEN）と運営者のID（OPERATOR_IDS）はvarsに置かず、Workerのsecretにする（src/worker/env.ts）
-    "APP_URL": "",
-    "DISCORD_CLIENT_ID": "",
-    "GOOGLE_CLIENT_ID": "",
-    // 公開しているリポジトリ（owner/name）と、新しい版を見に行く元のリポジトリ。公開のときに入れる（運営の管理画面の「更新」）
-    "APP_REPOSITORY": "",
-    "UPSTREAM_REPOSITORY": ""
   },
   "observability": { "enabled": true }
 }

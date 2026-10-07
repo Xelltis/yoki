@@ -3,9 +3,9 @@
 # 版は、元のリポジトリでは semantic-release（設定は .releaserc.json）が main のコミットから決め、タグ vX.Y.Z と GitHub の Release を作る。
 # フォークでは版を出さず、更新のワークフロー（update.yml）が取り込んだタグの版で公開する。アプリに入れる版は、いちばん近いタグから読む（vite.config.ts）
 # 公開する Cloudflare ごとの値はリポジトリに置かず、GitHub の environment「production」に置く（書き方は README の「公開」）
-#   変数（vars）: CLOUDFLARE_ACCOUNT_ID・YOKI_D1_DATABASE_ID・YOKI_APP_URL・YOKI_DISCORD_CLIENT_ID・YOKI_GOOGLE_CLIENT_ID（任意）・YOKI_UPSTREAM（任意）
+#   変数（vars）: CLOUDFLARE_ACCOUNT_ID・YOKI_D1_DATABASE_ID・YOKI_DISCORD_CLIENT_ID・YOKI_APP_URL（任意）・YOKI_GOOGLE_CLIENT_ID（任意）・YOKI_UPSTREAM（任意）
 #   秘密（secrets）: CLOUDFLARE_API_TOKEN・DISCORD_CLIENT_SECRET・DISCORD_BOT_TOKEN・OPERATOR_IDS・GOOGLE_CLIENT_SECRET（任意）・GOOGLE_TOKEN_KEY（任意）・UPDATE_DISPATCH_TOKEN（任意）
-#   Google カレンダーとの連携を使うときだけ、YOKI_GOOGLE_CLIENT_ID・GOOGLE_CLIENT_SECRET・GOOGLE_TOKEN_KEY の 3 つを入れる
+#   D1 の ID とリポジトリの名前は組み立てた設定に入れ、ほかは Worker の secret にする（var にしない。src/worker/env.ts）
 #   運営の管理画面の「更新」のボタンで更新するときだけ、UPDATE_DISPATCH_TOKEN を入れる（README の「新しい版に上げる」）。更新のワークフロー（update.yml）も、このワークフローを動かす
 name: アプリを公開する
 
@@ -89,14 +89,11 @@ jobs:
           cache: npm
       - run: npm ci
 
-      - name: 組み立てる（公開する Cloudflare の値を入れる。欠けていたら止まる）
+      - name: 組み立てる（D1 の ID とリポジトリの名前を入れる。D1 の ID が無ければ止まる）
         run: npm run build
         env:
           YOKI_DEPLOY: '1'
           YOKI_D1_DATABASE_ID: ${{ vars.YOKI_D1_DATABASE_ID }}
-          YOKI_APP_URL: ${{ vars.YOKI_APP_URL }}
-          YOKI_DISCORD_CLIENT_ID: ${{ vars.YOKI_DISCORD_CLIENT_ID }}
-          YOKI_GOOGLE_CLIENT_ID: ${{ vars.YOKI_GOOGLE_CLIENT_ID }}
           YOKI_REPOSITORY: ${{ github.repository }}
           YOKI_UPSTREAM: ${{ vars.YOKI_UPSTREAM }}
 
@@ -113,9 +110,13 @@ jobs:
       - name: 本番の D1 に表の変更を当てる
         run: npx wrangler d1 migrations apply DB --remote --config dist/yoki/wrangler.json
 
-      # 秘密の値は、公開する版と一緒に送る（ファイルは runner の一時の場所に置き、送ったら消す）
+      # Worker の secret は、公開する版と一緒に送る（ファイルは runner の一時の場所に置き、送ったら消す）。
+      # DiscordアプリのClient ID・公開のアドレス・GoogleのClient IDは秘密ではないが、Worker の値はすべて secret にそろえる
       - name: 公開する
         env:
+          DISCORD_CLIENT_ID: ${{ vars.YOKI_DISCORD_CLIENT_ID }}
+          APP_URL: ${{ vars.YOKI_APP_URL }}
+          GOOGLE_CLIENT_ID: ${{ vars.YOKI_GOOGLE_CLIENT_ID }}
           DISCORD_CLIENT_SECRET: ${{ secrets.DISCORD_CLIENT_SECRET }}
           DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
           OPERATOR_IDS: ${{ secrets.OPERATOR_IDS }}
@@ -124,12 +125,15 @@ jobs:
           UPDATE_DISPATCH_TOKEN: ${{ secrets.UPDATE_DISPATCH_TOKEN }}
         run: |
           test -n "$CLOUDFLARE_API_TOKEN" || { echo '::error::secret の CLOUDFLARE_API_TOKEN がありません'; exit 1; }
+          test -n "$DISCORD_CLIENT_ID" || { echo '::error::変数の YOKI_DISCORD_CLIENT_ID がありません'; exit 1; }
           test -n "$DISCORD_CLIENT_SECRET" || { echo '::error::secret の DISCORD_CLIENT_SECRET がありません'; exit 1; }
           test -n "$DISCORD_BOT_TOKEN" || { echo '::error::secret の DISCORD_BOT_TOKEN がありません'; exit 1; }
           secrets="$RUNNER_TEMP/secrets.json"
           trap 'rm -f "$secrets"' EXIT
           node -e "
-            const s = { DISCORD_CLIENT_SECRET: process.env.DISCORD_CLIENT_SECRET, DISCORD_BOT_TOKEN: process.env.DISCORD_BOT_TOKEN };
+            const s = { DISCORD_CLIENT_ID: process.env.DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET: process.env.DISCORD_CLIENT_SECRET, DISCORD_BOT_TOKEN: process.env.DISCORD_BOT_TOKEN };
+            if (process.env.APP_URL) s.APP_URL = process.env.APP_URL;
+            if (process.env.GOOGLE_CLIENT_ID) s.GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
             if (process.env.OPERATOR_IDS) s.OPERATOR_IDS = process.env.OPERATOR_IDS;
             if (process.env.GOOGLE_CLIENT_SECRET) s.GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
             if (process.env.GOOGLE_TOKEN_KEY) s.GOOGLE_TOKEN_KEY = process.env.GOOGLE_TOKEN_KEY;
