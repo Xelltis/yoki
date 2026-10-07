@@ -80,6 +80,7 @@
     "semantic-release": {
       "micromatch": "$micromatch",
       "@semantic-release/npm": "$@semantic-release/npm"
-    }
+    },
+    "sharp": "0.35.5"
   }
 }

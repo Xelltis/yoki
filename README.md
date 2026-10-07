@@ -99,6 +99,8 @@ lintはoxlint（`.oxlintrc.json`）。ESLintのTypeScript対応（typescript-esl
 
 Workersのテスト用の道具（`@cloudflare/vitest-pool-workers`）は、古いwranglerとminiflareを固定して抱えている（npm auditに出る）。`package.json` の `overrides` で、アプリと同じ版にそろえている。wranglerを上げたら、`overrides` のminiflareもwranglerが使う版に合わせる（テストが確かめる）。
 
+miniflareが固定している `sharp`（画像の部品）は、npm auditに指摘が出た版なので、`overrides` で直った版に上げている。miniflareが直った版を使うようになったら、外す。
+
 ## 公開（Cloudflare）
 
 アプリの公開はGitHub Actions（`.github/workflows/deploy.yml`）が行う。手元から `wrangler deploy` はしない。
