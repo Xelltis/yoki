@@ -4,12 +4,16 @@
 import { useData } from 'vitepress';
 import { VPFeatures } from 'vitepress/theme';
 import { computed } from 'vue';
+import calendarMonth from '~icons/material-symbols/calendar-month-outline-rounded?raw';
 import eventAvailable from '~icons/material-symbols/event-available-outline-rounded?raw';
 import howToVote from '~icons/material-symbols/how-to-vote-outline-rounded?raw';
 import login from '~icons/material-symbols/login-outline-rounded?raw';
 import notifications from '~icons/material-symbols/notifications-outline-rounded?raw';
+import rocketLaunch from '~icons/material-symbols/rocket-launch-outline-rounded?raw';
 
-const RAW: Record<string, string> = { event_available: eventAvailable, how_to_vote: howToVote, login: login, notifications: notifications };
+const RAW: Record<string, string> = {
+  calendar_month: calendarMonth, event_available: eventAvailable, how_to_vote: howToVote, login: login, notifications: notifications, rocket_launch: rocketLaunch,
+};
 type Point = { icon: string; title: string; details: string };
 
 const { frontmatter } = useData();

@@ -14,7 +14,7 @@ const base = new URL(SITE_URL).pathname;
 export default defineConfig({
   lang: 'ja',
   title: 'Yoki',
-  description: 'TRPGの卓の予定を、Discordサーバーの仲間と決めるWebアプリ。',
+  description: 'TRPGの卓の予定を、Discordサーバーの仲間と決めるWebアプリ。だれでも自分のCloudflareに設置できるOSS。',
   base,
   cleanUrls: true,
   vite: {
@@ -56,8 +56,13 @@ export default defineConfig({
       { text: '始め方', link: '/guide/start' },
       { text: '使い方', link: '/guide/availability', activeMatch: '^/guide/(?!start)' },
       { text: '設置する', link: '/setup/', activeMatch: '^/setup/' },
+      { text: 'GitHub', link: 'https://github.com/Xelltis/yoki' },
       ...(APP_URL ? [{ text: 'アプリを開く', link: APP_URL }] : []),
     ],
+    // トップのページの下に出る（横の並びの無いページだけ）。OSSであることと、ライセンス・第三者のライセンスへのリンク
+    footer: {
+      message: 'Yokiは<a href="https://github.com/Xelltis/yoki">MIT LicenseのOSS</a>です。使っている部品のライセンスは<a href="https://github.com/Xelltis/yoki/blob/main/THIRD_PARTY_NOTICES.md">THIRD_PARTY_NOTICES.md</a>にあります。',
+    },
     sidebar: {
       '/guide/': [
         { text: 'はじめる', items: [{ text: '始め方', link: '/guide/start' }] },

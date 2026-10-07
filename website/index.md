@@ -32,4 +32,10 @@ points:
   - icon: login
     title: Discordでログイン
     details: グループはDiscordサーバーごとに作ります。入れるのは、そのサーバーにいる人だけです。Googleのアカウントを結びつければ、Googleでもログインできます。
+  - icon: calendar_month
+    title: いつものカレンダーに出す
+    details: 参加する卓を、ふだん使っているカレンダーに出せます。購読URLか、Googleカレンダーとの連携を選べます。
+  - icon: rocket_launch
+    title: 自分で設置できる
+    details: MIT LicenseのOSSです。「Deploy to Cloudflare」のボタンから自分のCloudflareに設置でき、無料のプランで動きます。新しい版にも、管理画面から追いつけます。
 ---

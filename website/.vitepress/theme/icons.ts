@@ -23,6 +23,7 @@ import INotifications from '~icons/material-symbols/notifications-outline-rounde
 import IPlayCircle from '~icons/material-symbols/play-circle-outline-rounded';
 import IRefresh from '~icons/material-symbols/refresh-outline-rounded';
 import IRestartAlt from '~icons/material-symbols/restart-alt-outline-rounded';
+import IRocketLaunch from '~icons/material-symbols/rocket-launch-outline-rounded';
 import ISettings from '~icons/material-symbols/settings-outline-rounded';
 import IShield from '~icons/material-symbols/shield-outline-rounded';
 import IStickyNote2 from '~icons/material-symbols/sticky-note-2-outline-rounded';
@@ -56,6 +57,7 @@ export const ICONS = {
   play_circle: IPlayCircle,
   refresh: IRefresh,
   restart_alt: IRestartAlt,
+  rocket_launch: IRocketLaunch,
   settings: ISettings,
   shield: IShield,
   sticky_note_2: IStickyNote2,
