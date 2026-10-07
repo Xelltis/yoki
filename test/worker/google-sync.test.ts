@@ -5,7 +5,7 @@ import type { Bindings } from '../../src/worker/env';
 import { googleDeps, type GoogleDeps } from '../../src/worker/google/config';
 import { readFake, writeFake } from '../../src/worker/google/dev';
 import {
-  BUSY_EVERY_MS, CALL_BUDGET, eventBody, hasGoogleWriters, markOf, patrolGoogle, removeBusyMarks, removeEvents, REVOKED_MESSAGE, syncGroupWrites, syncUser,
+  BUSY_EVERY_MS, CALL_BUDGET, eventBody, googleBudget, hasGoogleWriters, markOf, patrolGoogle, removeBusyMarks, removeEvents, REVOKED_MESSAGE, syncGroupWrites, syncUser,
   tryAccessToken, windowMinutes,
 } from '../../src/worker/google/sync';
 import { jstMs } from '../../src/worker/lib/ics';
@@ -157,7 +157,7 @@ describe('卓の書き込み', () => {
     expect(await hasGoogleWriters(env.DB, 'other')).toBe(false);
     await syncGroupWrites(env.DB, deps, G.id, now);
     expect((await events()).map((e) => e.summary).sort()).toEqual(['こまちだけ', 'ソラがGM', 'ソラが参加']);
-    // 先に回るひよりに40卓。ひよりで使い切り、ソラとこまちには回らない
+    // 先に回るひよりに、使える回数と同じ数の卓。ひよりで使い切り、ソラとこまちには回らない
     await env.DB.prepare('UPDATE google_links SET write_events = 1').run();
     await env.DB.prepare('DELETE FROM google_events').run();
     await writeFake(env.DB, { seq: 0, events: {}, busy: [], revoked: [] });
@@ -188,6 +188,15 @@ describe('卓の書き込み', () => {
     await env.DB.prepare("UPDATE google_links SET checked_at = '2026-01-01T00:00:00Z' WHERE user_id = ?").bind(KOMACHI).run();
     await patrolGoogle(env.DB, deps, later);
     expect((await linkRow(SORA))!.checked_at).toBe(now.toISOString());
+  });
+
+  test('見回りでGoogleに使える回数は、先にDiscordへ送った分を、外へ出せる数（50）から引いた残り', async () => {
+    expect(googleBudget(0)).toBe(CALL_BUDGET);
+    expect(googleBudget(20)).toBe(25);
+    expect(googleBudget(60)).toBe(0);
+    // 残りが無ければ、だれも回らない
+    await patrolGoogle(env.DB, deps, now, 0);
+    expect((await linkRow(SORA))!.checked_at).toBeNull();
   });
 
   test('書いた予定を消す。access tokenが無ければ控えだけ消す。消せなかった予定は残す', async () => {

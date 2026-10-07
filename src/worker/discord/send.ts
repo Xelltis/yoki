@@ -82,6 +82,10 @@ function retryAfterMs(res: Response, body: string): number {
   return 0;
 }
 
+/** Discordへ送った回数（この入れ物が動き始めてから）。見回りが、外へ出せる呼び出しの残りを数えるのに使う（google/sync.tsのgoogleBudget） */
+let calls = 0;
+export const discordCalls = (): number => calls;
+
 /**
  * 1回だけ送り、結果を送信記録に1行残す。本文の @everyone や @here、ロールでは呼ばない（メンションするのは人だけ）
  */
@@ -97,6 +101,7 @@ export async function discordAttempt(log: LogTo, payload: Payload, kind: string,
     errText = BAD_CHANNEL;
   } else {
     try {
+      calls++;
       const res = await fetch(DISCORD_API + '/channels/' + channelId + '/messages', {
         method: 'POST',
         headers: { Authorization: 'Bot ' + log.token, 'Content-Type': 'application/json' },

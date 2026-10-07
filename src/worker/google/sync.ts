@@ -18,8 +18,19 @@ import type { GoogleDeps } from './config';
 
 /** 書き込む卓の、過ぎた日数（これより前の卓は書き込まない・書き直さない・消さない） */
 export const WRITE_PAST_DAYS = 7;
-/** 1回の同期でGoogleを呼ぶ回数の上限（Workersの1回の要求で外へ出せる数に収める） */
-export const CALL_BUDGET = 40;
+/**
+ * 1回の同期でGoogleを呼ぶ回数の上限。Workersの1回の要求で外へ出せる数（無料のプランで50）から、同じ要求の中のほかの呼び出し
+ * （Discordへの知らせとBotでの確かめ。画面の操作1回で多くて10回ほど）を引いた残りに収める
+ */
+export const CALL_BUDGET = 35;
+/** Workersの1回の要求で外へ出せる数（無料のプラン）と、Googleに回さずに残しておく数 */
+const SUBREQUESTS = 50;
+const SUBREQUEST_RESERVE = 5;
+
+/** 見回りで、先にDiscordへ used 回送ったあと、Googleに使える回数 */
+export function googleBudget(used: number): number {
+  return Math.max(0, Math.min(CALL_BUDGET, SUBREQUESTS - SUBREQUEST_RESERVE - used));
+}
 /** 予定を読み直す間隔 */
 export const BUSY_EVERY_MS = 3600_000;
 /** 見回り1回で回る人の数 */
@@ -254,9 +265,10 @@ export async function syncGroupWrites(db: D1Database, deps: GoogleDeps, groupId:
 }
 
 /** 見回り（5分おき）。長く回っていない人から順に、書き込みと（1時間おきの）予定の読み込み */
-export async function patrolGoogle(db: D1Database, deps: GoogleDeps, now: Date): Promise<void> {
+/** 見回りでの同期。limitは、この回にGoogleを呼んでよい回数（先にDiscordへ送った分を引いたもの。googleBudget） */
+export async function patrolGoogle(db: D1Database, deps: GoogleDeps, now: Date, limit = CALL_BUDGET): Promise<void> {
   const users = (await db.prepare('SELECT user_id FROM google_links ORDER BY checked_at IS NOT NULL, checked_at LIMIT ?').bind(PATROL_USERS).all<{ user_id: string }>()).results;
-  const budget = { left: CALL_BUDGET };
+  const budget = { left: limit };
   for (const u of users) {
     if (budget.left <= 0) break;
     await syncUser(db, deps, u.user_id, now, { write: true, busy: 'due', budget });

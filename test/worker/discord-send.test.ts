@@ -2,7 +2,7 @@
 import { env } from 'cloudflare:test';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import type { Payload } from '../../src/worker/discord/payloads';
-import { classifyFailure, discordAttempt, type LogTo, postDiscord, postToTargets, realSleep, SAMPLE_CHANNEL } from '../../src/worker/discord/send';
+import { classifyFailure, discordAttempt, discordCalls, type LogTo, postDiscord, postToTargets, realSleep, SAMPLE_CHANNEL } from '../../src/worker/discord/send';
 import type { Target } from '../../src/worker/discord/targets';
 import { makeGroup } from './helpers';
 
@@ -94,6 +94,17 @@ describe('1回だけ送る', () => {
     expect(r).toMatchObject({ ok: true, code: 200 });
     expect(posts).toHaveLength(0);
     expect(await results()).toEqual(['OK (200)']);
+  });
+
+  test('Discordへ送った回数を数える（送らなかったときは数えない。見回りがGoogleに使える回数を決めるのに使う）', async () => {
+    mockFetch([new Error('Network connection lost')]);
+    const before = discordCalls();
+    await discordAttempt(LOG, P, '案内', '港', 1, SAMPLE_CHANNEL);
+    await discordAttempt({ ...LOG, token: '' }, P, '案内', '港', 1, CH(1));
+    expect(discordCalls()).toBe(before);
+    await discordAttempt(LOG, P, '案内', '港', 1, CH(1));
+    await discordAttempt(LOG, P, '案内', '港', 2, CH(1));
+    expect(discordCalls()).toBe(before + 2);
   });
 
   test('Botのトークンが無ければ送らない。運営者に知らせるように書く', async () => {

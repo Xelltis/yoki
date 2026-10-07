@@ -7,11 +7,11 @@ import type { PatrolRecord } from '../../shared/admin';
 import { SYSTEM_ACTOR } from '../auth/guard';
 import { savedOrigin } from '../auth/origin';
 import { mentionsOf, recruitLink, sessionEmbed } from '../discord/payloads';
-import { appendLog, postDiscord, postToTargets, realSleep, type Sleep } from '../discord/send';
+import { appendLog, discordCalls, postDiscord, postToTargets, realSleep, type Sleep } from '../discord/send';
 import { sessionTargets, type Target, targetNote } from '../discord/targets';
 import type { Bindings } from '../env';
 import { googleDeps } from '../google/config';
-import { patrolGoogle, WRITE_PAST_DAYS } from '../google/sync';
+import { googleBudget, patrolGoogle, WRITE_PAST_DAYS } from '../google/sync';
 import { addDays, daysBetween, jst, minutesOfTime } from '../lib/jst';
 import { DATED, SOON_LATE_MIN, STATUS } from './constants';
 import { loadGroup } from './load';
@@ -55,6 +55,8 @@ export async function runPatrol(env: Bindings, scheduledTime: number, deps: Deps
 
 export async function patrol(env: Bindings, scheduledTime: number, deps: Deps): Promise<void> {
   const now = new Date(scheduledTime);
+  // この回に外へ出した呼び出しを数え始める（Googleに回せる残りを決めるため）
+  const callsAtStart = discordCalls();
   const db = env.DB;
   const p = jst(now);
   const appBase = await savedOrigin(env);
@@ -89,9 +91,9 @@ export async function patrol(env: Bindings, scheduledTime: number, deps: Deps): 
     p.ymd,
   )) await sendStartingSoon(await load(id), deps);
 
-  // Googleカレンダーとの同期（連携している人を、長く回っていない人から少しずつ）
+  // Googleカレンダーとの同期（連携している人を、長く回っていない人から少しずつ）。先にDiscordへ送った分を、外へ出せる数から引く
   const google = await googleDeps(env, appBase || 'http://localhost');
-  if (google) await patrolGoogle(db, google, now);
+  if (google) await patrolGoogle(db, google, now, googleBudget(discordCalls() - callsAtStart));
 
   if (p.hour >= 4 && (await claim(db, 'daily', p.ymd))) await cleanup(db, now);
 }
