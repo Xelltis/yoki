@@ -1,0 +1,54 @@
+# PR を確かめる。マージの前に、公開のワークフロー（deploy.yml）と同じ確かめ（型・lint・日本語の検査・テストとカバレッジ・e2e）と、
+# サイトの組み立て・コミットの説明の形（commitlint）を確かめる。main に入ったあとの確かめは、公開のワークフローがする
+name: 確かめる
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# 同じ PR に続けて push したら、前の確かめは止める
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # commitlint が、PR のコミットを全部読めるように
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      # oxlint と、日本語の検査（yomiyasu。Python 3 は runner に入っている）
+      - run: npm run lint
+      # 100% を下回ったら止まる
+      - run: npm run test:coverage
+      - run: npm run site:build
+      - name: コミットの説明の形（Conventional Commits）
+        if: github.event_name == 'pull_request'
+        run: npx commitlint --from "${{ github.event.pull_request.base.sha }}" --to "${{ github.event.pull_request.head.sha }}" --verbose
+
+  # ブラウザで通しで確かめる（e2e。開発サーバーと手元の D1 で動かす）
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - run: npm ci
+      - name: ブラウザを入れる（Chromium）
+        run: npx playwright install --with-deps chromium
+      - name: 手元の D1 に表を作る
+        run: npm run db:migrate:local
+      - run: npm run e2e
