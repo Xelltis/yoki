@@ -523,7 +523,15 @@ await withDevServer(async (base) => {
       assert.equal(await g.locator('#devForm input[name=link_google]').count(), 1, '結びつけるためのログインに印を付ける');
       await g.selectOption('#devAs', 'ひより');
       await Promise.all([g.waitForURL('**/?login=google-linked'), g.click('#devForm button')]);
+      // ログアウトで、その人のグループの控えを消す。見た目の設定（端末の控え）は残す
+      await g.goto(base + 'g/sample/');
+      await g.waitForFunction(() => Object.keys(localStorage).some((k) => k.startsWith('taku.cache:')));
+      await g.evaluate(() => localStorage.setItem('taku.font', 'm'));
+      await g.goto(base);
       await Promise.all([g.waitForURL(base), g.click('form[action="/auth/logout"] button')]);
+      const kept = await g.evaluate(() => Object.keys(localStorage).filter((k) => k.startsWith('taku.')));
+      assert.equal(kept.some((k) => k.startsWith('taku.cache:')), false, 'ログアウトでグループの控えを消す');
+      assert.equal(kept.includes('taku.font'), true, '端末の控えは残す');
       assert.equal(await g.locator('#devForm input[name=link_google]').count(), 0, 'ふだんのログインには印を付けない');
       await Promise.all([g.waitForURL((u) => u.pathname === '/' && !u.search), g.click('#googleLoginBtn')]);
       await g.waitForSelector('#groups');

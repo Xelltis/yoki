@@ -6,6 +6,7 @@ import type { MeResponse } from '../../../shared/api';
 import { isReturnPath } from '../../../shared/routes';
 import { HELP_URL } from '../../app/links';
 import { fetchMe, ME_KEY } from '../../app/me';
+import { forgetPerson } from '../../app/storage';
 import { Avatar } from '../../ui/Avatar';
 import { GroupTile } from '../../ui/GroupTile';
 import { Icon } from '../../ui/Icon';
@@ -87,7 +88,8 @@ function Who({ me }: { me: LoggedIn }) {
     <div className="flex items-center gap-10 text-14" id="who">
       <Avatar user={me.user} className="h-30 w-30" />
       <span className="max-sm:hidden">{me.user.name}</span>
-      <form className="m-0" method="post" action="/auth/logout">
+      {/* ログアウトの前に、この端末の控え（どのグループのものも）を消す */}
+      <form className="m-0" method="post" action="/auth/logout" onSubmit={forgetPerson}>
         <button className="inline-flex h-34 cursor-pointer items-center gap-6 rounded-full border border-white/30 bg-transparent px-14 py-0 font-inherit text-13 font-medium text-inherit hover:bg-chrome-hover" type="submit">
           <Icon name="logout" size="sm" className="align-[0]" />
           ログアウト

@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import type { ConsoleData } from '../../../../shared/api';
 import { HELP_URL } from '../../../app/links';
+import { forgetPerson } from '../../../app/storage';
 import { fetchMe, ME_KEY } from '../../../app/me';
 import { currentTheme, setTheme, themeStore } from '../../../app/theme';
 import { actions, appbar, areaBadge, brand, btxt, hbtn, hbtnIcon, logo, menuHead, menuItem, menuItemTall, menuSep } from '../../../ui/chrome';
@@ -52,11 +53,10 @@ const btxtRow = btxt + ' lg:max-2xl:hidden!';
 /** その幅で、字を隠したボタンを丸くする */
 const iconRow = ' lg:max-2xl:w-(--h-control) lg:max-2xl:p-0';
 
-/** ログアウト。この端末の控えを消し、サーバーのログインを消して、入口へ戻る（素のPOST） */
+/** ログアウト。この端末の控え（どのグループのものも）を消し、サーバーのログインを消して、入口へ戻る（素のPOST） */
 export function useLogout(): () => void {
-  const { sync } = useConsole();
   return () => askConfirm({ title: 'ログアウトしますか？', message: 'このブラウザのログインを消します。次に開くときは、もう一度ログインします。', ok: 'ログアウト', danger: true }, () => {
-    sync.forget();
+    forgetPerson();
     const f = document.createElement('form');
     f.method = 'post'; f.action = '/auth/logout';
     document.body.appendChild(f); f.submit();

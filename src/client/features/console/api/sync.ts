@@ -218,7 +218,7 @@ export class ConsoleSync {
     this.view.set((v) => ({ ...v, phase: 'gone', message, busy: false }));
   }
 
-  /** ログアウトの前に、この端末の控えを消す */
+  /** このグループの控えを消す（グループを消したあと。ログアウトでは、どのグループのものも消す。app/storage.tsのforgetPerson） */
   forget(): void { clearCache(this.groupId); }
 
   private apply(d: ConsoleData): void {
