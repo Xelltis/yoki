@@ -110,7 +110,7 @@ function Guest({ me, back }: { me: MeResponse; back: string | null }) {
   return (
     <section id="guest">
       {/* 大きな青い枠。右上にアイコンを大きく薄く置く */}
-      <div className="relative mb-18 overflow-hidden rounded-lg bg-chrome px-32 pt-36 pb-30 text-white shadow-card max-sm:px-22 max-sm:pt-28 max-sm:pb-24 dark:bg-linear-140 dark:from-brand dark:to-[#1d1ba8]">
+      <div className="relative mb-18 overflow-hidden rounded-lg bg-chrome px-32 pt-36 pb-30 text-white shadow-card max-sm:px-22 max-sm:pt-28 max-sm:pb-24 dark:bg-linear-140 dark:from-brand dark:to-brand-deep">
         <img className="pointer-events-none absolute -top-24 -right-28 h-190 w-190 rotate-12 rounded-[48px] opacity-22" src="/icon-192.png" alt="" />
         <h1 className="relative m-0 text-30 leading-[1.3] font-bold tracking-[.02em] max-sm:text-26">TRPGの卓の予定を、<br />Discordの仲間と。</h1>
         <p className="relative mt-12 mb-22 max-w-[34em] text-15 text-white/85">卓の登録・メンバーの予定・募集・日程調整をこの画面で行い、知らせをDiscordに送ります。</p>

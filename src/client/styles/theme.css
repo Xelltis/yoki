@@ -14,7 +14,7 @@
   --font-sans: "Noto Sans JP", system-ui, -apple-system, "Hiragino Sans", "Yu Gothic UI", Meiryo, sans-serif;
   --color-white: #fff; --color-black: #000;
   /* サービスアイコンの色（明るい・ダークで変えない。飾りに使う） */
-  --color-brand: #2d2afe; --color-brand-light: #769ffc; --color-orange: #fe841c; --color-pink: #fb2c85; --color-yellow: #fdd21f; --color-cream: #fcf9f0;
+  --color-brand: #2d2afe; --color-brand-light: #769ffc; --color-brand-deep: #1d1ba8; --color-orange: #fe841c; --color-pink: #fb2c85; --color-yellow: #fdd21f; --color-cream: #fcf9f0;
   /* 動き（@keyframes は下） */
   --animate-fade-in: fade-in var(--dur) ease-out;
   --animate-spin: spin .9s linear infinite;

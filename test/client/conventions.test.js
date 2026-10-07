@@ -15,3 +15,10 @@ test('サーバーは手元の時刻（new Date(年, 月, 日)・getHoursなど�
   }
   expect(bad).toEqual([]);
 });
+
+test('画面の部品に色を直に書かない（styles/theme.cssのトークンを使う）', () => {
+  const client = path.join(import.meta.dirname, '../../src/client');
+  const bad = fs.readdirSync(client, { recursive: true }).map(String)
+    .filter((f) => /\.tsx?$/.test(f) && /#[0-9a-fA-F]{3,8}\b/.test(fs.readFileSync(path.join(client, f), 'utf8')));
+  expect(bad).toEqual([]);
+});
