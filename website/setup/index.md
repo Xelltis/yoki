@@ -118,4 +118,4 @@ Discord Developer Portalの「General Information」のTerms of Service URLとPr
 
 ## GitHub Actionsで公開する
 
-ボタンを使わずに、Yokiのリポジトリをフォークし、GitHub Actionsで公開するやり方もあります。コードに手を入れながら使いたい人向けで、値をGitHubに入れるなど、手順が多いやり方です。手順は、リポジトリのREADMEの「GitHub Actionsで公開する」にあります。
+ボタンを使わずに、Yokiのリポジトリをフォークし、GitHub Actionsで公開するやり方もあります。コードに手を入れながら使いたい人向けで、値をGitHubに入れるなど、手順が多いやり方です。手順は、リポジトリの [docs/deployment.md](https://github.com/Xelltis/yoki/blob/main/docs/deployment.md) の「GitHub Actionsで公開する」にあります。

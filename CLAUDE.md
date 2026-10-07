@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-このリポジトリで作業するときの決まり。動かし方と書くときの決まりは [README.md](README.md)、作りとその理由は [docs/architecture.md](docs/architecture.md) にある。
+このリポジトリで作業するときの決まり。動かし方・テスト・書くときの決まりは [CONTRIBUTING.md](CONTRIBUTING.md)、公開と更新の仕組みは [docs/deployment.md](docs/deployment.md)、作りとその理由は [docs/architecture.md](docs/architecture.md) にある。[README.md](README.md) は、初めて来た人への短い紹介にとどめる。
 
 ## 何のリポジトリか
 
@@ -34,7 +34,7 @@ Yoki。TRPGの卓の予定を、Discordサーバーの仲間と管理するWeb�
 
 いつも: `npm test`・`npm run typecheck`・`npm run lint`。
 
-サーバー（`src/worker`）を変えたら: `npm run test:coverage`。カバレッジは100% を保つ（下回ると失敗する）。外すのは、テストの環境で動かせない道だけ（READMEの「テスト」）。
+サーバー（`src/worker`）を変えたら: `npm run test:coverage`。カバレッジは100% を保つ（下回ると失敗する）。外すのは、テストの環境で動かせない道だけ（CONTRIBUTING.mdの「テスト」）。
 
 画面（`src/client/`）を変えたら: `npm run e2e`。見た目が変わったら `npm run screenshots` で撮り直し、画像もコミットする。
 
@@ -48,7 +48,7 @@ Markdownの文書を変えたら: `npm run lint:ja`。yomiyasuの指摘（比喩
 
 ## 守ること
 
-READMEの「書くときの決まり」に加えて、次を守る。
+CONTRIBUTING.mdの「書くときの決まり」に加えて、次を守る。
 
 日付と時刻は `src/worker/lib/jst.ts` で日本時間として扱う（WorkersはUTCで動く）。
 
@@ -78,7 +78,7 @@ Googleカレンダーと連携した人のrefresh tokenだけは持つ（本人�
 
 版は、mainに入ったコミットからsemantic-releaseが決め、`package.json` の `version` を書き換えたコミットと、タグ `vX.Y.Z`・GitHubのReleaseを作り、`release` のブランチをそこに合わせる（公開のワークフローの中。設定は `.releaserc.json`）。`version` とタグを手で書き換えない。アプリの版は `package.json` から読む（ボタンで設置したリポジトリにはタグが無いため）。コミットのtypeが版の上げ方と変わったことの一覧を決めるので、typeを正しく付ける（`feat`・`fix`・`perf` は各地の運営の管理画面に出る）。
 
-npm auditは0件に保つ。出たら、依存の版をそろえる（`overrides`）。直った版が無く、使わない・使い方が狭い部品は、`tools/shims/` に差し替えを置いて `overrides` で替える（今はsemantic-releaseの `micromatch` と `@semantic-release/npm`。READMEの「版を出す」）。
+npm auditは0件に保つ。出たら、依存の版をそろえる（`overrides`）。直った版が無く、使わない・使い方が狭い部品は、`tools/shims/` に差し替えを置いて `overrides` で替える（今はsemantic-releaseの `micromatch` と `@semantic-release/npm`。CONTRIBUTING.mdの「版を出す」）。
 
 各地のYokiは、版を飛ばして更新する。表の変更（`migrations/`）は、前の版から順に当たれば動くように書く。
 
@@ -86,9 +86,9 @@ npm auditは0件に保つ。出たら、依存の版をそろえる（`overrides
 
 購読URL（`/cal/<token>.ics`）は、知っていればだれでも読める。tokenは推測できない長さのランダムにし、作り直しと止めるができるようにする。
 
-公開するCloudflareごとの値（D1のID・アプリのアドレス・Discordアプリの値とBotのトークン・運営者のID・Googleの値・APIトークン）は、リポジトリに書かない。設置の主な道は「Deploy to Cloudflare」のボタンで、CloudflareがD1のIDを設置した人のリポジトリの `wrangler.jsonc` に書き、ほかはWorkerのsecretに置く。GitHub Actionsで公開するときは、GitHubのenvironment「production」に置く（READMEの「公開」）。Workerの値はvarsにしない（Workers Buildsが公開のたびに消すため。`src/worker/env.ts`）。ボタンが聞く値を変えたら、`.dev.vars.example` と `package.json` の `"cloudflare"` も直す。
+公開するCloudflareごとの値（D1のID・アプリのアドレス・Discordアプリの値とBotのトークン・運営者のID・Googleの値・APIトークン）は、リポジトリに書かない。設置の主な道は「Deploy to Cloudflare」のボタンで、CloudflareがD1のIDを設置した人のリポジトリの `wrangler.jsonc` に書き、ほかはWorkerのsecretに置く。GitHub Actionsで公開するときは、GitHubのenvironment「production」に置く（docs/deployment.md）。Workerの値はvarsにしない（Workers Buildsが公開のたびに消すため。`src/worker/env.ts`）。ボタンが聞く値を変えたら、`.dev.vars.example` と `package.json` の `"cloudflare"` も直す。
 
-設置の手順（READMEの「公開」「管理画面」）と、サイトの運営者向けの手順書（`website/setup/`）は、同じ中身をそろえて直す。公開に要る値・ワークフロー・運営の管理画面を変えたら、両方を見直す。
+公開と更新の仕組み（docs/deployment.md）と、サイトの運営者向けの手順書（`website/setup/`）は、同じ中身をそろえて直す。公開に要る値・ワークフロー・運営の管理画面を変えたら、両方を見直す。
 
 アイコンはunplugin-iconsでSVGにして入れ、画像やフォント（Google FontsのMaterial Symbols）では読まない。集まりは、ライセンスを確かめたもの（`tools/icons.ts` の `ALLOWED_ICON_SETS`。今はMaterial SymbolsのApache-2.0）だけを使う。足したら一覧にも足す（画面は `src/client/ui/icons.ts` の `ICONS`、サイトは `website/.vitepress/theme/icons.ts` の `ICONS`。型の確認とテストが確かめる）。
 
@@ -110,7 +110,7 @@ npm auditは0件に保つ。出たら、依存の版をそろえる（`overrides
 |---|---|
 | `feat` | 機能を足す・変える |
 | `fix` | 不具合を直す |
-| `docs` | 文書だけ（README・docs/・CLAUDE.md・サイトの本文） |
+| `docs` | 文書だけ（README・CONTRIBUTING・docs/・CLAUDE.md・サイトの本文） |
 | `style` | 動きの変わらない見た目の整え（空白・並び） |
 | `refactor` | 動きを変えずにコードを直す |
 | `perf` | 速くする |

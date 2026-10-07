@@ -4,7 +4,7 @@
 # main にアプリの変更が入ったときと、Actions の画面から手で動かしたときに動く。確かめる → 版を出す（元のリポジトリだけ）→ 公開する、の順に進む。
 # 版は、元のリポジトリでは semantic-release（設定は .releaserc.json）が main のコミットから決め、package.json の version を書き換えてコミットし、
 # タグ vX.Y.Z と GitHub の Release を作る。アプリに入れる版は package.json から読む（vite.config.ts）
-# 公開する Cloudflare ごとの値はリポジトリに置かず、GitHub の environment「production」に置く（書き方は README の「GitHub Actions で公開する」）
+# 公開する Cloudflare ごとの値はリポジトリに置かず、GitHub の environment「production」に置く（書き方は docs/deployment.md の「GitHub Actions で公開する」）
 #   変数（vars）: CLOUDFLARE_ACCOUNT_ID・YOKI_D1_DATABASE_ID・YOKI_DISCORD_CLIENT_ID・YOKI_APP_URL（任意）・YOKI_GOOGLE_CLIENT_ID（任意）・YOKI_UPSTREAM（任意）
 #   秘密（secrets）: CLOUDFLARE_API_TOKEN・DISCORD_CLIENT_SECRET・DISCORD_BOT_TOKEN・OPERATOR_IDS・GOOGLE_CLIENT_SECRET（任意）・GOOGLE_TOKEN_KEY（任意）・UPDATE_DISPATCH_TOKEN（任意）
 #   D1 の ID とリポジトリの名前は組み立てた設定に入れ、ほかは Worker の secret にする（var にしない。src/worker/env.ts）
@@ -100,7 +100,7 @@ jobs:
           YOKI_REPOSITORY: ${{ github.repository }}
           YOKI_UPSTREAM: ${{ vars.YOKI_UPSTREAM }}
 
-      # 表を変える前の地点（bookmark）を控える。更新で困ったら、wrangler d1 time-travel restore で戻す（README の「新しい版に上げる」）
+      # 表を変える前の地点（bookmark）を控える。更新で困ったら、wrangler d1 time-travel restore で戻す（docs/deployment.md の「新しい版に上げる」）
       - name: 表を変える前の地点を控える（D1 の Time Travel）
         run: |
           {

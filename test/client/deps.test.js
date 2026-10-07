@@ -13,7 +13,7 @@ test('overridesのminiflareは、wranglerが使う版と同じ（wranglerを上�
   expect(override.miniflare).toBe(json('node_modules/wrangler/package.json').dependencies.miniflare);
 });
 
-// semantic-releaseの部品の差し替え（tools/shims。npm auditを0件に保つため。READMEの「版を出す」）
+// semantic-releaseの部品の差し替え（tools/shims。npm auditを0件に保つため。CONTRIBUTING.mdの「版を出す」）
 test('semantic-releaseのmicromatchとnpmプラグインは、tools/shimsの差し替えに替えている', async () => {
   const pkg = json('package.json');
   expect(pkg.overrides['semantic-release']).toEqual({ micromatch: '$micromatch', '@semantic-release/npm': '$@semantic-release/npm' });

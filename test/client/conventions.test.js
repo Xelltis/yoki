@@ -1,4 +1,4 @@
-// 書くときの決まり（README）が守られているか
+// 書くときの決まり（CONTRIBUTING.md）が守られているか
 import fs from 'node:fs';
 import path from 'node:path';
 import { expect, test } from 'vitest';

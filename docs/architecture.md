@@ -1,6 +1,6 @@
 # Yokiの作り
 
-開発する人向けに、Yokiの作りと、そう決めた理由をまとめる。使う人向けの説明はサイト（`website/`、GitHub Pages）、手元で動かす方法と公開の手順は [README.md](../README.md) にある。
+開発する人向けに、Yokiの作りと、そう決めた理由をまとめる。使う人向けの説明はサイト（`website/`、GitHub Pages）、手元で動かす方法は [CONTRIBUTING.md](../CONTRIBUTING.md)、公開と更新の仕組みは [deployment.md](deployment.md) にある。
 
 2026-10-03に、Google Apps Script（GAS）＋スプレッドシートの版から作り直した。業務の決まり（卓の状態、参加希望の扱い、日程調整の流れなど）はGAS版のまま移し、関数ごとに元の関数名をコメントに残してある。GAS版のコードと文書（旧いガイド・セキュリティレビュー・UIの再設計案）は、gitの `gas-final` タグで読める（`git show gas-final:src/server/Polls.js` など）。
 
