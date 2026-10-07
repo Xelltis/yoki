@@ -6,7 +6,7 @@ import type { AppEnv } from '../app';
 import { consumeGoogleLink, forgetGoogleLink } from '../auth/google-login';
 import { authorizeUrl, fetchDiscordProfile, saveProfile } from '../auth/oauth';
 import { isOperator } from '../auth/operator';
-import { appOrigin } from '../auth/origin';
+import { appOrigin, rememberOrigin } from '../auth/origin';
 import { mayLogIn } from '../domain/registration';
 import { endSession, isBanned, isLocalHttp, startSession } from '../auth/session';
 import { randomToken, safeEqual } from '../lib/ids';
@@ -66,6 +66,8 @@ authRoutes.get('/auth/callback', async (c) => {
   if (!(await mayLogIn(c.env.DB, user.id, isOperator(c.env, user.id, url)))) return c.redirect('/?login=closed');
   await saveProfile(c.env.DB, user, guilds);
   await startSession(c, user.id);
+  // 見回り（cron）が知らせのリンクに使うアドレスを控える
+  await rememberOrigin(c.env.DB, appOrigin(c.env, c.req.url));
   const back = isReturnPath(returnTo) ? returnTo : '/';
   // 初めてのGoogleのアカウントを結びつけるために来ていたら、この人に結びつける（入口へ戻るなら、そのことを知らせる）
   if (linkGoogle && (await consumeGoogleLink(c, user.id)) && back === '/') return c.redirect('/?login=google-linked');

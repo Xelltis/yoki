@@ -8,10 +8,11 @@
   "compatibility_date": "2026-08-15",
   "assets": {
     // 画面（src/clientをViteで組み立てたもの）。次の道はWorkerが先に受ける（ログインの確認やデータのため）。
+    // /（入口）は、リンクを貼ったときの見た目（OGP）に公開のアドレスを入れて返す（routes/pages.ts）。
     // /admin（運営者の管理画面）も、運営者かを確かめてから返すので、ここに入れる（入れないと、確かめずに配ってしまう）。
     // /terms・/privacy（利用規約・プライバシーポリシー）は、運営者が直した本文をD1から読んで返す
     "binding": "ASSETS",
-    "run_worker_first": ["/api/*", "/auth/*", "/g/*", "/dev/*", "/admin", "/admin/*", "/terms", "/privacy", "/cal/*"]
+    "run_worker_first": ["/", "/api/*", "/auth/*", "/g/*", "/dev/*", "/admin", "/admin/*", "/terms", "/privacy", "/cal/*"]
   },
   "d1_databases": [
     {

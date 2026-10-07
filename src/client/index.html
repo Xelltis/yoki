@@ -9,15 +9,15 @@
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="manifest" href="/manifest.webmanifest">
 <meta name="theme-color" content="#2d2afe">
-<!-- リンクを貼ったときの見た目（OGP）。%APP_ORIGIN% は、組み立てのときに公開するアドレスになる（vite.config.ts）。
-     グループの画面などのリンクは、Workerがこのタグを道ごとの文に書き換える（src/worker/routes/og.tsと同じ文） -->
+<!-- リンクを貼ったときの見た目（OGP）。入口やグループの画面などのリンクは、Workerがこのタグを、公開のアドレスを入れた道ごとの文に
+     書き換える（src/worker/routes/og.tsと同じ文）。組み立てのときには公開のアドレスが分からないので、ここはアドレスを省いた形 -->
 <meta name="description" content="TRPGの卓の予定を、Discordサーバーの仲間と管理するWebアプリ。みんなの都合・募集・日程調整・Discordへの知らせを1か所で。">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="卓予定">
 <meta property="og:title" content="卓予定">
 <meta property="og:description" content="TRPGの卓の予定を、Discordサーバーの仲間と管理するWebアプリ。みんなの都合・募集・日程調整・Discordへの知らせを1か所で。">
-<meta property="og:url" content="%APP_ORIGIN%/">
-<meta property="og:image" content="%APP_ORIGIN%/og.png">
+<meta property="og:url" content="/">
+<meta property="og:image" content="/og.png">
 <meta property="og:image:width" content="1600">
 <meta property="og:image:height" content="900">
 <meta name="twitter:card" content="summary_large_image">

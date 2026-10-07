@@ -5,6 +5,7 @@
 // 全部の送り先で失敗したら印を戻し、次の回で送り直す
 import type { PatrolRecord } from '../../shared/admin';
 import { SYSTEM_ACTOR } from '../auth/guard';
+import { savedOrigin } from '../auth/origin';
 import { mentionsOf, recruitLink, sessionEmbed } from '../discord/payloads';
 import { appendLog, postDiscord, postToTargets, realSleep, type Sleep } from '../discord/send';
 import { sessionTargets, type Target, targetNote } from '../discord/targets';
@@ -56,7 +57,7 @@ export async function patrol(env: Bindings, scheduledTime: number, deps: Deps): 
   const now = new Date(scheduledTime);
   const db = env.DB;
   const p = jst(now);
-  const appBase = (env.APP_URL || '').replace(/\/$/, '');
+  const appBase = await savedOrigin(env);
   const bot = { token: env.DISCORD_BOT_TOKEN ?? '', clientId: env.DISCORD_CLIENT_ID };
   const load = (groupId: string) => loadGroup(db, groupId, SYSTEM_ACTOR, appBase ? appBase + '/g/' + groupId + '/' : '', now, bot);
   const groupsOf = async (sql: string, ...args: unknown[]) => (await db.prepare(sql).bind(...args).all<{ group_id: string }>()).results.map((r) => r.group_id);

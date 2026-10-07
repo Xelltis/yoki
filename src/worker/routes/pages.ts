@@ -1,4 +1,5 @@
 // 画面のページ。入れる人には画面の骨組み（静的ファイル。1つのSPAで、どの道でも同じ）を返す。データは画面がAPIで読む
+//   /                                          入口。OGPのタグに公開のアドレスを入れる
 //   /g/:id/ と /g/:id/<タブ>/                 グループの予定の画面
 //   /g/:id/admin/ と /g/:id/admin/<区分>/      グループの管理画面（グループの管理者だけ）
 //   /admin/ と /admin/<区分>/                  運営者の管理画面（運営者（OPERATOR_IDS）だけ）
@@ -81,6 +82,8 @@ const TAB = oneOf('tab', TAB_PATHS);
 const PANE = oneOf('pane', ADMIN_PANES);
 const OP_PANE = oneOf('pane', OPERATOR_PANES);
 
+// 入口。画面の骨組みのOGPのタグはアドレスを持たない（組み立てのときには、公開のアドレスが分からない）ので、ここで入れて返す
+pageRoutes.get('/', (c) => previewShell(c, { title: '卓予定', description: SITE_DESCRIPTION }));
 for (const p of ['/g/:id', `/g/:id/${TAB}`, '/g/:id/admin', `/g/:id/admin/${PANE}`, '/admin', `/admin/${OP_PANE}`]) pageRoutes.get(p, withSlash);
 for (const p of ['/g/:id/', `/g/:id/${TAB}/`]) pageRoutes.get(p, (c) => groupPage(c, false));
 for (const p of ['/g/:id/admin/', `/g/:id/admin/${PANE}/`]) pageRoutes.get(p, (c) => groupPage(c, true));

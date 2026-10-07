@@ -190,6 +190,13 @@ describe('見回りの端の場合', () => {
     expect(posts.map((p) => p.content).sort()).toEqual(['⏳ 明日から「古城」の候補の期間です。まだ開催日が決まっていません。', '📢 明日は卓の日です！']);
   });
 
+  test('アプリのURLが無くても、ログインのときに控えたアドレス（workers.devのまま公開したとき）でリンクを付ける', async () => {
+    await addSession({ name: '古城', status: '募集', windowFrom: addDays(DAY, 1), gm: 'ひより' });
+    await env.DB.prepare("INSERT INTO meta (key, value) VALUES ('app_origin', 'https://yoki.example.workers.dev')").run();
+    await patrol({ ...env, APP_URL: '' }, at('20:00'), noWait);
+    expect(posts[0]!.content).toContain('から: https://yoki.example.workers.dev/g/g/');
+  });
+
   test('期間前の催促: チャンネルが無ければ送らずに記録する。送れなければ印を戻して次の回に送り直す', async () => {
     await addSession({ name: '古城', status: '募集', windowFrom: addDays(DAY, 1), gm: 'ひより' });
     await env.DB.prepare("UPDATE groups SET channel_id = '' WHERE id = 'g'").run();

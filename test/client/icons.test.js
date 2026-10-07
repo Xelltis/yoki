@@ -28,7 +28,7 @@ test('どのページも、同じアイコンとmanifestを参照し、そのフ
 
 test('リンクを貼ったときの見た目（OGP）: 骨組みとWorkerが同じ画像を指し、画像はサイトと同じもの（1600×900）', () => {
   const html = read('src/client/index.html');
-  expect(html).toContain('<meta property="og:image" content="%APP_ORIGIN%/og.png">');
+  expect(html).toContain('<meta property="og:image" content="/og.png">');
   expect(read('src/worker/routes/og.ts')).toContain('/og.png');
   const app = fs.readFileSync(path.join(root, PUBLIC, 'og.png')), site = fs.readFileSync(path.join(root, 'website/public/og.png'));
   expect(pngSize(app)).toEqual([1600, 900]);
