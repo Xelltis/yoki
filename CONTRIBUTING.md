@@ -6,7 +6,7 @@ Yokiの開発に参加する人向けの説明。不具合の知らせや、こ�
 
 ## 手元で動かす
 
-Node.js（22.12以降か24以降。`.node-version` は24）が要る。
+Node.js（22.12以降か24以降。`.node-version` は24）が要る。文書の日本語の検査（`npm run lint:ja`。`npm run lint` も呼ぶ）には、Python 3も要る（`python3`・`python`・`py -3` の順に探す）。無ければ、手元では断って飛ばし、CIでは止まる。
 
 ```
 npm install

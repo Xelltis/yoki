@@ -64,7 +64,7 @@ Yokiは、TRPGの卓の予定をDiscordサーバーの仲間と管理するWeb�
 
 ## 開発する
 
-Node.js（22.12以降か24以降）があれば、手元で動かせます。DiscordとCloudflareのアカウントは要りません。
+Node.js（22.12以降か24以降）があれば、手元で動かせます。DiscordとCloudflareのアカウントは要りません。文書の日本語の検査（`npm run lint`）には、Python 3も使います。
 
 ```sh
 npm install
