@@ -177,13 +177,13 @@ typeは、版の上げ方と、各地のYokiの「更新」に出る変わった
 
 版は [semantic-release](https://github.com/semantic-release/semantic-release)（設定は `.releaserc.json`）が、mainにアプリの変更が入ったときに、公開のワークフロー（`.github/workflows/deploy.yml`）の中で出す。PRは使わない。コミットをmainに入れる（PRをマージする）だけで、版を出すところまで進む。フォークでは動かない。
 
-公開のワークフローは、確かめる（型・lint・テスト）→ 版を出す → 公開する、の順に進む。確かめが通らなければ、版も出さない。
+公開のワークフローは、確かめる（型・lint・テスト）→ 版を出す → 公開する、の順に進む。確かめが通らなければ、版も出さない。公開するのは、版を出したならそのコミット、出さなければ確かめたコミット（確かめているあいだにmainに入った、まだ確かめていないコミットは公開しない）。
 
 前の版のタグから後のコミット（Conventional Commits）を見て、`feat` は小さい版（1.1.0 → 1.2.0）、`fix`・`perf`・`revert` はいちばん小さい版（1.1.0 → 1.1.1）、`!` 付き（互換を壊す変更）は大きい版（2.0.0）を上げる。`docs`・`ci` などだけなら、版は出さない。
 
 版を出すときは、`package.json` と `package-lock.json` の `version` を新しい版にしてコミットし（`chore(release): vX.Y.Z [skip ci]`）、mainにpushする（`tools/release/commit-version.mjs`）。そのコミットにタグ `vX.Y.Z` が付き、GitHubのRelease（変わったことの一覧。`feat`・`fix`・`perf`・`revert` だけ）ができる。各地のYokiの「更新」に、変わったこととして出る。最後に `release` のブランチをそのコミットに合わせる（ボタンが指す先）。mainに保護（PRを必須にするなど）を付けると、このpushが止まるので付けない。
 
-アプリに入れる版は、`package.json` の `version` から読む（`vite.config.ts`）。ボタンで作ったリポジトリには、元の履歴とタグが無いため。`version` は手で書き換えない。公開のワークフローは、版を出したあとのmainを取って組み立てる。変わったことの一覧は、ファイルに書かずGitHubのReleasesに置く。
+アプリに入れる版は、`package.json` の `version` から読む（`vite.config.ts`）。ボタンで作ったリポジトリには、元の履歴とタグが無いため。`version` は手で書き換えない。変わったことの一覧は、ファイルに書かずGitHubのReleasesに置く。
 
 コミットのtypeが版の上げ方を決めるので、typeを正しく付ける。各地のYokiは、版を飛ばして上げることがある。表の変更（`migrations/`）は、前の版から順に当たれば動くように書く。
 
