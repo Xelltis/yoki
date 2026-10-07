@@ -8,6 +8,7 @@ import { fetchMe, ME_KEY } from '../../../app/me';
 import { currentTheme, setTheme, themeStore } from '../../../app/theme';
 import { actions, appbar, areaBadge, brand, btxt, hbtn, hbtnIcon, logo, menuHead, menuItem, menuItemTall, menuSep } from '../../../ui/chrome';
 import { GroupTile } from '../../../ui/GroupTile';
+import { Avatar } from '../../../ui/Avatar';
 import { askConfirm } from '../../../ui/confirm';
 import { Icon } from '../../../ui/Icon';
 import type { IconName } from '../../../ui/icons';
@@ -87,6 +88,7 @@ export function Header({ tab }: { tab: Tab }) {
   const turns = d ? myTurns(d).length : 0;
   /** 入れるグループ（入口と同じ控え）。メニューを開くたびに読み直す（ほかのタブで作ったグループも出す）。消えたグループは、切り替え先に出さない */
   const me = useQuery({ queryKey: ME_KEY, queryFn: fetchMe, staleTime: 60_000 });
+  const meUser = me.data && me.data.loggedIn ? me.data.user : null;
   const groups = me.data && me.data.loggedIn ? me.data.groups : [];
   /** 運営者か（グループの中からも、運営の管理画面へ移れるようにする） */
   const operator = !!me.data && me.data.loggedIn && me.data.operator;
@@ -161,8 +163,8 @@ export function Header({ tab }: { tab: Tab }) {
           buttonClass={hbtn() + ' gap-6 max-sm:w-(--h-control) max-sm:px-0 data-active:bg-chrome-active data-active:text-chrome-active-ink'}
           label={d ? 'あなた（' + d.me.name + '）のメニュー' : 'あなたのメニュー'} title="設定・見た目・ログアウト"
           button={<>
-            <Icon name="person" size="sm" className={hbtnIcon + ' sm:hidden'} />
-            <span className="text-12 font-normal opacity-80 max-sm:hidden lg:max-2xl:hidden">あなた</span>
+            {/* あなたのDiscordのアイコン（読み込むまでは人の形） */}
+            {meUser ? <Avatar user={meUser} className="h-26 w-26 ring-2 ring-white/40" /> : <Icon name="person" size="sm" className={hbtnIcon} />}
             {/* スマホでは名前を隠してアイコンだけにする（グループ名の場所を残す）。名前はメニューの頭に出す */}
             <b className="max-w-[12em] truncate text-14 font-semibold max-sm:sr-only" id="me" hidden={!d}>{d ? d.me.name : ''}</b>
             <Icon name="expand_more" size="sm" className={hbtnIcon + ' opacity-80 max-sm:hidden'} />

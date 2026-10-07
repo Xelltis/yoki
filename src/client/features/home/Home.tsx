@@ -6,6 +6,7 @@ import type { MeResponse } from '../../../shared/api';
 import { isReturnPath } from '../../../shared/routes';
 import { HELP_URL } from '../../app/links';
 import { fetchMe, ME_KEY } from '../../app/me';
+import { Avatar } from '../../ui/Avatar';
 import { GroupTile } from '../../ui/GroupTile';
 import { Icon } from '../../ui/Icon';
 import type { IconName } from '../../ui/icons';
@@ -82,12 +83,9 @@ const footLink = 'inline-flex items-center gap-4 font-medium text-accent-text no
 
 /** 右上: ログインしている人とログアウト（素のPOST。サーバーがログインを消して入口へ戻す） */
 function Who({ me }: { me: LoggedIn }) {
-  const avatar = me.user.avatar ? 'https://cdn.discordapp.com/avatars/' + me.user.id + '/' + me.user.avatar + '.png?size=64' : '';
   return (
     <div className="flex items-center gap-10 text-14" id="who">
-      {avatar
-        ? <img className="h-30 w-30 rounded-full" src={avatar} alt="" />
-        : <span className="grid h-30 w-30 place-items-center rounded-full bg-linear-135 from-orange to-pink text-13 font-bold text-white" aria-hidden="true">{me.user.name.slice(0, 1)}</span>}
+      <Avatar user={me.user} className="h-30 w-30" />
       <span className="max-sm:hidden">{me.user.name}</span>
       <form className="m-0" method="post" action="/auth/logout">
         <button className="inline-flex h-34 cursor-pointer items-center gap-6 rounded-full border border-white/30 bg-transparent px-14 py-0 font-inherit text-13 font-medium text-inherit hover:bg-chrome-hover" type="submit">
