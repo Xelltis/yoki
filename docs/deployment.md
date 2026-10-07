@@ -105,33 +105,41 @@ Googleでのログインと、Googleカレンダーとの連携は、同じOAuth
 
 購読URLと、卓ごとの「Googleカレンダーに追加」は、何も設定しなくても使える。
 
+設置する人向けの、画面の画像付きの手順は、サイトの「[Googleと連携する](https://xelltis.github.io/yoki/setup/google)」（`website/setup/google.md`）。画面の名前は、Google Cloudの「Google Auth Platform」に合わせる。
+
 ### 1. Google Cloudでプロジェクトを作る
 
-「APIとサービス」でGoogle Calendar APIを有効にする。
+プロジェクトを作り、Google Calendar APIを有効にする。
 
-### 2. OAuth同意画面を作る
+### 2. Google Auth Platformを設定する
 
-アプリ名・サポートのメール・アプリのホームページ（公開するアドレス）・プライバシーポリシー（`<公開するアドレス>/privacy`）・利用規約（`/terms`）を入れる。スコープは `openid`・`email`・`https://www.googleapis.com/auth/calendar.events.owned`（本人が持つカレンダーの予定だけ。Yokiはメインのカレンダーしか触らないので、共有されたカレンダーにも届く `calendar.events` は求めない）。
+「開始」で、アプリ名・ユーザーサポートメール・対象（外部）・連絡先を入れる。
 
-### 3. OAuthクライアントIDを作る
+「ブランディング」に、ホームページ（公開するアドレス）・プライバシーポリシー（`<公開するアドレス>/privacy`）・利用規約（`/terms`）・承認済みドメインを入れる。ロゴは入れない（入れると、本番環境でGoogleの確認が要る）。
 
-種類は「ウェブ アプリケーション」。承認済みのリダイレクトURIに `<公開するアドレス>/auth/google/callback` を入れる（手元で本物を試すなら `http://localhost:5173/auth/google/callback` も）。
+「データアクセス」に、スコープ `openid`・`.../auth/userinfo.email`・`https://www.googleapis.com/auth/calendar.events.owned` を足す。`calendar.events.owned` は本人が持つカレンダーの予定だけを触れる。Yokiはメインのカレンダーしか触らないので、共有されたカレンダーにも届く `calendar.events` は求めない。
+
+### 3. OAuthクライアントを作る
+
+「クライアント」で、種類を「ウェブ アプリケーション」にする。承認済みのリダイレクトURIに `<公開するアドレス>/auth/google/callback` を入れる（手元で本物を試すなら `http://localhost:5173/auth/google/callback` も）。クライアントシークレットは、作ったときの窓でだけ見られる（無くしたら、クライアントの画面の「Add secret」で作り直す）。
 
 ### 4. 鍵を作る
 
-`openssl rand -base64 32` の出力を `GOOGLE_TOKEN_KEY` にする。refresh tokenはこの鍵で暗号にしてD1に置くので、鍵を替えると、連携していた人は連携し直しになる。
+`openssl rand -base64 32` の出力（44文字）を `GOOGLE_TOKEN_KEY` にする。refresh tokenはこの鍵で暗号にしてD1に置くので、鍵を替えると、連携していた人は連携し直しになる。形が違う（32バイトのbase64でない）と、連携を「使えない」として扱う（`googleConfigured`）。
 
 ### 5. 値を入れる
 
 ボタンで設置したなら、CloudflareのWorkerのVariables and Secretsに、`GOOGLE_CLIENT_ID`・`GOOGLE_CLIENT_SECRET`・`GOOGLE_TOKEN_KEY`（4の鍵）を、種類「Secret」で足す。GitHub Actionsで公開しているなら、変数 `YOKI_GOOGLE_CLIENT_ID` にクライアントID、秘密 `GOOGLE_CLIENT_SECRET` にクライアント シークレット、秘密 `GOOGLE_TOKEN_KEY` に4の鍵を入れて、公開し直す。
 
-`calendar.events.owned` はGoogleの「機密性の高いスコープ」なので、だれでも連携できるようにするには、Googleの審査（OAuthアプリの確認）を受ける。審査の前は、同意画面の「テストユーザー」に足した人だけが連携できる（100人まで）。テストのあいだは、refresh tokenが7日で切れるので、連携し直しになる。
+### 6. 使える人を決める
 
-審査では、プライバシーポリシーにGoogleのデータの扱い（受け取るもの・使い道・Limited Useに従うこと）が書いてあるかを見られる。既定の文には書いてある。直したときは、消さないように気を付ける。
+公開ステータスは、初めは「テスト中」で、「対象」のテストユーザー（100人まで）だけが使える。テスト中は、連携から7日でrefresh tokenが切れる（スコープが `openid`・`email` だけでないため）。
+
+「アプリを公開」で「本番環境」にすれば、審査を受けなくても、だれでもGoogleでログインし、カレンダーと連携できる。ただし `calendar.events.owned` は「機密性の高いスコープ」なので、審査が済むまでは、連携のときに「確認されていないアプリ」の注意が出て（プロジェクトの持ち主と、同じGoogle Workspaceの組織の人には出ない）、連携できるのはプロジェクトの全期間で100人まで。Googleでのログイン（`openid`・`email`）には、注意は出ない。ブランディングの確認を受けるまでは、Googleの画面にアプリ名ではなく、公開するアドレスのドメインが出る。
+
+審査は「検証センター」で、ブランディングの確認のあとに、データアクセスの確認を受ける。ブランディングでは、ホームページとプライバシーポリシーが開けることと、Search Consoleでサイトの持ち主だと確かめてあることを見られる。Yokiは、Search Consoleの確かめのファイルやタグを出さないので、workers.devのままでは確かめられない。独自のドメインで公開し、DNSで確かめる。データアクセスでは、スコープの使い道の説明と、使っているところの動画を求められる。プライバシーポリシーにGoogleのデータの扱い（受け取るもの・使い道・Limited Useに従うこと）が書いてあるかも見られる。既定の文には書いてある。直したときは、消さないように気を付ける。
 
 連携した人のrefresh tokenは、画面・ログ・運営の管理画面には出さない。本人が連携を外すと、運営者が利用者を消すと、書き込んだ予定を消し、Googleの許可を取り消してから消す。
-
-Googleでのログインが求める `openid`・`email` は、機密性の高いスコープではない。ただし同意画面が「テスト」のあいだは、テストユーザーしかログインできない。だれでもGoogleでログインできるようにするには、同意画面の公開ステータスを「本番環境」にする（`calendar.events.owned` の審査が済むまでは、カレンダーの連携に「確認されていないアプリ」の注意が出る）。
 
 Googleでログインした人がグループに入れるかは、Discordのサーバーの一覧の控えで決める。控えが24時間より古くなったら、そのサーバーに知らせのBotがいればBotで確かめ（Discordのログインの画面は出ない）、いなければDiscordに聞き直す。
 
