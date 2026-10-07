@@ -23,6 +23,12 @@ on:
       - package.json
       - package-lock.json
       - .node-version
+      - tsconfig*.json
+      - vitest.config.ts
+      - .oxlintrc.json
+      - .releaserc.json
+      - tools/**
+      - test/**
       - .github/workflows/deploy.yml
   workflow_dispatch:
 

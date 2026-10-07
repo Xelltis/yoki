@@ -9,6 +9,7 @@ on:
     branches: [main]
     paths:
       - website/**
+      - tools/icons.ts
       - package.json
       - package-lock.json
       - .github/workflows/pages.yml
