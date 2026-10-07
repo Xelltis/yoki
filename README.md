@@ -44,7 +44,7 @@ Yokiは、TRPGの卓の予定をDiscordサーバーの仲間と管理するWeb�
 |---|---|
 | 1 | Discord Developer PortalでDiscordアプリを作り、Client ID・Client Secret・Botのトークンを控える |
 | 2 | ボタンを押し、控えた値とあなたのDiscordユーザーIDを入れる。CloudflareがGitHubのリポジトリとデータベースを作り、公開まで済ませる |
-| 3 | 公開のアドレスを、DiscordアプリのRedirectsに入れる |
+| 3 | 公開のアドレスを、Discordアプリの「リダイレクト」に入れる |
 
 くわしい手順は、サイトの「[設置する](https://xelltis.github.io/yoki/setup/)」にあります。新しい版が出たら、運営の管理画面の「更新」から取り込めます（[新しい版に上げる](https://xelltis.github.io/yoki/setup/update)）。
 

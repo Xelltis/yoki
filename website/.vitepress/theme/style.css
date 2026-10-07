@@ -240,3 +240,11 @@
 @media (prefers-reduced-motion: reduce) {
   .stage *, .stage *::before, .stage *::after { animation-duration: 1ms !important; transition-duration: 1ms !important; }
 }
+
+/* 設置の手順書の画面の画像（public/setup/）。白い地に溶けないように、枠と角の丸みを付ける */
+.vp-doc img[src*="/setup/"] {
+  margin: 12px 0 20px;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgb(0 0 0 / 0.06);
+}

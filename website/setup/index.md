@@ -33,19 +33,16 @@ Cloudflareは、無料のプランのまま使えます。グループが増え�
 
 ## 1. Discordアプリを作る
 
-[Discord Developer Portal](https://discord.com/developers/applications) で「New Application」を押し、アプリを作ります。名前は、ログインの画面とBotの名前に出ます（「Yoki」など）。ログインと知らせ（Bot）の両方に、この1つのアプリを使います。
+Yokiのログインと知らせ（Bot）に使うDiscordアプリを、[Discord Developer Portal](https://discord.com/developers/applications) で作ります。画面の画像付きの手順は、[Discordアプリを作る](./discord)にまとめてあります。
 
-左の項目ごとに、次のように設定してください。
+その手順で、次の4つを控えてください。手順2の入力欄に入れます。
 
-| 項目 | 設定 |
+| 控えるもの | 入れる欄 |
 |---|---|
-| OAuth2 | Client IDを控える。「Reset Secret」でClient Secretを作って控える。Redirectsは、手順3で入れる |
-| Bot | 「Reset Token」でトークンを作って控える。「Public Bot」はONにする。Privileged Gateway Intentsは全部OFFのまま |
-| Installation | Install Linkを「None」にする |
-
-Public BotをONにするのは、グループの管理者がYokiの画面から、自分のDiscordサーバーにBotを招くためです。YokiはGatewayにつながないので、Privileged Gateway Intentsは要りません。Botを招くURLはYokiが作るので、Install Linkも要りません（求める権限は「チャンネルを見る」「メッセージを送信」「埋め込みリンク」です）。
-
-あわせて、あなたのDiscordユーザーIDも控えてください。Discordの設定の「詳細設定」で開発者モードをONにし、自分のアイコンを右クリックして「ユーザーIDをコピー」で取れます。
+| Client ID | `DISCORD_CLIENT_ID` |
+| Client Secret | `DISCORD_CLIENT_SECRET` |
+| Botのトークン | `DISCORD_BOT_TOKEN` |
+| あなたのDiscordユーザーID | `OPERATOR_IDS` |
 
 ## 2. ボタンを押して設置する
 
@@ -81,7 +78,7 @@ Cloudflareにログインし、GitHubとつなぐと、設置の画面が開き�
 
 公開のアドレスは、`https://yoki.<サブドメイン>.workers.dev` の形です。Cloudflareの画面のWorkers（Workers & Pages）で `yoki` を開くと、出ています。
 
-Discord Developer Portalのアプリの「OAuth2」を開き、Redirectsに `https://<公開のアドレス>/auth/callback` を足して保存してください。
+Discord Developer Portalのアプリの「OAuth2」を開き、「リダイレクト」に `https://<公開のアドレス>/auth/callback` を足して保存してください（[画像付きの手順](./discord#_6-設置したあと-リダイレクトを入れる)）。
 
 ## 4. ログインして確かめる
 
@@ -93,7 +90,7 @@ Discord Developer Portalのアプリの「OAuth2」を開き、Redirectsに `htt
 
 | 起きたこと | 直し方 |
 |---|---|
-| Discordの画面に「Invalid OAuth2 redirect_uri」と出る | DiscordアプリのRedirectsに、公開のアドレスの `/auth/callback` が入っているかを確かめる |
+| Discordの画面に「Invalid OAuth2 redirect_uri」と出る | Discordアプリの「リダイレクト」に、公開のアドレスの `/auth/callback` が1文字も違わずに入っているかを確かめる |
 | 「Discordログインの設定がありません」と出る | Workerのsecretに `DISCORD_CLIENT_ID` があるかを確かめる（手順2の終わり） |
 | 公開が終わらない・失敗した | Cloudflareの画面で `yoki` を開き、「Deployments」か「Builds」で組み立ての記録を読む |
 
@@ -103,7 +100,7 @@ Discord Developer Portalのアプリの「OAuth2」を開き、Redirectsに `htt
 
 既定の文は、このリポジトリのままのYokiに合わせてあります。前に別のサービスを置くなど、公開のしかたを変えたときは、本文も直してください。
 
-Discord Developer Portalの「General Information」のTerms of Service URLとPrivacy Policy URLにも、この2つのアドレスを入れます。
+Discord Developer Portalのアプリの「一般情報」の「利用規約URL」と「プライバシーポリシーURL」にも、この2つのアドレスを入れます（[画像付きの手順](./discord#_7-設置したあと-利用規約とプライバシーポリシーのアドレスを入れる)）。
 
 ## 設置したあとに
 

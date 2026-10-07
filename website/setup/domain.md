@@ -58,7 +58,7 @@ workers.devのアドレスも開けますが、ログインの戻り先とcookie
 | 直すところ | 直し方 |
 |---|---|
 | YokiのWorkerのsecret | `APP_URL` を `https://yoki.example.com` にする（下の表） |
-| DiscordアプリのOAuth2 | Redirectsに `https://yoki.example.com/auth/callback` を足す |
+| DiscordアプリのOAuth2 | 「リダイレクト」に `https://yoki.example.com/auth/callback` を足す |
 | GoogleのOAuthクライアント（連携しているとき） | 承認済みのリダイレクトURIに `https://yoki.example.com/auth/google/callback` を足す |
 | 利用規約・プライバシーポリシーのアドレス | Discord Developer PortalとGoogleの同意画面のアドレスを、新しいドメインに直す |
 

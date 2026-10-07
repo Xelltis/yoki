@@ -44,13 +44,13 @@ Cloudflareだけなら `https://yoki.<アカウントのサブドメイン>.work
 
 ### 2. Discordアプリを作る
 
-[Discord Developer Portal](https://discord.com/developers/applications) でNew Application。ログインと知らせ（Bot）の両方に、この1つのアプリを使う。
+[Discord Developer Portal](https://discord.com/developers/applications) で「新しいアプリケーション」を作る。ログインと知らせ（Bot）の両方に、この1つのアプリを使う。画面の画像付きの手順は、サイトの「[Discordアプリを作る](https://xelltis.github.io/yoki/setup/discord)」（`website/setup/discord.md`）。
 
-OAuth2: Redirectsに `https://<公開するアドレス>/auth/callback` と `http://localhost:5173/auth/callback` を足す。Client IDとClient Secretを控える。
+OAuth2: 「リダイレクト」に `https://<公開するアドレス>/auth/callback` と `http://localhost:5173/auth/callback` を足す。クライアントIDと、「秘密をリセット」で出るクライアントシークレットを控える。
 
-Bot: 「Reset Token」でトークンを作って控える。「Public Bot」はON（グループの管理者が、Yokiの画面から自分のサーバーに招く）。Privileged Gateway Intentsは全部OFFのまま（Gatewayには繋がない）。
+Bot: 「トークンをリセット」でトークンを作って控える。「公開Bot」はON（グループの管理者が、Yokiの画面から自分のサーバーに招く）。Privileged Gateway Intentsは全部OFFのまま（Gatewayには繋がない）。
 
-Installation: Install Linkは「None」（Botを招くURLはYokiが作る。求める権限は「チャンネルを見る」「メッセージを送信」「埋め込みリンク」）。
+インストール: 「インストールリンク」は「なし」（Botを招くURLはYokiが作る。求める権限は「チャンネルを見る」「メッセージを送信」「埋め込みリンク」）。
 
 ### 3. CloudflareでD1とAPIトークンを作る
 
@@ -81,7 +81,7 @@ APIトークン: アカウントのAPIトークンを作る（Cloudflareの画�
 | 秘密（任意） | `GOOGLE_TOKEN_KEY` | 同じく。Googleのrefresh tokenを暗号にする鍵 |
 | 秘密（任意） | `UPDATE_DISPATCH_TOKEN` | 運営の管理画面のボタンで更新するときだけ。下の「新しい版に上げる」 |
 
-DiscordのユーザーIDは、Discordの設定の「詳細設定」で開発者モードをONにし、自分のアイコンを右クリックして「ユーザーIDをコピー」で取れる。
+DiscordのユーザーIDは、Discordのユーザー設定の「開発者」で開発者モードをONにし、左下の自分のアイコンを押して「ユーザーIDをコピー」で取れる。
 
 運営者のIDは、公開のログに出さないように秘密に置く（公開のリポジトリでは、Actionsのログはだれでも読める）。
 
@@ -93,7 +93,7 @@ mainにアプリの変更（`src/`・`migrations/`・設定）をpushすると�
 
 ### 6. 利用規約とプライバシーポリシーを整える
 
-公開したアドレスの `/terms` と `/privacy` に出る。運営の管理画面（`/admin/`）の「規約」で、運営者の名前と問い合わせ先を入れ、本文を確かめる。既定の文は、このリポジトリのままのYokiに合わせてある。前にCDNを置くなど、公開のしかたが違えば直す。Discordの開発者ポータルの「General Information」のTerms of Service URLとPrivacy Policy URLにも、この2つのアドレスを入れる。
+公開したアドレスの `/terms` と `/privacy` に出る。運営の管理画面（`/admin/`）の「規約」で、運営者の名前と問い合わせ先を入れ、本文を確かめる。既定の文は、このリポジトリのままのYokiに合わせてある。前にCDNを置くなど、公開のしかたが違えば直す。Discordの開発者ポータルのアプリの「一般情報」の「利用規約URL」と「プライバシーポリシーURL」にも、この2つのアドレスを入れる。
 
 ## Googleでのログインと、Googleカレンダーとの連携（任意）
 

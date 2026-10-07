@@ -50,6 +50,8 @@ export default defineConfig({
       ['meta', { property: 'og:url', content: SITE_URL + path }],
     ];
   },
+  // 注意書き（::: warning や > [!WARNING]）の見出しを日本語にする
+  markdown: { container: { tipLabel: 'ヒント', warningLabel: '注意', dangerLabel: '危険', infoLabel: '情報', detailsLabel: 'くわしく', noteLabel: 'メモ', importantLabel: '大事', cautionLabel: '気を付ける' } },
   themeConfig: {
     logo: '/icon-192.png',
     nav: [
@@ -96,7 +98,7 @@ export default defineConfig({
       ],
       // Yokiを自分のCloudflareに設置する運営者向け
       '/setup/': [
-        { text: '設置する', items: [{ text: '設置の手順', link: '/setup/' }] },
+        { text: '設置する', items: [{ text: '設置の手順', link: '/setup/' }, { text: 'Discordアプリを作る', link: '/setup/discord' }] },
         {
           text: '設置したあとに',
           items: [
