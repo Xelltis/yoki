@@ -70,7 +70,7 @@ export async function updateStatus(db: D1Database, deps: UpdateDeps, now: Date, 
 
 /** 最新の版への更新を始める（更新のワークフローを動かす）。始めた版を返す */
 export async function startUpdate(db: D1Database, deps: UpdateDeps, now = new Date()): Promise<string> {
-  if (!deps.repo || !deps.token) throw new AppError(400, '管理画面から更新するには、WorkerのsecretにUPDATE_DISPATCH_TOKENが要ります（READMEの「新しい版に上げる」）。GitHubのActionsの画面からも更新できます。');
+  if (!deps.repo || !deps.token) throw new AppError(400, '管理画面から更新するには、WorkerのsecretにUPDATE_DISPATCH_TOKENが要ります（使い方のサイトの「新しい版に上げる」）。GitHubのActionsの画面からも更新できます。');
   const c = await check(db, deps, now, false);
   if (!c.latest || !newer(c.latest.version, APP_VERSION)) throw new AppError(409, '新しい版はありません。「確かめ直す」で、もう一度GitHubを見てください。');
   try {

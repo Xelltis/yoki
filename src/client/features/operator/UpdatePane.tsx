@@ -3,6 +3,7 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import type { AdminUpdate, AdminUpdateRun } from '../../../shared/admin';
+import { HELP_URL } from '../../app/links';
 import { askConfirm } from '../../ui/confirm';
 import { Icon } from '../../ui/Icon';
 import { toast } from '../../ui/toast';
@@ -102,8 +103,8 @@ export function UpdatePane() {
         </div>
         {u.available && !u.canDispatch && (
           <p className="hint">
-            {u.workflowUrl ? 'GitHubの画面で「Run workflow」を押すと、最新の版を取り込んで公開します。' : '公開しているリポジトリが分かりません（公開のワークフローで入ります）。'}
-            WorkerのsecretにUPDATE_DISPATCH_TOKENを入れると、ここのボタンで更新できます（READMEの「新しい版に上げる」）。
+            {u.workflowUrl ? 'GitHubの画面で「Run workflow」を押すと、最新の版を取り込んで公開します。' : '公開しているリポジトリが分かりません。あなたのリポジトリのActionsで「Yokiを更新する」を動かしてください。'}
+            WorkerのsecretにUPDATE_DISPATCH_TOKENを入れると、ここのボタンで更新できます（<a href={HELP_URL + 'setup/update'} target="_blank" rel="noopener">新しい版に上げる</a>）。
           </p>
         )}
         <p className="hint">更新は、公開しているリポジトリのGitHubのActions（更新のワークフロー）が、元のリポジトリの版を取り込んで公開します。コードを直しているときなど、取り込みでぶつかったら、mainを変えずにPRを作って止まります。</p>
