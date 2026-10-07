@@ -8,6 +8,10 @@ TRPGの卓の予定を、Discordサーバーの仲間と管理するWebアプリ
 
 使う人向けの説明はサイト（https://xelltis.github.io/yoki/ 。中身は `website/`）、作りの説明は [docs/architecture.md](docs/architecture.md)。
 
+自分のCloudflareに設置するときは、このボタンを押す（手順はサイトの「[設置する](https://xelltis.github.io/yoki/setup/)」）。
+
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/Xelltis/yoki/tree/release)
+
 ## 手元で動かす
 
 Node.js（22.12以降か24以降。`.node-version` は24）が要る。
@@ -63,9 +67,11 @@ website/           サイト（VitePress。GitHub Pages に公開する）。紹
   tools/           スクリーンショット・SNS 用の画像・アイコンを作る道具
 .github/workflows/ アプリを Cloudflare に（deploy.yml）、サイトを GitHub Pages に（pages.yml）公開する
 docs/              作りの説明（architecture.md）
-wrangler.jsonc     Worker の設定（D1・cron）。公開する Cloudflare ごとの値は仮の値だけ
+wrangler.jsonc     Worker の設定（D1・cron）。公開する Cloudflare ごとの値（D1 の ID など）は書かない
 vite.config.ts     開発サーバーと組み立て。公開のときに、Cloudflare ごとの値を組み立てた設定に入れる
 tools/icons.ts     アイコン（unplugin-icons）の決まり。使ってよい集まりとライセンス、SVG を React の部品にする変換（アプリとサイトで使う）
+tools/release/     版を出すときに package.json の版を書き換えてコミットする（semantic-release のプラグイン）
+tools/update/      更新のワークフローが、ボタンで設置したリポジトリの wrangler.jsonc の値を引き継ぐ
 vitest.config.ts   テスト
 lefthook.yml       Git のフック（コミットの前の確認）
 commitlint.config.js コミットの説明の決まり（Conventional Commits）
@@ -103,15 +109,47 @@ miniflareが固定している `sharp`（画像の部品）は、npm auditに指
 
 ## 公開（Cloudflare）
 
-アプリの公開はGitHub Actions（`.github/workflows/deploy.yml`）が行う。手元から `wrangler deploy` はしない。
+公開のしかたは2つある。設置する人（運営者）には、ボタンをすすめる。
 
-公開するCloudflareごとに違う値（D1のID・アプリのアドレス・Discordアプリの値・運営者のID）は、リポジトリに置かない。GitHubのenvironment「production」に置き、公開のときに組み立てた設定（`dist/yoki/wrangler.json`）に入れる（`vite.config.ts`）。リポジトリの `wrangler.jsonc` には仮の値だけがある。フォークして自分のCloudflareに公開するときも、同じ手順で進める。
+| しかた | 向いている人 | 公開する仕組み |
+|---|---|---|
+| 「Deploy to Cloudflare」のボタン（おすすめ） | 卓予定を自分のCloudflareに立てたい人 | Cloudflareの組み立て（Workers Builds） |
+| GitHub Actions | 元のリポジトリ（Xelltis/yoki）と、コードに手を入れながら使う人 | `.github/workflows/deploy.yml` |
 
-### 1. 公開するアドレスを決める
+どちらでも、手元から `wrangler deploy` はしない。公開するCloudflareごとに違う値（D1のID・Discordアプリの値・運営者のIDなど）は、リポジトリに置かない。
+
+設置する人向けには、ボタンでの手順を画面の操作に沿って、サイトの「[設置する](https://xelltis.github.io/yoki/setup/)」（`website/setup/`）に書いてある。手順を変えたら、こことサイトの両方を直す。
+
+### ボタンで設置する
+
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/Xelltis/yoki/tree/release)
+
+ボタンは `release` のブランチを指す。`release` は、版を出すたびにその版のコミットに合わせる（下の「版を出す」）。なので設置する人は、いつも版を出したときの中身を受け取る。
+
+ボタンを押すと、Cloudflareが次をする。
+
+| Cloudflareがすること | リポジトリの側の用意 |
+|---|---|
+| 設置する人のGitHubに、中身を写したリポジトリを作る（フォークではない。元の履歴とタグは無い） | 版は `package.json` の `version` に持たせる（タグに頼らない） |
+| D1を作り、そのIDを写したリポジトリの `wrangler.jsonc` に書き込む | `wrangler.jsonc` にはD1のIDを書かない |
+| Workerのsecretの値を聞く | 聞く名前は `.dev.vars.example` のコメントでない行（Discordアプリの3つと `OPERATOR_IDS`）。説明は `package.json` の `"cloudflare"` |
+| 組み立てて公開する（Workers Builds）。この後も、mainが変わるたびに公開し直す | `npm run build` と `npm run deploy`（表の変更を当ててから `wrangler deploy`） |
+
+Viteは、`wrangler deploy` の行き先（`.wrangler/deploy/config.json`）を `src/client/` の下に書く。直下で動く `wrangler deploy` から見えるように、組み立ての終わりに直下にも同じ行き先を書く（`vite.config.ts` の `deployRedirect`）。表の変更（`wrangler d1 migrations apply`）は行き先を見ないので、直下の `wrangler.jsonc`（CloudflareがIDを書いたもの）を読む。
+
+Workerの値は、どれもsecretにする（varsにしない）。Workers Buildsは公開のたびに、設定に無いvarsを消すため。公開のアドレス（`APP_URL`）は無くてもよい。そのときは届いた要求のアドレスを使い、要求の無い見回り（cron）のために、ログインのたびにD1に控える（`auth/origin.ts`）。公開しているリポジトリの名前（運営の管理画面の「更新」）は、組み立てのときにGitのoriginから読む。
+
+写したリポジトリ（フォークではない）では、公開のワークフロー（`deploy.yml`）とサイトの公開（`pages.yml`）は動かない。更新のワークフロー（`update.yml`）は動く（下の「新しい版に上げる」）。
+
+### GitHub Actionsで公開する
+
+元のリポジトリと、フォークして自分で公開するときのやり方。公開するCloudflareごとの値は、GitHubのenvironment「production」に置く。D1のIDとリポジトリの名前は組み立てた設定（`dist/yoki/wrangler.json`）に入れ（`vite.config.ts`）、ほかはWorkerのsecretとして公開する版と一緒に送る（`deploy.yml`）。
+
+#### 1. 公開するアドレスを決める
 
 Cloudflareだけなら `https://yoki.<アカウントのサブドメイン>.workers.dev` になる（サブドメインは、Cloudflareの画面のWorkersで分かる）。Route 53などのドメインで公開するなら、下の「独自のドメインで公開する」のCloudFrontのアドレス（`https://yoki.example.com` など）。
 
-### 2. Discordアプリを作る
+#### 2. Discordアプリを作る
 
 [Discord Developer Portal](https://discord.com/developers/applications) でNew Application。ログインと知らせ（Bot）の両方に、この1つのアプリを使う。
 
@@ -121,7 +159,7 @@ Bot: 「Reset Token」でトークンを作って控える。「Public Bot」は
 
 Installation: Install Linkは「None」（Botを招くURLは卓予定が作る。求める権限は「チャンネルを見る」「メッセージを送信」「埋め込みリンク」）。
 
-### 3. CloudflareでD1とAPIトークンを作る
+#### 3. CloudflareでD1とAPIトークンを作る
 
 D1: `npx wrangler login` のあと `npx wrangler d1 create yoki`（Cloudflareの画面のD1で作ってもよい）。出てきたdatabase IDを控える。
 
@@ -129,7 +167,9 @@ APIトークン: アカウントのAPIトークンを作る（Cloudflareの画�
 
 アカウントID: Cloudflareの画面のWorkersの右側に出る。
 
-### 4. GitHubに値を入れる
+#### 4. GitHubに値を入れる
+
+公開のワークフローが動くのは、元のリポジトリとそのフォークだけ（ボタンで作ったリポジトリでは動かない）。フォークでないリポジトリで使うときは、Settings → Secrets and variables → ActionsのRepository variablesに `YOKI_DEPLOY_WITH_ACTIONS` を `true` で入れる。
 
 リポジトリのSettings → Environmentsで「production」を作り、次を入れる。
 
@@ -137,12 +177,12 @@ APIトークン: アカウントのAPIトークンを作る（Cloudflareの画�
 |---|---|---|
 | 変数（Variables） | `CLOUDFLARE_ACCOUNT_ID` | CloudflareのアカウントID |
 | 変数 | `YOKI_D1_DATABASE_ID` | 3で作ったD1のdatabase ID |
-| 変数 | `YOKI_APP_URL` | 公開するアドレス（`https://…`）。Discordの知らせに付くリンクになる |
 | 変数 | `YOKI_DISCORD_CLIENT_ID` | DiscordアプリのClient ID |
 | 秘密（Secrets） | `CLOUDFLARE_API_TOKEN` | 3で作ったアカウントのAPIトークン |
 | 秘密 | `DISCORD_CLIENT_SECRET` | DiscordアプリのClient Secret |
 | 秘密 | `DISCORD_BOT_TOKEN` | DiscordアプリのBotのトークン（知らせを送る） |
 | 秘密 | `OPERATOR_IDS` | 運営者（下の「管理画面」）のDiscordユーザーID。何人いても、カンマか空白で区切って並べる |
+| 変数（任意） | `YOKI_APP_URL` | 公開するアドレス（`https://…`）。前にCDNを置くときだけ要る（下の「独自のドメインで公開する」） |
 | 変数（任意） | `YOKI_GOOGLE_CLIENT_ID` | Googleカレンダーとの連携を使うときだけ。下の「Googleカレンダーと連携する」 |
 | 秘密（任意） | `GOOGLE_CLIENT_SECRET` | 同じく。GoogleのOAuthクライアントのシークレット |
 | 秘密（任意） | `GOOGLE_TOKEN_KEY` | 同じく。Googleのrefresh tokenを暗号にする鍵 |
@@ -154,11 +194,11 @@ DiscordのユーザーIDは、Discordの設定の「詳細設定」で開発者�
 
 公開のたびに確かめたいなら、environmentの「Required reviewers」に自分を入れる。承認するまで公開が止まる。
 
-### 5. 公開する
+#### 5. 公開する
 
-mainにアプリの変更（`src/`・`migrations/`・設定）をpushすると動く。Actionsの画面の「アプリを公開する」から、手で動かすこともできる。型の確認 → テスト（カバレッジ100%）→ 組み立て（値が欠けていたら止まる。開発用ログインが残っていても止まる）→ 本番のD1にマイグレーション → 公開、の順に進む。秘密の値は、公開する版と一緒に送る。
+mainにアプリの変更（`src/`・`migrations/`・設定）をpushすると動く。Actionsの画面の「アプリを公開する」から、手で動かすこともできる。型の確認 → テスト（カバレッジ100%）→ 組み立て（D1のIDが無ければ止まる。開発用ログインが残っていても止まる）→ 本番のD1にマイグレーション → 公開、の順に進む。Workerのsecretは、公開する版と一緒に送る。
 
-### 6. 利用規約とプライバシーポリシーを整える
+#### 6. 利用規約とプライバシーポリシーを整える
 
 公開したアドレスの `/terms` と `/privacy` に出る。運営の管理画面（`/admin/`）の「規約」で、運営者の名前と問い合わせ先を入れ、本文を確かめる。既定の文は、このリポジトリのままの卓予定に合わせてある。前にCDNを置くなど、公開のしかたが違えば直す。Discordの開発者ポータルの「General Information」のTerms of Service URLとPrivacy Policy URLにも、この2つのアドレスを入れる。
 
@@ -188,9 +228,9 @@ Googleでのログインと、Googleカレンダーとの連携は、同じOAuth
 
 `openssl rand -base64 32` の出力を `GOOGLE_TOKEN_KEY` にする。refresh tokenはこの鍵で暗号にしてD1に置くので、鍵を替えると、連携していた人は連携し直しになる。
 
-#### 5. GitHubに値を入れる
+#### 5. 値を入れる
 
-変数 `YOKI_GOOGLE_CLIENT_ID` にクライアントID、秘密 `GOOGLE_CLIENT_SECRET` にクライアント シークレット、秘密 `GOOGLE_TOKEN_KEY` に4の鍵を入れて、公開し直す。
+ボタンで設置したなら、CloudflareのWorkerのVariables and Secretsに、`GOOGLE_CLIENT_ID`・`GOOGLE_CLIENT_SECRET`・`GOOGLE_TOKEN_KEY`（4の鍵）を、種類「Secret」で足す。GitHub Actionsで公開しているなら、変数 `YOKI_GOOGLE_CLIENT_ID` にクライアントID、秘密 `GOOGLE_CLIENT_SECRET` にクライアント シークレット、秘密 `GOOGLE_TOKEN_KEY` に4の鍵を入れて、公開し直す。
 
 `calendar.events.owned` はGoogleの「機密性の高いスコープ」なので、だれでも連携できるようにするには、Googleの審査（OAuthアプリの確認）を受ける。審査の前は、同意画面の「テストユーザー」に足した人だけが連携できる（100人まで）。テストのあいだは、refresh tokenが7日で切れるので、連携し直しになる。
 
@@ -204,19 +244,24 @@ Googleでログインした人がグループに入れるかは、Discordのサ�
 
 ### 新しい版に上げる（更新）
 
-元のリポジトリ（[Xelltis/yoki](https://github.com/Xelltis/yoki)）は、版（`v1.2.0` など）をGitHubのReleaseとして出す（下の「版を出す」）。フォークして公開している卓予定は、運営の管理画面の「更新」で新しい版と変わったことを見て、ボタンかGitHubの画面で取り込む。コードを触らずに追いつける。
+元のリポジトリ（[Xelltis/yoki](https://github.com/Xelltis/yoki)）は、版（`v1.4.0` など）をGitHubのReleaseとして出す（下の「版を出す」）。設置した卓予定は、運営の管理画面の「更新」で新しい版と変わったことを見て、ボタンかGitHubの画面で取り込む。コードを触らずに追いつける。設置する人向けの手順は、サイトの「[新しい版に上げる](https://xelltis.github.io/yoki/setup/update)」。
 
 **新しい版を知る**: 運営の管理画面の「様子」のいちばん上と、「更新」の区分に出る。元のリポジトリのReleaseを、1時間に1回まで読む（トークンは要らない）。表（D1）の変更を含む版は、そう出る。トークンなしで読むので、元のリポジトリが非公開だと読めず、その理由が出る。
 
-**更新する**: 「更新」の区分のボタンか、GitHubのActionsの「卓予定を更新する」（`.github/workflows/update.yml`）の「Run workflow」。ワークフローが元のリポジトリのタグをmainに取り込み、公開のワークフローを動かす。公開のワークフローは、表を変える前のD1の地点（bookmark）をSummaryに控えてから、表の変更を当てて公開する。
+**更新する**: 「更新」の区分のボタンか、GitHubのActionsの「卓予定を更新する」（`.github/workflows/update.yml`）の「Run workflow」。ワークフローは、設置した人のリポジトリの作り方で、取り込み方を変える。
 
-**取り込みでぶつかったら**: フォークでコードを直していると、ぶつかることがある。そのときはmainを変えずに `update/v1.2.0` のブランチとPRを作って止まる。GitHubの画面で直してマージすると公開される。サーバーごとの値はenvironmentに、規約の文はD1にあるので、コードを直さずに使っていればぶつからない。
+| リポジトリ | 見分け方 | 取り込み方 | 公開 |
+|---|---|---|---|
+| ボタンで作った | 元の履歴とつながっていない | 版のファイルで入れ替える。Cloudflareが `wrangler.jsonc` に書いた値（Workerの名前・D1の名前とID）は引き継ぐ（`tools/update/carry-wrangler.mjs`） | mainへのpushで、Workers Buildsが表の変更を当てて公開する |
+| フォーク | 元の履歴とつながっている | 版のタグをマージする | 公開のワークフローが、表を変える前のD1の地点（bookmark）をSummaryに控えてから、表の変更を当てて公開する |
+
+**mainに入れずにPRにするとき**: ボタンで作ったリポジトリのコードが、今の版（`package.json` の版のタグ）から変わっているとき（入れ替えると、その変更が消えるため。`wrangler.jsonc` は比べない）と、フォークでマージがぶつかったとき。どちらも `update/v1.4.0` のブランチとPRを作って止まる。GitHubの画面で確かめてマージすると公開される。サーバーごとの値はsecretかenvironmentに、規約の文はD1にあるので、コードを直さずに使っていればPRにならない。
 
 初めの1回だけ、次を準備する。
 
-#### 1. フォークでActionsを使えるようにする
+#### 1. Actionsを使えるようにする
 
-フォークでは、Actionsは初めは止まっている（Actionsの画面で使うと決める）。Settings → Actions → Generalの「Workflow permissions」を「Read and write permissions」にし、「Allow GitHub Actions to create and approve pull requests」を入れる（ぶつかったときのPRのため）。
+フォークでは、Actionsは初めは止まっている（Actionsの画面で使うと決める）。ボタンで作ったリポジトリでは、初めから動く。どちらも、Settings → Actions → Generalの「Workflow permissions」を「Read and write permissions」にし、「Allow GitHub Actions to create and approve pull requests」を入れる（PRのため）。
 
 #### 2. mainに書き込むトークン（おすすめ）
 
@@ -224,17 +269,17 @@ Googleでログインした人がグループに入れるかは、Discordのサ�
 
 #### 3. 管理画面のボタンで更新する（任意）
 
-このリポジトリだけに「Actions」のRead and writeを付けたトークンを作り、environment「production」の秘密 `UPDATE_DISPATCH_TOKEN` に入れて公開し直す。Workerはこのトークンで更新のワークフローを動かし、その記録を読む。コードは書き換えられない権限にとどめる。無ければ、「更新」の区分にGitHubの画面を開くボタンが出る。
+このリポジトリだけに「Actions」のRead and writeを付けたトークンを作り、Workerのsecretの `UPDATE_DISPATCH_TOKEN` に入れる（ボタンで設置したならCloudflareのWorkerのVariables and Secretsに種類「Secret」で、GitHub Actionsで公開しているならenvironment「production」の秘密に入れて公開し直す）。Workerはこのトークンで更新のワークフローを動かし、その記録を読む。コードは書き換えられない権限にとどめる。無ければ、「更新」の区分にGitHubの画面を開くボタンが出る。
 
 #### 4. 元のリポジトリを変える（任意。フォークのフォークなど）
 
-リポジトリのSettings → Secrets and variables → ActionsのRepository variablesに `YOKI_UPSTREAM`（`owner/name`）を入れる。
+リポジトリのSettings → Secrets and variables → ActionsのRepository variablesに `YOKI_UPSTREAM`（`owner/name`）を入れる（更新のワークフローが取り込む元）。運営の管理画面が新しい版を見に行く先は、組み立てのときの `YOKI_UPSTREAM` で決まる。ボタンで設置したなら、Workers Buildsの組み立ての変数（Settings → Build）にも入れる。
 
 困ったときは、次の順に戻す。
 
 Worker: Cloudflareの画面のWorkers → `yoki` → Deploymentsで、前の版に戻す（`npx wrangler rollback` でもよい）。
 
-D1: 表を変えた版なら、公開のワークフローのSummaryに出たbookmarkへ `npx wrangler d1 time-travel restore yoki --bookmark=<bookmark>` で戻す。その地点より後に書かれたもの（予定・回答など）は消える。
+D1: 表を変えた版なら、Time Travelで更新の前に戻す。`npx wrangler d1 time-travel restore yoki --timestamp=<更新の前の時刻>`（GitHub Actionsで公開しているなら、公開のワークフローのSummaryに出たbookmarkを `--bookmark=<bookmark>` で渡してもよい）。その地点より後に書かれたもの（予定・回答など）は消える。
 
 コード: mainの取り込みのコミットをrevertする（そのままだと、次の公開でまた新しい版が出る）。
 
@@ -242,13 +287,13 @@ D1: 表を変えた版なら、公開のワークフローのSummaryに出たboo
 
 Workersに独自のドメインを直接付けるには、そのドメインのDNSをCloudflareに移す必要がある（DNSを別のところに残す形は、Cloudflareの有料のプランが要る）。ドメインのDNSをRoute 53に残したまま公開するときは、前にAWS CloudFrontを置き、CloudFrontからworkers.devのアドレスへ渡す。
 
-Workerに届く要求のアドレスはworkers.devのままになる。アプリは、自分のアドレス（Discordログインの戻り先・知らせのリンク・CSRFの確かめ）を `YOKI_APP_URL` で決めるので、そのまま動く。
+Workerに届く要求のアドレスはworkers.devのままになる。アプリは、自分のアドレス（Discordログインの戻り先・知らせのリンク・CSRFの確かめ）をWorkerのsecretの `APP_URL` で決めるので、そのまま動く。
 
 workers.devのアドレスもそのまま開けるが、ログインの戻り先とcookieは公開のアドレスに結びつくので、workers.devのままでは使えない（ログインの途中で止まる）。使う人を絞りたいときは、運営の管理画面で新規登録の受付を止める。
 
 #### 1. 公開するCloudflareの側
 
-上の1〜5のとおり。workers.devは有効のままにする（CloudFrontの行き先になる）。
+上の「ボタンで設置する」か「GitHub Actionsで公開する」のとおり。workers.devは有効のままにする（CloudFrontの行き先になる）。
 
 #### 2. 証明書
 
@@ -270,13 +315,13 @@ AWS Certificate Managerで、**us-east-1（バージニア北部）** に、使�
 
 #### 5. 値を直す
 
-`YOKI_APP_URL` を `https://yoki.example.com` にし、DiscordアプリのRedirectsに `https://yoki.example.com/auth/callback` を足して、公開し直す。Googleカレンダーと連携しているなら、Googleの承認済みのリダイレクトURIにも `https://yoki.example.com/auth/google/callback` を足す。
+Workerのsecretの `APP_URL` を `https://yoki.example.com` にし（ボタンで設置したならCloudflareのWorkerのVariables and Secretsで。GitHub Actionsで公開しているなら変数 `YOKI_APP_URL` を直して公開し直す）、DiscordアプリのRedirectsに `https://yoki.example.com/auth/callback` を足す。Googleカレンダーと連携しているなら、Googleの承認済みのリダイレクトURIにも `https://yoki.example.com/auth/google/callback` を足す。
 
 #### 6. 確かめる
 
 `https://yoki.example.com/` でログインでき、グループを開けること。
 
-DNSをCloudflareに移せるドメインなら、CloudFrontを置かずに、Cloudflareの画面でWorkerに独自のドメイン（Custom Domain）を足せる。そのときも `YOKI_APP_URL` とDiscordのRedirectsを直す。
+DNSをCloudflareに移せるドメインなら、CloudFrontを置かずに、Cloudflareの画面でWorkerに独自のドメイン（Custom Domain）を足せる。そのときも `APP_URL` とDiscordのRedirectsを直す。
 
 Cloudflareは無料のプランで動く。グループが増えて、知らせの見回りで送る数が多くなったら、有料のプラン（Workers Paid）にする。
 
@@ -312,9 +357,9 @@ Cloudflareは無料のプランで動く。グループが増えて、知らせ�
 
 前の版のタグから後のコミット（Conventional Commits）を見て、`feat` は小さい版（1.1.0 → 1.2.0）、`fix`・`perf`・`revert` はいちばん小さい版（1.1.0 → 1.1.1）、`!` 付き（互換を壊す変更）は大きい版（2.0.0）を上げる。`docs`・`ci` などだけなら、版は出さない。
 
-版を出すと、タグ `vX.Y.Z` とGitHubのRelease（変わったことの一覧。`feat`・`fix`・`perf`・`revert` だけ）ができる。各地の卓予定の「更新」に、変わったこととして出る。
+版を出すときは、`package.json` と `package-lock.json` の `version` を新しい版にしてコミットし（`chore(release): vX.Y.Z [skip ci]`）、mainにpushする（`tools/release/commit-version.mjs`）。そのコミットにタグ `vX.Y.Z` が付き、GitHubのRelease（変わったことの一覧。`feat`・`fix`・`perf`・`revert` だけ）ができる。各地の卓予定の「更新」に、変わったこととして出る。最後に `release` のブランチをそのコミットに合わせる（ボタンが指す先）。mainに保護（PRを必須にするなど）を付けると、このpushが止まるので付けない。
 
-アプリに入れる版は、いちばん近い版のタグから読む（`vite.config.ts`）。`package.json` の `version` は使わない（`0.0.0-development` のまま）。変わったことの一覧は、ファイルに書かずGitHubのReleasesに置く。
+アプリに入れる版は、`package.json` の `version` から読む（`vite.config.ts`）。ボタンで作ったリポジトリには、元の履歴とタグが無いため。`version` は手で書き換えない。公開のワークフローは、版を出したあとのmainを取って組み立てる。変わったことの一覧は、ファイルに書かずGitHubのReleasesに置く。
 
 コミットのtypeが版の上げ方を決めるので、typeを正しく付ける。各地の卓予定は、版を飛ばして上げることがある。表の変更（`migrations/`）は、前の版から順に当たれば動くように書く。
 

@@ -76,7 +76,7 @@ Googleカレンダーと連携した人のrefresh tokenだけは持つ（本人�
 
 利用者そのものはDiscordのアカウント（`users.id`）のままにする。Googleでのログインは、結びつけた入り口（`google_logins`）として扱い、Googleのアカウントだけではグループに入れない。グループに入れるかの確かめ直しは、BotがいるサーバーではBotで、いなければDiscordで行う（`auth/guard.ts`）。
 
-版は、mainに入ったコミットからsemantic-releaseが決め、タグ `vX.Y.Z` とGitHubのReleaseを作る（公開のワークフローの中。設定は `.releaserc.json`）。タグを手で付けない。`package.json` の `version` は使わない。コミットのtypeが版の上げ方と変わったことの一覧を決めるので、typeを正しく付ける（`feat`・`fix`・`perf` は各地の運営の管理画面に出る）。
+版は、mainに入ったコミットからsemantic-releaseが決め、`package.json` の `version` を書き換えたコミットと、タグ `vX.Y.Z`・GitHubのReleaseを作り、`release` のブランチをそこに合わせる（公開のワークフローの中。設定は `.releaserc.json`）。`version` とタグを手で書き換えない。アプリの版は `package.json` から読む（ボタンで設置したリポジトリにはタグが無いため）。コミットのtypeが版の上げ方と変わったことの一覧を決めるので、typeを正しく付ける（`feat`・`fix`・`perf` は各地の運営の管理画面に出る）。
 
 npm auditは0件に保つ。出たら、依存の版をそろえる（`overrides`）。直った版が無く、使わない・使い方が狭い部品は、`tools/shims/` に差し替えを置いて `overrides` で替える（今はsemantic-releaseの `micromatch` と `@semantic-release/npm`。READMEの「版を出す」）。
 
@@ -86,7 +86,9 @@ npm auditは0件に保つ。出たら、依存の版をそろえる（`overrides
 
 購読URL（`/cal/<token>.ics`）は、知っていればだれでも読める。tokenは推測できない長さのランダムにし、作り直しと止めるができるようにする。
 
-公開するCloudflareごとの値（D1のID・アプリのアドレス・Discordアプリの値とBotのトークン・運営者のID・Googleの値・APIトークン）は、リポジトリに書かない。GitHubのenvironment「production」に置き、`wrangler.jsonc` には仮の値だけを置く（READMEの「公開」）。
+公開するCloudflareごとの値（D1のID・アプリのアドレス・Discordアプリの値とBotのトークン・運営者のID・Googleの値・APIトークン）は、リポジトリに書かない。設置の主な道は「Deploy to Cloudflare」のボタンで、CloudflareがD1のIDを設置した人のリポジトリの `wrangler.jsonc` に書き、ほかはWorkerのsecretに置く。GitHub Actionsで公開するときは、GitHubのenvironment「production」に置く（READMEの「公開」）。Workerの値はvarsにしない（Workers Buildsが公開のたびに消すため。`src/worker/env.ts`）。ボタンが聞く値を変えたら、`.dev.vars.example` と `package.json` の `"cloudflare"` も直す。
+
+設置の手順（READMEの「公開」「管理画面」）と、サイトの運営者向けの手順書（`website/setup/`）は、同じ中身をそろえて直す。公開に要る値・ワークフロー・運営の管理画面を変えたら、両方を見直す。
 
 アイコンはunplugin-iconsでSVGにして入れ、画像やフォント（Google FontsのMaterial Symbols）では読まない。集まりは、ライセンスを確かめたもの（`tools/icons.ts` の `ALLOWED_ICON_SETS`。今はMaterial SymbolsのApache-2.0）だけを使う。足したら一覧にも足す（画面は `src/client/ui/icons.ts` の `ICONS`、サイトは `website/.vitepress/theme/icons.ts` の `ICONS`。型の確認とテストが確かめる）。
 

@@ -32,7 +32,7 @@ Worker 1つで、次の3つを受け持つ。
 
 **リンクの見た目（OGP）**。リンクをDiscordなどに貼ると、貼られた側がページを読みに来て、題・説明・画像を出す。
 
-画面の骨組み（`index.html`）に、卓予定の題・一言・画像（`/og.png`。`npm run og-image` がサイトと同じ画像を書き出す）のタグを置く。画像のURLは、組み立てのときに公開するアドレス（`YOKI_APP_URL`）を入れて、省かない形にする（`vite.config.ts` の `appOrigin`）。
+画面の骨組み（`index.html`）に、卓予定の題・一言・画像（`/og.png`。`npm run og-image` がサイトと同じ画像を書き出す）のタグを置く。骨組みのタグはアドレスを省いた形（組み立てのときには、公開のアドレスが分からない）。入口（`/`）は、Workerがタグを公開のアドレスを入れた形に書き換えて返す（`routes/pages.ts`。`wrangler.jsonc` の `run_worker_first` に `/` を入れてある）。
 
 読みに来たものはログインしないので、グループの画面と運営の管理画面はログインへ送られ、Discordのログインのページの見た目が出てしまう。User-Agentで見分け（`routes/og.ts` の `isPreviewBot`）、ログインへ送らずに骨組みを返し、タグを道ごとの文に書き換える。骨組みにはグループの中身が無く、グループの名前も出さない（「卓予定のグループ」）。見分けを外れても、ふつうの人と同じくログインへ送られるだけ。
 
@@ -255,19 +255,23 @@ Discordサーバーを付け替えると、新しいサーバーの人は、控�
 
 ## 版と更新
 
-卓予定はOSSとして、ほかの人がフォークして自分のCloudflareに公開する。元のリポジトリが出す版に、各地の卓予定が運営の管理画面から追いつけるようにする（WordPressの更新と同じ役目）。Workerは自分のコードを書き換えない。取り込みと公開は、各地のリポジトリのGitHub Actionsがする。
+卓予定はOSSとして、ほかの人が自分のCloudflareに設置して公開する。設置の主な道は「Deploy to Cloudflare」のボタンで、フォークしてGitHub Actionsで公開する道もある（下の「公開」）。元のリポジトリが出す版に、各地の卓予定が運営の管理画面から追いつけるようにする（WordPressの更新と同じ役目）。Workerは自分のコードを書き換えない。取り込みは、各地のリポジトリのGitHub Actionsがする。
 
-**版**: いちばん近い版のタグ（`vX.Y.Z`）。`vite.config.ts` が組み立てのときに `git describe` で読み、`__APP_VERSION__` としてWorkerに入れる（`src/worker/version.ts`。タグが無ければ0.0.0）。元のリポジトリでは、公開のワークフローの中でsemantic-release（`.releaserc.json`）がConventional Commitsから次の版を決め、タグとGitHubのReleaseを作ってから公開する（`package.json` を書き戻すコミットは作らない。署名の無いコミットと二度目の公開を避けるため）。フォークでは、更新のワークフローが取り込んだタグを自分のリポジトリにも置き、公開のワークフローは履歴とタグを全部取ってから組み立てる。
+**版**: `package.json` の `version`。`vite.config.ts` が組み立てのときに読み、`__APP_VERSION__` としてWorkerに入れる（`src/worker/version.ts`）。ボタンで作ったリポジトリは、元の履歴とタグを持たない（中身を1つのコミットにしたもの）ので、版はタグではなくファイルに持たせる。元のリポジトリでは、公開のワークフローの中でsemantic-release（`.releaserc.json`）がConventional Commitsから次の版を決める。`tools/release/commit-version.mjs` が `package.json` と `package-lock.json` の版を書き換えてコミットし（`[skip ci]`。`GITHUB_TOKEN` のpushなので、公開のワークフローは二度動かない）、semantic-releaseがそのコミットにタグとGitHubのReleaseを作る。最後に `release` のブランチをそのコミットに合わせる。ボタンは `release` を指すので、設置する人はいつも版を出したときの中身を受け取る。版のコミットはActionsのボットが作るので、署名は付かない。公開のワークフローは、版を出したあとのmainを取って組み立てる。
 
 **新しい版を知る**（`domain/update.ts`）: 元のリポジトリ（`UPSTREAM_REPOSITORY`。無ければ `update/config.ts` の既定）の最新のReleaseをGitHubのAPIで読み、今の版と比べる。新しければ、2つのタグのあいだに変わったファイル（compare）に `migrations/` があるかで、表の変更を含むかを出す。読んだ結果は `meta` の `update_check` に控え、1時間は読み直さない（GitHubのAPIは、トークンなしでは1時間に60回まで）。Releaseが404なら、リポジトリそのものも読む。リポジトリも見えなければ（非公開・名前の誤り）、「版がまだ無い」とは言わずに理由を出す。読めなければ理由を出し、前に読めた最新の版は残す。
 
-**更新する**（`.github/workflows/update.yml`。各地のリポジトリで動く）: 元のリポジトリのタグをfetchしてmainにマージし、公開のワークフローを動かす。ぶつかったらmainを変えずに `update/vX.Y.Z` のブランチとPRを作って止まる。版の形（`vX.Y.Z`）を確かめてから使い、入力は式の中に直に書かない（スクリプトの差し込みを防ぐ）。
+**更新する**（`.github/workflows/update.yml`。各地のリポジトリで動く）: 元のリポジトリのタグをfetchし、履歴がつながっているかで取り込み方を変える。版の形（`vX.Y.Z`）を確かめてから使い、入力は式の中に直に書かない（スクリプトの差し込みを防ぐ）。
+
+ボタンで作ったリポジトリ（履歴がつながっていない）: 版のファイルで入れ替える。Cloudflareが設置のときに `wrangler.jsonc` に書いた値（Workerの名前・D1の名前とID）は、`tools/update/carry-wrangler.mjs` が新しい版の `wrangler.jsonc` に引き継ぐ（コメント付きの文のまま、値の行だけを書き換える）。入れ替える前に、今のコードが今の版（`package.json` の版のタグ。`wrangler.jsonc` は除く）と同じかを比べ、違えば設置した人が変えたものとして、mainを変えずにPRを作って止まる。mainへのpushで、Workers Buildsが表の変更を当てて公開する。
+
+フォーク（履歴がつながっている）: タグをmainにマージし、公開のワークフローを動かす。ぶつかったらmainを変えずに `update/vX.Y.Z` のブランチとPRを作って止まる。
 
 **2つのトークン**: 管理画面のボタンは、Workerのsecretの `UPDATE_DISPATCH_TOKEN`（そのリポジトリのActionsを動かすだけの権限）で、更新のワークフローを `workflow_dispatch` で動かし、その実行の一覧を読む。運営者のDiscordのアカウントを取られても、コードは書き換えられない。mainへの書き込みは、更新のワークフローがActionsのsecretの `UPDATE_PUSH_TOKEN`（ContentsとWorkflows）で行う。既定の `GITHUB_TOKEN` は `.github/workflows/` を書き換えられず、書き込んだpushでは公開のワークフローも動かないので、そのときは更新のワークフローが公開のワークフローを動かす。
 
-**表の変更**: 公開のワークフローが、当てる前にD1のTime Travelの地点（bookmark）をSummaryに控える。表の変更は戻せないので、困ったらWorkerを前の版に戻し、D1をその地点に戻す。
+**表の変更**: 公開のワークフローは、当てる前にD1のTime Travelの地点（bookmark）をSummaryに控える。Workers Buildsは控えないので、時刻で戻す。表の変更は戻せないので、困ったらWorkerを前の版に戻し、D1を更新の前に戻す。
 
-`APP_REPOSITORY`（公開しているリポジトリ）は、公開のワークフローが `github.repository` を組み立てに渡して入れる。`owner/name` の形でなければ使わない（APIの道に入れるため）。
+`APP_REPOSITORY`（公開しているリポジトリ）は、組み立てのときにvarsに入れる。公開のワークフローは `github.repository` を渡し、Workers Buildsでは組み立てる場所のGitのoriginから読む（`vite.config.ts` の `appRepository`）。`owner/name` の形でなければ使わない（APIの道に入れるため）。
 
 開発サーバーでは `APP_REPOSITORY` が空なので、開発用の偽のGitHub（`update/dev.ts`。最新はいつも今の小さい版を1つ上げたもの）を使う。偽物を選ぶ道は `import.meta.env.DEV` のときだけ。
 
@@ -397,17 +401,21 @@ Workerのページ（知らせと規約。`routes/html.ts`）・サイト（`web
 
 ## 公開
 
-アプリはGitHub Actions（`.github/workflows/deploy.yml`）が、mainにアプリの変更が入ったときに公開する。
+公開の道は2つある。どちらでも、公開するCloudflareごとに違う値はリポジトリに置かない（OSSとして）。
 
-OSSとして、公開するCloudflareごとに違う値はリポジトリに置かない。`wrangler.jsonc` には仮の値（D1のIDは0が並んだもの、APP_URLとDISCORD_CLIENT_IDは空）だけを置き、手元の開発とテストはそのまま動く。
+**「Deploy to Cloudflare」のボタン**（主な道）。Cloudflareが、設置する人のGitHubに中身を写したリポジトリを作り、D1を作ってそのIDを写した先の `wrangler.jsonc` に書き込み、Workers Buildsで公開する。このあとも、写した先のmainが変わるたびに、Workers Buildsが `npm run build` と `npm run deploy`（`wrangler d1 migrations apply DB --remote` のあと `wrangler deploy`）で公開し直す。元のリポジトリの側の用意は次のとおり。
 
-本番の値はGitHubのenvironment「production」に置く。組み立てのとき、`vite.config.ts` が環境変数（`YOKI_D1_DATABASE_ID`・`YOKI_APP_URL`・`YOKI_DISCORD_CLIENT_ID`。あれば `YOKI_GOOGLE_CLIENT_ID`・`YOKI_REPOSITORY`・`YOKI_UPSTREAM`）を、組み立てた設定（`dist/yoki/wrangler.json`）に入れる。`YOKI_DEPLOY=1` のときに欠けていたら、組み立てを止める（仮の値のまま公開しないように）。
+`wrangler.jsonc` にはD1のIDを書かない（Cloudflareが作って書き込む）。手元の開発とテストは、IDが無くても動く。
 
-秘密の値（`DISCORD_CLIENT_SECRET`・`DISCORD_BOT_TOKEN`）と運営者のID（`OPERATOR_IDS`）はvarsに置かず、Workerのsecretにする。公開のたびに `wrangler deploy --secrets-file` で版と一緒に送る。varsは公開のログに出るため（公開のリポジトリでは、Actionsのログはだれでも読める）。
+Workerの値（DiscordアプリのClient IDとSecret・Botのトークン・運営者のID・公開のアドレス・Google）は、どれもWorkerのsecretにする（`src/worker/env.ts`）。Workers Buildsは公開のたびに、設定に無いvarsを消すため。ボタンが聞く名前は、`.dev.vars.example` のコメントでない行で、説明は `package.json` の `"cloudflare"` に書く。任意の値は、聞かれないようにコメントにしてある。
 
-マイグレーションと公開は、どちらも組み立てた設定（`--config dist/yoki/wrangler.json`）で行う。
+Viteは `wrangler deploy` の行き先（`.wrangler/deploy/config.json`）を、root（`src/client`）の下に書く。リポジトリの直下で動く `wrangler deploy` から見えるように、組み立ての終わりに直下にも同じ行き先を書く（`vite.config.ts` の `deployRedirect`）。`wrangler d1 migrations apply` は行き先を見ないので、直下の `wrangler.jsonc`（IDが書いてある）を読む。
 
-wranglerにはD1のIDを省くと自動で作る機能もあるが、試験中で、マイグレーションとの順番も合わないので使わない。
+写した先はフォークではないので、公開のワークフロー（`deploy.yml`）は動かない（動くのは、元のリポジトリ・フォーク・`YOKI_DEPLOY_WITH_ACTIONS` を入れたリポジトリ）。サイトの公開（`pages.yml`）は、元のリポジトリでだけ動く。
+
+**GitHub Actions**（`.github/workflows/deploy.yml`。元のリポジトリとフォーク）。mainにアプリの変更が入ったときに公開する。本番の値はGitHubのenvironment「production」に置く。組み立てのとき、`vite.config.ts` がD1のID（`YOKI_D1_DATABASE_ID`）とリポジトリの名前（`YOKI_REPOSITORY`・`YOKI_UPSTREAM`）を、組み立てた設定（`dist/yoki/wrangler.json`）に入れる。`YOKI_DEPLOY=1` のときにD1のIDが無ければ、組み立てを止める。ほかの値は、公開のたびに `wrangler deploy --secrets-file` でWorkerのsecretとして版と一緒に送る。varsにしないのは、ボタンの道と置き場所をそろえるためと、varsは公開のログに出るため（公開のリポジトリでは、Actionsのログはだれでも読める）。マイグレーションと公開は、どちらも組み立てた設定（`--config dist/yoki/wrangler.json`）で行う。
+
+**公開のアドレス**（`auth/origin.ts`）。`APP_URL` は無くてもよい（workers.devのまま公開するとき）。そのときは届いた要求のアドレスを使う。要求の無い見回り（cron）が知らせのリンクに使うために、Discordでログインするたびに、`meta` の `app_origin` に控える（変わったときだけ書く）。
 
 **前にCDNを置くとき**（`auth/origin.ts`）。ドメインのDNSをCloudflareに移さずに独自のドメインで公開するときは、AWS CloudFrontなどを前に置き、workers.devのアドレスへ渡す。
 

@@ -55,6 +55,7 @@ export default defineConfig({
     nav: [
       { text: '始め方', link: '/guide/start' },
       { text: '使い方', link: '/guide/availability', activeMatch: '^/guide/(?!start)' },
+      { text: '設置する', link: '/setup/', activeMatch: '^/setup/' },
       ...(APP_URL ? [{ text: 'アプリを開く', link: APP_URL }] : []),
     ],
     sidebar: {
@@ -87,6 +88,19 @@ export default defineConfig({
           ],
         },
         { text: '困ったとき', items: [{ text: 'よくある質問', link: '/guide/faq' }] },
+      ],
+      // 卓予定を自分のCloudflareに設置する運営者向け
+      '/setup/': [
+        { text: '設置する', items: [{ text: '設置の手順', link: '/setup/' }] },
+        {
+          text: '設置したあとに',
+          items: [
+            { text: '新しい版に上げる', link: '/setup/update' },
+            { text: 'Googleと連携する', link: '/setup/google' },
+            { text: '独自のドメインで公開する', link: '/setup/domain' },
+            { text: '運営の管理画面', link: '/setup/admin' },
+          ],
+        },
       ],
     },
     outline: { level: [2, 3], label: 'このページの内容' },

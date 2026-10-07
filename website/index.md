@@ -14,6 +14,9 @@ hero:
     - theme: alt
       text: 使い方を見る
       link: /guide/availability
+    - theme: alt
+      text: 自分で設置する
+      link: /setup/
 
 # 特長（theme/components/HomeFeatures.vueが出す。iconはtheme/icons.tsの名前）
 points:
