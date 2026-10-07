@@ -1,10 +1,14 @@
-# 卓予定を新しい版に上げる（フォークして公開している卓予定で動かす。元のリポジトリでは何もしない）。
-# 元のリポジトリ（vars の YOKI_UPSTREAM。無ければ Xelltis/yoki）の Release のタグを main に取り込み、公開のワークフロー（deploy.yml）を動かす。
-# 表（D1）の変更は、公開のワークフローが、変える前の地点を控えてから当てる。
+# 卓予定を新しい版に上げる（設置した人のリポジトリで動かす。元のリポジトリでは何もしない）。
+# 元のリポジトリ（vars の YOKI_UPSTREAM。無ければ Xelltis/yoki）の Release の版を main に取り込む。取り込み方は、リポジトリの作り方で変わる。
+#   「Deploy to Cloudflare」のボタンで作ったリポジトリ（元の履歴とつながっていない）: 取り込む版のファイルで入れ替える。
+#     設置したときに Cloudflare が wrangler.jsonc に書いた値（Worker の名前・D1 の名前と ID）は引き継ぐ（tools/update/carry-wrangler.mjs）。
+#     main に入れると、Cloudflare の組み立て（Workers Builds）が公開する
+#   フォーク（元の履歴とつながっている）: 版のタグをマージする。公開は公開のワークフロー（deploy.yml）がする
+# 表（D1）の変更は、公開のときに当たる（Workers Builds は package.json の deploy、deploy.yml は変える前の地点を控えてから当てる）。
 #   動かし方: 運営の管理画面の「更新」のボタン（Worker の secret に UPDATE_DISPATCH_TOKEN があるとき）か、この画面の「Run workflow」
-#   取り込みでぶつかったら（フォークでコードを直しているときなど）: main は変えずに PR を作って止まる。GitHub の画面で直してマージする
+#   main を変えずに PR を作って止まるとき: フォークでマージがぶつかったとき。ボタンで作ったリポジトリのコードを、設置した人が変えていたとき
 #   元のリポジトリが .github/workflows/ を変えた版は、GITHUB_TOKEN では main に書き込めない。そのときは Actions の secret に
-#   UPDATE_PUSH_TOKEN（このリポジトリの Contents と Workflows を書ける fine-grained token）を入れる（README の「新しい版に上げる」）
+#   UPDATE_PUSH_TOKEN（このリポジトリの Contents と Workflows を書ける fine-grained token）を入れる（サイトの「新しい版に上げる」）
 name: 卓予定を更新する
 
 on:
@@ -42,7 +46,7 @@ jobs:
       - name: 上げる版を決める
         id: ver
         run: |
-          if [ "$GITHUB_REPOSITORY" = "$UPSTREAM" ]; then echo '::error::元のリポジトリでは動かしません（フォークして公開している卓予定で動かします）'; exit 1; fi
+          if [ "$GITHUB_REPOSITORY" = "$UPSTREAM" ]; then echo '::error::元のリポジトリでは動かしません（設置した卓予定のリポジトリで動かします）'; exit 1; fi
           tag="$WANT"
           if [ -z "$tag" ]; then tag=$(gh release view --repo "$UPSTREAM" --json tagName --jq .tagName); fi
           tag="v${tag#v}"
@@ -57,31 +61,62 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git fetch --no-tags "https://github.com/$UPSTREAM.git" "refs/tags/$TAG:refs/tags/$TAG"
-          if git merge-base --is-ancestor "$TAG" HEAD; then
-            echo "すでに $TAG を取り込んでいます。" >> "$GITHUB_STEP_SUMMARY"
-            echo 'pushed=no' >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          if ! git merge --no-edit -m "chore: 卓予定 $TAG を取り込む" "$TAG"; then
-            git merge --abort
-            branch="update/$TAG"
-            git push --force origin "$TAG^{commit}:refs/heads/$branch"
-            gh pr create --base main --head "$branch" --title "chore: 卓予定 $TAG を取り込む" \
-              --body "元のリポジトリの $TAG を取り込もうとして、このリポジトリの変更とぶつかりました。ぶつかったところを直してマージすると、公開されます。" \
+          branch="update/$TAG"
+          # PR を作って止まる（main は変えない）。$1 は PR の本文
+          stop_with_pr() {
+            git push --force origin "HEAD:refs/heads/$branch"
+            gh pr create --base main --head "$branch" --title "chore: 卓予定 $TAG を取り込む" --body "$1" \
               || echo '::warning::PR を作れませんでした（Settings → Actions の「Allow GitHub Actions to create and approve pull requests」を入れるか、手で作ってください）'
-            echo "::error::$TAG の取り込みでぶつかりました。$branch を PR にしたので、GitHub の画面で直してマージしてください"
+            echo "::error::$TAG を main に入れずに、$branch を PR にしました。GitHub の画面で確かめてマージしてください"
             exit 1
+          }
+
+          if git merge-base HEAD "$TAG" > /dev/null 2>&1; then
+            # フォーク: 版のタグをマージする
+            if git merge-base --is-ancestor "$TAG" HEAD; then
+              echo "すでに $TAG を取り込んでいます。" >> "$GITHUB_STEP_SUMMARY"
+              echo 'pushed=no' >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            if ! git merge --no-edit -m "chore: 卓予定 $TAG を取り込む" "$TAG"; then
+              git merge --abort
+              git checkout -q -B "$branch" "$TAG^{commit}"
+              stop_with_pr "元のリポジトリの $TAG を取り込もうとして、このリポジトリの変更とぶつかりました。ぶつかったところを直してマージすると、公開されます。"
+            fi
+            # 版のタグも、このリポジトリに置く（main より先に）
+            git push origin "refs/tags/$TAG"
+          else
+            # ボタンで作ったリポジトリ: 取り込む版のファイルで入れ替える
+            now="v$(node -p "require('./package.json').version")"
+            if [ "$now" = "$TAG" ]; then
+              echo "すでに $TAG です。" >> "$GITHUB_STEP_SUMMARY"
+              echo 'pushed=no' >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            # 設置した人がコードを変えたか: 今の版（設置したときと、前の更新で入れた版）と比べる。wrangler.jsonc は Cloudflare が書き換えるので除く
+            changed=yes
+            if git fetch --no-tags "https://github.com/$UPSTREAM.git" "refs/tags/$now:refs/tags/$now" 2> /dev/null \
+              && git diff --quiet "$now" HEAD -- . ':(exclude)wrangler.jsonc'; then changed=no; fi
+            cp wrangler.jsonc "$RUNNER_TEMP/wrangler.jsonc"
+            git rm -q -r .
+            git checkout "$TAG" -- .
+            node tools/update/carry-wrangler.mjs "$RUNNER_TEMP/wrangler.jsonc" wrangler.jsonc
+            git add -A
+            git commit -q -m "chore: 卓予定 $TAG を取り込む"
+            if [ "$changed" = yes ]; then
+              stop_with_pr "このリポジトリのコードが、元のリポジトリの $now から変わっています。新しい版の $TAG のファイルで入れ替えると、その変更は消えます。差分を確かめて、残したい変更が無ければマージしてください（マージすると公開されます）。"
+            fi
           fi
-          # 公開のワークフローは、アプリに入れる版をタグから読む。main より先に、取り込んだタグをこのリポジトリにも置く
-          git push origin "refs/tags/$TAG"
+
           if ! git push origin HEAD:main; then
-            echo '::error::main に書き込めませんでした。元のリポジトリがワークフローのファイル（.github/workflows/）を変えた版は、Actions の secret に UPDATE_PUSH_TOKEN が要ります（README の「新しい版に上げる」）'
+            echo '::error::main に書き込めませんでした。元のリポジトリがワークフローのファイル（.github/workflows/）を変えた版は、Actions の secret に UPDATE_PUSH_TOKEN が要ります（サイトの「新しい版に上げる」）'
             exit 1
           fi
-          echo "$TAG を取り込みました。公開は「アプリを公開する」のワークフローで進みます。" >> "$GITHUB_STEP_SUMMARY"
+          echo "$TAG を取り込みました。公開が続けて進みます。" >> "$GITHUB_STEP_SUMMARY"
           echo 'pushed=yes' >> "$GITHUB_OUTPUT"
 
-      # UPDATE_PUSH_TOKEN で書き込んだときは、push で公開のワークフローが動く。GITHUB_TOKEN のときは動かないので、ここで動かす
+      # GitHub Actions で公開しているリポジトリ（フォークか、YOKI_DEPLOY_WITH_ACTIONS）だけ。UPDATE_PUSH_TOKEN で書き込んだときは push で公開のワークフローが動き、
+      # GITHUB_TOKEN のときは動かないので、ここで動かす。ボタンで作ったリポジトリは、main への push で Workers Builds が公開する
       - name: 公開する
-        if: steps.merge.outputs.pushed == 'yes' && env.UPDATE_TOKEN == ''
+        if: steps.merge.outputs.pushed == 'yes' && env.UPDATE_TOKEN == '' && (github.event.repository.fork || vars.YOKI_DEPLOY_WITH_ACTIONS == 'true')
         run: gh workflow run deploy.yml --ref main

@@ -12,6 +12,7 @@
     "predev": "wrangler d1 migrations apply DB --local",
     "dev": "vite",
     "build": "vite build",
+    "deploy": "wrangler d1 migrations apply DB --remote && wrangler deploy",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -82,5 +83,14 @@
       "@semantic-release/npm": "$@semantic-release/npm"
     },
     "sharp": "0.35.5"
+  },
+  "cloudflare": {
+    "bindings": {
+      "DB": { "description": "卓予定のデータ（グループ・卓・予定）を置くD1のデータベース。新しく作ってください。" },
+      "DISCORD_CLIENT_ID": { "description": "DiscordアプリのClient ID（Discord Developer PortalのOAuth2）。" },
+      "DISCORD_CLIENT_SECRET": { "description": "DiscordアプリのClient Secret（Discord Developer PortalのOAuth2）。" },
+      "DISCORD_BOT_TOKEN": { "description": "DiscordアプリのBotのトークン（Discord Developer PortalのBotの「Reset Token」）。知らせを送るのに使います。" },
+      "OPERATOR_IDS": { "description": "運営者（あなた）のDiscordユーザーID。何人いても、カンマで区切って並べます。運営の管理画面を開けるのは、この人だけです。" }
+    }
   }
 }

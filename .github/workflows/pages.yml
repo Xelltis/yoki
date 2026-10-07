@@ -1,6 +1,7 @@
 # サイト（website/）を組み立てて、GitHub Pages に公開する。
 # main に website/ などの変更が入ったときと、Actions の画面から手で動かしたときに動く。
 # 初めて使う前に、リポジトリの Settings → Pages の Source を「GitHub Actions」にしておく
+# 動くのは元のリポジトリだけ（設置した人のリポジトリでは、サイトを公開しない。アプリの「ヘルプ」は元のサイトを開く）
 name: サイトを公開する
 
 on:
@@ -25,6 +26,7 @@ concurrency:
 
 jobs:
   build:
+    if: github.repository == (vars.YOKI_UPSTREAM || 'Xelltis/yoki')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7

@@ -1,6 +1,9 @@
 // semantic-releaseのプラグイン（.releaserc.json）。版を出すときに、package.jsonとpackage-lock.jsonのversionを新しい版にしてコミットし、
 // mainへpushする。semantic-releaseは、prepareでできたコミットにタグを付ける（vX.Y.Zのタグの中身にも、同じ版が入る）。
-// 版をファイルに持たせるのは、履歴とタグを持たない中身からも、同じ版で組み立てられるようにするため（アプリの版はpackage.jsonから読む。vite.config.tsのappVersion）。
+// 版をファイルに持たせるのは、「Deploy to Cloudflare」のボタンで設置したリポジトリが、元の履歴とタグの無い中身だけを受け取るため
+// （アプリの版はpackage.jsonから読む。vite.config.tsのappVersion）。
+// 版を出し終えたら、releaseのブランチをその版のコミットに合わせる。ボタン（README・サイトの「設置する」）はreleaseを指すので、
+// 設置した人は、いつも版を出したときの中身を受け取る（更新のワークフローが、設置した人がコードを変えたかを、その版と比べて確かめられる）。
 // CIで動くので、Gitのフック（lefthook）は入っていない（lefthookはCIでは入らない）
 import { execFileSync } from 'node:child_process';
 import { readFileSync, writeFileSync } from 'node:fs';
@@ -38,3 +41,8 @@ export async function prepare(_config, { cwd, env, nextRelease, options, branch,
   logger.log('package.jsonの版を %s にしてコミットしました', version);
 }
 
+export async function success(_config, { cwd, env, nextRelease, options, logger }) {
+  // prepareのあと、nextRelease.gitHeadは版を書き換えたコミット（タグと同じ）になっている
+  execFileSync('git', ['push', '--force', options.repositoryUrl, `${nextRelease.gitHead}:refs/heads/release`], { cwd, env, stdio: 'pipe' });
+  logger.log('releaseのブランチを %s にしました', nextRelease.gitTag);
+}

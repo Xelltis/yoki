@@ -1,16 +1,19 @@
-# 手元で動かすときの値。このファイルを .dev.vars に写して使う（.dev.vars はリポジトリに入れない）
-# Discord アプリ（https://discord.com/developers/applications）の OAuth2 の値。空なら開発用ログインだけで動く
+# Workerのsecretの見本。手元では、このファイルを .dev.vars に写して使う（.dev.vars はリポジトリに入れない）。
+# 「Deploy to Cloudflare」のボタンで設置するときは、ここの名前の値を聞かれる（説明はpackage.jsonの "cloudflare"）。
+# Discordアプリ（https://discord.com/developers/applications）のOAuth2の値。手元では空でも、開発用ログインだけで動く
 DISCORD_CLIENT_ID=
 DISCORD_CLIENT_SECRET=
-# 知らせを送る Bot（同じ Discord アプリの Bot）のトークン。空なら Discord に送らない（サンプルのグループのチャンネルにだけ、送ったことにする）
+# 知らせを送るBot（同じDiscordアプリのBot）のトークン。空ならDiscordに送らない（サンプルのグループのチャンネルにだけ、送ったことにする）
 DISCORD_BOT_TOKEN=
-# Discord の文に付けるアプリの URL
-APP_URL=http://localhost:5173
-# 運営者（/admin/）の Discord ユーザー ID。カンマで区切って何人でも書ける。開発用ログインでは、空でもひよりが運営者になる
+# 運営者（/admin/）のDiscordユーザーID。カンマで区切って何人でも書ける。手元の開発用ログインでは、空でもひよりが運営者になる
 OPERATOR_IDS=
-# Google カレンダーとの連携（Google Cloud の OAuth クライアント）。3 つとも空なら、開発用の偽の Google（/dev/google/*）で連携を試せる。
-# 本物の Google を手元で試すときは、Google Cloud の「承認済みのリダイレクト URI」に http://localhost:5173/auth/google/callback を足す
-GOOGLE_CLIENT_ID=
-GOOGLE_CLIENT_SECRET=
-# refresh token を暗号にする鍵（32 バイトを base64 にしたもの。openssl rand -base64 32 で作る）
-GOOGLE_TOKEN_KEY=
+
+# ここから下は任意。ボタンで聞かれないように、コメントにしてある（使うときは # を外す。公開した卓予定では、Workerのsecretに足す）
+# 公開のアドレス。CDN（CloudFrontなど）を前に置くときだけ要る。無ければ、届いた要求のアドレスを使う
+# APP_URL=
+# Googleでのログインと、Googleカレンダーとの連携（Google CloudのOAuthクライアント）。3つとも空なら、手元では開発用の偽のGoogle（/dev/google/*）で試せる。
+# 本物のGoogleを手元で試すときは、Google Cloudの「承認済みのリダイレクトURI」に http://localhost:5173/auth/google/callback を足す
+# GOOGLE_CLIENT_ID=
+# GOOGLE_CLIENT_SECRET=
+# refresh tokenを暗号にする鍵（32バイトをbase64にしたもの。openssl rand -base64 32 で作る）
+# GOOGLE_TOKEN_KEY=

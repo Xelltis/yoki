@@ -1,7 +1,9 @@
 // 卓予定（Yoki）のWorkerの設定。npm run devとnpm run build（Vite）がこれを読む。
-// 公開するCloudflareごとに違う値は、ここには仮の値だけを置くか、書かない。
-//   D1のID: 仮の値。公開のときにGitHub Actions（.github/workflows/deploy.yml）が、組み立てた設定にYOKI_D1_DATABASE_IDから入れる（vite.config.ts）
-//   DiscordアプリのIDや公開のアドレスなど: Workerのsecretに置く（src/worker/env.ts）。varsにしない
+// 公開するCloudflareごとに違う値は、ここに書かない。
+//   D1のID: 「Deploy to Cloudflare」のボタンで設置すると、Cloudflareが作ったD1のIDを、設置した人のリポジトリのこのファイルに書き込む。
+//           GitHub Actions（.github/workflows/deploy.yml）で公開するときは、組み立てた設定にYOKI_D1_DATABASE_IDから入れる（vite.config.ts）
+//   DiscordアプリのIDや公開のアドレスなど: Workerのsecretに置く（src/worker/env.ts。ボタンでは .dev.vars.exampleの名前を聞かれる）。
+//           varsに置くと、公開のたびに設定の値（空）で上書きされるため
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "yoki",
@@ -19,8 +21,7 @@
     {
       "binding": "DB",
       "database_name": "yoki",
-      // 仮のID（手元のD1はこのままでよい）。本番のIDは、公開のときにYOKI_D1_DATABASE_IDから入れる
-      "database_id": "00000000-0000-0000-0000-000000000000",
+      // database_id: 元のリポジトリには書かない。設置するときに入る（上のとおり）。手元のD1は無くても動く
       "migrations_dir": "./migrations"
     }
   ],
