@@ -1,6 +1,6 @@
 {
   "name": "yoki",
-  "version": "0.0.0-development",
+  "version": "1.3.0",
   "private": true,
   "license": "MIT",
   "description": "卓予定（TRPGの卓の予定を管理する。Cloudflare Workers + D1 + Discordログイン）",

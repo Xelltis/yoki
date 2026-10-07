@@ -24,6 +24,7 @@
         }
       }
     ],
+    "./tools/release/commit-version.mjs",
     ["@semantic-release/github", { "successComment": false, "failComment": false, "releasedLabels": false }]
   ]
 }

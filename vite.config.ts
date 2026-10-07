@@ -3,7 +3,6 @@
 //   npm run build   dist/ に組み立てる（GitHub Actionsのdeploy.ymlが使う）。開発用ログインが残っていたら止まる
 // 組み立てると、プラグインがwrangler deployの行き先（.wrangler/deploy/config.json）をroot（src/client）の下に書く。
 // リポジトリの直下で動かすwranglerからは見えないので、deploy.ymlは組み立てたdist/yoki/wrangler.jsonを直接渡す
-import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
@@ -45,17 +44,12 @@ function apiShape(): string {
 }
 
 /**
- * 卓予定の版。いちばん近い版のタグ（vX.Y.Z。元のリポジトリではsemantic-releaseが作り、フォークでは更新のワークフローが取り込む）から読む。
- * Workerに __APP_VERSION__ として入れ、運営の管理画面の「更新」で新しい版と比べる。タグが無ければ（履歴を浅く取ったときなど）0.0.0。
- * package.jsonのversionは使わない（0.0.0-developmentのまま）
+ * 卓予定の版。package.jsonのversionから読む（元のリポジトリでは、semantic-releaseが版を出すときに書き換えてコミットする。
+ * tools/release/commit-version.mjs）。Gitのタグには頼らない（履歴とタグを持たない中身からも、同じ版で組み立てられるように）。
+ * Workerに __APP_VERSION__ として入れ、運営の管理画面の「更新」で新しい版と比べる
  */
 export function appVersion(): string {
-  try {
-    const tag = execFileSync('git', ['describe', '--tags', '--abbrev=0', '--match', 'v[0-9]*.[0-9]*.[0-9]*'], { cwd: import.meta.dirname, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
-    return tag.trim().replace(/^v/, '');
-  } catch {
-    return '0.0.0';
-  }
+  return (JSON.parse(readFileSync(path.join(import.meta.dirname, 'package.json'), 'utf8')) as { version: string }).version;
 }
 
 /**

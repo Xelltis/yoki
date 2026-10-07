@@ -1,7 +1,7 @@
 # アプリ（Worker と D1）を Cloudflare に公開する。
 # main にアプリの変更が入ったときと、Actions の画面から手で動かしたときに動く。確かめる → 版を出す（元のリポジトリだけ）→ 公開する、の順に進む。
-# 版は、元のリポジトリでは semantic-release（設定は .releaserc.json）が main のコミットから決め、タグ vX.Y.Z と GitHub の Release を作る。
-# フォークでは版を出さず、更新のワークフロー（update.yml）が取り込んだタグの版で公開する。アプリに入れる版は、いちばん近いタグから読む（vite.config.ts）
+# 版は、元のリポジトリでは semantic-release（設定は .releaserc.json）が main のコミットから決め、package.json の version を書き換えてコミットし、
+# タグ vX.Y.Z と GitHub の Release を作る。アプリに入れる版は package.json から読む（vite.config.ts）
 # 公開する Cloudflare ごとの値はリポジトリに置かず、GitHub の environment「production」に置く（書き方は README の「公開」）
 #   変数（vars）: CLOUDFLARE_ACCOUNT_ID・YOKI_D1_DATABASE_ID・YOKI_DISCORD_CLIENT_ID・YOKI_APP_URL（任意）・YOKI_GOOGLE_CLIENT_ID（任意）・YOKI_UPSTREAM（任意）
 #   秘密（secrets）: CLOUDFLARE_API_TOKEN・DISCORD_CLIENT_SECRET・DISCORD_BOT_TOKEN・OPERATOR_IDS・GOOGLE_CLIENT_SECRET（任意）・GOOGLE_TOKEN_KEY（任意）・UPDATE_DISPATCH_TOKEN（任意）
@@ -79,10 +79,10 @@ jobs:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
     steps:
-      # 版をタグから読むので、履歴とタグを全部取る（版を出したばかりなら、そのタグも入る）
+      # 版は package.json から読む。版を出したばかりなら、版を書き換えたコミットが main の先にあるので、main の今を取る
       - uses: actions/checkout@v7
         with:
-          fetch-depth: 0
+          ref: ${{ github.ref }}
       - uses: actions/setup-node@v7
         with:
           node-version-file: .node-version
