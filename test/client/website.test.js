@@ -49,3 +49,17 @@ test('アプリの「使い方」は、サイトのアドレス（config.tsのSI
   // 画面はapp/links.tsのHELP_URLを使う
   expect(/HELP_URL = '([^']+)'/.exec(read('src/client/app/links.ts'))[1]).toBe(url);
 });
+
+// リリースノート（website/releases/）: バージョンのページは、一覧（index.md）に新しい順に並べる。サイドバーはページから作る（config.ts）
+test('リリースノートの一覧に、バージョンのページがちょうど新しい順に並ぶ', () => {
+  const dir = path.join(site, 'releases');
+  const num = (v) => v.slice(1).split('.').map(Number);
+  const newer = (a, b) => num(b).reduce((d, x, i) => d || x - num(a)[i], 0);
+  const files = fs.readdirSync(dir).filter((f) => /^v\d+\.\d+\.\d+\.md$/.test(f)).map((f) => f.slice(0, -3)).sort(newer);
+  const listed = [...fs.readFileSync(path.join(dir, 'index.md'), 'utf8').matchAll(/^## \[(v\d+\.\d+\.\d+)\]\(\.\/(v\d+\.\d+\.\d+)\)$/gm)]
+    .map((m) => { expect(m[2]).toBe(m[1]); return m[1]; });
+  expect(files.length).toBeGreaterThan(0);
+  expect(listed).toEqual(files);
+  // 各ページの見出しは、ファイルの名前のバージョン
+  for (const v of files) expect(fs.readFileSync(path.join(dir, v + '.md'), 'utf8')).toMatch(new RegExp('^# ' + v.replace(/\./g, '\\.') + '$', 'm'));
+});

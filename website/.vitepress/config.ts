@@ -1,6 +1,7 @@
 // Yokiのサイト（GitHub Pages）。紹介と使い方を載せる
 //   npm run site         手元で開く（http://localhost:5174/yoki/）
 //   npm run site:build   組み立てる（website/.vitepress/dist/）
+import { readdirSync } from 'node:fs';
 import Icons from 'unplugin-icons/vite';
 import { defineConfig, postcssIsolateStyles } from 'vitepress';
 
@@ -10,6 +11,13 @@ const SITE_URL = 'https://xelltis.github.io/yoki/';
 const APP_URL = '';
 
 const base = new URL(SITE_URL).pathname;
+
+/** リリースノートのバージョン（website/releases/vX.Y.Z.md）。新しい順。サイドバーはここから作るので、ページを足すだけでよい */
+const RELEASES = readdirSync(new URL('../releases/', import.meta.url))
+  .map((f) => /^v(\d+)\.(\d+)\.(\d+)\.md$/.exec(f))
+  .filter((m) => m !== null)
+  .sort((a, b) => Number(b[1]) - Number(a[1]) || Number(b[2]) - Number(a[2]) || Number(b[3]) - Number(a[3]))
+  .map((m) => 'v' + m[1] + '.' + m[2] + '.' + m[3]);
 
 export default defineConfig({
   lang: 'ja',
@@ -58,7 +66,7 @@ export default defineConfig({
       { text: '始め方', link: '/guide/start' },
       { text: '使い方', link: '/guide/availability', activeMatch: '^/guide/(?!start)' },
       { text: '設置する', link: '/setup/', activeMatch: '^/setup/' },
-      { text: '変わったこと', link: '/releases' },
+      { text: 'リリースノート', link: '/releases/', activeMatch: '^/releases/' },
       { text: 'GitHub', link: 'https://github.com/Xelltis/yoki' },
       ...(APP_URL ? [{ text: 'アプリを開く', link: APP_URL }] : []),
     ],
@@ -119,6 +127,10 @@ export default defineConfig({
             { text: '運営の管理画面', link: '/setup/admin' },
           ],
         },
+      ],
+      // リリースノート（使う人向け）。バージョンのページは、website/releases/ のファイルから新しい順に並べる
+      '/releases/': [
+        { text: 'リリースノート', items: [{ text: 'バージョンの一覧', link: '/releases/' }, ...RELEASES.map((v) => ({ text: v, link: '/releases/' + v }))] },
       ],
     },
     outline: { level: [2, 3], label: 'このページの内容' },

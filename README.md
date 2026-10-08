@@ -26,7 +26,7 @@
   <a href="https://xelltis.github.io/yoki/">使い方</a> ·
   <a href="https://xelltis.github.io/yoki/setup/">設置する</a> ·
   <a href="CONTRIBUTING.md">開発に参加する</a> ·
-  <a href="https://xelltis.github.io/yoki/releases">変わったこと</a>
+  <a href="https://xelltis.github.io/yoki/releases/">リリースノート</a>
 </p>
 
 ![Yokiのカレンダー。卓の予定と、全員が空いている日の色が並び、右に選んだ日の卓の内訳が出る](website/public/screenshots/pc-calendar-light.png)
