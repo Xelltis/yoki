@@ -33,7 +33,11 @@ export type GroupRow = {
   day_parts: number;
 };
 
-export type Member = { id: number; name: string; discordId: string; note: string; isAdmin: boolean; userId: string | null };
+/**
+ * メンバー。otherは、同じ利用者がほかのグループで入っている、これからの「開催」の卓（日と開始時刻だけ。本人が出すと決めているときだけ）。
+ * shareBusyは、その利用者がほかのグループの卓を出すと決めているか（ログインしていないメンバーはfalse）
+ */
+export type Member = { id: number; name: string; discordId: string; note: string; isAdmin: boolean; userId: string | null; other: { date: string; start: string }[]; shareBusy: boolean };
 
 export type Role = 'gm' | 'member' | 'want' | 'interest';
 

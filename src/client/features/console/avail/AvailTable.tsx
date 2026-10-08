@@ -91,7 +91,7 @@ export function AvailTable({ d, names, mine, rows, onMark, onPen }: Props) {
                 if (r.bk[n]) {
                   return (
                     <td className={cell + line + 'group/cell bg-session py-6 pl-8 text-center font-bold text-booked-text ' + (own ? 'relative pr-18 ' : 'pr-8 ') + (memo ? 'relative cursor-pointer' : 'cursor-default')}
-                      key={n} data-memo-of={n} data-day={key} data-memo={memo || undefined} title={memo ? undefined : 'この日の卓に入っています'}>
+                      key={n} data-memo-of={n} data-day={key} data-memo={memo || undefined} title={memo ? undefined : r.bk[n] === '他' ? 'ほかのグループの卓に入っています' : 'この日の卓に入っています'}>
                       <span className={bkTag}>{r.bk[n]}</span>{dot}{pen}
                     </td>
                   );
@@ -139,7 +139,7 @@ function SplitCell({ d, r, n, own, line, memo, dot, pen, onMark }: {
       data-memo-of={own ? undefined : n} data-day={r.key} data-memo={memo || undefined}>
       <div className="grid grid-cols-2">
         {(r.parts as Part[]).map((p) => {
-          if (bookedOn(d, r.key, n, p)) return <span className={half + 'bg-session'} key={p} title={p + 'は卓に入っています'}><span className={bkTag + ' min-w-0 px-3'}>{r.bk[n] || '参'}</span></span>;
+          if (bookedOn(d, r.key, n, p)) return <span className={half + 'bg-session'} key={p} title={p + 'は' + (r.bk[n] === '他' ? 'ほかのグループの' : '') + '卓に入っています'}><span className={bkTag + ' min-w-0 px-3'}>{r.bk[n] || '参'}</span></span>;
           const v = markAtRow(d, r, n, p), gTag = v && g ? <sup className={gSup} title={G_TITLE} data-google>G</sup> : null;
           if (!own) return <span className={half + 'text-muted ' + (MARK_BG[v] || '')} key={p}>{v}{gTag}</span>;
           return (

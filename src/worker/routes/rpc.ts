@@ -13,7 +13,7 @@ import { deleteCalendarFeed, saveCalendarFeed } from '../domain/calendar';
 import { consoleData } from '../domain/console-data';
 import { type Form, readForm } from '../domain/form';
 import { loadGroup } from '../domain/load';
-import { deleteMember, saveMember, setAdmin } from '../domain/members';
+import { deleteMember, saveMember, setAdmin, setShareBusy } from '../domain/members';
 import { cancelPoll, decidePoll, type Io, setPollVote, setPollVoteAll, setPollVoteFromAvail, startPoll } from '../domain/polls';
 import { bulkUpdateSessions, deleteSession, saveSession, setInterest } from '../domain/sessions';
 import { getDiscordChannels, renameGroup, saveConsoleSettings, saveSeriesNotify } from '../domain/settings';
@@ -81,6 +81,8 @@ export const RPC: Record<Exclude<RpcName, 'getConsoleData'>, Entry> = {
   submitSheet: { run: submitSheet, data: true },
   // 行けなくなった（本人だけ。開催の卓の参加者）。Googleの予定からも外れるので、書き直す
   setAbsence: { run: setAbsence, data: true, calendar: true },
+  // 本人の設定（どのグループにも効く）
+  setShareBusy: { run: setShareBusy, data: true },
   // 消したあとは画面のデータを読めないのでdataを付けない
   deleteGroup: { run: deleteGroup, admin: 'グループを消すこと' },
 };

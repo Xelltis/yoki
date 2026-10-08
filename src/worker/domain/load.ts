@@ -53,7 +53,17 @@ export async function loadGroup(
          FROM groups g WHERE g.id = ?`,
       )
       .bind(groupId),
-    db.prepare('SELECT id, name, discord_id, note, is_admin, user_id FROM members WHERE group_id = ? ORDER BY id').bind(groupId),
+    // メンバーと、同じ利用者がほかのグループで入っている、これからの「開催」の卓（日と開始時刻だけ。行けなくなった卓は除く。本人が止めていれば読まない）
+    db
+      .prepare(
+        `SELECT m.id, m.name, m.discord_id, m.note, m.is_admin, m.user_id, COALESCE(u.share_busy, 0) AS share_busy,
+           (SELECT json_group_array(json_array(s.date, s.start_time))
+              FROM members o JOIN session_people p ON p.member_id = o.id AND p.role IN ('gm', 'member') JOIN sessions s ON s.id = p.session_id
+             WHERE u.share_busy = 1 AND o.user_id = m.user_id AND o.group_id <> m.group_id AND s.status = '開催' AND s.date >= ?2
+               AND NOT EXISTS (SELECT 1 FROM session_absences a WHERE a.session_id = s.id AND a.member_id = o.id)) AS other_json
+           FROM members m LEFT JOIN users u ON u.id = m.user_id WHERE m.group_id = ?1 ORDER BY m.id`,
+      )
+      .bind(groupId, today),
     // 卓と、その準備（HOの枠・希望・キャラシ）。秘匿HOは、読み込む人（?2。0は人でない読み込み）がGMか割り当てた本人の枠だけ読む
     db
       .prepare(
@@ -112,13 +122,16 @@ export async function loadGroup(
     .sort((a, b) => a.name.localeCompare(b.name, 'ja'));
   const scenarioMarks: ScenarioMarkRow[] = (JSON.parse(marks_json) as [number, number, ScenarioMarkRow['kind']][]).map(([scenarioId, memberId, kind]) => ({ scenarioId, memberId, kind }));
 
-  const members: Member[] = rows<{ id: number; name: string; discord_id: string; note: string; is_admin: number; user_id: string | null }>(2).map((m) => ({
+  type MemberRow = { id: number; name: string; discord_id: string; note: string; is_admin: number; user_id: string | null; share_busy: number; other_json: string };
+  const members: Member[] = rows<MemberRow>(2).map((m) => ({
     id: m.id,
     name: m.name,
     discordId: m.discord_id,
     note: m.note,
     isAdmin: m.is_admin === 1,
     userId: m.user_id,
+    other: (JSON.parse(m.other_json) as [string, string][]).map(([date, start]) => ({ date, start })),
+    shareBusy: m.share_busy === 1,
   }));
 
   // 行けなくなった印の行は、メンバーが消えたら一緒に消えるので、名前はいつもある

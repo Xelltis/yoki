@@ -21,7 +21,7 @@ export function consoleData(ctx: Ctx): ConsoleData {
   const setter = g.remind_enabled ? g.remind_set_by || '有効' : '';
   return {
     title: g.title,
-    me: { name: ctx.actor.name, isAdmin: ctx.actor.isAdmin },
+    me: { name: ctx.actor.name, isAdmin: ctx.actor.isAdmin, shareBusy: !!ctx.members.find((m) => m.id === ctx.actor.memberId)?.shareBusy },
     group: { id: g.id, guildName: g.guild_name },
     isAdmin: ctx.actor.isAdmin,
     admins: ctx.members.filter((m) => m.isAdmin).map((m) => m.name),
@@ -59,8 +59,8 @@ export function consoleData(ctx: Ctx): ConsoleData {
     notes,
     availNotes,
     log: ctx.log.map((l) => ({ at: stampText(l.at), kind: l.kind, target: l.target, result: l.result })),
-    booked: bookedMap(ctx.sessions),
-    bookedParts: bookedPartsMap(ctx.sessions),
+    booked: bookedMap(ctx.sessions, ctx.members),
+    bookedParts: bookedPartsMap(ctx.sessions, ctx.members),
     availDays,
     channelSet: !!g.channel_id,
     remindChannelSet: !!g.remind_channel_id,

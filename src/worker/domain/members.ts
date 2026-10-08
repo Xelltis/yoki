@@ -61,3 +61,13 @@ export async function setAdmin(ctx: Ctx, form: Form) {
   await ctx.db.prepare('UPDATE members SET is_admin = ? WHERE id = ?').bind(admin ? 1 : 0, m.id).run();
   return { ok: true, message: admin ? '「' + name + '」を管理者にしました。' : '「' + name + '」を管理者から外しました。' };
 }
+
+/**
+ * ほかのグループの卓の日を、入っているグループの予定表に「他」として出すか（本人の設定。どのグループにも効く）。form: { on }
+ * 出すのは日と時間帯だけで、グループや卓の名前は出さない
+ */
+export async function setShareBusy(ctx: Ctx, form: Form) {
+  const on = form.on !== false;
+  await ctx.db.prepare('UPDATE users SET share_busy = ? WHERE id = ?').bind(on ? 1 : 0, ctx.actor.userId).run();
+  return { ok: true, message: on ? 'ほかのグループの卓の日を、予定表に「他」として出します。' : 'ほかのグループの卓の日を、予定表に出すのをやめました。' };
+}

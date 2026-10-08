@@ -36,7 +36,7 @@ export const RPC_FUNCS = [
   'saveSession', 'deleteSession', 'saveMember', 'deleteMember', 'saveConsoleSettings', 'saveSeriesNotify', 'renameGroup', 'startPoll', 'setPollVote',
   'setPollVoteAll', 'setPollVoteFromAvail', 'cancelPoll', 'decidePoll', 'setAdmin', 'deleteGroup', 'getDiscordChannels', 'saveCalendarFeed', 'deleteCalendarFeed',
   'saveGoogleSettings', 'syncGoogleNow', 'unlinkGoogle', 'unlinkGoogleLogin', 'saveScenario', 'deleteScenario', 'setScenarioMark',
-  'savePrep', 'saveSlotSecret', 'assignSlots', 'setSlotHope', 'submitSheet', 'setAbsence',
+  'savePrep', 'saveSlotSecret', 'assignSlots', 'setSlotHope', 'submitSheet', 'setAbsence', 'setShareBusy',
 ] as const;
 export type RpcName = (typeof RPC_FUNCS)[number];
 
@@ -157,8 +157,8 @@ export type SeriesNotifyView = { series: string; channelId: string; alsoBase: bo
 /** 画面のデータ（getConsoleDataの返事。書き込みの返事のdataにも付く） */
 export type ConsoleData = {
   title: string;
-  /** ログインした本人 */
-  me: { name: string; isAdmin: boolean };
+  /** ログインした本人。shareBusyは、ほかのグループの卓の日を、入っているグループの予定表に「他」として出すか（本人の設定。どのグループにも効く） */
+  me: { name: string; isAdmin: boolean; shareBusy: boolean };
   group: { id: string; guildName: string };
   isAdmin: boolean;
   admins: string[];
@@ -178,7 +178,7 @@ export type ConsoleData = {
   /** 予定のメモ{ 'YYYY-MM-DD': { 名前: { text, at } } } */
   availNotes: Record<string, Record<string, { text: string; at: string }>>;
   log: { at: string; kind: string; target: string; result: string }[];
-  /** 卓に入っている日{ 'YYYY-MM-DD': { 名前: '参' | 'GM' } } */
+  /** 卓に入っている日{ 'YYYY-MM-DD': { 名前: '参' | 'GM' | '他' } }。「他」は、ほかのグループの卓（グループや卓の名前は出さない） */
   booked: Record<string, Record<string, string>>;
   /** 卓に入っている時間帯{ 'YYYY-MM-DD': { 名前: '昼' | '夜' | '' } }（'' は終日） */
   bookedParts: BookedParts;

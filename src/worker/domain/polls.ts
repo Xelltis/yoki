@@ -177,7 +177,7 @@ export async function setPollVoteFromAvail(ctx: Ctx, form: Form, io: Io) {
   const s = findAdjusting(ctx, form.id);
   if (!peopleOf(s).includes(name)) throw badRequest(name + 'は「' + s.name + '」のGMでも参加者でもないので、回答できません。');
   const votes = ctx.votes.get(s.rowId) ?? {};
-  const last = addDays(ctx.today, ctx.group.avail_days), booked = bookedPartsMap(ctx.sessions), part = ctx.group.day_parts ? partOf(s.start) : '';
+  const last = addDays(ctx.today, ctx.group.avail_days), booked = bookedPartsMap(ctx.sessions, ctx.members), part = ctx.group.day_parts ? partOf(s.start) : '';
   const rows = s.candidates.filter((k) => k >= ctx.today && k < last && !votes[k]?.[name]).map((date) => ({ date, vote: voteFromAvail(ctx, booked, name, date, part) }));
   if (!rows.length) return { ok: true, id: s.id, count: 0, message: name + ': 予定表から入れられる候補日はありません（まだ答えていない、予定表の範囲の日がありません）。' };
   const wasComplete = pollComplete(ctx, s);

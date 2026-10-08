@@ -526,6 +526,16 @@ await withDevServer(async (base) => {
       assert.equal(await page.locator('select#me, #proxyBadge').count(), 0);
     });
 
+    await step('設定: ほかのグループの卓を「他」として出すのを止めて、戻せる', async () => {
+      await tab('settings');
+      assert.equal(await page.isChecked('#stShareBusy'), true, 'はじめは出す');
+      await page.click('#stShareBusy');
+      await until((d) => d.me.shareBusy === false);
+      await page.click('#stShareBusy');
+      await until((d) => d.me.shareBusy === true);
+      await tab('cal');
+    });
+
     await step('「更新」で読み直せる', async () => {
       await page.click('#reload');
       await page.waitForFunction(() => /最新/.test(document.getElementById('toast').textContent), null, { timeout: 15000 });

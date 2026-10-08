@@ -4,7 +4,7 @@ import { partOf } from '../../../../shared/parts';
 import { passesOf } from '../../../../shared/scenario';
 import type { IconName } from '../../../ui/icons';
 import { addDaysYmd, fmtJa, parseYmd, ymdOf } from '../model/dates';
-import { isActive, markOn, me, peopleOf, sortSessions, splitNames, STATUS_DATED } from '../model/model';
+import { bookedOn, isActive, markOn, me, peopleOf, sortSessions, splitNames, STATUS_DATED } from '../model/model';
 import { hookFor, kindSet, seriesHook, snEntry } from '../model/notify';
 
 /** 窓の入力。idは変える卓（新しく登録するなら空） */
@@ -194,6 +194,8 @@ export function conflictText(d: ConsoleData, form: SessionForm): string {
       if (part && sp && sp !== part) return;
       if (peopleOf(s).indexOf(n) >= 0) busyAt.push(n + '（' + s.name + '）');
     });
+    // ほかのグループの卓（名前は分からない）
+    if ((d.booked[form.date] || {})[n] === '他' && bookedOn(d, form.date, n, part)) busyAt.push(n + '（ほかのグループの卓）');
     const v = markOn(d, form.date, n, part);
     if (v === '×') ng.push(n); else if (v === '△') soft.push(n);
   });

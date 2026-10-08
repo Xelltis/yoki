@@ -4,7 +4,7 @@ import { fmtDateJa, fmtYmdSlash, parseYmd } from '../lib/jst';
 import { uniq } from '../lib/text';
 import { DATED, STATUS } from './constants';
 import { type BookedParts, bookedPartsOf } from '../../shared/parts';
-import type { Ctx, Session } from './types';
+import type { Ctx, Member, Session } from './types';
 
 /** GMと参加者（GAS版peopleOf_） */
 export function peopleOf(s: Pick<Session, 'gm' | 'members'>): string[] {
@@ -36,8 +36,11 @@ export function readWindow(from: unknown, to: unknown): WindowInfo | null {
   return windowInfo(da, db);
 }
 
-/** 「開催」の卓に入っている人{ 'YYYY-MM-DD': { 名前: '参' | 'GM' } }（GAS版bookedMap_） */
-export function bookedMap(sessions: Session[]): Record<string, Record<string, string>> {
+/**
+ * 「開催」の卓に入っている人{ 'YYYY-MM-DD': { 名前: '参' | 'GM' | '他' } }（GAS版bookedMap_）。
+ * membersを渡すと、ほかのグループの卓（Member.other）の日に「他」を付ける（このグループの卓がある日は、そちらを出す）
+ */
+export function bookedMap(sessions: Session[], members: Pick<Member, 'name' | 'other'>[] = []): Record<string, Record<string, string>> {
   const out: Record<string, Record<string, string>> = {};
   for (const s of sessions) {
     if (!DATED.includes(s.status) || !s.date) continue;
@@ -45,12 +48,16 @@ export function bookedMap(sessions: Session[]): Record<string, Record<string, st
     if (s.gm) day[s.gm] = 'GM';
     for (const n of s.members) if (day[n] !== 'GM') day[n] = '参';
   }
+  for (const m of members) for (const o of m.other) (out[o.date] ??= {})[m.name] ??= '他';
   return out;
 }
 
-/** 「開催」の卓に入っている時間帯{ 'YYYY-MM-DD': { 名前: '昼' | '夜' | '' } }（時間帯は開始時刻で決める。'' は終日） */
-export function bookedPartsMap(sessions: Session[]): BookedParts {
-  return bookedPartsOf(sessions.filter((s) => DATED.includes(s.status) && s.date).map((s) => ({ date: s.date!, start: s.start, names: peopleOf(s) })));
+/** 卓に入っている時間帯{ 'YYYY-MM-DD': { 名前: '昼' | '夜' | '' } }（時間帯は開始時刻で決める。'' は終日）。membersを渡すと、ほかのグループの卓も入れる */
+export function bookedPartsMap(sessions: Session[], members: Pick<Member, 'name' | 'other'>[]): BookedParts {
+  return bookedPartsOf([
+    ...sessions.filter((s) => DATED.includes(s.status) && s.date).map((s) => ({ date: s.date!, start: s.start, names: peopleOf(s) })),
+    ...members.flatMap((m) => m.other.map((o) => ({ date: o.date, start: o.start, names: [m.name] }))),
+  ]);
 }
 
 /**

@@ -73,7 +73,7 @@ export async function setAvailability(ctx: Ctx, form: Form) {
   if (!ymd) throw badRequest('日付が読めません: ' + str(form.ymd));
   const part = readPart(ctx, form.part);
   if (!inRange(ctx, ymd)) throw badRequest(fmtDateJa(ymd) + 'は予定表の範囲外です。設定の「予定の日数」を増やしてください。');
-  if (bookedAt(bookedPartsMap(ctx.sessions), ymd, name, part)) throw badRequest(dayText(ymd, part) + 'は' + name + 'が卓に入っている' + (part ? '時間帯' : '日') + 'なので、都合は変えられません。');
+  if (bookedAt(bookedPartsMap(ctx.sessions, ctx.members), ymd, name, part)) throw badRequest(dayText(ymd, part) + 'は' + name + 'が卓に入っている' + (part ? '時間帯' : '日') + 'なので、都合は変えられません。');
   await ctx.db.batch(markStmts(ctx, memberId, [ymd], part, mark));
   return { ok: true, name, ymd, part, mark };
 }
@@ -98,7 +98,7 @@ export async function setAvailabilityBulk(ctx: Ctx, form: Form) {
   if (!wds.length) throw badRequest('曜日を選んでください。');
   const keep = !!form.keep;
   const part = readPart(ctx, form.part);
-  const booked = bookedPartsMap(ctx.sessions);
+  const booked = bookedPartsMap(ctx.sessions, ctx.members);
   const days: string[] = [], noteDays: string[] = [];
   let skippedBooked = 0, skippedKeep = 0;
   for (let d = ctx.today; inRange(ctx, d); d = addDays(d, 1)) {

@@ -86,7 +86,7 @@ usersの行は消さない（印がそこにあるため）。Discordのユー�
 
 ## データベース（D1）
 
-表の定義は `migrations/`（`0001_init.sql` が最初の形、`0002_admin.sql` が締め出し・最後に使われた日と索引、`0003_bot.sql` が知らせのBot、`0004_calendar.sql` がカレンダーとの連携、`0005_member_check.sql` がBotで確かめた日時、`0006_google_login.sql` がGoogleでのログイン、`0007_scenarios.sql` がシナリオと通過、`0008_prep.sql` が卓の準備、`0009_discord_events.sql` がDiscordのイベント、`0010_note_ranges.sql` が期間の日付メモ、`0011_poll_maybe.sql` が日程調整の △、`0012_recruit_limits.sql` が募集の定員と締め切り、`0013_absences.sql` が行けなくなった印、`0014_day_parts.sql` が予定の時間帯）。日付（開催日・予定・メモ）は日本時間の `YYYY-MM-DD`、日時（〜した時刻）はUTCのISO文字列。
+表の定義は `migrations/`（`0001_init.sql` が最初の形、`0002_admin.sql` が締め出し・最後に使われた日と索引、`0003_bot.sql` が知らせのBot、`0004_calendar.sql` がカレンダーとの連携、`0005_member_check.sql` がBotで確かめた日時、`0006_google_login.sql` がGoogleでのログイン、`0007_scenarios.sql` がシナリオと通過、`0008_prep.sql` が卓の準備、`0009_discord_events.sql` がDiscordのイベント、`0010_note_ranges.sql` が期間の日付メモ、`0011_poll_maybe.sql` が日程調整の △、`0012_recruit_limits.sql` が募集の定員と締め切り、`0013_absences.sql` が行けなくなった印、`0014_day_parts.sql` が予定の時間帯、`0015_share_busy.sql` がほかのグループの卓）。日付（開催日・予定・メモ）は日本時間の `YYYY-MM-DD`、日時（〜した時刻）はUTCのISO文字列。
 
 `users`・`user_guilds`・`auth_sessions`: ログイン。`users.banned_at`・`banned_reason` は締め出し。
 
@@ -117,6 +117,8 @@ usersの行は消さない（印がそこにあるため）。Discordのユー�
 `google_logins`: Googleでのログイン（GoogleのアカウントのID・メール → 利用者）。`user_guilds.checked_at` は、そのサーバーにいることをBotで確かめた日時。
 
 **予定の時間帯**（`src/shared/parts.ts`）。`groups.day_parts` を入れたグループだけ、予定の印を昼と夜に分けて持つ。`availability.part` は `''`（1日の印）か `昼`・`夜`。1つの日には、1日の印か時間帯の印のどちらかだけを持つ（時間帯の印を書く前に、1日の印を昼と夜に写して消す。1日の印を書くときは、時間帯の印を消す。`domain/availability.ts` の `markStmts`）。卓は開始時刻で昼（17:00より前）か夜に入り、時刻の無い卓は両方をふさぐ（`bookedPartsOf`）。画面データの `avail` は1日の印のままで、分けて入れた日は昼と夜をまとめた印（両方 × なら ×、どちらかに印があれば △）を入れる。分けないところ（分けないグループ・Google連携の読み込み・まとめての印）は、これまでどおり `avail` を見る。時間帯の印は `availParts`、卓の時間帯は `bookedParts` で渡す。日程調整の「予定表から入れる」と候補日を選ぶ窓は、卓の開始時刻の時間帯の印を見る。Googleの予定から入れる印は、分けるグループでは昼（10:00〜17:00）と夜（本人の時間帯）に分けて入れる。
+
+**ほかのグループの卓**。同じ利用者（`members.user_id`）がほかのグループで入っている、これからの「開催」の卓の日と開始時刻を、メンバーを読む文の副問い合わせで読む（読み込みの文は増やさない）。画面データの `booked` に「他」、`bookedParts` に時間帯を入れ、全員空き・予定の印・日程調整の「予定表から入れる」・Googleの予定の読み込みでは、このグループの卓と同じく扱う。グループや卓の名前は読まない。行けなくなった卓は除く。利用者が `users.share_busy` を切ると読まない（設定の画面の「ほかのグループの卓」。どのグループにも効く）。
 
 `google_dismissed`: Googleの予定から入った印を、本人が消した日（その日には、もう入れない）。`availability.source` は、本人が入れた印なら空、Googleの予定から入れた印なら `google`。
 

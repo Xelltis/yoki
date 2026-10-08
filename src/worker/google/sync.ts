@@ -173,7 +173,7 @@ async function importBusy(db: D1Database, deps: GoogleDeps, at: string, link: Li
   const to = windowMinutes(link.busy_to) ?? 23 * 60;
   const stmts: D1PreparedStatement[] = [];
   for (const g of groups) {
-    const booked = bookedPartsMap(g.ctx.sessions);
+    const booked = bookedPartsMap(g.ctx.sessions, g.ctx.members);
     const parts: (Part | '')[] = g.ctx.group.day_parts ? PARTS : [''];
     const end = addDays(today, g.ctx.group.avail_days);
     const marks: { d: string; p: Part | ''; m: string }[] = [];

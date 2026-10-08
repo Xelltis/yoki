@@ -176,7 +176,7 @@ export function DayDetail({ d, target }: { d: ConsoleData; target: string }) {
                 const vs = parts.map((pt) => (bookedOn(d, selDay, p, pt) ? bk[p] || '参' : markOn(d, selDay, p, pt) || '可'));
                 const v = parts.length > 1 ? parts.map((pt, i) => pt + vs[i]).join(' ') : vs[0]!;
                 const one = vs.every((x) => x === vs[0]) ? vs[0]! : '△';
-                const cls = one === '可' ? 'm-ok' : one === '△' ? 'm-soft' : one === '×' ? 'm-ng' : one === '参' || one === 'GM' ? 'm-bk' : '';
+                const cls = one === '可' ? 'm-ok' : one === '△' ? 'm-soft' : one === '×' ? 'm-ng' : one === '参' || one === 'GM' || one === '他' ? 'm-bk' : '';
                 const chip = 'relative rounded-full border border-transparent px-10 py-1 text-12 ' + (MARK_BG[cls] || 'bg-head');
                 const mm = ((d.availNotes || {})[selDay] || {})[p];
                 if (!mm) return <span className={chip} key={p}>{p + ' ' + v}</span>;
