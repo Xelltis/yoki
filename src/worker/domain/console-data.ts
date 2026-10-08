@@ -61,7 +61,7 @@ export function consoleData(ctx: Ctx): ConsoleData {
     channelSet: !!g.channel_id,
     remindChannelSet: !!g.remind_channel_id,
     recruitChannelSet: !!g.recruit_channel_id,
-    bot: { ready: !!ctx.bot.token, inviteUrl: botInviteUrl(ctx.bot.clientId, g.guild_id) },
+    bot: { ready: !!ctx.bot.token, inviteUrl: botInviteUrl(ctx.bot.clientId, g.guild_id), eventsInviteUrl: botInviteUrl(ctx.bot.clientId, g.guild_id, true) },
     notifyDefault: g.notify_on_save === 1,
     notifySetter: setter,
     settings: {
@@ -79,6 +79,8 @@ export function consoleData(ctx: Ctx): ConsoleData {
       calMonths: g.cal_months,
       availDays: g.avail_days,
       setter,
+      discordEvents: g.discord_events === 1,
+      eventsError: g.events_error,
     },
     seriesNotify: Object.keys(ctx.seriesNotify)
       .sort()

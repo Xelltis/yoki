@@ -29,3 +29,28 @@ export async function guildMembership(token: string, guildId: string, userId: st
     return null;
   }
 }
+
+/** 管理者（8）・イベントの管理（1<<33）・イベントを作成（1<<44）。どれかがあれば、Botはイベントを作れる */
+const EVENTS = 0x8n | (1n << 33n) | (1n << 44n);
+
+/**
+ * Botが、そのサーバーでイベントを作れるか。Botがいないときはfalse、Discordが答えないときはnull。
+ * BotのユーザーIDは /users/@me で読む（DiscordアプリのIDと同じことが多いが、決まりではないため）
+ */
+export async function botCanCreateEvents(token: string, guildId: string): Promise<boolean | null> {
+  try {
+    const me = await botGet(token, '/users/@me');
+    const id = (me.body as { id?: string } | null)?.id;
+    if (me.status !== 200 || !id) return null;
+    const m = await botGet(token, '/guilds/' + guildId + '/members/' + id);
+    if (m.status === 403 || m.status === 404) return false;
+    if (m.status !== 200) return null;
+    const g = await botGet(token, '/guilds/' + guildId);
+    if (g.status !== 200) return null;
+    const guild = g.body as ApiGuild, roles = new Set([guildId, ...(m.body as ApiMember).roles]);
+    const perms = guild.roles.filter((r) => roles.has(r.id)).reduce((p, r) => p | BigInt(r.permissions), 0n);
+    return (perms & EVENTS) !== 0n;
+  } catch {
+    return null;
+  }
+}

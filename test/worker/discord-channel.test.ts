@@ -241,7 +241,7 @@ describe('送り先に選べるチャンネルの一覧（getDiscordChannels）'
       ]),
     );
     const r = await ok(G.admin, G.id, 'getDiscordChannels');
-    expect(r).toEqual({ ok: true, botReady: true, inGuild: true, channels: [{ id: CH(2), name: '雑談', category: '' }, { id: CH(1), name: '卓の知らせ', category: '卓' }] });
+    expect(r).toEqual({ ok: true, botReady: true, inGuild: true, channels: [{ id: CH(2), name: '雑談', category: '' }, { id: CH(1), name: '卓の知らせ', category: '卓' }], canEvents: null });
     expect(calls).toEqual([{ method: 'GET', url: API + '/guilds/' + GUILD + '/channels', auth: 'Bot test-bot-token' }]);
     // 画面のデータは付けない
     expect(r.data).toBeUndefined();
@@ -249,7 +249,7 @@ describe('送り先に選べるチャンネルの一覧（getDiscordChannels）'
 
   test('BotがサーバーにいなければinGuild: false（画面は招くURLを出す）', async () => {
     mockApi(() => Response.json({ message: 'Missing Access', code: 50001 }, { status: 403 }));
-    expect(await ok(G.admin, G.id, 'getDiscordChannels')).toEqual({ ok: true, botReady: true, inGuild: false, channels: [] });
+    expect(await ok(G.admin, G.id, 'getDiscordChannels')).toEqual({ ok: true, botReady: true, inGuild: false, channels: [], canEvents: null });
   });
 
   test('管理者だけが読める', async () => {
@@ -263,7 +263,7 @@ describe('送り先に選べるチャンネルの一覧（getDiscordChannels）'
     const calls = mockApi(() => Response.json([]));
     const actor: Actor = { memberId: 1, name: 'ひより', isAdmin: true, userId: '400000000000000010' };
     const ctx = await loadGroup(env.DB, G.id, actor, '', new Date());
-    expect(await getDiscordChannels(ctx)).toEqual({ ok: true, botReady: false, inGuild: false, channels: [] });
+    expect(await getDiscordChannels(ctx)).toEqual({ ok: true, botReady: false, inGuild: false, channels: [], canEvents: null });
     expect(calls).toEqual([]);
   });
 });

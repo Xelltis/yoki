@@ -1,5 +1,7 @@
 // グループの設定（管理画面の「知らせ」と「このグループ」。GAS版Settings.js）。知らせの設定・グループの名前・シリーズごとの知らせ
 import { getChannel, isChannelId, listChannels } from '../discord/channel';
+import { EVENT_ERROR } from '../discord/events';
+import { botCanCreateEvents } from '../discord/member';
 import { badRequest } from '../lib/errors';
 import { fmtDateTime } from '../lib/jst';
 import { NOTIFY_DAYS_MAX } from './constants';
@@ -45,7 +47,8 @@ async function checkChannel(ctx: Ctx, channelId: string): Promise<string> {
 
 /**
  * 設定を書く。送られた項目だけを変える。
- * form: { channelId（'' なら外す）, kindChannel: { kind, channelId（'' なら基本へ） }, remind, days, hour, notifyOnSave, urge, soon, soonMinutes, autoFinish, calMonths, availDays }
+ * form: { channelId（'' なら外す）, kindChannel: { kind, channelId（'' なら基本へ） }, remind, days, hour, notifyOnSave, urge, soon, soonMinutes, autoFinish, calMonths, availDays,
+ *   discordEvents（卓をDiscordのイベントにも出す。入れるときは、Botがイベントを作れるかを確かめる） }
  */
 export async function saveConsoleSettings(ctx: Ctx, form: Form) {
   const g = ctx.group;
@@ -93,6 +96,21 @@ export async function saveConsoleSettings(ctx: Ctx, form: Form) {
   if (calMonths !== undefined) { set.cal_months = calMonths; changes.push('表示月数を' + calMonths + 'に'); }
   const availDays = intIn(form.availDays, 7, 366, 'メンバーの予定の日数は7〜366です。');
   if (availDays !== undefined) { set.avail_days = availDays; changes.push('予定の日数を' + availDays + 'に'); }
+
+  if (form.discordEvents !== undefined) {
+    if (form.discordEvents) {
+      if (!ctx.bot.token) throw badRequest(EVENT_ERROR.noBot);
+      if (!isChannelId(g.guild_id)) throw badRequest(EVENT_ERROR.badGuild);
+      const can = await botCanCreateEvents(ctx.bot.token, g.guild_id);
+      if (can === false) throw badRequest(EVENT_ERROR.forbidden);
+      if (can === null) throw badRequest('Botの権限を確かめられませんでした。時間をおいてもう一度入れてください。');
+    }
+    // 入れたら作り、切ったらまだ始まっていないイベントを消す（どちらも見回りが拾う）
+    set.discord_events = form.discordEvents ? 1 : 0;
+    set.events_pending = 1;
+    set.events_error = '';
+    changes.push('Discordのイベントに出すのを' + onOff(form.discordEvents));
+  }
 
   const cols = Object.keys(set);
   if (cols.length) {
@@ -158,7 +176,9 @@ export async function saveSeriesNotify(ctx: Ctx, form: Form) {
  * Botが設定されていなければ（運営者の設定）botReady: false
  */
 export async function getDiscordChannels(ctx: Ctx) {
-  if (!ctx.bot.token) return { ok: true, botReady: false, inGuild: false, channels: [] };
+  if (!ctx.bot.token) return { ok: true, botReady: false, inGuild: false, channels: [], canEvents: null };
   const channels = await listChannels(ctx.bot.token, ctx.group.guild_id);
-  return { ok: true, botReady: true, inGuild: channels !== null, channels: channels ?? [] };
+  // Botがイベントを作れるか（イベントに出すグループだけ確かめる。Discordへの呼び出しを増やさないため）
+  const canEvents = channels !== null && ctx.group.discord_events === 1 ? await botCanCreateEvents(ctx.bot.token, ctx.group.guild_id) : null;
+  return { ok: true, botReady: true, inGuild: channels !== null, channels: channels ?? [], canEvents };
 }

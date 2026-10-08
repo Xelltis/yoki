@@ -6,6 +6,7 @@
 import type { PatrolRecord } from '../../shared/admin';
 import { SYSTEM_ACTOR } from '../auth/guard';
 import { savedOrigin } from '../auth/origin';
+import { EVENT_BUDGET, processDiscordEvents, sweepOrphanEvents } from '../discord/events';
 import { mentionsOf, recruitLink, sessionEmbed, sheetUrgePayload } from '../discord/payloads';
 import { appendLog, discordCalls, postDiscord, postToTargets, realSleep, type Sleep } from '../discord/send';
 import { sessionTargets, type Target, targetNote } from '../discord/targets';
@@ -64,7 +65,8 @@ export async function patrol(env: Bindings, scheduledTime: number, deps: Deps): 
   const load = (groupId: string) => loadGroup(db, groupId, SYSTEM_ACTOR, appBase ? appBase + '/g/' + groupId + '/' : '', now, bot);
   const groupsOf = async (sql: string, ...args: unknown[]) => (await db.prepare(sql).bind(...args).all<{ group_id: string }>()).results.map((r) => r.group_id);
 
-  if (await claim(db, 'hourly', p.ymd + 'T' + String(p.hour).padStart(2, '0'))) {
+  const hourly = await claim(db, 'hourly', p.ymd + 'T' + String(p.hour).padStart(2, '0'));
+  if (hourly) {
     // 開催日が過ぎた「開催」の卓を「終了」に（読み込むたびにもするが、誰も開かないグループのため）
     await db
       .prepare(`UPDATE sessions SET status = '終了', updated_at = ?1 WHERE status = '開催' AND date < ?2 AND group_id IN (SELECT id FROM groups WHERE auto_finish = 1)`)
@@ -104,6 +106,11 @@ export async function patrol(env: Bindings, scheduledTime: number, deps: Deps): 
       WHERE g.soon = 1 AND s.status = '開催' AND s.date = ?1 AND s.soon_at IS NULL AND s.start_time <> ''`,
     p.ymd,
   )) await sendStartingSoon(await load(id), deps);
+
+  // Discordのイベント: 書き直しが要るグループを1つずつ（毎時、持ち主のいなくなったイベントも片付ける）
+  const events = { left: EVENT_BUDGET };
+  await processDiscordEvents(db, load, events);
+  if (hourly) await sweepOrphanEvents(db, bot.token, now, events);
 
   // Googleカレンダーとの同期（連携している人を、長く回っていない人から少しずつ）。先にDiscordへ送った分を、外へ出せる数から引く
   const google = await googleDeps(env, appBase || 'http://localhost');
@@ -257,5 +264,7 @@ export async function cleanup(db: D1Database, now: Date): Promise<void> {
     db.prepare('DELETE FROM google_dismissed WHERE date < ?').bind(addDays(today, -KEEP_AVAIL_DAYS)),
     // 連携が無くなった人（運営者が利用者を消したなど）と、触らなくなった過ぎた卓の、書いた予定の控え。Googleの予定は残る
     db.prepare('DELETE FROM google_events WHERE user_id NOT IN (SELECT user_id FROM google_links) OR date < ?').bind(addDays(today, -WRITE_PAST_DAYS)),
+    // 過ぎた卓のDiscordのイベントの控え（イベントは終わっている）
+    db.prepare('DELETE FROM discord_events WHERE date < ?').bind(addDays(today, -1)),
   ]);
 }

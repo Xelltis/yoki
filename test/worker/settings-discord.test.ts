@@ -40,7 +40,12 @@ describe('設定', () => {
     expect((await fail(G.admin, G.id, 'saveConsoleSettings', { channelId: 'https://discord.com/api/webhooks/1/x' })).error).toBe('チャンネルのIDが正しくありません。');
     let r = await ok(G.admin, G.id, 'getConsoleData');
     expect(r).toMatchObject({ channelSet: false, settings: { channelId: '' } });
-    expect(r.bot).toEqual({ ready: true, inviteUrl: 'https://discord.com/oauth2/authorize?client_id=test-client&scope=bot&permissions=19456&guild_id=guild-t&disable_guild_select=true' });
+    expect(r.bot).toEqual({
+      ready: true,
+      inviteUrl: 'https://discord.com/oauth2/authorize?client_id=test-client&scope=bot&permissions=19456&guild_id=guild-t&disable_guild_select=true',
+      // イベントに出すときは「イベントを作成」（1<<44）も求める
+      eventsInviteUrl: 'https://discord.com/oauth2/authorize?client_id=test-client&scope=bot&permissions=17592186063872&guild_id=guild-t&disable_guild_select=true',
+    });
     r = await ok(G.admin, G.id, 'saveConsoleSettings', { channelId: CH(1) });
     expect(r.message).toBe('保存しました: 基本のチャンネルを「#卓の知らせ」に');
     expect(r.data.channelSet).toBe(true);

@@ -11,10 +11,14 @@ export function isChannelId(id: string): boolean {
 /** Botを招くときに求める権限: チャンネルを見る（1024）・メッセージを送る（2048）・埋め込みリンク（16384） */
 export const BOT_PERMISSIONS = 1024 + 2048 + 16384;
 
-/** グループのサーバーにBotを招くURL。DiscordアプリのClient IDが無ければ空 */
-export function botInviteUrl(clientId: string | undefined, guildId: string): string {
+/** 「イベントを作成」（1<<44）。イベントを作り、自分が作ったイベントを書き換え・消せる。卓をDiscordのイベントに出すグループだけが求める */
+export const CREATE_EVENTS = 2 ** 44;
+
+/** グループのサーバーにBotを招くURL。eventsなら「イベントを作成」の権限も求める。DiscordアプリのClient IDが無ければ空 */
+export function botInviteUrl(clientId: string | undefined, guildId: string, events = false): string {
   if (!clientId) return '';
-  const q = new URLSearchParams({ client_id: clientId, scope: 'bot', permissions: String(BOT_PERMISSIONS), guild_id: guildId, disable_guild_select: 'true' });
+  const permissions = String(BOT_PERMISSIONS + (events ? CREATE_EVENTS : 0));
+  const q = new URLSearchParams({ client_id: clientId, scope: 'bot', permissions, guild_id: guildId, disable_guild_select: 'true' });
   return 'https://discord.com/oauth2/authorize?' + q.toString();
 }
 

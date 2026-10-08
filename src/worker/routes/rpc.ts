@@ -117,6 +117,8 @@ rpcRoutes.post('/api/g/:groupId/:fn', async (c) => {
   const result = await entry.run(ctx, form, io);
   // 卓が変わったら、このグループでGoogleに書き込んでいる人がいるときだけ、返事のあとで予定を書き直す
   if (entry.calendar && google && (await hasGoogleWriters(c.env.DB, groupId))) defer(syncGroupWrites(c.env.DB, google, groupId, new Date()));
+  // 卓をDiscordのイベントに出しているグループは、書き直しが要る印を付ける（書くのは見回り。重なって同じイベントを作らないように）
+  if (entry.calendar && ctx.group.discord_events === 1) await c.env.DB.prepare('UPDATE groups SET events_pending = 1 WHERE id = ?').bind(groupId).run();
   // 書き込みが読み直した中身を返していれば、そのまま使う（もう一度読まない）
   if (entry.data && !result.data) result.data = await io.data();
   return c.json(result);

@@ -168,8 +168,11 @@ export type ConsoleData = {
   channelSet: boolean;
   remindChannelSet: boolean;
   recruitChannelSet: boolean;
-  /** 知らせを送るBot。ready: サーバーにBotのトークンがある（運営者の設定）。inviteUrl: このグループのサーバーにBotを招くURL */
-  bot: { ready: boolean; inviteUrl: string };
+  /**
+   * 知らせを送るBot。ready: サーバーにBotのトークンがある（運営者の設定）。inviteUrl: このグループのサーバーにBotを招くURL。
+   * eventsInviteUrl: 「イベントを作成」の権限も付けて招くURL（卓をDiscordのイベントに出すとき）
+   */
+  bot: { ready: boolean; inviteUrl: string; eventsInviteUrl: string };
   notifyDefault: boolean;
   /** 開催前の知らせを有効にした人（無効なら空） */
   notifySetter: string;
@@ -188,6 +191,10 @@ export type ConsoleData = {
     calMonths: number;
     availDays: number;
     setter: string;
+    /** 卓をDiscordのイベントにも出す */
+    discordEvents: boolean;
+    /** イベントの最後の失敗（うまくいけば空） */
+    eventsError: string;
   };
   seriesNotify: SeriesNotifyView[];
   /** カレンダーとの連携（本人のぶん） */
@@ -215,7 +222,8 @@ export type CalendarView = {
 
 /** 送り先に選べるDiscordのチャンネル（getDiscordChannelsの返事）。categoryはカテゴリーの名前（無ければ空） */
 export type DiscordChannel = { id: string; name: string; category: string };
-export type DiscordChannelsResult = { ok: true; botReady: boolean; inGuild: boolean; channels: DiscordChannel[] };
+/** canEventsは、Botがイベントを作れるか（イベントに出すグループで、Botがサーバーにいるときだけ確かめる。ほかはnull） */
+export type DiscordChannelsResult = { ok: true; botReady: boolean; inGuild: boolean; channels: DiscordChannel[]; canEvents: boolean | null };
 
 /** 呼び出しの返事（書き込み）。messageは画面の吹き出しに出す。ほかは呼び出しごとに付く */
 export type RpcResult = {

@@ -167,7 +167,8 @@ export async function changeGuild(db: D1Database, groupId: string, form: Form): 
   const name = known?.name || str(form.guildName);
   if (!name) throw badRequest('サーバーの名前を入れてください（そのサーバーから、まだ誰もログインしていないため分かりません）。');
   await db.batch([
-    db.prepare("UPDATE groups SET guild_id = ?, guild_name = ?, guild_icon = ?, channel_id = '', remind_channel_id = '', recruit_channel_id = '' WHERE id = ?")
+    // Discordのイベントは、前のサーバーから消して新しいサーバーに作り直す（見回りが拾う）
+    db.prepare("UPDATE groups SET guild_id = ?, guild_name = ?, guild_icon = ?, channel_id = '', remind_channel_id = '', recruit_channel_id = '', events_pending = 1 WHERE id = ?")
       .bind(guildId, name, known?.icon ?? null, groupId),
     db.prepare("UPDATE series_notify SET channel_id = '' WHERE group_id = ?").bind(groupId),
   ]);

@@ -24,6 +24,10 @@ export type GroupRow = {
   auto_finish: number;
   cal_months: number;
   avail_days: number;
+  /** 卓をDiscordのイベントにも出す（1）。書き直しが要る印（1）と、最後の失敗（うまくいけば空） */
+  discord_events: number;
+  events_pending: number;
+  events_error: string;
 };
 
 export type Member = { id: number; name: string; discordId: string; note: string; isAdmin: boolean; userId: string | null };
