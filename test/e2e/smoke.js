@@ -97,6 +97,14 @@ await withDevServer(async (base) => {
       assert.equal(await page.textContent('#monthLabel'), month);
     });
 
+    await step('だれも印を付けていない日も、カレンダーで全員空きになる', async () => {
+      const d = await D();
+      const free = d.availDays.find((k) => !Object.keys(d.avail[k] || {}).length && !Object.keys(d.booked[k] || {}).length);
+      assert.ok(free, 'だれも印を付けていない日がある');
+      await page.evaluate((k) => window.yoki.selectDay(k), free);
+      assert.match(await page.getAttribute(`.cal .day[data-day="${free}"]`, 'aria-label'), /全員空き/);
+    });
+
     await step('卓を登録できる', async () => {
       await page.click('#newSession');
       await page.fill('#name', 'e2eで登録した卓');

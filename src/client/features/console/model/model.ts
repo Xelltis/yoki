@@ -128,16 +128,19 @@ export function targetPeople(d: ConsoleData, target: string): string[] {
   const s = active(d).filter((x) => x.name === target)[0];
   return s ? candidatesOf(s) : [];
 }
-/** 日ごとの都合。'ok' は全員空き、'soft' は △ の人がいる。× か卓のある人がいれば出さない */
+/**
+ * 日ごとの都合（予定表の範囲の日）。'ok' は全員空き、'soft' は △ の人がいる。× か卓のある人がいれば出さない。
+ * だれも印を付けていない日も全員空き（予定表の「全員空き」と同じ）
+ */
 export function availMap(d: ConsoleData, target: string): Record<string, 'ok' | 'soft'> {
   const out: Record<string, 'ok' | 'soft'> = {}, people = targetPeople(d, target);
   if (!people.length) return out;
-  Object.keys(d.avail).forEach((key) => {
-    const marks = d.avail[key]!;
+  d.availDays.forEach((key) => {
+    const marks = d.avail[key] || {}, bk = d.booked[key] || {};
     let allOk = true;
     for (let i = 0; i < people.length; i++) {
-      const v = marks[people[i]!] || '';
-      if (v === '×' || v === '参' || v === 'GM') return;
+      const n = people[i]!, v = marks[n] || '';
+      if (v === '×' || bk[n]) return;
       if (v === '△') allOk = false;
     }
     out[key] = allOk ? 'ok' : 'soft';
