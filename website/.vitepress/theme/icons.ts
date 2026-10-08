@@ -3,11 +3,13 @@
 import type { FunctionalComponent, SVGAttributes } from 'vue';
 import IAdd from '~icons/material-symbols/add-outline-rounded';
 import IArrowBack from '~icons/material-symbols/arrow-back-outline-rounded';
+import IAutoStories from '~icons/material-symbols/auto-stories-outline-rounded';
 import IBlock from '~icons/material-symbols/block-outline-rounded';
 import ICalendarMonth from '~icons/material-symbols/calendar-month-outline-rounded';
 import ICampaign from '~icons/material-symbols/campaign-outline-rounded';
 import ICheck from '~icons/material-symbols/check-outline-rounded';
 import ICheckCircle from '~icons/material-symbols/check-circle-outline-rounded';
+import IChecklist from '~icons/material-symbols/checklist-rounded';
 import IDateRange from '~icons/material-symbols/date-range-outline-rounded';
 import IEditCalendar from '~icons/material-symbols/edit-calendar-outline-rounded';
 import IEvent from '~icons/material-symbols/event-outline-rounded';
@@ -37,11 +39,13 @@ type IconComponent = FunctionalComponent<SVGAttributes>;
 export const ICONS = {
   add: IAdd,
   arrow_back: IArrowBack,
+  auto_stories: IAutoStories,
   block: IBlock,
   calendar_month: ICalendarMonth,
   campaign: ICampaign,
   check: ICheck,
   check_circle: ICheckCircle,
+  checklist: IChecklist,
   date_range: IDateRange,
   edit_calendar: IEditCalendar,
   event: IEvent,

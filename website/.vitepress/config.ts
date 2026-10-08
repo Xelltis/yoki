@@ -75,6 +75,8 @@ export default defineConfig({
             { text: 'カレンダーを読む', link: '/guide/calendar' },
             { text: '卓に参加する', link: '/guide/join' },
             { text: '日程調整に答える', link: '/guide/vote' },
+            { text: 'シナリオと通過', link: '/guide/scenario' },
+            { text: '卓の準備（HO・キャラシ）', link: '/guide/prep' },
             { text: '最新の状態にする', link: '/guide/sync' },
             { text: 'カレンダーに出す', link: '/guide/calendar-sync' },
           ],

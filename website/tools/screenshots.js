@@ -67,10 +67,16 @@ await withDevServer(async (base) => {
       await pg.click('#newSession'); await pg.waitForTimeout(400);
       await shot(pg, 'pc-new-session.png');
       await pg.click('#formClose'); await pg.waitForTimeout(200);
-      for (const [tab, name] of [['recruit', 'recruit'], ['avail', 'availability']]) {
+      for (const [tab, name] of [['recruit', 'recruit'], ['scenario', 'scenario'], ['avail', 'availability']]) {
         await pg.click(`nav.tabs button[data-tab=${tab}]`); await pg.waitForTimeout(400);
         await shot(pg, `pc-${name}.png`);
       }
+      // 卓の準備の窓（ひよりはHO2を割り当てられているので、自分の秘匿HOが見える）
+      await pg.click('nav.tabs button[data-tab=cal]'); await pg.waitForTimeout(300);
+      await pg.evaluate((d) => window.yoki.selectDay(d), await dayOf(pg, '灰色の図書館'));
+      await pg.click('#dayBody button[data-prep]'); await pg.waitForTimeout(500);
+      await shot(pg, 'pc-prep.png');
+      await pg.click('#prepClose'); await pg.waitForTimeout(200);
       // グループの管理画面（メンバーと知らせの区分）
       await fakeBot(ctx);
       await pg.goto(base + 'g/sample/admin/#members');

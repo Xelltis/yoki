@@ -56,7 +56,7 @@ Yokiは、「Discordでログイン」と、チャンネルへの知らせ（Bot
 
 [![Botの画面の下の方。1は公開BotのスイッチでON、2はPresence Intent・Server Members Intent・Message Content Intentの3つのスイッチでOFF](/setup/discord/08-bot-settings.png)](/setup/discord/08-bot-settings.png)
 
-公開BotをONにしておくのは、グループの管理者が、Yokiの画面から自分のDiscordサーバーにBotを招くためです。YokiのBotはメッセージを書くだけで、Discordの会話を読みに行かないので、Intentsは要りません。
+公開BotをONにしておくのは、グループの管理者が、Yokiの画面から自分のDiscordサーバーにBotを招くためです。YokiのBotは、メッセージを書くことと、卓をサーバーのイベントにすることだけをします。Discordの会話を読みに行かないので、Intentsは要りません。
 
 ## 4. インストールリンクを「なし」にする
 
@@ -68,7 +68,7 @@ Yokiは、「Discordでログイン」と、チャンネルへの知らせ（Bot
 
 [![インストールリンクが「なし」になった画面。2は選ぶ欄、3は画面の下の「変更を保存」のボタン](/setup/discord/10-install-save.png)](/setup/discord/10-install-save.png)
 
-Botを招くURLは、Yokiが作ります。求める権限は「チャンネルを見る」「メッセージを送信」「埋め込みリンク」の3つだけで、Discordが用意するリンクは使いません。
+Botを招くURLは、Yokiが作ります。求める権限は「チャンネルを見る」「メッセージを送信」「埋め込みリンク」の3つです。卓をDiscordのイベントに出すグループだけ、「イベントを作成」も求めます。Discordが用意するリンクは使いません。
 
 ## 5. あなたのDiscordユーザーIDを控える
 
