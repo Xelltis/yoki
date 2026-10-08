@@ -11,6 +11,7 @@ import { Avatar } from '../../ui/Avatar';
 import { GroupTile } from '../../ui/GroupTile';
 import { Icon } from '../../ui/Icon';
 import type { IconName } from '../../ui/icons';
+import { Agenda } from './Agenda';
 import { CreateGroup } from './CreateGroup';
 import { DevLogin } from './DevLogin';
 import { card, h2, heroBtn, hint } from './styles';
@@ -152,10 +153,11 @@ function Guest({ me, back }: { me: MeResponse; back: string | null }) {
   );
 }
 
-/** ログインしている: 入れるグループの一覧と、グループを作る */
+/** ログインしている: あなたの予定・入れるグループの一覧と、グループを作る */
 function Groups({ me }: { me: LoggedIn }) {
   return (
     <>
+      <Agenda />
       <section className={card} id="home">
         <div className="mb-14 flex flex-wrap items-center gap-8">
           <h2 className={h2 + ' mb-0'}>

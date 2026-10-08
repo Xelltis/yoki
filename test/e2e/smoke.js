@@ -83,6 +83,16 @@ await withDevServer(async (base) => {
       await tab('cal');
     });
 
+    await step('入口に「あなたの予定」が出て、あなたの番の日程調整から「募集・調整」のタブへ移れる', async () => {
+      await page.goto(base);
+      await page.waitForSelector('#agenda', { timeout: 15000 });
+      assert.match(await page.textContent('#agenda'), /今夜の短編/, '今日の卓が出る');
+      await page.click('#agenda [data-agenda="vote"] a');
+      await page.waitForSelector('#tab-recruit', { state: 'visible', timeout: 15000 });
+      await page.waitForFunction(() => window.yoki && window.yoki.D, null, { timeout: 30000 });
+      await tab('cal');
+    });
+
     await step('カレンダーで日を選ぶと内訳が出て、月を送れる', async () => {
       const s = (await D()).sessions.find((x) => x.name === '連れて帰る');
       await page.evaluate((k) => window.yoki.selectDay(k), s.date);

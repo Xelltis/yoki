@@ -313,5 +313,26 @@ export type MeResponse = {
     }
 );
 
+/**
+ * 自分の予定の一覧の1件（GET /api/me/agenda）。入っているグループをまたいで出す。
+ *   session … これからの「開催」の卓（GMか参加者。行けなくなった卓は除く）。dateは開催日
+ *   vote    … まだ答えていない候補日がある日程調整
+ *   decide  … 全員の回答がそろった、GMとして開催日を選ぶ日程調整
+ *   sheet   … まだ出していないキャラシ（参加者）。dateは締め切り
+ */
+export type AgendaItem = {
+  kind: 'session' | 'vote' | 'decide' | 'sheet';
+  groupId: string;
+  groupTitle: string;
+  /** 卓のID（S001） */
+  id: string;
+  name: string;
+  date: string;
+  start: string;
+  end: string;
+};
+/** 自分の予定の一覧（GET /api/me/agenda）。あなたの番（vote・decide・sheet）が先、卓は開催日の順 */
+export type AgendaResponse = { today: string; items: AgendaItem[] };
+
 /** グループを作った返事（POST /api/groups）。失敗なら{ error } */
 export type CreateGroupResult = { ok: true; id: string; url: string };

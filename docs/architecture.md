@@ -22,7 +22,7 @@ Worker 1つで、次の3つを受け持つ。
 | `/admin/` と `/admin/<区分>/` | 運営の管理画面。同じ骨組みを返す（控えさせない）。ログインしていなければDiscordログインへ、運営者でなければ403の案内 |
 | `/terms` `/privacy` | 利用規約とプライバシーポリシー。だれでも読める。WorkerがD1から本文を読み、その場でHTMLにして返す（JSは使わない。`routes/html.ts` の `legalPage`） |
 | `/auth/login` `/auth/callback` `POST /auth/logout` | Discordログイン |
-| `GET /api/me` `POST /api/groups` | 入口の画面が使う |
+| `GET /api/me` `GET /api/me/agenda` `POST /api/groups` | 入口の画面が使う（`/api/me/agenda` は「あなたの予定」。入れるグループをまたいで、これからの卓とあなたの番を集める。`domain/agenda.ts`） |
 | `POST /api/g/:id/:fn` | 画面からの呼び出し |
 | `GET` / `POST /api/admin/*` | 運営の管理画面が使う（下の「運営の管理画面」） |
 | `GET /cal/<token>.ics` | 購読URL（iCalendar）。ログインせずに読む（下の「カレンダーとの連携」） |

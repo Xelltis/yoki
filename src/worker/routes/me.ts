@@ -11,7 +11,8 @@ import { devAvailable, isOperator } from '../auth/operator';
 import { readForm, str } from '../domain/form';
 import { registrationOpen } from '../domain/registration';
 import { googleConfigured } from '../google/config';
-import type { CreateGroupResult, MeResponse } from '../../shared/api';
+import type { AgendaResponse, CreateGroupResult, MeResponse } from '../../shared/api';
+import { agendaOf } from '../domain/agenda';
 
 export const meRoutes = new Hono<AppEnv>();
 
@@ -44,6 +45,16 @@ meRoutes.get('/api/me', async (c) => {
     creatable: creatable.results,
     stale: snapshotAgeMs(viewer, new Date()) > SNAPSHOT_HOURS * 3600_000,
   } satisfies MeResponse);
+});
+
+/** 自分の予定の一覧（入口の画面）。入れるグループ（/api/meのgroupsと同じ）をまたいで集める */
+meRoutes.get('/api/me/agenda', async (c) => {
+  const viewer = await currentViewer(c);
+  if (!viewer) throw authError();
+  const db = c.env.DB;
+  const groups = await db.prepare('SELECT g.id FROM groups g JOIN user_guilds ug ON ug.guild_id = g.guild_id AND ug.user_id = ?').bind(viewer.id).all<{ id: string }>();
+  c.header('Cache-Control', 'no-store');
+  return c.json((await agendaOf(db, viewer.id, groups.results.map((g) => g.id), new Date())) satisfies AgendaResponse);
 });
 
 meRoutes.post('/api/groups', async (c) => {
