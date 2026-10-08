@@ -147,6 +147,11 @@ await withDevServer(async (base) => {
       await page.fill('#name', '灰色の図書館（改）');
       await page.click('#f button[type=submit]');
       await until((d, id) => d.sessions.some((x) => x.id === id && x.name === '灰色の図書館（改）'), s.id);
+      // 変更の窓の下で、変更の履歴を読める
+      await page.click(`#dayBody button[data-edit="${s.id}"]`);
+      await page.click('#historyFold summary');
+      await page.waitForSelector('#historyList >> text=名前 灰色の図書館→灰色の図書館（改）', { timeout: 15000 });
+      await page.click('#formClose');
     });
 
     await step('変更の窓から、続きの登録に移れる', async () => {

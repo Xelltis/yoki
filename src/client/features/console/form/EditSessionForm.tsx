@@ -1,6 +1,7 @@
 // 卓の変更の窓の中身。どの卓を変えているかを題に出し、状態を変えたらその状態の説明を出す。
-// 続きの登録（翌日の卓を登録の窓で開く）と、削除もここから
+// 続きの登録（翌日の卓を登録の窓で開く）と、削除もここから。下に、卓の変更の履歴
 import { useState } from 'react';
+import type { SessionHistoryItem } from '../../../../shared/api';
 import { askConfirm } from '../../../ui/confirm';
 import { Icon } from '../../../ui/Icon';
 import { formActions, wideBar, wideBarTitle } from '../../../ui/modalParts';
@@ -90,7 +91,35 @@ export function EditSessionForm({ req, onClose, reopen }: { req: FormReq; onClos
           <FormMsg msg={msg} />
         </div>
       </form>
+      {s && <History id={s.id} />}
       <PromoteModal ask={promote} onDone={(picked) => { setPromote(null); if (picked) submit(picked); }} />
     </>
+  );
+}
+
+/** 卓の変更の履歴（だれが・いつ・何をしたか。新しい順）。開いたときに読む */
+function History({ id }: { id: string }) {
+  const { sync } = useConsole();
+  const [st, setSt] = useState<{ items: SessionHistoryItem[] | null; msg: string }>({ items: null, msg: '' });
+  const load = () => {
+    setSt({ items: null, msg: '読んでいます…' });
+    sync.call<{ items: SessionHistoryItem[] }>('getSessionHistory', { id }).then((r) => setSt({ items: r.items, msg: '' }), (e: Error) => setSt({ items: null, msg: e.message }));
+  };
+  return (
+    <details className="mt-14 border-t border-line pt-10" id="historyFold" onToggle={(ev) => { if (ev.currentTarget.open && !st.items) load(); }}>
+      <summary className="cursor-pointer text-13 font-semibold text-muted"><Icon name="history" size="sm" />変更の履歴</summary>
+      {st.msg && <p className="hint">{st.msg}</p>}
+      {st.items && !st.items.length && <p className="hint">まだ履歴がありません。</p>}
+      {st.items && st.items.length > 0 && (
+        <ul className="mt-8 mb-0 grid list-none gap-6 p-0 text-13" id="historyList">
+          {st.items.map((h, i) => (
+            <li className="rounded-md bg-head px-10 py-6" key={i}>
+              <span className="text-12 text-muted tabular-nums">{h.at + '　' + (h.by || '—')}</span>
+              <span className="block wrap-anywhere"><b className="font-semibold">{h.action}</b>{h.detail ? '　' + h.detail : ''}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </details>
   );
 }

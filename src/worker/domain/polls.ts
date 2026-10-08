@@ -11,6 +11,7 @@ import { addDays, fmtDateJa, normTime, parseYmd } from '../lib/jst';
 import { POLL_MARKS, POLL_MAX_DATES, STATUS } from './constants';
 import { type Form, list, requireSelf, str } from './form';
 import { bookedAt, type BookedParts, markAt, type Part, partOf } from '../../shared/parts';
+import { historyStmt } from './history';
 import { bookedPartsMap, findAdjusting, findSession, peopleOf, pollComplete } from './model';
 import type { GoogleDeps } from '../google/config';
 import type { Ctx, Session } from './types';
@@ -126,6 +127,7 @@ export async function startPoll(ctx: Ctx, form: Form) {
   const me = ctx.actor.name;
   const added = dates.filter((k) => fresh || !s.candidates.includes(k));
   if (peopleOf(s).includes(me) && added.length) stmts.push(voteStmts(ctx, s, added, '◯'));
+  stmts.push(historyStmt(ctx, s.rowId, '日程調整', (fresh ? '候補日を出した: ' : '候補日を選び直した: ') + dates.map(fmtDateJa).join('、')));
   await db.batch(stmts);
   return { ok: true, id: s.id, dates, fresh, message: '「' + s.name + '」の日程調整を' + (fresh ? '始めました' : '更新しました') + '（候補' + dates.length + '日）。' };
 }
@@ -225,6 +227,7 @@ export async function decidePoll(ctx: Ctx, form: Form, io: Io) {
       )
       .bind(s.rowId, k, ctx.actor.name, ctx.now.toISOString()),
     db.prepare('DELETE FROM poll_votes WHERE session_id = ?').bind(s.rowId),
+    historyStmt(ctx, s.rowId, '日程決定', fmtDateJa(k)),
   ]);
   await appendLog({ db, groupId: ctx.group.id }, '日程決定', s.name, 'GMが選んだ日: ' + fmtDateJa(k));
   const fresh = await io.reload();
@@ -243,6 +246,7 @@ export async function cancelPoll(ctx: Ctx, form: Form) {
   await ctx.db.batch([
     ctx.db.prepare("UPDATE sessions SET candidates = '[]', poll_ready_at = NULL, editor = ?2, updated_at = ?3 WHERE id = ?1").bind(s.rowId, ctx.actor.name, ctx.now.toISOString()),
     ctx.db.prepare('DELETE FROM poll_votes WHERE session_id = ?').bind(s.rowId),
+    historyStmt(ctx, s.rowId, '日程調整', 'やめた'),
   ]);
   return { ok: true, id: s.id, message: '「' + s.name + '」の日程調整をやめました。' };
 }

@@ -6,6 +6,7 @@ import { sessionTargets } from '../discord/targets';
 import { badRequest } from '../lib/errors';
 import { ABSENCE_NOTE_MAX, STATUS } from './constants';
 import { type Form, requireSelf, str } from './form';
+import { historyStmt } from './history';
 import { reloadLog } from './load';
 import { findSession } from './model';
 import { type Io, noticeNote } from './polls';
@@ -20,16 +21,20 @@ export async function setAbsence(ctx: Ctx, form: Form, io: Io) {
   if (!s.members.includes(name)) throw badRequest(name + 'は「' + s.name + '」の参加者ではありません。');
   const db = ctx.db, memberId = ctx.actor.memberId;
   if (form.absent === false) {
-    await db.prepare('DELETE FROM session_absences WHERE session_id = ? AND member_id = ?').bind(s.rowId, memberId).run();
+    await db.batch([
+      db.prepare('DELETE FROM session_absences WHERE session_id = ? AND member_id = ?').bind(s.rowId, memberId),
+      historyStmt(ctx, s.rowId, '行けなくなったを取り消し', name),
+    ]);
     return { ok: true, id: s.id, message: '「' + s.name + '」の「行けなくなった」を取り消しました。' };
   }
   const note = str(form.note);
   if (note.length > ABSENCE_NOTE_MAX) throw badRequest('一言は' + ABSENCE_NOTE_MAX + '文字までです。');
   const again = s.absent.some((a) => a.name === name);
-  await db
-    .prepare('INSERT INTO session_absences (session_id, member_id, note, at) VALUES (?1, ?2, ?3, ?4) ON CONFLICT (session_id, member_id) DO UPDATE SET note = excluded.note')
-    .bind(s.rowId, memberId, note, ctx.now.toISOString())
-    .run();
+  await db.batch([
+    db.prepare('INSERT INTO session_absences (session_id, member_id, note, at) VALUES (?1, ?2, ?3, ?4) ON CONFLICT (session_id, member_id) DO UPDATE SET note = excluded.note')
+      .bind(s.rowId, memberId, note, ctx.now.toISOString()),
+    ...(again ? [] : [historyStmt(ctx, s.rowId, '行けなくなった', name)]),
+  ]);
   // 一言を直しただけなら、もう一度は知らせない
   if (again) return { ok: true, id: s.id, message: '「' + s.name + '」への一言を直しました。' };
   const targets = sessionTargets(ctx, s);

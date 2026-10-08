@@ -7,6 +7,7 @@ import { type Form, list, requireSelf, str } from './form';
 import { sessionCode } from './load';
 import { findSession, peopleOf, readWindow, windowInfo } from './model';
 import { insertPeopleForNext, insertPeopleForSeq, type People, peopleOfSession, replacePeople } from './people';
+import { changeText, createdText, historyForSeqStmt, historyManyStmt, historyStmt } from './history';
 import { checkGmChange, unassignGoneStmt } from './prep';
 import { findScenario, keepPassesStmt, readScenarioId } from './scenarios';
 import type { Ctx, Session } from './types';
@@ -138,6 +139,11 @@ export async function saveSession(ctx: Ctx, form: Form) {
     if (status !== STATUS.ADJUSTING) stmts.push(db.prepare('DELETE FROM poll_votes WHERE session_id = ?').bind(existing.rowId));
     // 開催日が変わったり、開催でなくなったり、参加者から外れたりしたら、行けなくなった印を消す
     if (existing.absent.length) stmts.push(absenceCleanupStmt(ctx, [existing.rowId], dateChanged));
+    const detail = changeText(ctx, existing, {
+      name, status, date, start, end, place: str(form.place), memo: str(form.memo), series, gm, members,
+      windowFrom: win?.from ?? null, windowTo: win?.to ?? null, scenarioId, capacity: limits.capacity, recruitDue: limits.due,
+    });
+    if (detail) stmts.push(historyStmt(ctx, existing.rowId, '変更', detail));
   } else {
     const seq = await allocateSeq(ctx, 1);
     id = sessionCode(seq);
@@ -145,6 +151,7 @@ export async function saveSession(ctx: Ctx, form: Form) {
       db.prepare(INSERT_SESSION).bind(ctx.group.id, seq, name, status, date, start, end, str(form.place), str(form.memo), series, seriesEnd, win?.from ?? null, win?.to ?? null, ctx.actor.name, at, scenarioId,
         limits.capacity, limits.due),
       insertPeopleForSeq(ctx, seq, people),
+      historyForSeqStmt(ctx, seq, 1, '登録', createdText(status, date, start, end, win?.from ?? null, win?.to ?? null)),
     );
   }
   // 単発の卓から「続けて登録」したときは、元の回にも同じシリーズ名を入れて1つのシリーズにする（元の回にシリーズ名が無いときだけ）
@@ -185,9 +192,9 @@ async function saveSessionDates(ctx: Ctx, form: Form, name: string, raw: string[
   const at = ctx.now.toISOString();
   const seriesEnd = series ? parseYmd(form.seriesEnd) : null;
   const people: People = { gm: gm ? [gm] : [], member: members, want: [], interest: [] };
-  // 卓・関わる人・番号を、日数によらず3文で書く（D1の1回の呼び出しで使える問い合わせの数を超えないように）。
+  // 卓・関わる人・履歴・番号を、日数によらず4文で書く（D1の1回の呼び出しで使える問い合わせの数を超えないように）。
   // 番号は、グループの次の番号から順に振り、最後に進める。1つのbatchなので、途中で失敗すれば番号も進まない
-  const [, , seq] = await ctx.db.batch([
+  const [, , , seq] = await ctx.db.batch([
     ctx.db
       .prepare(
         `INSERT INTO sessions (group_id, seq, name, status, date, start_time, end_time, place, memo, series, series_end, window_from, window_to, candidates, editor, updated_at,
@@ -199,6 +206,7 @@ async function saveSessionDates(ctx: Ctx, form: Form, name: string, raw: string[
       .bind(ctx.group.id, status, normTime(form.start), normTime(form.end), str(form.place), str(form.memo), series, seriesEnd, ctx.actor.name, at,
         JSON.stringify(dates.map((d, i) => ({ i, name: names[i], date: d }))), scenarioId),
     insertPeopleForNext(ctx, dates.length, people),
+    historyForSeqStmt(ctx, null, dates.length, '登録', status + '（' + dates.length + '回分をまとめて）'),
     ctx.db.prepare('UPDATE groups SET next_session_seq = next_session_seq + ?2 WHERE id = ?1 RETURNING next_session_seq - ?2 AS first').bind(ctx.group.id, dates.length),
   ]);
   const first = (seq!.results[0] as { first: number }).first;
@@ -353,9 +361,10 @@ export async function bulkUpdateSessions(ctx: Ctx, form: Form) {
   // 参加者から外した人のHOの割り当ても外す
   const assigned = peopleChanges.filter((c) => targets.find((s) => s.rowId === c.rowId)!.slots.some((x) => x.memberId !== null));
   if (assigned.length) stmts.push(unassignGoneStmt(ctx, assigned.map((c) => c.rowId)));
-  // 行けなくなった印も片付ける（開催日をずらしたら全部）
+  // 行けなくなった印も片付ける（開催日をずらしたら全部）。消すのでなければ、履歴を残す
   const absent = targets.filter((s) => s.absent.length);
   if (absent.length && action !== 'delete') stmts.push(absenceCleanupStmt(ctx, absent.map((s) => s.rowId), action === 'shiftDays'));
+  if (action !== 'delete') stmts.push(historyManyStmt(ctx, targets.map((s) => s.rowId), 'まとめての変更', label));
   await db.batch(stmts);
   let message = targets.length + '件の卓' + done + ': ' + targets.map((s) => s.name).join('、');
   if (promoted.length) message += '　参加希望の人を参加者に加えました: ' + promoted.join('、');

@@ -25,6 +25,7 @@ import { deleteGroup } from '../domain/groups';
 import { deleteScenario, saveScenario, setScenarioMark } from '../domain/scenarios';
 import { assignSlots, savePrep, saveSlotSecret, setSlotHope, submitSheet } from '../domain/prep';
 import { setAbsence } from '../domain/absence';
+import { getSessionHistory } from '../domain/history';
 import { AppError, adminError, authError, goneError, notFound } from '../lib/errors';
 import type { RpcName } from '../../shared/api';
 
@@ -83,6 +84,8 @@ export const RPC: Record<Exclude<RpcName, 'getConsoleData'>, Entry> = {
   setAbsence: { run: setAbsence, data: true, calendar: true },
   // 本人の設定（どのグループにも効く）
   setShareBusy: { run: setShareBusy, data: true },
+  // 卓の変更の履歴を読む（書かないので、画面のデータは付けない）
+  getSessionHistory: { run: getSessionHistory },
   // 消したあとは画面のデータを読めないのでdataを付けない
   deleteGroup: { run: deleteGroup, admin: 'グループを消すこと' },
 };

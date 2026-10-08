@@ -16,6 +16,7 @@ import { googleDeps } from '../google/config';
 import { googleBudget, patrolGoogle, WRITE_PAST_DAYS } from '../google/sync';
 import { addDays, daysBetween, jst, minutesOfTime } from '../lib/jst';
 import { DATED, SOON_LATE_MIN, STATUS } from './constants';
+import { HISTORY_KEEP } from './history';
 import { loadGroup } from './load';
 import { aheadText, notifyHourOf, notifyYmdOf } from './notify';
 import type { Ctx, Session } from './types';
@@ -279,12 +280,13 @@ export async function sendStartingSoon(ctx: Ctx, deps: Deps): Promise<void> {
   }
 }
 
-/** 毎日1回の片付け: 期限切れのログイン、古い送信記録・予定・メモ、Googleの古い記録 */
+/** 毎日1回の片付け: 期限切れのログイン、古い送信記録・卓の履歴・予定・メモ、Googleの古い記録 */
 export async function cleanup(db: D1Database, now: Date): Promise<void> {
   const today = jst(now).ymd;
   await db.batch([
     db.prepare('DELETE FROM auth_sessions WHERE expires_at < ?').bind(now.toISOString()),
     db.prepare(`DELETE FROM notify_log WHERE id IN (SELECT id FROM (SELECT id, ROW_NUMBER() OVER (PARTITION BY group_id ORDER BY id DESC) AS rn FROM notify_log) WHERE rn > ?)`).bind(KEEP_LOG_ROWS),
+    db.prepare(`DELETE FROM session_history WHERE id IN (SELECT id FROM (SELECT id, ROW_NUMBER() OVER (PARTITION BY session_id ORDER BY id DESC) AS rn FROM session_history) WHERE rn > ?)`).bind(HISTORY_KEEP),
     db.prepare('DELETE FROM availability WHERE date < ?').bind(addDays(today, -KEEP_AVAIL_DAYS)),
     db.prepare('DELETE FROM avail_notes WHERE date < ?').bind(addDays(today, -KEEP_AVAIL_DAYS)),
     db.prepare('DELETE FROM day_notes WHERE COALESCE(end_date, date) < ?').bind(addDays(today, -KEEP_DAY_NOTE_DAYS)),

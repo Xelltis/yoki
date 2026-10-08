@@ -36,7 +36,7 @@ export const RPC_FUNCS = [
   'saveSession', 'deleteSession', 'saveMember', 'deleteMember', 'saveConsoleSettings', 'saveSeriesNotify', 'renameGroup', 'startPoll', 'setPollVote',
   'setPollVoteAll', 'setPollVoteFromAvail', 'cancelPoll', 'decidePoll', 'setAdmin', 'deleteGroup', 'getDiscordChannels', 'saveCalendarFeed', 'deleteCalendarFeed',
   'saveGoogleSettings', 'syncGoogleNow', 'unlinkGoogle', 'unlinkGoogleLogin', 'saveScenario', 'deleteScenario', 'setScenarioMark',
-  'savePrep', 'saveSlotSecret', 'assignSlots', 'setSlotHope', 'submitSheet', 'setAbsence', 'setShareBusy',
+  'savePrep', 'saveSlotSecret', 'assignSlots', 'setSlotHope', 'submitSheet', 'setAbsence', 'setShareBusy', 'getSessionHistory',
 ] as const;
 export type RpcName = (typeof RPC_FUNCS)[number];
 
@@ -265,6 +265,9 @@ export type RpcResult = {
   /** サーバーがDiscordに送れたか（falseなら画面から送り直す） */
   notified?: boolean;
 };
+
+/** 卓の変更の履歴の1件（getSessionHistoryの返事のitems。新しい順）。atは「2026/10/09（金）21:16」の形 */
+export type SessionHistoryItem = { at: string; by: string; action: string; detail: string };
 
 /** 届かなかった理由 */
 export type DiscordReason = { kind: string; label: string; toolFault: boolean; text: string; advice: string };
