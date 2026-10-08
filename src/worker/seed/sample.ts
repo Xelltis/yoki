@@ -82,7 +82,7 @@ export async function seedSample(db: D1Database, groupId: string, appUrl: string
   await assignSlots(await as('レン'), { id: library.id, assign: { 1: 'こまち', 2: 'ひより' } });
   await submitSheet(await as('こまち'), { id: library.id, name: 'こまち', url: 'https://example.com/sheet/komachi', pc: '水瀬 栞' });
   // 募集
-  const castle = await S({ name: '雪原の古城', gm: 'こまち', status: '募集', windowFrom: nextFrom, windowTo: nextMid, memo: '3〜4人で。ボイスあり', scenarioId: scCastle });
+  const castle = await S({ name: '雪原の古城', gm: 'こまち', status: '募集', windowFrom: nextFrom, windowTo: nextMid, memo: '3〜4人で。ボイスあり', scenarioId: scCastle, capacity: 4, recruitDue: T(20) });
   await setInterest(await as('ソラ'), { id: castle.id, name: 'ソラ', level: 'want' });
   await setInterest(await as('レン'), { id: castle.id, name: 'レン', level: 'interest' });
   await setInterest(await as('ユズ'), { id: castle.id, name: 'ユズ', level: 'interest' });

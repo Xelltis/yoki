@@ -1,7 +1,7 @@
 // Discordに送る文面。データを読まずに、作った卓をそのまま渡して文を確かめる
 import { describe, expect, test } from 'vitest';
 import {
-  announcePayload, askPayload, bulkPayload, changePayload, decidedPayload, mentionsOf, pollPayload, pollReadyPayload, recruitLink, sessionEmbed, testPayload, whenText,
+  announcePayload, askPayload, bulkPayload, changePayload, decidedPayload, mentionsOf, pollPayload, pollReadyPayload, recruitDuePayload, recruitLink, sessionEmbed, testPayload, whenText,
 } from '../../src/worker/discord/payloads';
 import type { Ctx, GroupRow, Member, Session } from '../../src/worker/domain/types';
 
@@ -29,7 +29,7 @@ function session(o: Partial<Session> = {}): Session {
   return {
     rowId: 1, id: 'S001', seq: 1, name: '港', gm: '', members: [], want: [], interest: [], date: null, start: '', end: '', status: '開催',
     place: '', memo: '', series: '', seriesEnd: null, windowFrom: null, windowTo: null, candidates: [], editor: '', updatedAt: '',
-    notifiedAt: null, askedAt: null, urgedAt: null, soonAt: null, pollReadyAt: null, scenarioId: null, sheetDue: null, sheetUrgedAt: null, slots: [], sheets: [], ...o,
+    notifiedAt: null, askedAt: null, urgedAt: null, soonAt: null, pollReadyAt: null, scenarioId: null, sheetDue: null, sheetUrgedAt: null, slots: [], sheets: [], capacity: null, recruitDue: null, dueUrgedAt: null, ...o,
   };
 }
 
@@ -57,6 +57,17 @@ describe('日時と卓の埋め込み', () => {
     const held = sessionEmbed(ctxOf(), session({ gm: 'ひより', members: ['ソラ'], want: ['こまち'], date: '2026-10-17' }));
     expect(held.title).toBe('港');
     expect(held.description).toBe('GM: ひより\n日時: 10/17（土） 時間未定\n参加者: ソラ');
+  });
+
+  test('締め切りの知らせ: GMにIDが無ければ名前で呼ぶ。アプリのURLが無ければリンクを付けない', () => {
+    const p = recruitDuePayload(ctxOf({ appUrl: '' }), session({ status: '募集', gm: 'こまち', want: ['ソラ'], recruitDue: TODAY }));
+    expect(p.content).toBe('📮 「港」の募集は今日（10/10（土））で締め切りです。参加希望: ソラ（1人） こまちさん\n集まったら、カードの「開催にする」か、「編集」で状態を「調整中」にして進めてください。');
+  });
+
+  test('募集の定員と締め切りがあれば、参加希望の人数と締め切りを書く（まだいなくても）', () => {
+    const e = sessionEmbed(ctxOf(), session({ status: '募集', want: ['ソラ'], capacity: 3, recruitDue: '2026-10-15' }));
+    expect(e.description).toBe('GM: 未定\n日時: 時期未定（募集中）\n参加者: 未定\n参加希望: ソラ（1/3人）\n締め切り: 10/15（木）');
+    expect(sessionEmbed(ctxOf(), session({ status: '募集', capacity: 2 })).description).toContain('参加希望: まだいません（0/2人）');
   });
 });
 

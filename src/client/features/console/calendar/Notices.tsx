@@ -35,7 +35,7 @@ export function Notices({ d, onDay, onRecruit, onTarget }: {
         <Icon name="campaign" />{'募集中' + rec.length + '件'}
         {rec.slice(0, rec.length > 3 ? 2 : 3).map((s) => (
           <span className="block" key={s.id}>
-            <b>{s.name}</b><span className="ml-6 text-12 font-normal text-muted">{(s.windowLabel || '期間未定') + (s.want.length ? '　希望' + s.want.length + '人' : '')}</span>
+            <b>{s.name}</b><span className="ml-6 text-12 font-normal text-muted">{(s.windowLabel || '期間未定') + (s.want.length || s.capacity ? '　希望' + s.want.length + (s.capacity ? '/' + s.capacity : '') + '人' : '') + (s.recruitDue && s.recruitDue >= d.today ? '　' + fmtJa(s.recruitDue) + '締め切り' : '')}</span>
           </span>
         ))}
         {/* 多いときは2件だけ出し、残りの数を出す（全部は「募集・調整」タブにある） */}
@@ -73,6 +73,9 @@ export function Notices({ d, onDay, onRecruit, onTarget }: {
   planned.filter((s) => { const n = daysBetween(d.today, s.date); return n >= 2 && n <= 14; }).forEach((s) => { add('week', line(s, <><Icon name="date_range" />{fmtJa(s.date) + ' '}</>), s.date); });
   const later = planned.filter((s) => daysBetween(d.today, s.date) > 14);
   if (later.length) add('info', '15日以降: ' + later.map((s) => fmtJa(s.date) + ' ' + s.name).join('、'));
+  rec.filter((s) => s.recruitDue && s.recruitDue < d.today).forEach((s) => {
+    add('overdue', <><Icon name="history" />{'募集の締め切りを過ぎています: ' + s.name + '（' + fmtJa(s.recruitDue) + 'まで）→ 「開催にする」か、状態を「調整中」にしてください。'}</>, '', { id: s.id });
+  });
   adj.filter((s) => s.windowTo && s.windowTo < d.today).forEach((s) => {
     add('overdue', <><Icon name="history" />{'候補の期間を過ぎています: ' + s.name + '（' + s.windowLabel + '）→ 開催日を決めて「開催」にするか、期間を延ばしてください。'}</>, s.windowFrom, undefined, s.name);
   });

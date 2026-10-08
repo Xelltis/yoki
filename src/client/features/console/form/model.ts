@@ -1,5 +1,5 @@
 // 卓の登録の窓と変更の窓で共通の決まり（入力の形・サーバーへ送る形・重なりの注意・状態ごとの手順・シリーズの引き継ぎ）
-import { type ConsoleData, type ConsoleSession, SESSION_DATES_MAX } from '../../../../shared/api';
+import { CAPACITY_MAX, type ConsoleData, type ConsoleSession, SESSION_DATES_MAX } from '../../../../shared/api';
 import { passesOf } from '../../../../shared/scenario';
 import type { IconName } from '../../../ui/icons';
 import { addDaysYmd, fmtJa, parseYmd, ymdOf } from '../model/dates';
@@ -14,6 +14,8 @@ export type Fields = {
   scenarioId: string;
   /** まとめて登録する日（開催日のほかに足した日） */
   more: { key: number; v: string }[];
+  /** 募集の定員（空なら決めない）と締め切り（空なら決めない）。募集の卓だけ */
+  capacity: string; recruitDue: string;
 };
 /** 窓の下の文。clsは 'ok'（案内）・'err'（失敗） */
 export type Msg = { text: string; cls: 'ok' | 'err' } | null;
@@ -78,7 +80,7 @@ export function fieldsOf(d: ConsoleData, s: ConsoleSession | null): Fields {
     id: s ? s.id : '', series: s ? (s.series || '') : '', seriesEnd: s ? (s.seriesEnd || '') : '', name: s ? s.name : '', status: s ? s.status : '開催',
     date: s ? s.date : '', start: s ? s.start : '', end: s ? s.end : '', winFrom: s ? (s.windowFrom || '') : '', winTo: s ? (s.windowTo || '') : '',
     gm: s ? s.gm : '', ...splitMembers(d, s ? s.members : []), place: s ? s.place : '', memo: s ? s.memo : '', notify: false, more: [],
-    scenarioId: s ? s.scenarioId : '',
+    scenarioId: s ? s.scenarioId : '', capacity: s && s.capacity ? String(s.capacity) : '', recruitDue: s ? s.recruitDue : '',
   };
   f.notify = canNotify(d, f) && !!d.notifyDefault;
   return f;
@@ -86,6 +88,9 @@ export function fieldsOf(d: ConsoleData, s: ConsoleSession | null): Fields {
 /** 入力を変える。送り先が無くなったら「Discordに知らせる」を外し、送れるようになったら既定に戻す */
 export function patchFields(d: ConsoleData, cur: Fields, patch: Partial<Fields>): Fields {
   const next = { ...cur, ...patch };
+  // 募集の卓でシナリオを選んだら、定員が空ならシナリオのPLの人数（上限）を入れる
+  const sc = patch.scenarioId ? d.scenarios.find((x) => x.id === patch.scenarioId) : undefined;
+  if (sc && sc.playersMax && next.status === '募集' && !next.capacity.trim()) next.capacity = String(sc.playersMax);
   const before = canNotify(d, cur), after = canNotify(d, next);
   if (!after) next.notify = false; else if (!before) next.notify = !!d.notifyDefault;
   return next;
@@ -157,6 +162,7 @@ export function collect(d: ConsoleData, f: Fields, seriesFrom: string) {
     date: noDate ? '' : f.date, start: noDate ? '' : f.start, end: noDate ? '' : f.end, status: st,
     windowFrom: noDate ? f.winFrom : '', windowTo: noDate ? f.winTo : '',
     place: f.place, memo: f.memo, notify: f.notify, scenarioId: f.scenarioId,
+    capacity: rec ? f.capacity.trim() : '', recruitDue: rec ? f.recruitDue : '',
   };
 }
 export type SessionForm = ReturnType<typeof collect>;
@@ -167,6 +173,7 @@ export function checkForm(form: SessionForm): string {
   if (!form.date && STATUS_DATED.indexOf(form.status) >= 0) return '開催日を入れてください。まだ決まっていなければ状態を「募集」か「調整中」にします。';
   if (form.dates && form.dates.length > SESSION_DATES_MAX) return 'まとめて登録できるのは' + SESSION_DATES_MAX + '日分までです。';
   if (!!form.windowFrom !== !!form.windowTo) return '期間は、始まりと終わりの両方の日を入れてください。';
+  if (form.capacity && !(/^\d+$/.test(form.capacity) && +form.capacity >= 1 && +form.capacity <= CAPACITY_MAX)) return '定員は1〜' + CAPACITY_MAX + '人で入れてください（決めないなら空のまま）。';
   if (form.windowFrom && form.windowTo && form.windowFrom > form.windowTo) { const wx = form.windowFrom; form.windowFrom = form.windowTo; form.windowTo = wx; }
   return '';
 }

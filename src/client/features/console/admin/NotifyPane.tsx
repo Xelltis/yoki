@@ -136,7 +136,7 @@ export function NotifyPane() {
                 <td className={ntd(false) + ntdSw}><Switch id="ntRemind" on={!!st.setter} label="開催前の知らせを送る" busy={!!busy.ntRemind} onClick={toggleRemind} /></td>
               </tr>
               <tr className={ntr + 'max-tab:border-b max-tab:border-line'}>
-                <td className={what(false)}><b className={whatTitle}>期間前の催促</b><span className={whatHint}>募集中・調整中のまま、期間の前日になったらGMに</span></td>
+                <td className={what(false)}><b className={whatTitle}>期間前の催促</b><span className={whatHint}>募集中・調整中のまま期間の前日になったとき、募集の締め切りの日に、GMに</span></td>
                 <td className={plain(false)}><span className={chip(!!d.recruitChannelSet)} id="ntDestUrge">{destC}</span></td>
                 <td className={plain(false)}>期間の前日（開催前の知らせと同じ時刻）</td>
                 <td className={ntd(false) + ntdSw}><Switch id="stUrge" on={!!st.urge} label="期間前の催促を送る" busy={!!busy.stUrge} onClick={() => save('stUrge', { urge: !st.urge })} /></td>

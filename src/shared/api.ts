@@ -17,6 +17,9 @@ export const SESSION_DATES_MAX = 20;
 /** 日付メモを期間で書くときの、いちばん長い日数（始まりの日を含む） */
 export const DAY_NOTE_SPAN_MAX = 92;
 
+/** 募集の定員の上限（シナリオのPLの人数の上限と同じ） */
+export const CAPACITY_MAX = 20;
+
 /** シナリオに書ける長さと、グループごとの数の上限（画面は入力欄に、サーバーは受け取るときに使う）。playersはPLの人数の上限 */
 export const SCENARIO_MAX = { count: 200, name: 100, system: 50, hours: 20, url: 500, memo: 500, players: 20 } as const;
 
@@ -71,6 +74,10 @@ export type ConsoleSession = {
   scenarioId: string;
   /** 卓の準備（HO・キャラシ） */
   prep: ConsolePrep;
+  /** 募集の定員（参加希望を受ける人数。GMは数えない）。決めていなければ0 */
+  capacity: number;
+  /** 募集の締め切り（参加希望・興味ありを受ける最後の日。YYYY-MM-DD）。決めていなければ空 */
+  recruitDue: string;
 };
 
 /** 卓の準備（HOの枠と、出したキャラシ） */

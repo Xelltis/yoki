@@ -10,6 +10,7 @@ type SessionRow = {
   candidates: string; editor: string; updated_at: string; notified_at: string | null; asked_at: string | null;
   urged_at: string | null; soon_at: string | null; poll_ready_at: string | null; scenario_id: number | null;
   sheet_due: string | null; sheet_urged_at: string | null; slots_json: string; sheets_json: string;
+  capacity: number | null; recruit_due: string | null; due_urged_at: string | null;
 };
 type SlotJson = { pos: number; label: string; summary: string; member: number | null; secret: string | null; has: number; hopes: [number, number][] };
 
@@ -163,6 +164,9 @@ export async function loadGroup(
         }))
         .sort((a, b) => a.pos - b.pos),
       sheets: (JSON.parse(r.sheets_json) as [number, string, string, string][]).map(([memberId, url, pc, at]) => ({ memberId, url, pc, at })),
+      capacity: r.capacity,
+      recruitDue: r.recruit_due,
+      dueUrgedAt: r.due_urged_at,
     };
   });
 

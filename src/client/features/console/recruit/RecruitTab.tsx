@@ -205,6 +205,8 @@ export function RecruitTab() {
         )}
         {list.map((s) => {
           const level = s.want.indexOf(mine) >= 0 ? 'want' : s.interest.indexOf(mine) >= 0 ? 'interest' : 'none';
+          // 定員に達した卓は参加希望を、締め切りを過ぎた卓はどちらも、新しく付けられない（取り消しはできる）
+          const full = s.capacity > 0 && s.want.length >= s.capacity, closed = !!s.recruitDue && d.today > s.recruitDue;
           const member = !!mine && peopleOf(s).indexOf(mine) >= 0;
           const canAsk = hookFor(d, s.series, 'recruit');
           const askTitle = !canAsk ? 'チャンネル未設定' : !s.interest.length ? '興味ありの人がいません' : '興味ありの人にメンションして、参加できるかDiscordで聞く';
@@ -219,8 +221,9 @@ export function RecruitTab() {
               {scenarioOf(d, s) && <div className="hint" data-scenario-of={s.id}>{'シナリオ: ' + scenarioOf(d, s)!.name}</div>}
               <People d={d} s={s} none="GM・参加者 未定" />
               <div className="mt-10 grid grid-cols-[max-content_minmax(0,1fr)] gap-x-12 gap-y-2 text-13">
-                <div className="contents"><b className="font-semibold text-muted">参加希望</b>{s.want.length ? s.want.join('、') : <span className="hint">まだいません</span>}</div>
+                <div className="contents"><b className="font-semibold text-muted">参加希望</b><span data-want-of={s.id}>{s.want.length ? s.want.join('、') : <span className="hint">まだいません</span>}{s.capacity > 0 && <span className={'ml-6 text-12 font-semibold ' + (full ? 'text-soon-text' : 'text-muted')}>{s.want.length + '/' + s.capacity + '人' + (full ? '（定員）' : '')}</span>}</span></div>
                 <div className="contents"><b className="font-semibold text-muted">興味あり</b>{s.interest.length ? s.interest.join('、') : <span className="hint">まだいません</span>}</div>
+                {s.recruitDue && <div className="contents"><b className="font-semibold text-muted">締め切り</b><span data-due-of={s.id} className={closed ? 'text-soon-text' : ''}>{fmtJa(s.recruitDue) + (closed ? '（締め切りました）' : s.recruitDue === d.today ? '（今日まで）' : 'まで')}</span></div>}
               </div>
               {s.place && <Place place={s.place} className={rcRow} />}
               {s.memo && <div className={rcRow + ' hint'}>{s.memo}</div>}
@@ -228,9 +231,12 @@ export function RecruitTab() {
               <div className="btns mt-12 gap-6">
                 {member ? <span className="hint">{'あなたはこの卓の' + (s.gm === mine ? ' GM ' : '参加者') + 'です'}</span> : (
                   <>
-                    <button type="button" className={'btn small' + (level === 'want' ? ' on' : '')} aria-pressed={level === 'want'} data-level="want" data-id={s.id} onClick={() => setLevel(s, 'want')}>参加希望</button>
-                    <button type="button" className={'btn small' + (level === 'interest' ? ' on' : '')} aria-pressed={level === 'interest'} data-level="interest" data-id={s.id} onClick={() => setLevel(s, 'interest')}>興味あり</button>
+                    <button type="button" className={'btn small' + (level === 'want' ? ' on' : '')} aria-pressed={level === 'want'} data-level="want" data-id={s.id}
+                      disabled={level !== 'want' && (closed || full)} title={level !== 'want' && closed ? '募集は締め切りました' : level !== 'want' && full ? '定員に達しています' : undefined} onClick={() => setLevel(s, 'want')}>参加希望</button>
+                    <button type="button" className={'btn small' + (level === 'interest' ? ' on' : '')} aria-pressed={level === 'interest'} data-level="interest" data-id={s.id}
+                      disabled={level !== 'interest' && closed} title={level !== 'interest' && closed ? '募集は締め切りました' : undefined} onClick={() => setLevel(s, 'interest')}>興味あり</button>
                     {level !== 'none' && <button type="button" className="btn small" data-level="none" data-id={s.id} onClick={() => setLevel(s, 'none')}>取り消す</button>}
+                    {level === 'none' && (closed || full) && <span className="hint">{closed ? '募集は締め切りました' : '定員に達しています。「興味あり」なら付けられます'}</span>}
                   </>
                 )}
                 <span className={res} data-rres={s.id}>{saving[s.id] ? '保存しています…' : ''}</span>

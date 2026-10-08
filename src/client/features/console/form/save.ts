@@ -39,6 +39,7 @@ export function useSessionSave() {
       scenarioId: form.scenarioId,
       // 準備（HO・キャラシ）は卓の窓では変えないので、今のまま
       prep: prev ? prev.prep : { sheetDue: '', slots: [], sheets: {} },
+      capacity: +form.capacity || 0, recruitDue: form.recruitDue,
     };
     let tmps = [tmp];
     if (form.dates) {

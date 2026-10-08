@@ -1,5 +1,6 @@
 // 卓の登録の窓と変更の窓で共通の欄。どれも入力（f）と、入力を変える関数（set）を受ける
 import { type ReactNode, useRef } from 'react';
+import { CAPACITY_MAX } from '../../../../shared/api';
 import { Icon } from '../../../ui/Icon';
 import { useData } from '../context';
 import { checkPill, checkPills } from '../styles';
@@ -83,6 +84,23 @@ export function WindowRow({ f, set }: Props) {
         <input type="date" id="winFrom" value={f.winFrom} onChange={(ev) => set({ winFrom: ev.target.value })} />
       </div>
       <div><label htmlFor="winTo">まで</label><input type="date" id="winTo" value={f.winTo} onChange={(ev) => set({ winTo: ev.target.value })} /></div>
+    </div>
+  );
+}
+
+/** 募集の定員と締め切り（募集の卓だけ）。定員に達すると、参加希望を付けられなくなる。締め切りを過ぎると、参加希望も興味ありも付けられない */
+export function RecruitRow({ f, set }: Props) {
+  if (f.status !== '募集') return null;
+  return (
+    <div className="row" id="recruitRow">
+      <div className="narrow">
+        <label htmlFor="capacity">定員 <small>参加希望の人数（GMは数えない）</small></label>
+        <input type="number" id="capacity" min={1} max={CAPACITY_MAX} placeholder="決めない" value={f.capacity} onChange={(ev) => set({ capacity: ev.target.value })} />
+      </div>
+      <div>
+        <label htmlFor="recruitDue">募集の締め切り <small>この日まで参加希望を受ける（空なら決めない）</small></label>
+        <input type="date" id="recruitDue" value={f.recruitDue} onChange={(ev) => set({ recruitDue: ev.target.value })} />
+      </div>
     </div>
   );
 }

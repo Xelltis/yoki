@@ -71,6 +71,10 @@ export type Session = {
   slots: Slot[];
   /** 出したキャラシ */
   sheets: Sheet[];
+  /** 募集の定員（GMは数えない）・締め切り（YYYY-MM-DD）と、締め切りの日の知らせを送った日時。決めていなければnull */
+  capacity: number | null;
+  recruitDue: string | null;
+  dueUrgedAt: string | null;
 };
 
 /**

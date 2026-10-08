@@ -8,7 +8,7 @@ import { type FormReq, useData } from '../context';
 import { fmtJa } from '../model/dates';
 import { byId } from '../model/model';
 import { canNotify, checkForm, collect, conflictText, continueFrom, type Fields, fieldsOf, FLOW, inheritSeries, KINDS, type Msg, passWarnText, patchFields, type Repeat, repeatDates, REPEATS } from './model';
-import { ConflictWarn, DateRow, FormMsg, NameRow, NotifyCheck, PeopleFields, PlaceMemo, ScenarioRow, SeriesRow, WindowRow } from './parts';
+import { ConflictWarn, DateRow, FormMsg, NameRow, NotifyCheck, PeopleFields, PlaceMemo, RecruitRow, ScenarioRow, SeriesRow, WindowRow } from './parts';
 import { useSessionSave } from './save';
 
 /** 開く頼みから、初めの入力を作る（続きの登録・日・状態・シリーズ） */
@@ -140,7 +140,7 @@ export function NewSessionForm({ req, onClose, reopen }: { req: FormReq; onClose
               <span className="hint" id="moreDatesHint">{nDates > 1 ? nDates + '日分をまとめて登録します。名前は末尾の数字を進めます（「#1」→「#2」）。数字が無ければ「名前 #1」「名前 #2」' : ''}</span>
             </div>
           </>
-        ) : <WindowRow f={f} set={set} />}
+        ) : <><WindowRow f={f} set={set} /><RecruitRow f={f} set={set} /></>}
         <PeopleFields f={f} set={set} />
         <ConflictWarn text={passWarn} id="passWarn" />
         <PlaceMemo f={f} set={set} />

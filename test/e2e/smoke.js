@@ -218,6 +218,20 @@ await withDevServer(async (base) => {
       await until((d, id) => !d.sessions.find((x) => x.id === id).want.includes('ひより'), s.id);
     });
 
+    await step('募集の定員を決めると、定員に達した卓には参加希望を付けられない', async () => {
+      const s = (await D()).sessions.find((x) => x.name === '雪原の古城');
+      assert.equal(s.capacity, 4, 'サンプルの定員');
+      await page.click(`#recruitList button[data-edit="${s.id}"]`);
+      assert.equal(await page.inputValue('#capacity'), '4');
+      await page.fill('#capacity', '1');
+      await page.click('#f button[type=submit]');
+      await until((d, id) => d.sessions.find((x) => x.id === id).capacity === 1, s.id);
+      assert.match(await page.textContent(`[data-want-of="${s.id}"]`), /1\/1人（定員）/);
+      assert.equal(await page.isDisabled(`#recruitList button[data-level="want"][data-id="${s.id}"]`), true, '参加希望は押せない');
+      assert.equal(await page.isDisabled(`#recruitList button[data-level="interest"][data-id="${s.id}"]`), false, '興味ありは押せる');
+      assert.match(await page.textContent(`[data-due-of="${s.id}"]`), /まで/);
+    });
+
     await step('調整中の卓を登録すると候補日を選ぶ窓が開き、候補日を出せる', async () => {
       const d = await D();
       await tab('cal');

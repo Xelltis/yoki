@@ -1,15 +1,15 @@
 // 卓の登録・変更・削除・参加希望・まとめての変更（GAS版Sessions.js）
 import { badRequest, notFound } from '../lib/errors';
-import { normTime, parseYmd } from '../lib/jst';
+import { fmtDateJa, normTime, parseYmd } from '../lib/jst';
 import { splitNames, uniq } from '../lib/text';
-import { DATED, PROMOTE, SESSION_DATES_MAX, STATUS, STATUS_LIST, type Status } from './constants';
+import { CAPACITY_MAX, DATED, PROMOTE, SESSION_DATES_MAX, STATUS, STATUS_LIST, type Status } from './constants';
 import { type Form, list, requireSelf, str } from './form';
 import { sessionCode } from './load';
 import { findSession, peopleOf, readWindow, windowInfo } from './model';
 import { insertPeopleForNext, insertPeopleForSeq, type People, peopleOfSession, replacePeople } from './people';
 import { checkGmChange, unassignGoneStmt } from './prep';
 import { findScenario, keepPassesStmt, readScenarioId } from './scenarios';
-import type { Ctx } from './types';
+import type { Ctx, Session } from './types';
 
 /** 状態を読む。知らない値は「開催」（旧い版の「予定」も「開催」） */
 function readStatus(v: unknown): Status {
@@ -27,7 +27,28 @@ async function allocateSeq(ctx: Ctx, n: number): Promise<number> {
 }
 
 const INSERT_SESSION = `INSERT INTO sessions (group_id, seq, name, status, date, start_time, end_time, place, memo, series, series_end,
-  window_from, window_to, candidates, editor, updated_at, scenario_id) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, '[]', ?14, ?15, ?16)`;
+  window_from, window_to, candidates, editor, updated_at, scenario_id, capacity, recruit_due)
+  VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, '[]', ?14, ?15, ?16, ?17, ?18)`;
+
+/**
+ * 募集の定員と締め切りを読む。持つのは募集の卓だけ（ほかの状態ならnull）。
+ * 送られなければ今のまま（古い画面から保存しても消えないように）。空なら決めない
+ */
+function readRecruitLimits(form: Form, status: Status, existing: Session | null): { capacity: number | null; due: string | null } {
+  if (status !== STATUS.RECRUIT) return { capacity: null, due: null };
+  let capacity = existing?.capacity ?? null, due = existing?.recruitDue ?? null;
+  if (form.capacity !== undefined) {
+    const v = str(form.capacity), n = Number(v);
+    if (v && (!Number.isInteger(n) || n < 1 || n > CAPACITY_MAX)) throw badRequest('定員は1〜' + CAPACITY_MAX + '人で入れてください（決めないなら空のまま）。');
+    capacity = v ? n : null;
+  }
+  if (form.recruitDue !== undefined) {
+    const v = str(form.recruitDue);
+    due = v ? parseYmd(v) : null;
+    if (v && !due) throw badRequest('募集の締め切りの日付が読めません: ' + v);
+  }
+  return { capacity, due };
+}
 
 /** 卓を登録・更新する。form.datesに2日以上あれば、まとめて登録する（新規だけ） */
 export async function saveSession(ctx: Ctx, form: Form) {
@@ -48,6 +69,7 @@ export async function saveSession(ctx: Ctx, form: Form) {
   if (existing) checkGmChange(ctx, existing, gm);
   // シナリオ。送られなければ今のまま（古い画面から保存しても外れないように）
   const scenarioId = form.scenarioId === undefined ? (existing?.scenarioId ?? null) : readScenarioId(ctx, form.scenarioId);
+  const limits = readRecruitLimits(form, status, existing);
   const dateChanged = !existing || existing.date !== date;
   // 参加希望・興味あり。参加者やGMになった人は外す。募集から「調整中」「開催」になったら、参加希望の人を参加者に移す
   const notIn = (n: string) => !members.includes(n) && n !== gm;
@@ -77,7 +99,8 @@ export async function saveSession(ctx: Ctx, form: Form) {
         .prepare(
           `UPDATE sessions SET name = ?2, status = ?3, date = ?4, start_time = ?5, end_time = ?6, place = ?7, memo = ?8, series = ?9, series_end = ?10,
              window_from = ?11, window_to = ?12, candidates = ?13, editor = ?14, updated_at = ?15,
-             notified_at = ?16, asked_at = ?17, urged_at = ?18, soon_at = ?19, poll_ready_at = ?20, scenario_id = ?21
+             notified_at = ?16, asked_at = ?17, urged_at = ?18, soon_at = ?19, poll_ready_at = ?20, scenario_id = ?21,
+             capacity = ?22, recruit_due = ?23, due_urged_at = ?24
            WHERE id = ?1`,
         )
         .bind(
@@ -90,6 +113,8 @@ export async function saveSession(ctx: Ctx, form: Form) {
           !dateChanged && existing.start === start ? existing.soonAt : null,
           status === STATUS.ADJUSTING ? existing.pollReadyAt : null,
           scenarioId,
+          // 締め切りを変えたら、締め切りの日の知らせを送り直せるようにする
+          limits.capacity, limits.due, limits.due && limits.due === existing.recruitDue ? existing.dueUrgedAt : null,
         ),
       ...replacePeople(ctx, [{ rowId: existing.rowId, people }]),
     );
@@ -101,7 +126,8 @@ export async function saveSession(ctx: Ctx, form: Form) {
     const seq = await allocateSeq(ctx, 1);
     id = sessionCode(seq);
     stmts.push(
-      db.prepare(INSERT_SESSION).bind(ctx.group.id, seq, name, status, date, start, end, str(form.place), str(form.memo), series, seriesEnd, win?.from ?? null, win?.to ?? null, ctx.actor.name, at, scenarioId),
+      db.prepare(INSERT_SESSION).bind(ctx.group.id, seq, name, status, date, start, end, str(form.place), str(form.memo), series, seriesEnd, win?.from ?? null, win?.to ?? null, ctx.actor.name, at, scenarioId,
+        limits.capacity, limits.due),
       insertPeopleForSeq(ctx, seq, people),
     );
   }
@@ -172,6 +198,11 @@ export async function setInterest(ctx: Ctx, form: Form) {
   const s = findSession(ctx, form.id);
   if (s.status !== STATUS.RECRUIT) throw badRequest('「' + s.name + '」は募集中ではありません（' + s.status + '）。');
   if (level !== 'none' && peopleOf(s).includes(name)) throw badRequest(name + 'はすでにこの卓の' + (s.gm === name ? 'GM' : '参加者') + 'です。');
+  // 締め切りを過ぎたら、新しく付けられない（取り消すことはできる）
+  if (level !== 'none' && s.recruitDue && ctx.today > s.recruitDue) throw badRequest('「' + s.name + '」の募集は締め切りました（' + fmtDateJa(s.recruitDue) + 'まで）。');
+  if (level === 'want' && s.capacity !== null && !s.want.includes(name) && s.want.length >= s.capacity) {
+    throw badRequest('「' + s.name + '」は定員（' + s.capacity + '人）に達しています。「興味あり」なら付けられます。');
+  }
   const want = s.want.filter((n) => n !== name);
   const interest = s.interest.filter((n) => n !== name);
   if (level === 'want') want.push(name);
@@ -266,7 +297,9 @@ export async function bulkUpdateSessions(ctx: Ctx, form: Form) {
              asked_at = CASE WHEN ?4 = '募集' THEN asked_at END,
              candidates = CASE WHEN ?4 = '調整中' THEN candidates ELSE '[]' END,
              poll_ready_at = CASE WHEN ?4 = '調整中' THEN poll_ready_at END,
-             window_from = CASE WHEN ?5 THEN window_from END, window_to = CASE WHEN ?5 THEN window_to END, urged_at = CASE WHEN ?5 THEN urged_at END
+             window_from = CASE WHEN ?5 THEN window_from END, window_to = CASE WHEN ?5 THEN window_to END, urged_at = CASE WHEN ?5 THEN urged_at END,
+             capacity = CASE WHEN ?4 = '募集' THEN capacity END, recruit_due = CASE WHEN ?4 = '募集' THEN recruit_due END,
+             due_urged_at = CASE WHEN ?4 = '募集' THEN due_urged_at END
            WHERE ${inTargets}`,
         )
         .bind(rowIds, ctx.actor.name, at, v, keepWindow ? 1 : 0),

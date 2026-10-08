@@ -153,6 +153,68 @@ describe('参加希望・興味あり', () => {
   });
 });
 
+describe('募集の定員と締め切り', () => {
+  test('募集の卓だけが持つ。送らなければ今のまま、空にすると消える。「開催」にすると消える', async () => {
+    let r = await ok(G.admin, G.id, 'saveSession', { name: '古城', gm: 'ひより', status: '募集', capacity: '3', recruitDue: T(5) });
+    expect(sessionOf(r, 'S001')).toMatchObject({ capacity: 3, recruitDue: T(5) });
+    r = await ok(G.admin, G.id, 'saveSession', { id: 'S001', name: '古城', gm: 'ひより', status: '募集' });
+    expect(sessionOf(r, 'S001')).toMatchObject({ capacity: 3, recruitDue: T(5) });
+    r = await ok(G.admin, G.id, 'saveSession', { id: 'S001', name: '古城', gm: 'ひより', status: '募集', capacity: '', recruitDue: '' });
+    expect(sessionOf(r, 'S001')).toMatchObject({ capacity: 0, recruitDue: '' });
+    r = await ok(G.admin, G.id, 'saveSession', { id: 'S001', name: '古城', gm: 'ひより', status: '募集', capacity: 4, recruitDue: T(6) });
+    r = await ok(G.admin, G.id, 'saveSession', { id: 'S001', name: '古城', gm: 'ひより', status: '開催', date: T(9), capacity: 4, recruitDue: T(6) });
+    expect(sessionOf(r, 'S001')).toMatchObject({ capacity: 0, recruitDue: '' });
+    r = await ok(G.admin, G.id, 'saveSession', { name: '開催の卓', gm: 'ひより', status: '開催', date: T(9), capacity: 4 });
+    expect(sessionOf(r, 'S002').capacity).toBe(0);
+  });
+
+  test('定員は1〜20人。締め切りは読める日付だけ', async () => {
+    for (const capacity of ['0', '21', '2.5', 'あ']) {
+      expect((await fail(G.admin, G.id, 'saveSession', { name: '古城', status: '募集', capacity })).error).toBe('定員は1〜20人で入れてください（決めないなら空のまま）。');
+    }
+    expect((await fail(G.admin, G.id, 'saveSession', { name: '古城', status: '募集', recruitDue: 'x' })).error).toBe('募集の締め切りの日付が読めません: x');
+  });
+
+  test('定員に達したら参加希望は付けられない（興味ありと取り消しはできる）。付けている人は付け直せる', async () => {
+    await ok(G.admin, G.id, 'saveSession', { name: '古城', gm: 'ひより', status: '募集', capacity: 1 });
+    await ok(G.sora, G.id, 'setInterest', { id: 'S001', name: 'ソラ', level: 'want' });
+    expect((await fail(G.komachi, G.id, 'setInterest', { id: 'S001', name: 'こまち', level: 'want' })).error).toBe('「古城」は定員（1人）に達しています。「興味あり」なら付けられます。');
+    await ok(G.komachi, G.id, 'setInterest', { id: 'S001', name: 'こまち', level: 'interest' });
+    await ok(G.sora, G.id, 'setInterest', { id: 'S001', name: 'ソラ', level: 'want' });
+    await ok(G.sora, G.id, 'setInterest', { id: 'S001', name: 'ソラ', level: 'none' });
+    const r = await ok(G.komachi, G.id, 'setInterest', { id: 'S001', name: 'こまち', level: 'want' });
+    expect(sessionOf(r, 'S001')).toMatchObject({ want: ['こまち'], interest: [] });
+  });
+
+  test('締め切りを過ぎたら、参加希望も興味ありも付けられない（取り消しはできる）。締め切りの日は付けられる', async () => {
+    await ok(G.admin, G.id, 'saveSession', { name: '古城', gm: 'ひより', status: '募集', recruitDue: T(0) });
+    await ok(G.sora, G.id, 'setInterest', { id: 'S001', name: 'ソラ', level: 'interest' });
+    await env.DB.prepare('UPDATE sessions SET recruit_due = ?').bind(T(-1)).run();
+    for (const level of ['want', 'interest']) {
+      expect((await fail(G.komachi, G.id, 'setInterest', { id: 'S001', name: 'こまち', level })).error).toContain('「古城」の募集は締め切りました');
+    }
+    await ok(G.sora, G.id, 'setInterest', { id: 'S001', name: 'ソラ', level: 'none' });
+  });
+
+  test('まとめて状態を変えると、募集でなくなった卓の定員と締め切りは消える', async () => {
+    await ok(G.admin, G.id, 'saveSession', { name: '古城', gm: 'ひより', status: '募集', capacity: 3, recruitDue: T(5) });
+    await ok(G.admin, G.id, 'saveSession', { name: '港', gm: 'ひより', status: '募集', capacity: 2 });
+    let r = await ok(G.admin, G.id, 'bulkUpdateSessions', { ids: ['S001'], action: 'status', value: '募集' });
+    expect(sessionOf(r, 'S001')).toMatchObject({ capacity: 3, recruitDue: T(5) });
+    r = await ok(G.admin, G.id, 'bulkUpdateSessions', { ids: ['S001', 'S002'], action: 'status', value: '調整中' });
+    expect([sessionOf(r, 'S001'), sessionOf(r, 'S002')].map((x) => [x.capacity, x.recruitDue])).toEqual([[0, ''], [0, '']]);
+  });
+
+  test('締め切りを変えると、締め切りの日の知らせを送り直せる。変えなければ印は残る', async () => {
+    await ok(G.admin, G.id, 'saveSession', { name: '古城', gm: 'ひより', status: '募集', recruitDue: T(5) });
+    await env.DB.prepare("UPDATE sessions SET due_urged_at = 'x'").run();
+    await ok(G.admin, G.id, 'saveSession', { id: 'S001', name: '古城（改）', gm: 'ひより', status: '募集' });
+    expect(await env.DB.prepare('SELECT due_urged_at AS v FROM sessions').first('v')).toBe('x');
+    await ok(G.admin, G.id, 'saveSession', { id: 'S001', name: '古城', gm: 'ひより', status: '募集', recruitDue: T(6) });
+    expect(await env.DB.prepare('SELECT due_urged_at AS v FROM sessions').first('v')).toBeNull();
+  });
+});
+
 describe('削除', () => {
   test('管理者だけが消せる', async () => {
     await ok(G.sora, G.id, 'saveSession', { name: '消す卓', status: '募集' });

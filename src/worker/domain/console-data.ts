@@ -50,6 +50,7 @@ export function consoleData(ctx: Ctx): ConsoleData {
         candidates: s.candidates, votes: ctx.votes.get(s.rowId) ?? {},
         scenarioId: s.scenarioId === null ? '' : String(s.scenarioId),
         prep: prepView(ctx, s),
+        capacity: s.capacity ?? 0, recruitDue: s.recruitDue ?? '',
       };
     }),
     avail: ctx.avail,

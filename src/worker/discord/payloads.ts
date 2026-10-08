@@ -24,7 +24,8 @@ export function whenText(s: Session): string {
 
 export function sessionEmbed(ctx: PayloadCtx, s: Session): Embed {
   const lines = ['GM: ' + (s.gm || '未定'), '日時: ' + whenText(s), '参加者: ' + (s.members.length ? s.members.join('、') : '未定')];
-  if (s.status === STATUS.RECRUIT && s.want.length) lines.push('参加希望: ' + s.want.join('、'));
+  if (s.status === STATUS.RECRUIT && (s.want.length || s.capacity)) lines.push('参加希望: ' + (s.want.join('、') || 'まだいません') + (s.capacity ? '（' + s.want.length + '/' + s.capacity + '人）' : ''));
+  if (s.status === STATUS.RECRUIT && s.recruitDue) lines.push('締め切り: ' + fmtDateJa(s.recruitDue));
   if (s.place) lines.push('場所: ' + s.place);
   if (s.memo) lines.push('メモ: ' + s.memo);
   return {
@@ -107,6 +108,18 @@ export function pollReadyPayload(ctx: PayloadCtx, s: Session): Payload {
     });
   return {
     content: ['📝 「' + s.name + '」の日程調整の回答がそろいました。' + call, days.join('\n'), 'Yokiの「募集・調整」タブで、開催日を選んでください。' + (ctx.appUrl ? '\n' + ctx.appUrl : '')].join('\n'),
+  };
+}
+
+/** 募集の締め切りの日。GMを呼び、集まった人数を書く */
+export function recruitDuePayload(ctx: PayloadCtx, s: Session): Payload {
+  const gmId = discordIdOf(ctx, s.gm);
+  const call = gmId ? ' <@' + gmId + '>' : s.gm ? ' ' + s.gm + 'さん' : '';
+  const got = '参加希望: ' + (s.want.length ? s.want.join('、') : 'まだいません') + (s.capacity ? '（' + s.want.length + '/' + s.capacity + '人）' : '（' + s.want.length + '人）');
+  return {
+    content: '📮 「' + s.name + '」の募集は今日（' + fmtDateJa(s.recruitDue!) + '）で締め切りです。' + got + call +
+      '\n集まったら、カードの「開催にする」か、「編集」で状態を「調整中」にして進めてください。' + (ctx.appUrl ? '\n🔗 ' + ctx.appUrl : ''),
+    embeds: [sessionEmbed(ctx, s)],
   };
 }
 

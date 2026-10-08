@@ -2,7 +2,8 @@
 import { env } from 'cloudflare:test';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { loadGroup } from '../../src/worker/domain/load';
-import { type PatrolRecord, patrol, runPatrol, sendSheetUrges, sendStartingSoon, sendUrges } from '../../src/worker/domain/patrol';
+import { type PatrolRecord, patrol, runPatrol, sendRecruitDue, sendSheetUrges, sendStartingSoon, sendUrges } from '../../src/worker/domain/patrol';
+import { SYSTEM_ACTOR } from '../../src/worker/auth/guard';
 import { addDays } from '../../src/worker/lib/jst';
 import { makeGroup } from './helpers';
 
@@ -27,11 +28,12 @@ function mockBot(codes: number[] = []) {
 }
 
 let seq = 1;
-async function addSession(o: { name: string; status?: string; date?: string | null; start?: string; gm?: string; members?: string[]; series?: string; windowFrom?: string; windowTo?: string }) {
+async function addSession(o: { name: string; status?: string; date?: string | null; start?: string; gm?: string; members?: string[]; series?: string; windowFrom?: string; windowTo?: string; recruitDue?: string; capacity?: number }) {
   const s = seq++;
   await env.DB.prepare(
-    `INSERT INTO sessions (group_id, seq, name, status, date, start_time, series, window_from, window_to, updated_at) VALUES ('g', ?, ?, ?, ?, ?, ?, ?, ?, '2026-01-01')`,
-  ).bind(s, o.name, o.status ?? '開催', o.date ?? null, o.start ?? '', o.series ?? '', o.windowFrom ?? null, o.windowTo ?? null).run();
+    `INSERT INTO sessions (group_id, seq, name, status, date, start_time, series, window_from, window_to, updated_at, recruit_due, capacity)
+     VALUES ('g', ?, ?, ?, ?, ?, ?, ?, ?, '2026-01-01', ?, ?)`,
+  ).bind(s, o.name, o.status ?? '開催', o.date ?? null, o.start ?? '', o.series ?? '', o.windowFrom ?? null, o.windowTo ?? null, o.recruitDue ?? null, o.capacity ?? null).run();
   const people = [...(o.gm ? [['gm', o.gm]] : []), ...(o.members ?? []).map((n) => ['member', n])];
   for (const [i, [role, name]] of people.entries()) {
     await env.DB.prepare(
@@ -144,6 +146,42 @@ describe('期間前の催促と開始直前の知らせ', () => {
     expect(await mark('古城', 'urged_at')).toBeNull();
   });
 
+  test('募集の締め切りの日、送る時刻になったら、GMに集まった人数を知らせる。1回だけ', async () => {
+    await addSession({ name: '古城', status: '募集', recruitDue: DAY, capacity: 3, gm: 'ひより' });
+    await addSession({ name: '明日まで', status: '募集', recruitDue: addDays(DAY, 1), gm: 'ひより' });
+    await env.DB.prepare("INSERT INTO session_people (session_id, role, pos, member_id) SELECT id, 'want', 0, (SELECT id FROM members WHERE name = 'ソラ') FROM sessions WHERE name = '古城'").run();
+    await patrol(env, at('19:00'), noWait);
+    expect(posts).toHaveLength(0);
+    await patrol(env, at('20:00'), noWait);
+    expect(posts).toHaveLength(1);
+    expect(posts[0]!.content).toBe('📮 「古城」の募集は今日（10/10（土））で締め切りです。参加希望: ソラ（1/3人） <@400000000000000010>\n'
+      + '集まったら、カードの「開催にする」か、「編集」で状態を「調整中」にして進めてください。\n🔗 https://yoki.test/g/g/');
+    await patrol(env, at('21:00'), noWait);
+    expect(posts).toHaveLength(1);
+  });
+
+  test('締め切りの知らせ: 期間前の催促を止めていれば送らない。送り先が無ければ記録し、届かなければ次の時刻台で送り直す', async () => {
+    await addSession({ name: '古城', status: '募集', recruitDue: DAY });
+    await env.DB.prepare("UPDATE groups SET urge = 0 WHERE id = 'g'").run();
+    await sendRecruitDue(await loadGroup(env.DB, 'g', SYSTEM_ACTOR, '', new Date(at('20:00'))), 20, noWait);
+    expect(posts).toHaveLength(0);
+    await env.DB.prepare("UPDATE groups SET urge = 1, channel_id = '' WHERE id = 'g'").run();
+    await patrol(env, at('20:00'), noWait);
+    expect(posts).toHaveLength(0);
+    expect(await env.DB.prepare('SELECT result FROM notify_log ORDER BY id DESC').first('result')).toBe('送らず: 送り先のチャンネルが未設定');
+    await env.DB.prepare("UPDATE groups SET channel_id = ? WHERE id = 'g'").bind(CH).run();
+    await env.DB.prepare('UPDATE sessions SET due_urged_at = NULL').run();
+    mockBot([500, 500, 500]);
+    await patrol(env, at('21:00'), noWait);
+    expect(posts).toHaveLength(3);
+    // GMがいないときは呼ばない。参加希望がいないときは「まだいません」
+    expect(posts[0]!.content).toBe('📮 「古城」の募集は今日（10/10（土））で締め切りです。参加希望: まだいません（0人）\n集まったら、カードの「開催にする」か、「編集」で状態を「調整中」にして進めてください。\n🔗 https://yoki.test/g/g/');
+    expect(await mark('古城', 'due_urged_at')).toBeNull();
+    mockBot();
+    await patrol(env, at('22:00'), noWait);
+    expect(posts).toHaveLength(1);
+  });
+
   test('開始のN分前を過ぎた最初の見回りで、GMと参加者に知らせる（ONのときだけ）', async () => {
     await env.DB.prepare("UPDATE groups SET soon = 1, soon_minutes = 30 WHERE id = 'g'").run();
     await addSession({ name: '今夜の卓', date: DAY, start: '21:00', gm: 'ひより', members: ['ソラ'] });
@@ -231,11 +269,12 @@ describe('見回りの端の場合', () => {
 
   test('期間前の催促と開始直前の知らせ: ほかの見回りが先に印を取っていたら送らない', async () => {
     await env.DB.prepare("UPDATE groups SET soon = 1, soon_minutes = 30 WHERE id = 'g'").run();
-    await addSession({ name: '古城', status: '募集', windowFrom: addDays(DAY, 1), gm: 'ひより' });
+    await addSession({ name: '古城', status: '募集', windowFrom: addDays(DAY, 1), recruitDue: DAY, gm: 'ひより' });
     await addSession({ name: '今夜の卓', date: DAY, start: '21:00', gm: 'ひより' });
     const ctx = await load('20:40');
-    await env.DB.prepare("UPDATE sessions SET urged_at = 'x', soon_at = 'x'").run();
+    await env.DB.prepare("UPDATE sessions SET urged_at = 'x', soon_at = 'x', due_urged_at = 'x'").run();
     await sendUrges(ctx, 20, noWait);
+    await sendRecruitDue(ctx, 20, noWait);
     await sendStartingSoon(ctx, noWait);
     expect(posts).toHaveLength(0);
   });
