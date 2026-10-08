@@ -87,6 +87,8 @@ Googleカレンダーと連携した人のrefresh tokenだけは持つ（本人�
 
 npm auditは0件に保つ。出たら、依存の版をそろえる（`overrides`）。直った版が無く、使わない・使い方が狭い部品は、`tools/shims/` に差し替えを置いて `overrides` で替える（今はsemantic-releaseの `micromatch` と `@semantic-release/npm`。CONTRIBUTING.mdの「版を出す」）。
 
+版が出たら、サイトの「変わったこと」（`website/releases.md`）に、その版の節を足す。使う人と運営者に関わることだけを画面の言葉で書き、作りの変更・テスト・リポジトリの扱いは書かない（CONTRIBUTING.mdの「版を出す」）。
+
 各地のYokiは、版を飛ばして更新する。表の変更（`migrations/`）は、前の版から順に当たれば動くように書く。
 
 更新のボタンのトークン（`UPDATE_DISPATCH_TOKEN`）はWorkerのsecretに置き、画面・ログ・運営者のAPIには出さない。権限は、そのリポジトリのActionsを動かすだけにする（Workerからコードを書き換えられないように）。

@@ -187,7 +187,9 @@ typeは、版の上げ方と、各地のYokiの「更新」に出る変わった
 
 版を出すときは、`package.json` と `package-lock.json` の `version` を新しい版にしてコミットし（`chore(release): vX.Y.Z [skip ci]`）、mainにpushする（`tools/release/commit-version.mjs`）。そのコミットにタグ `vX.Y.Z` が付き、GitHubのRelease（変わったことの一覧。`feat`・`fix`・`perf`・`revert` だけ）ができる。各地のYokiの「更新」に、変わったこととして出る。最後に `release` のブランチをそのコミットに合わせる（ボタンが指す先）。mainに保護（PRを必須にするなど）を付けると、このpushが止まるので付けない。
 
-アプリに入れる版は、`package.json` の `version` から読む（`vite.config.ts`）。ボタンで作ったリポジトリには、元の履歴とタグが無いため。`version` は手で書き換えない。変わったことの一覧は、ファイルに書かずGitHubのReleasesに置く。
+アプリに入れる版は、`package.json` の `version` から読む（`vite.config.ts`）。ボタンで作ったリポジトリには、元の履歴とタグが無いため。`version` は手で書き換えない。変わったことの一覧（コミットの説明そのまま）は、ファイルに書かずGitHubのReleasesに置く。
+
+使う人向けの説明は、サイトの「変わったこと」（`website/releases.md`）に置く。版が出たら、その版の節を上に足す（`docs(site)` のコミット。版は出ない）。版の番号と日付（日本時間）は、出たReleaseに合わせる。使う人と運営者に関わることだけを、画面の言葉で書き、作りの変更・テスト・リポジトリの扱いは書かない。運営者だけに関わることは「運営者の方へ」に分ける。
 
 コミットのtypeが版の上げ方を決めるので、typeを正しく付ける。各地のYokiは、版を飛ばして上げることがある。表の変更（`migrations/`）は、前の版から順に当たれば動くように書く。
 
