@@ -1,6 +1,7 @@
 // Discordへ送る（GAS版discordAttempt_・postDiscord_・classifyDiscordFailure_）。YokiのBotで、チャンネルにメッセージを書く。
 // 429と5xx・通信の切れは、少し待って最大3回まで送り直す。1回ごとに送信記録（notify_log）に1行残す
 import { DISCORD_API } from '../auth/oauth';
+import { discordFetch } from './calls';
 import { isChannelId } from './channel';
 import type { Payload } from './payloads';
 import { targetNote, type Target } from './targets';
@@ -82,9 +83,8 @@ function retryAfterMs(res: Response, body: string): number {
   return 0;
 }
 
-/** Discordへ送った回数（この入れ物が動き始めてから）。見回りが、外へ出せる呼び出しの残りを数えるのに使う（google/sync.tsのgoogleBudget） */
-let calls = 0;
-export const discordCalls = (): number => calls;
+// Discordへ呼び出した回数（見回りが、外へ出せる呼び出しの残りを数えるのに使う）。数えるのはcalls.ts
+export { discordCalls } from './calls';
 
 /**
  * 1回だけ送り、結果を送信記録に1行残す。本文の @everyone や @here、ロールでは呼ばない（メンションするのは人だけ）
@@ -101,8 +101,7 @@ export async function discordAttempt(log: LogTo, payload: Payload, kind: string,
     errText = BAD_CHANNEL;
   } else {
     try {
-      calls++;
-      const res = await fetch(DISCORD_API + '/channels/' + channelId + '/messages', {
+      const res = await discordFetch(DISCORD_API + '/channels/' + channelId + '/messages', {
         method: 'POST',
         headers: { Authorization: 'Bot ' + log.token, 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...payload, allowed_mentions: { parse: ['users'] } }),

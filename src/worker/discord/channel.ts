@@ -1,6 +1,7 @@
 // DiscordのチャンネルとBot（YokiのDiscordアプリ）。送り先はチャンネルのIDで持ち、Botのトークンで読む・送る。
 // Gatewayには繋がず、RESTだけを使う。トークンはWorkerのsecret（DISCORD_BOT_TOKEN）
 import { DISCORD_API } from '../auth/oauth';
+import { discordFetch } from './calls';
 
 /** チャンネルのID（17〜20桁の数字） */
 export function isChannelId(id: string): boolean {
@@ -19,7 +20,7 @@ export function botInviteUrl(clientId: string | undefined, guildId: string): str
 
 /** Botの権限でDiscordのAPIを読む。statusと、JSONの本文（読めなければnull）を返す */
 export async function botGet(token: string, path: string): Promise<{ status: number; body: unknown }> {
-  const res = await fetch(DISCORD_API + path, { headers: { Authorization: 'Bot ' + token } });
+  const res = await discordFetch(DISCORD_API + path, { headers: { Authorization: 'Bot ' + token } });
   return { status: res.status, body: await res.json().catch(() => null) };
 }
 

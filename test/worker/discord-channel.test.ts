@@ -2,6 +2,7 @@
 import { env } from 'cloudflare:test';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import type { Actor } from '../../src/worker/auth/guard';
+import { discordCalls } from '../../src/worker/discord/calls';
 import { BOT_PERMISSIONS, botGet, botInviteUrl, getChannel, isChannelId, listChannels } from '../../src/worker/discord/channel';
 import { loadGroup } from '../../src/worker/domain/load';
 import { getDiscordChannels, saveConsoleSettings, saveSeriesNotify } from '../../src/worker/domain/settings';
@@ -44,8 +45,11 @@ describe('チャンネルのIDと、Botを招くURL', () => {
 describe('DiscordのAPIをBotで読む', () => {
   test('Botのトークンを添えて読み、状態と本文を返す。JSONでない本文はnull', async () => {
     const calls = mockApi((url) => (url.endsWith('/a') ? Response.json({ x: 1 }) : new Response('<html>Bad Gateway</html>', { status: 502 })));
+    const before = discordCalls();
     expect(await botGet('tok', '/a')).toEqual({ status: 200, body: { x: 1 } });
     expect(await botGet('tok', '/b')).toEqual({ status: 502, body: null });
+    // 読むだけの呼び出しも、外へ出した数に数える（見回りがGoogleに使える残りを決めるため）
+    expect(discordCalls()).toBe(before + 2);
     expect(calls).toEqual([{ method: 'GET', url: API + '/a', auth: 'Bot tok' }, { method: 'GET', url: API + '/b', auth: 'Bot tok' }]);
   });
 
