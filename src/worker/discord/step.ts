@@ -8,7 +8,8 @@ import { notifyYmdOf } from '../domain/notify';
 import type { Ctx, Session } from '../domain/types';
 import { adminError, badRequest } from '../lib/errors';
 import { stampText } from '../lib/jst';
-import { announcePayload, askPayload, bulkPayload, changePayload, mentionsOf, type Payload, pollPayload, pollReadyPayload, decidedPayload, testPayload } from './payloads';
+import { isGmOf } from '../domain/prep';
+import { announcePayload, askPayload, bulkPayload, changePayload, mentionsOf, type Payload, pollPayload, pollReadyPayload, prepPayload, decidedPayload, testPayload } from './payloads';
 import { discordAttempt } from './send';
 import { discordTargets, type Kind, kindBase, sessionTargets, type Target, targetNote, unionTargets } from './targets';
 
@@ -104,6 +105,16 @@ export async function sendDiscordStep(ctx: Ctx, form: Form, io: { data: () => Pr
       const x = need((y) => (y.status !== STATUS.ADJUSTING || !y.candidates.length ? '「' + y.name + '」は日程調整をしていません。' : null));
       payload = kind === 'poll' ? pollPayload(ctx, x, me) : pollReadyPayload(ctx, x);
       label = kind === 'poll' ? '日程調整' : '回答そろい';
+      target = x.name;
+      targets = sessionTargets(ctx, x);
+      break;
+    }
+    case 'prep': {
+      // 準備の知らせ（HOの割り当てとキャラシの締め切り）。秘匿HOは載せない。送れるのはGMと管理者
+      const x = need((y) => (!y.slots.length && !y.sheetDue ? '「' + y.name + '」には、HOもキャラシの締め切りもありません。' : null));
+      if (!isGmOf(ctx, x) && !ctx.actor.isAdmin) throw adminError('GMのほかが準備の知らせを送ること');
+      payload = prepPayload(ctx, x, me);
+      label = '準備の知らせ';
       target = x.name;
       targets = sessionTargets(ctx, x);
       break;

@@ -1,12 +1,12 @@
 // 知らせの見回り（GAS版Notify.jsのdailyNotify・sendTomorrow_・sendUrge_・sendStartingSoon_）。cronが5分おきに呼ぶ。
-//   毎時の仕事（開催前の知らせ・期間前の催促・過ぎた卓の自動終了）は、metaの印で1時間に1回だけ回す
+//   毎時の仕事（開催前の知らせ・期間前の催促・キャラシの催促・過ぎた卓の自動終了）は、metaの印で1時間に1回だけ回す
 //   開始直前の知らせは毎回見る
 // 送る前に卓の「送った」印を取り（UPDATE … WHERE … IS NULL）、取れた卓だけを送る。重なって動いても二重には送らない。
 // 全部の送り先で失敗したら印を戻し、次の回で送り直す
 import type { PatrolRecord } from '../../shared/admin';
 import { SYSTEM_ACTOR } from '../auth/guard';
 import { savedOrigin } from '../auth/origin';
-import { mentionsOf, recruitLink, sessionEmbed } from '../discord/payloads';
+import { mentionsOf, recruitLink, sessionEmbed, sheetUrgePayload } from '../discord/payloads';
 import { appendLog, discordCalls, postDiscord, postToTargets, realSleep, type Sleep } from '../discord/send';
 import { sessionTargets, type Target, targetNote } from '../discord/targets';
 import type { Bindings } from '../env';
@@ -70,18 +70,32 @@ export async function patrol(env: Bindings, scheduledTime: number, deps: Deps): 
       .prepare(`UPDATE sessions SET status = '終了', updated_at = ?1 WHERE status = '開催' AND date < ?2 AND group_id IN (SELECT id FROM groups WHERE auto_finish = 1)`)
       .bind(now.toISOString(), p.ymd)
       .run();
-    // 開催前の知らせ: 近いうちの開催日で、まだ送っていない卓があるグループだけを読む
-    for (const id of await groupsOf(
-      `SELECT DISTINCT s.group_id FROM sessions s JOIN groups g ON g.id = s.group_id
-        WHERE g.remind_enabled = 1 AND s.status = '開催' AND s.notified_at IS NULL AND s.date BETWEEN ?1 AND ?2`,
-      p.ymd, addDays(p.ymd, 31),
-    )) await sendReminders(await load(id), p.hour, deps);
-    // 期間前の催促: 期間の始まりが明日の、募集中・調整中の卓
-    for (const id of await groupsOf(
-      `SELECT DISTINCT s.group_id FROM sessions s JOIN groups g ON g.id = s.group_id
-        WHERE g.urge = 1 AND s.status IN ('募集', '調整中') AND s.urged_at IS NULL AND s.window_from = ?1`,
-      addDays(p.ymd, 1),
-    )) await sendUrges(await load(id), p.hour, deps);
+    // 毎時の知らせがありそうなグループだけを、1回ずつ読む（D1の問い合わせの数を抑えるため。読み込みは1回14文）
+    const ids = new Set([
+      // 開催前の知らせ: 近いうちの開催日で、まだ送っていない卓
+      ...(await groupsOf(
+        `SELECT DISTINCT s.group_id FROM sessions s JOIN groups g ON g.id = s.group_id
+          WHERE g.remind_enabled = 1 AND s.status = '開催' AND s.notified_at IS NULL AND s.date BETWEEN ?1 AND ?2`,
+        p.ymd, addDays(p.ymd, 31),
+      )),
+      // 期間前の催促: 期間の始まりが明日の、募集中・調整中の卓
+      ...(await groupsOf(
+        `SELECT DISTINCT s.group_id FROM sessions s JOIN groups g ON g.id = s.group_id
+          WHERE g.urge = 1 AND s.status IN ('募集', '調整中') AND s.urged_at IS NULL AND s.window_from = ?1`,
+        addDays(p.ymd, 1),
+      )),
+      // キャラシの催促: 締め切りが今日か明日で、まだ催促していない卓
+      ...(await groupsOf(
+        `SELECT DISTINCT group_id FROM sessions WHERE sheet_due BETWEEN ?1 AND ?2 AND sheet_urged_at IS NULL AND status IN ('募集', '調整中', '開催')`,
+        p.ymd, addDays(p.ymd, 1),
+      )),
+    ]);
+    for (const id of ids) {
+      const ctx = await load(id);
+      await sendReminders(ctx, p.hour, deps);
+      await sendUrges(ctx, p.hour, deps);
+      await sendSheetUrges(ctx, p.hour, deps);
+    }
   }
 
   // 開始直前の知らせ: 今日開く卓（開始時刻のある「開催」）
@@ -108,7 +122,9 @@ async function claim(db: D1Database, key: string, value: string): Promise<boolea
 }
 
 /** 卓の送った印を取る。取れた卓（まだ誰も送っていない卓）のidを返す */
-async function claimMark(ctx: Ctx, column: 'notified_at' | 'urged_at' | 'soon_at', sessions: Session[]): Promise<Set<number>> {
+type MarkColumn = 'notified_at' | 'urged_at' | 'soon_at' | 'sheet_urged_at';
+
+async function claimMark(ctx: Ctx, column: MarkColumn, sessions: Session[]): Promise<Set<number>> {
   if (!sessions.length) return new Set();
   const r = await ctx.db
     .prepare(`UPDATE sessions SET ${column} = ?1 WHERE id IN (SELECT value FROM json_each(?2)) AND ${column} IS NULL RETURNING id`)
@@ -118,7 +134,7 @@ async function claimMark(ctx: Ctx, column: 'notified_at' | 'urged_at' | 'soon_at
 }
 
 /** 送れなかった卓の印を戻す（自分が付けた印だけ） */
-async function releaseMark(ctx: Ctx, column: 'notified_at' | 'urged_at' | 'soon_at', rowIds: number[]): Promise<void> {
+async function releaseMark(ctx: Ctx, column: MarkColumn, rowIds: number[]): Promise<void> {
   if (!rowIds.length) return;
   await ctx.db
     .prepare(`UPDATE sessions SET ${column} = NULL WHERE id IN (SELECT value FROM json_each(?2)) AND ${column} = ?1`)
@@ -182,6 +198,26 @@ export async function sendUrges(ctx: Ctx, hour: number, deps: Deps): Promise<voi
       : '⏳ 明日から「' + s.name + '」の候補の期間です。まだ開催日が決まっていません。';
     const payload = { content: head + (gmId ? ' <@' + gmId + '>' : '') + recruitLink(ctx, s), embeds: [sessionEmbed(ctx, s)] };
     if (!(await postToTargets(logTo(ctx), payload, kind, s.name, targets, deps.sleep))) await releaseMark(ctx, 'urged_at', [s.rowId]);
+  }
+}
+
+/**
+ * キャラシの催促。締め切りが明日の卓を、送る時刻（開催前の知らせと同じ）になったら知らせる。その時刻を逃しても、締め切りの当日に送る。
+ * まだ出していないPL（メンバー）をメンションする。みんな出していれば、送らずに印だけ付ける。送り先が無ければ、記録して印を付ける（毎時記録しないように）
+ */
+export async function sendSheetUrges(ctx: Ctx, hour: number, deps: Deps): Promise<void> {
+  const kind = 'キャラシの催促';
+  const tomorrow = addDays(ctx.today, 1);
+  const open = [STATUS.RECRUIT, STATUS.ADJUSTING, STATUS.HELD] as string[];
+  const due = ctx.sessions.filter((s) => s.sheetDue && s.sheetDue >= ctx.today && s.sheetDue <= tomorrow && !s.sheetUrgedAt && open.includes(s.status) && notifyHourOf(ctx, s) <= hour);
+  for (const s of due) {
+    if (!(await claimMark(ctx, 'sheet_urged_at', [s])).size) continue;
+    const submitted = new Set(s.sheets.map((x) => x.memberId));
+    const missing = s.members.map((n) => ctx.memberByName.get(n)?.id).filter((id): id is number => id !== undefined && !submitted.has(id));
+    if (!missing.length) continue;
+    const targets = sessionTargets(ctx, s, 'remind');
+    if (!targets.length) { await appendLog(logTo(ctx), kind, s.name, '送らず: 送り先のチャンネルが未設定'); continue; }
+    if (!(await postToTargets(logTo(ctx), sheetUrgePayload(ctx, s, missing), kind, s.name, targets, deps.sleep))) await releaseMark(ctx, 'sheet_urged_at', [s.rowId]);
   }
 }
 

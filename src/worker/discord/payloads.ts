@@ -127,3 +127,42 @@ export function bulkPayload(label: string, me: string, names: string[], mentions
 export function testPayload(title: string, where = ''): Payload {
   return { content: '✅ Yokiから接続テスト（' + title + (where ? ' / ' + where : '') + '）' };
 }
+
+/** 公開HOを知らせに載せる長さ（Discordの1通は2000文字まで） */
+const SUMMARY_IN_MESSAGE = 80;
+const CONTENT_MAX = 1900;
+
+/** メンバーのメンション（Discord IDが無ければ名前） */
+function memberMention(ctx: PayloadCtx, id: number | null): string {
+  if (id === null) return '未定';
+  const m = [...ctx.memberByName.values()].find((x) => x.id === id);
+  // 割り当てはメンバーが消えたらnullになるので、いつも見つかる
+  return m!.discordId ? '<@' + m!.discordId + '>' : m!.name;
+}
+
+/**
+ * 卓の準備の知らせ（HOの割り当てと、キャラシの締め切り）。秘匿HOの中身は載せず、あることだけを書く（本人はYokiで読む）。
+ * 割り当てたPLをメンションする
+ */
+export function prepPayload(ctx: PayloadCtx, s: Session, editor: string): Payload {
+  const lines = s.slots.map((sl) => {
+    const summary = sl.summary.length > SUMMARY_IN_MESSAGE ? sl.summary.slice(0, SUMMARY_IN_MESSAGE) + '…' : sl.summary;
+    return '・' + sl.label + (summary ? '（' + summary + '）' : '') + ' → ' + memberMention(ctx, sl.memberId) + (sl.hasSecret ? ' 🔒秘匿HOあり' : '');
+  });
+  const secret = s.slots.some((x) => x.hasSecret) && ctx.appUrl ? '\n🔒 秘匿HOは、Yokiの卓の「準備」で、割り当てられた本人だけが読めます: ' + ctx.appUrl : '';
+  // 送るのは画面からで、送った人（editor）はいつもいる
+  const content = '🎭 「' + s.name + '」の準備（' + editor + '）'
+    + (lines.length ? '\n' + lines.join('\n') : '')
+    + (s.sheetDue ? '\n📝 キャラシの締め切り: ' + fmtDateJa(s.sheetDue) : '') + secret;
+  return { content: content.slice(0, CONTENT_MAX), embeds: [sessionEmbed(ctx, s)] };
+}
+
+/** キャラシの締め切りの催促。まだ出していないPLをメンションする */
+export function sheetUrgePayload(ctx: PayloadCtx, s: Session, missing: number[]): Payload {
+  const when = s.sheetDue === ctx.today ? '今日' : '明日';
+  const link = ctx.appUrl ? '\n🔗 キャラシはYokiの卓の「準備」から出せます: ' + ctx.appUrl : '';
+  return {
+    content: '📝 「' + s.name + '」のキャラシの締め切りは' + when + '（' + fmtDateJa(s.sheetDue!) + '）です。まだ出していない人: ' + missing.map((id) => memberMention(ctx, id)).join(' ') + link,
+    embeds: [sessionEmbed(ctx, s)],
+  };
+}

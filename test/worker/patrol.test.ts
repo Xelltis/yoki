@@ -2,7 +2,7 @@
 import { env } from 'cloudflare:test';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { loadGroup } from '../../src/worker/domain/load';
-import { type PatrolRecord, patrol, runPatrol, sendStartingSoon, sendUrges } from '../../src/worker/domain/patrol';
+import { type PatrolRecord, patrol, runPatrol, sendSheetUrges, sendStartingSoon, sendUrges } from '../../src/worker/domain/patrol';
 import { addDays } from '../../src/worker/lib/jst';
 import { makeGroup } from './helpers';
 
@@ -242,5 +242,72 @@ describe('見回りの端の場合', () => {
     await patrol(env, at('20:45'), noWait);
     expect(posts).toHaveLength(3);
     expect(await mark('今夜の卓', 'soon_at')).toBeNull();
+  });
+});
+
+describe('キャラシの催促', () => {
+  /** 締め切りを決め、出した人のキャラシを入れる */
+  async function sheetDue(name: string, due: string, submitted: string[] = []) {
+    await env.DB.prepare('UPDATE sessions SET sheet_due = ? WHERE name = ?').bind(due, name).run();
+    for (const n of submitted) {
+      await env.DB.prepare(
+        `INSERT INTO session_sheets (session_id, member_id, url, updated_at) SELECT (SELECT id FROM sessions WHERE name = ?), (SELECT id FROM members WHERE name = ?), 'https://example.com', 'x'`,
+      ).bind(name, n).run();
+    }
+  }
+
+  test('締め切りの前日、送る時刻になったら、まだ出していないPLにメンションする。次の時刻台では送り直さない', async () => {
+    await addSession({ name: '港', date: addDays(DAY, 7), gm: 'ひより', members: ['ソラ'] });
+    // メンバーでない参加者（ゲスト）は、キャラシを出せないので数えない
+    await env.DB.prepare("INSERT INTO session_people (session_id, role, pos, guest_name) SELECT id, 'member', 9, 'ゲスト' FROM sessions WHERE name = '港'").run();
+    await sheetDue('港', addDays(DAY, 1));
+    await patrol(env, at('19:00'), noWait);
+    expect(posts).toHaveLength(0);
+    await patrol(env, at('20:00'), noWait);
+    expect(posts).toHaveLength(1);
+    expect(posts[0]!.content).toBe('📝 「港」のキャラシの締め切りは明日（10/11（日））です。まだ出していない人: <@400000000000000011>\n🔗 キャラシはYokiの卓の「準備」から出せます: https://yoki.test/g/g/');
+    expect(await mark('港', 'sheet_urged_at')).not.toBeNull();
+    await patrol(env, at('21:00'), noWait);
+    expect(posts).toHaveLength(1);
+  });
+
+  test('前日に送れなかったら、締め切りの当日に送る。みんな出していれば送らずに印だけ。終わった卓・過ぎた締め切りには送らない', async () => {
+    await addSession({ name: '今日まで', date: addDays(DAY, 3), gm: 'ひより', members: ['ソラ'] });
+    await sheetDue('今日まで', DAY);
+    await addSession({ name: '出した', date: addDays(DAY, 3), gm: 'ひより', members: ['ソラ'] });
+    await sheetDue('出した', DAY, ['ソラ']);
+    await addSession({ name: '中止', status: '中止', date: addDays(DAY, 3), members: ['ソラ'] });
+    await sheetDue('中止', DAY);
+    await addSession({ name: '過ぎた', date: addDays(DAY, 3), members: ['ソラ'] });
+    await sheetDue('過ぎた', addDays(DAY, -1));
+    await patrol(env, at('20:00'), noWait);
+    expect(posts.map((p) => p.content.split('\n')[0])).toEqual(['📝 「今日まで」のキャラシの締め切りは今日（10/10（土））です。まだ出していない人: <@400000000000000011>']);
+    expect(await mark('出した', 'sheet_urged_at')).not.toBeNull();
+    expect(await mark('中止', 'sheet_urged_at')).toBeNull();
+  });
+
+  test('送り先が無ければ、記録して印を付ける（毎時記録しない）。全部の送り先で届かなければ、印を戻す', async () => {
+    await addSession({ name: '港', date: addDays(DAY, 7), members: ['ソラ'] });
+    await sheetDue('港', addDays(DAY, 1));
+    await env.DB.prepare("UPDATE groups SET channel_id = '' WHERE id = 'g'").run();
+    // 画面のアドレスが無ければ、案内の行は付けない
+    const ctx = () => loadGroup(env.DB, 'g', { memberId: 0, name: '', isAdmin: true, userId: '' }, '', new Date(at('20:00')), { token: 'test-bot-token' });
+    await sendSheetUrges(await ctx(), 20, noWait);
+    expect(await env.DB.prepare("SELECT kind, result FROM notify_log WHERE kind = 'キャラシの催促'").all()).toMatchObject({ results: [{ result: '送らず: 送り先のチャンネルが未設定' }] });
+    expect(await mark('港', 'sheet_urged_at')).not.toBeNull();
+    await env.DB.prepare("UPDATE groups SET channel_id = ? WHERE id = 'g'").bind(CH).run();
+    await env.DB.prepare('UPDATE sessions SET sheet_urged_at = NULL').run();
+    mockBot([500, 500, 500]);
+    await sendSheetUrges(await ctx(), 20, noWait);
+    expect(posts).toHaveLength(3);
+    expect(posts[0]!.content).not.toContain('🔗');
+    expect(await mark('港', 'sheet_urged_at')).toBeNull();
+    // ほかの見回りが先に印を取っていれば、送らない
+    await env.DB.prepare("UPDATE sessions SET sheet_urged_at = 'x'").run();
+    const stale = await ctx();
+    stale.sessions.forEach((s) => { s.sheetUrgedAt = null; });
+    mockBot();
+    await sendSheetUrges(stale, 20, noWait);
+    expect(posts).toHaveLength(0);
   });
 });

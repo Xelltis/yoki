@@ -212,3 +212,46 @@ describe('まとめての変更', () => {
 test('知らない種類は断る', async () => {
   expect(await refuse({ kind: '謎' })).toBe('送る種類が不正です: 謎');
 });
+
+describe('準備の知らせ', () => {
+  /** GMはこまち、参加者はソラとひより。HO1（秘匿HOあり）をソラに */
+  async function prepared() {
+    await ok(G.sora, G.id, 'saveSession', { name: '港', gm: 'こまち', members: ['ソラ', 'ひより'], date: T(7), status: '開催' });
+    await ok(G.komachi, G.id, 'savePrep', { id: 'S001', slots: [{ pos: 1, label: 'HO1', summary: 'あ'.repeat(90) }, { pos: 2, label: 'HO2' }], sheetDue: T(3) });
+    await ok(G.komachi, G.id, 'saveSlotSecret', { id: 'S001', pos: 1, secret: '犯人は執事' });
+    await ok(G.komachi, G.id, 'assignSlots', { id: 'S001', assign: { 1: 'ソラ' } });
+  }
+
+  test('GMが送る。割り当てた人をメンションし、締め切りを書く。秘匿HOの中身は載せない（あることだけ）。公開HOは短くする', async () => {
+    await prepared();
+    const r = await send(G.komachi, { kind: 'prep', id: 'S001', attempt: 1 });
+    expect(r).toMatchObject({ ok: true, targetLabel: '基本のチャンネル' });
+    const [p] = bot.posts();
+    expect(p!.content).toBe(
+      '🎭 「港」の準備（こまち）\n・HO1（' + 'あ'.repeat(80) + '…） → ' + ID.ソラ + ' 🔒秘匿HOあり\n・HO2 → 未定\n📝 キャラシの締め切り: ' + fmtDateJa(T(3))
+      + '\n🔒 秘匿HOは、Yokiの卓の「準備」で、割り当てられた本人だけが読めます: https://yoki.test/g/grp/',
+    );
+    expect(JSON.stringify(bot.calls)).not.toContain('犯人は執事');
+    expect(await lastLog()).toEqual({ kind: '準備の知らせ', target: '港', result: 'OK (200)' });
+  });
+
+  test('管理者も送れる。GMでない参加者は送れない。準備が何も無ければ断る', async () => {
+    await prepared();
+    await send(G.admin, { kind: 'prep', id: 'S001', attempt: 1 });
+    expect((await fail(G.sora, G.id, 'sendDiscordStep', { kind: 'prep', id: 'S001' })).error).toBe('ADMIN: GMのほかが準備の知らせを送ることができるのは管理者だけです。');
+    await ok(G.sora, G.id, 'saveSession', { name: '空', gm: 'こまち', date: T(8), status: '開催' });
+    expect(await refuse({ kind: 'prep', id: 'S002' })).toBe('「空」には、HOもキャラシの締め切りもありません。');
+  });
+
+  test('締め切りだけ・HOだけでも送れる。Discord IDの無い人は名前で書く。秘匿HOが無ければ案内の行は無い', async () => {
+    await ok(G.admin, G.id, 'saveMember', { name: 'ゲスト', note: '' });
+    await ok(G.sora, G.id, 'saveSession', { name: '港', gm: 'こまち', members: ['ゲスト'], date: T(7), status: '開催' });
+    await ok(G.komachi, G.id, 'savePrep', { id: 'S001', slots: [], sheetDue: T(3) });
+    await send(G.komachi, { kind: 'prep', id: 'S001', attempt: 1 });
+    expect(bot.posts().at(-1)!.content).toBe('🎭 「港」の準備（こまち）\n📝 キャラシの締め切り: ' + fmtDateJa(T(3)));
+    await ok(G.komachi, G.id, 'savePrep', { id: 'S001', slots: [{ pos: 1, label: 'HO1' }] });
+    await ok(G.komachi, G.id, 'assignSlots', { id: 'S001', assign: { 1: 'ゲスト' } });
+    await send(G.komachi, { kind: 'prep', id: 'S001', attempt: 1 });
+    expect(bot.posts().at(-1)!.content).toBe('🎭 「港」の準備（こまち）\n・HO1 → ゲスト');
+  });
+});
