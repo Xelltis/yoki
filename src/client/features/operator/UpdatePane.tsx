@@ -1,4 +1,4 @@
-// 運営者の管理画面の「更新」。動いているYokiの版と、元のリポジトリの最新の版・変わったこと・表の変更があるかを出す。
+// 運営者の管理画面の「更新」。動いているYokiのバージョンと、元のリポジトリの最新のバージョン・変わったこと・表の変更があるかを出す。
 // 更新は、公開しているリポジトリの更新のワークフロー（GitHubのActions）がする。トークンがあればボタンで動かし、無ければGitHubの画面を開く
 import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
@@ -51,7 +51,7 @@ export function UpdatePane() {
   const recheck = () => {
     setBusy(true);
     adminCall<AdminUpdate>(ADMIN_READS.update.path + '?refresh=1').then(
-      (r) => { qc.setQueryData(ADMIN_READS.update.queryKey, r); setBusy(false); toast(r.error || (r.available ? '新しい版v' + r.latest!.version + 'があります' : '最新です')); },
+      (r) => { qc.setQueryData(ADMIN_READS.update.queryKey, r); setBusy(false); toast(r.error || (r.available ? '新しいバージョンv' + r.latest!.version + 'があります' : '最新です')); },
       (e: Error) => { setBusy(false); toast(e.message); },
     );
   };
@@ -63,17 +63,17 @@ export function UpdatePane() {
       + (u.migrations ? '表（D1）の変更を含みます。変える前の地点を控えるので、戻すときはそこへ戻せます。' : ''),
     ok: '更新する',
   }, () => { setBusy(true); void act('/api/admin/update', {}).then(() => setBusy(false)); });
-  const [tone, say] = u.available ? ['warn', '新しい版v' + latest!.version + 'があります']
-    : latest ? ['ok', '最新です'] : u.error ? ['bad', '新しい版を確かめられませんでした'] : ['ok', 'まだ版が出ていません'];
+  const [tone, say] = u.available ? ['warn', '新しいバージョンv' + latest!.version + 'があります']
+    : latest ? ['ok', '最新です'] : u.error ? ['bad', '新しいバージョンを確かめられませんでした'] : ['ok', 'まだバージョンが出ていません'];
   return (
     <div data-pane="update">
       <div className="card" id="opUpdate">
-        <h3><Icon name="upgrade" size="sm" />Yokiの版</h3>
+        <h3><Icon name="upgrade" size="sm" />Yokiのバージョン</h3>
         <p className={stateCls(tone)} id="opUpdateState">{say}</p>
         {u.error && <p className="hint text-err-text" id="opUpdateError">{u.error}</p>}
         <dl className={dl}>
-          <dt className={dt}>動いている版</dt><dd className={dd} id="opVersion">{'v' + u.current}</dd>
-          <dt className={dt}>最新の版</dt><dd className={dd} id="opLatest">{latest ? 'v' + latest.version + (latest.publishedAt ? '（' + fmt(latest.publishedAt) + '）' : '') : '—'}</dd>
+          <dt className={dt}>動いているバージョン</dt><dd className={dd} id="opVersion">{'v' + u.current}</dd>
+          <dt className={dt}>最新のバージョン</dt><dd className={dd} id="opLatest">{latest ? 'v' + latest.version + (latest.publishedAt ? '（' + fmt(latest.publishedAt) + '）' : '') : '—'}</dd>
           <dt className={dt}>元のリポジトリ</dt><dd className={dd}><a href={'https://github.com/' + u.upstream} target="_blank" rel="noopener">{u.upstream}</a></dd>
           <dt className={dt}>確かめた時刻</dt><dd className={dd}>{fmt(u.checkedAt) + (u.checkedAt ? '（' + ago(u.checkedAt) + '）' : '')}</dd>
         </dl>
@@ -103,11 +103,11 @@ export function UpdatePane() {
         </div>
         {u.available && !u.canDispatch && (
           <p className="hint">
-            {u.workflowUrl ? 'GitHubの画面で「Run workflow」を押すと、最新の版を取り込んで公開します。' : '公開しているリポジトリが分かりません。あなたのリポジトリのActionsで「Yokiを更新する」を動かしてください。'}
-            WorkerのsecretにUPDATE_DISPATCH_TOKENを入れると、ここのボタンで更新できます（<a href={HELP_URL + 'setup/update'} target="_blank" rel="noopener">新しい版に上げる</a>）。
+            {u.workflowUrl ? 'GitHubの画面で「Run workflow」を押すと、最新のバージョンを取り込んで公開します。' : '公開しているリポジトリが分かりません。あなたのリポジトリのActionsで「Yokiを更新する」を動かしてください。'}
+            WorkerのsecretにUPDATE_DISPATCH_TOKENを入れると、ここのボタンで更新できます（<a href={HELP_URL + 'setup/update'} target="_blank" rel="noopener">新しいバージョンに上げる</a>）。
           </p>
         )}
-        <p className="hint">更新は、公開しているリポジトリのGitHubのActions（更新のワークフロー）が、元のリポジトリの版を取り込んで公開します。コードを直しているときなど、取り込みでぶつかったら、mainを変えずにPRを作って止まります。</p>
+        <p className="hint">更新は、公開しているリポジトリのGitHubのActions（更新のワークフロー）が、元のリポジトリのバージョンを取り込んで公開します。コードを直しているときなど、取り込みでぶつかったら、mainを変えずにPRを作って止まります。</p>
       </div>
       {u.canDispatch && (
         <div className="card" id="opRuns">

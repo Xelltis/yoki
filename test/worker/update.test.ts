@@ -54,7 +54,7 @@ describe('版を比べる', () => {
 });
 
 describe('新しい版を確かめる（本物のGitHub。fetchを差し替える）', () => {
-  test('新しい版があれば、変わったファイルから表の変更を調べる。1時間は控えを使い、確かめ直すと読み直す', async () => {
+  test('新しいバージョンがあれば、変わったファイルから表の変更を調べる。1時間は控えを使い、確かめ直すと読み直す', async () => {
     const calls = mockGitHub({
       '/repos/o/u/releases/latest': release('v' + NEXT),
       '/repos/o/u/compare/': () => Response.json({ files: [{ filename: 'src/a.ts' }, { filename: 'migrations/0009_x.sql' }] }),
@@ -101,26 +101,26 @@ describe('新しい版を確かめる（本物のGitHub。fetchを差し替え�
   test('元のリポジトリが見えなければ（非公開・名前の誤り）、版が無いとは言わず、そう出す', async () => {
     mockGitHub({});
     expect(await updateStatus(env.DB, deps({ token: '' }), new Date(), true)).toMatchObject({
-      latest: null, available: false, error: '新しい版を確かめられませんでした（GitHubで元のリポジトリ「o/u」が見えません。公開されているか、名前が合っているかを確かめてください）',
+      latest: null, available: false, error: '新しいバージョンを確かめられませんでした（GitHubで元のリポジトリ「o/u」が見えません。公開されているか、名前が合っているかを確かめてください）',
     });
     vi.restoreAllMocks();
     mockGitHub({ '/repos/o/u': () => new Response('slow down', { status: 403 }) });
-    expect((await updateStatus(env.DB, deps({ token: '' }), new Date(), true)).error).toBe('新しい版を確かめられませんでした（GitHubが403を返しました。トークンの権限と、リポジトリの名前を確かめてください）');
+    expect((await updateStatus(env.DB, deps({ token: '' }), new Date(), true)).error).toBe('新しいバージョンを確かめられませんでした（GitHubが403を返しました。トークンの権限と、リポジトリの名前を確かめてください）');
   });
 
-  test('読めなければ理由を出し、前に読めた最新の版は残す。表の変更を比べられなければ、分からないまま', async () => {
+  test('読めなければ理由を出し、前に読めた最新のバージョンは残す。表の変更を比べられなければ、分からないまま', async () => {
     mockGitHub({ '/repos/o/u/releases/latest': release('v' + NEXT), '/repos/o/u/compare/': () => Response.json({}) });
     const first = await updateStatus(env.DB, deps({ token: '' }), new Date(), true);
     expect(first.migrations).toBe(false);
     vi.restoreAllMocks();
     mockGitHub({ '/repos/o/u/releases/latest': () => new Response('x', { status: 500 }) });
     const broken = await updateStatus(env.DB, deps({ token: '' }), new Date(), true);
-    expect(broken).toMatchObject({ available: true, latest: { version: NEXT }, migrations: false, error: '新しい版を確かめられませんでした（GitHubが500を返しました）' });
+    expect(broken).toMatchObject({ available: true, latest: { version: NEXT }, migrations: false, error: '新しいバージョンを確かめられませんでした（GitHubが500を返しました）' });
     vi.restoreAllMocks();
     // 控えが無いときに読めなければ、何も無い
     await env.DB.prepare("DELETE FROM meta WHERE key = 'update_check'").run();
     vi.spyOn(globalThis, 'fetch').mockRejectedValue('network down');
-    expect(await updateStatus(env.DB, deps({ token: '' }), new Date(), true)).toMatchObject({ latest: null, migrations: null, error: '新しい版を確かめられませんでした（network down）' });
+    expect(await updateStatus(env.DB, deps({ token: '' }), new Date(), true)).toMatchObject({ latest: null, migrations: null, error: '新しいバージョンを確かめられませんでした（network down）' });
     vi.restoreAllMocks();
     // 今の版のタグが元のリポジトリに無ければ（フォークで版を変えたなど）、表の変更は分からない
     mockGitHub({ '/repos/o/u/releases/latest': release('v' + NEXT) });
@@ -141,14 +141,14 @@ describe('更新を始める', () => {
     await expect(startUpdate(env.DB, deps({ repo: '' }))).rejects.toMatchObject({ status: 400 });
     mockGitHub({ '/repos/o/u/releases/latest': release('v' + APP_VERSION) });
     await updateStatus(env.DB, deps(), new Date(), true);
-    await expect(startUpdate(env.DB, deps())).rejects.toMatchObject({ status: 409, message: expect.stringContaining('新しい版はありません') });
+    await expect(startUpdate(env.DB, deps())).rejects.toMatchObject({ status: 409, message: expect.stringContaining('新しいバージョンはありません') });
     vi.restoreAllMocks();
     mockGitHub({ '/repos/o/u/releases/latest': release('v' + NEXT), '/repos/me/yoki/actions/workflows/update.yml/dispatches': () => new Response('', { status: 422 }) });
     await updateStatus(env.DB, deps(), new Date(), true);
     await expect(startUpdate(env.DB, deps())).rejects.toMatchObject({ status: 409, message: '更新を始められませんでした（GitHubが422を返しました）' });
   });
 
-  test('最新の版で、更新のワークフローをmainで動かす', async () => {
+  test('最新のバージョンで、更新のワークフローをmainで動かす', async () => {
     const calls = mockGitHub({ '/repos/o/u/releases/latest': release('v' + NEXT), '/repos/me/yoki/actions/workflows/update.yml/dispatches': () => new Response(null, { status: 204 }) });
     expect(await startUpdate(env.DB, deps(), new Date())).toBe(NEXT);
     const d = calls.find((c) => c.url.endsWith('/dispatches'))!;

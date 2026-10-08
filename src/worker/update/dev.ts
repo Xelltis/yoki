@@ -1,5 +1,5 @@
 // 開発用の偽のGitHub（開発サーバーだけ）。運営の管理画面の「更新」を、本物のGitHubなしで試すため。
-// 最新の版はいつも、今の版の小さい版を1つ上げたもの。表の変更も含む。更新を頼むと、metaのdev_updateに実行を足す。
+// 最新のバージョンはいつも、今の版の小さい版を1つ上げたもの。表の変更も含む。更新を頼むと、metaのdev_updateに実行を足す。
 // config.tsがimport.meta.env.DEVのときだけ選ぶので、本番の組み立てには入らない
 import { APP_VERSION } from '../version';
 import type { UpdateApi, UpdateRun } from './api';
@@ -21,7 +21,7 @@ export function fakeGitHub(db: D1Database): UpdateApi {
       return {
         tag: 'v' + next, name: 'v' + next, url: REPO_URL + '/releases/tag/v' + next, publishedAt: '2026-01-01T00:00:00Z',
         body: '## [' + next + '](' + REPO_URL + '/compare/v' + APP_VERSION + '...v' + next + ') (2026-01-01)\n\n\n'
-          + '### 足したこと・変えたこと\n\n* **client:** 開発用の偽の版です ([0000000](' + REPO_URL + '/commit/0000000))\n\n'
+          + '### 足したこと・変えたこと\n\n* **client:** 開発用の偽のバージョンです ([0000000](' + REPO_URL + '/commit/0000000))\n\n'
           + '### 直したこと\n\n* 偽の不具合を直す ([1111111](' + REPO_URL + '/commit/1111111))\n',
       };
     },

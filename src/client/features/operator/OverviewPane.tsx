@@ -47,10 +47,10 @@ export function OverviewPane() {
   };
   return (
     <div data-pane="overview">
-      {/* 新しい版があれば、いちばん上で知らせる。押すと「更新」の区分へ */}
+      {/* 新しいバージョンがあれば、いちばん上で知らせる。押すと「更新」の区分へ */}
       {up && up.available && up.latest && (
         <Link className={stateCls('warn') + ' mt-0 mb-14 flex items-center gap-8 no-underline hover:underline'} id="opUpdateNotice" to="/admin/$pane/" params={{ pane: 'update' }}>
-          <Icon name="upgrade" size="sm" />{'新しい版v' + up.latest.version + 'があります（いまはv' + up.current + '）。更新の区分で、変わったことを見て更新できます'}
+          <Icon name="upgrade" size="sm" />{'新しいバージョンv' + up.latest.version + 'があります（いまはv' + up.current + '）。更新の区分で、変わったことを見て更新できます'}
           <Icon name="chevron_right" size="sm" className="ml-auto" />
         </Link>
       )}
