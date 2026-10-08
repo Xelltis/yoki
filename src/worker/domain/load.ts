@@ -2,7 +2,7 @@
 import type { Actor } from '../auth/guard';
 import { addDays, jst } from '../lib/jst';
 import type { Status } from './constants';
-import type { Bot, Ctx, FeedScope, GoogleLinkRow, GroupRow, Member, Role, Session } from './types';
+import type { Bot, Ctx, FeedScope, GoogleLinkRow, GroupRow, LogRow, Member, Role, Session } from './types';
 
 type SessionRow = {
   id: number; seq: number; name: string; status: Status; date: string | null; start_time: string; end_time: string;
@@ -12,6 +12,14 @@ type SessionRow = {
 };
 
 export const sessionCode = (seq: number) => 'S' + String(seq).padStart(3, '0');
+
+/** 送信記録の新しい10件 */
+const logStmt = (db: D1Database, groupId: string) => db.prepare('SELECT at, kind, target, result FROM notify_log WHERE group_id = ? ORDER BY id DESC LIMIT 10').bind(groupId);
+
+/** 送信記録だけを読み直す（読み込んだあとにDiscordへ送ったとき。画面データ全体を読み直さずに済ませる） */
+export async function reloadLog(ctx: Ctx): Promise<void> {
+  ctx.log = (await logStmt(ctx.db, ctx.group.id).all<LogRow>()).results;
+}
 
 export async function loadGroup(
   db: D1Database, groupId: string, actor: Actor, appUrl: string, now = new Date(), bot: Bot = { token: '', clientId: '' }, googleReady = false,
@@ -57,7 +65,7 @@ export async function loadGroup(
       )
       .bind(groupId),
     db.prepare('SELECT series, channel_id, also_base, days, hour FROM series_notify WHERE group_id = ?').bind(groupId),
-    db.prepare('SELECT at, kind, target, result FROM notify_log WHERE group_id = ? ORDER BY id DESC LIMIT 10').bind(groupId),
+    logStmt(db, groupId),
     db.prepare('SELECT token, scope FROM calendar_feeds WHERE group_id = ? AND user_id = ?').bind(groupId, actor.userId),
     db.prepare('SELECT email, write_events, read_busy, busy_from, busy_to, synced_at, busy_at, error FROM google_links WHERE user_id = ?').bind(actor.userId),
     db.prepare('SELECT email FROM google_logins WHERE user_id = ?').bind(actor.userId),

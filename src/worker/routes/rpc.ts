@@ -105,6 +105,7 @@ rpcRoutes.post('/api/g/:groupId/:fn', async (c) => {
   const result = await entry.run(ctx, form, io);
   // 卓が変わったら、このグループでGoogleに書き込んでいる人がいるときだけ、返事のあとで予定を書き直す
   if (entry.calendar && google && (await hasGoogleWriters(c.env.DB, groupId))) defer(syncGroupWrites(c.env.DB, google, groupId, new Date()));
-  if (entry.data) result.data = await io.data();
+  // 書き込みが読み直した中身を返していれば、そのまま使う（もう一度読まない）
+  if (entry.data && !result.data) result.data = await io.data();
   return c.json(result);
 });

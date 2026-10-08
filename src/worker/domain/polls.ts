@@ -4,6 +4,8 @@ import { decidedPayload, pollReadyPayload } from '../discord/payloads';
 import { appendLog, postToTargets, type Sleep } from '../discord/send';
 import { sessionTargets } from '../discord/targets';
 import { adminError, badRequest } from '../lib/errors';
+import { consoleData } from './console-data';
+import { reloadLog } from './load';
 import { fmtDateJa, normTime, parseYmd } from '../lib/jst';
 import { POLL_MARKS, POLL_MAX_DATES, STATUS } from './constants';
 import { type Form, list, requireSelf, str } from './form';
@@ -56,20 +58,22 @@ export async function sendPollNotice(ctx: Ctx, s: Session, kind: 'decided' | 'po
  * 回答を書いたあと、全員がそろったかを見る。そろったら「回答そろい」の印を取り（二重に送らないため）、GMに知らせる。
  * そろわなくなったら（回答を取り消した）印を外す
  */
-async function afterVote(ctx: Ctx, sid: string, wasComplete: boolean, io: Io): Promise<{ ready: boolean; notified?: boolean | null; message: string }> {
+async function afterVote(ctx: Ctx, sid: string, wasComplete: boolean, io: Io): Promise<{ ready: boolean; notified?: boolean | null; message: string; fresh: Ctx }> {
   const fresh = await io.reload();
   const s = findSession(fresh, sid);
   const complete = pollComplete(fresh, s);
   if (!complete) {
     if (s.pollReadyAt) await fresh.db.prepare('UPDATE sessions SET poll_ready_at = NULL WHERE id = ?').bind(s.rowId).run();
-    return { ready: false, message: '' };
+    return { ready: false, message: '', fresh };
   }
-  if (wasComplete) return { ready: false, message: '' };
+  if (wasComplete) return { ready: false, message: '', fresh };
   const claim = await fresh.db.prepare('UPDATE sessions SET poll_ready_at = ?1 WHERE id = ?2 AND poll_ready_at IS NULL').bind(ctx.now.toISOString(), s.rowId).run();
-  if (!claim.meta.changes) return { ready: true, message: '　全員の回答がそろいました。' };
+  if (!claim.meta.changes) return { ready: true, message: '　全員の回答がそろいました。', fresh };
   const notified = await sendPollNotice(fresh, s, 'pollReady', io.sleep);
   if (notified === false) await fresh.db.prepare('UPDATE sessions SET poll_ready_at = NULL WHERE id = ?').bind(s.rowId).run();
-  return { ready: true, notified, message: '　全員の回答がそろいました。' + noticeNote(notified, 'GMへの知らせ') };
+  // 送ったら、送信記録だけを読み直す（返事の画面データに、送った結果を出すため）
+  if (notified !== null) await reloadLog(fresh);
+  return { ready: true, notified, message: '　全員の回答がそろいました。' + noticeNote(notified, 'GMへの知らせ'), fresh };
 }
 
 /**
@@ -125,7 +129,8 @@ export async function setPollVote(ctx: Ctx, form: Form, io: Io) {
   await voteStmts(ctx, s, [k], vote).run();
   const after = await afterVote(ctx, s.id, wasComplete, io);
   const message = fmtDateJa(k) + ' ' + name + ': ' + (vote || '回答を取り消しました') + after.message;
-  return { ok: true, id: s.id, ymd: k, vote, ready: after.ready, notified: after.notified, message };
+  // 返事の画面データは、そろったかを見るために読み直した中身を使う（もう一度読まない。D1の問い合わせの数を抑えるため）
+  return { ok: true, id: s.id, ymd: k, vote, ready: after.ready, notified: after.notified, message, data: consoleData(after.fresh) };
 }
 
 /**
@@ -144,7 +149,7 @@ export async function setPollVoteAll(ctx: Ctx, form: Form, io: Io) {
   await voteStmts(ctx, s, days, vote).run();
   const after = await afterVote(ctx, s.id, wasComplete, io);
   const message = (vote ? name + ': 候補日' + days.length + '日すべてに ◯ を付けました（どの日でもいい）' : name + ': 「' + s.name + '」の回答を取り消しました') + after.message;
-  return { ok: true, id: s.id, days, vote, ready: after.ready, notified: after.notified, message };
+  return { ok: true, id: s.id, days, vote, ready: after.ready, notified: after.notified, message, data: consoleData(after.fresh) };
 }
 
 /** GMが候補日から開催日を選ぶ（GMのほかは管理者だけ）。決めたら「日程が決まりました」をサーバーから送る。form: { id, ymd } */
@@ -169,7 +174,11 @@ export async function decidePoll(ctx: Ctx, form: Form, io: Io) {
   const fresh = await io.reload();
   const decided = findSession(fresh, s.id);
   const notified = decided.status === STATUS.HELD ? await sendPollNotice(fresh, decided, 'decided', io.sleep) : null;
-  return { ok: true, id: s.id, decided: k, notified, message: '日程を決めました: ' + s.name + '（' + fmtDateJa(k) + '）' + noticeNote(notified, '決まった知らせ') };
+  if (notified !== null) await reloadLog(fresh);
+  return {
+    ok: true, id: s.id, decided: k, notified, message: '日程を決めました: ' + s.name + '（' + fmtDateJa(k) + '）' + noticeNote(notified, '決まった知らせ'),
+    data: consoleData(fresh),
+  };
 }
 
 /** 日程調整をやめる。候補日と回答を消す（卓は調整中のまま）。form: { id } */
