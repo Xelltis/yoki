@@ -51,6 +51,7 @@ export function consoleData(ctx: Ctx): ConsoleData {
         scenarioId: s.scenarioId === null ? '' : String(s.scenarioId),
         prep: prepView(ctx, s),
         capacity: s.capacity ?? 0, recruitDue: s.recruitDue ?? '',
+        absent: s.absent.map((a) => ({ name: a.name, note: a.note, at: stampText(a.at) })),
       };
     }),
     avail: ctx.avail,

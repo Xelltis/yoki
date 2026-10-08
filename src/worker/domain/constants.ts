@@ -1,8 +1,8 @@
 // 卓の状態と、知らせの決まり（GAS版Config.js）
-import { CAPACITY_MAX, DAY_NOTE_SPAN_MAX, SESSION_DATES_MAX, STATUS, type Status } from '../../shared/api';
+import { ABSENCE_NOTE_MAX, CAPACITY_MAX, DAY_NOTE_SPAN_MAX, SESSION_DATES_MAX, STATUS, type Status } from '../../shared/api';
 
-// 卓の状態（の名前と順番）と、まとめて登録する日数・日付メモの期間・募集の定員の上限は、画面と共有する（src/shared/api.ts）
-export { CAPACITY_MAX, DAY_NOTE_SPAN_MAX, SESSION_DATES_MAX, STATUS, type Status };
+// 卓の状態（の名前と順番）と、いくつかの上限（まとめて登録する日数・日付メモの期間・募集の定員・行けなくなったときの一言）は、画面と共有する（src/shared/api.ts）
+export { ABSENCE_NOTE_MAX, CAPACITY_MAX, DAY_NOTE_SPAN_MAX, SESSION_DATES_MAX, STATUS, type Status };
 export const STATUS_LIST: Status[] = [STATUS.RECRUIT, STATUS.ADJUSTING, STATUS.HELD, STATUS.DONE, STATUS.CANCELED];
 /** 開催日が要る。予定表に「参」「GM」が付く */
 export const DATED: Status[] = [STATUS.HELD];

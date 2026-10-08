@@ -75,7 +75,12 @@ export type Session = {
   capacity: number | null;
   recruitDue: string | null;
   dueUrgedAt: string | null;
+  /** 行けなくなった参加者（名前・GMへの一言・伝えた日時） */
+  absent: Absence[];
 };
+
+/** 行けなくなった参加者 */
+export type Absence = { name: string; note: string; at: string };
 
 /**
  * HOの枠。secretは、読み込んだ人（Ctx.actor）がその卓のGMか、割り当てた本人のときだけ入る（読み込みのSQLで絞る）。ほかはnull。

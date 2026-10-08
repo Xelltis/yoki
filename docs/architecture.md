@@ -86,7 +86,7 @@ usersの行は消さない（印がそこにあるため）。Discordのユー�
 
 ## データベース（D1）
 
-表の定義は `migrations/`（`0001_init.sql` が最初の形、`0002_admin.sql` が締め出し・最後に使われた日と索引、`0003_bot.sql` が知らせのBot、`0004_calendar.sql` がカレンダーとの連携、`0005_member_check.sql` がBotで確かめた日時、`0006_google_login.sql` がGoogleでのログイン、`0007_scenarios.sql` がシナリオと通過、`0008_prep.sql` が卓の準備、`0009_discord_events.sql` がDiscordのイベント、`0010_note_ranges.sql` が期間の日付メモ、`0011_poll_maybe.sql` が日程調整の △、`0012_recruit_limits.sql` が募集の定員と締め切り）。日付（開催日・予定・メモ）は日本時間の `YYYY-MM-DD`、日時（〜した時刻）はUTCのISO文字列。
+表の定義は `migrations/`（`0001_init.sql` が最初の形、`0002_admin.sql` が締め出し・最後に使われた日と索引、`0003_bot.sql` が知らせのBot、`0004_calendar.sql` がカレンダーとの連携、`0005_member_check.sql` がBotで確かめた日時、`0006_google_login.sql` がGoogleでのログイン、`0007_scenarios.sql` がシナリオと通過、`0008_prep.sql` が卓の準備、`0009_discord_events.sql` がDiscordのイベント、`0010_note_ranges.sql` が期間の日付メモ、`0011_poll_maybe.sql` が日程調整の △、`0012_recruit_limits.sql` が募集の定員と締め切り、`0013_absences.sql` が行けなくなった印）。日付（開催日・予定・メモ）は日本時間の `YYYY-MM-DD`、日時（〜した時刻）はUTCのISO文字列。
 
 `users`・`user_guilds`・`auth_sessions`: ログイン。`users.banned_at`・`banned_reason` は締め出し。
 
@@ -95,6 +95,8 @@ usersの行は消さない（印がそこにあるため）。Discordのユー�
 `members`: メンバー。名前はグループの中で一意。
 
 `sessions`・`session_people`: 卓と、関わる人（GM・参加者・参加希望・興味あり）。`sessions.capacity`・`recruit_due` は募集の定員と締め切り（募集の卓だけが持ち、ほかの状態にすると消す）。定員に達すると参加希望を、締め切りを過ぎると参加希望と興味ありを断る（取り消しは通す）。`due_urged_at` は締め切りの日の知らせを送った日時。
+
+`session_absences`: 行けなくなった印（開催の卓の参加者が本人だけで付け外しし、GMへの一言を添える）。付けたときは、サーバーがその場でGMに知らせる（`domain/absence.ts`）。開催日が変わる・開催でなくなる・参加者から外れると、卓の保存とまとめての変更が同じbatchで消す（`absenceCleanupStmt`）。行けなくなった人は、自分のカレンダー（購読URLの「自分の卓」・Googleへの書き込み）から外し、「終了」の卓のシナリオの通過にも数えない。
 
 `availability`・`avail_notes`・`day_notes`・`poll_votes`・`series_notify`・`notify_log`。`day_notes.end_date` は期間のメモの終わり（1日だけなら `NULL`）で、メモは始まりの日（`date`）に1つだけ持つ。`poll_votes.vote` は ◯・△（調整すれば行ける）・× で、△ も答えたものとして「全員そろった」に数える。「予定表から入れる」（`setPollVoteFromAvail`）は、まだ答えていない候補日に、本人の予定表の印（空欄は ◯、△ は △、× とほかの卓のある日は ×）を入れる。
 

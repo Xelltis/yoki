@@ -51,7 +51,7 @@ describe('載せる卓と中身', () => {
   const base = {
     rowId: 1, id: 'S001', seq: 1, want: [], interest: [], start: '20:00', end: '', place: '', memo: '', series: '', seriesEnd: null,
     windowFrom: null, windowTo: null, candidates: [], editor: '', updatedAt: '2026-10-01T00:00:00.000Z', notifiedAt: null, askedAt: null,
-    urgedAt: null, soonAt: null, pollReadyAt: null,
+    urgedAt: null, soonAt: null, pollReadyAt: null, absent: [],
   } as const;
   const s = (o: Record<string, unknown>) => ({ ...base, name: 'A', gm: 'ひより', members: ['ソラ'], date: '2026-10-10', status: '開催', ...o }) as any;
 

@@ -24,6 +24,7 @@ import { saveGoogleSettings, syncGoogleNow, unlinkGoogle, unlinkGoogleLogin } fr
 import { deleteGroup } from '../domain/groups';
 import { deleteScenario, saveScenario, setScenarioMark } from '../domain/scenarios';
 import { assignSlots, savePrep, saveSlotSecret, setSlotHope, submitSheet } from '../domain/prep';
+import { setAbsence } from '../domain/absence';
 import { AppError, adminError, authError, goneError, notFound } from '../lib/errors';
 import type { RpcName } from '../../shared/api';
 
@@ -78,6 +79,8 @@ export const RPC: Record<Exclude<RpcName, 'getConsoleData'>, Entry> = {
   assignSlots: { run: assignSlots, data: true },
   setSlotHope: { run: setSlotHope, data: true },
   submitSheet: { run: submitSheet, data: true },
+  // 行けなくなった（本人だけ。開催の卓の参加者）。Googleの予定からも外れるので、書き直す
+  setAbsence: { run: setAbsence, data: true, calendar: true },
   // 消したあとは画面のデータを読めないのでdataを付けない
   deleteGroup: { run: deleteGroup, admin: 'グループを消すこと' },
 };

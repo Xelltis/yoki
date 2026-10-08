@@ -9,7 +9,7 @@ import type { Ctx, Scenario } from './types';
 
 /** 通過の計算に使う形の卓 */
 export const scenarioSessions = (ctx: Ctx): ScenarioSession[] =>
-  ctx.sessions.map((s) => ({ id: s.id, scenarioId: s.scenarioId === null ? '' : String(s.scenarioId), status: s.status, date: s.date ?? '', gm: s.gm, members: s.members }));
+  ctx.sessions.map((s) => ({ id: s.id, scenarioId: s.scenarioId === null ? '' : String(s.scenarioId), status: s.status, date: s.date ?? '', gm: s.gm, members: s.members, absent: s.absent }));
 
 export function findScenario(ctx: Ctx, id: unknown): Scenario {
   const s = ctx.scenarios.find((x) => String(x.id) === str(id));
@@ -120,6 +120,7 @@ export function keepPassesStmt(ctx: Ctx, rowIds: number[]): D1PreparedStatement 
          FROM sessions s JOIN session_people p ON p.session_id = s.id
         WHERE s.id IN (SELECT value FROM json_each(?1)) AND s.status = '終了' AND s.scenario_id IS NOT NULL
           AND p.member_id IS NOT NULL AND p.role IN ('gm', 'member')
+          AND NOT EXISTS (SELECT 1 FROM session_absences a WHERE a.session_id = s.id AND a.member_id = p.member_id)
        ON CONFLICT (scenario_id, member_id) DO UPDATE SET kind = 'gm' WHERE excluded.kind = 'gm'`,
     )
     .bind(JSON.stringify(rowIds), ctx.now.toISOString());

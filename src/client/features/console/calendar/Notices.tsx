@@ -65,6 +65,15 @@ export function Notices({ d, onDay, onRecruit, onTarget }: {
       </>
     ), s.windowFrom || '', undefined, s.name);
   });
+  // 行けなくなった人がいる、これからの卓（押すとその日を開く。GMが日を組み直す）
+  planned.filter((s) => s.absent.length && s.date >= d.today).forEach((s) => {
+    add('adjust hot', (
+      <>
+        <Icon name="event_busy" />行けなくなった人がいます: <b>{s.name}</b>
+        <span className={noticeSub}>{fmtJa(s.date) + '　' + s.absent.map((a) => a.name).join('、') + (s.gm ? '　GM: ' + s.gm : '')}</span>
+      </>
+    ), s.date);
+  });
   const t = planned.filter((s) => daysBetween(d.today, s.date) === 0);
   const tm = planned.filter((s) => daysBetween(d.today, s.date) === 1);
   t.forEach((s) => { add('today', line(s, <><Icon name="today" />今日 </>), s.date); });

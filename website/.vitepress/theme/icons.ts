@@ -14,6 +14,7 @@ import IDateRange from '~icons/material-symbols/date-range-outline-rounded';
 import IEditCalendar from '~icons/material-symbols/edit-calendar-outline-rounded';
 import IEvent from '~icons/material-symbols/event-outline-rounded';
 import IEventAvailable from '~icons/material-symbols/event-available-outline-rounded';
+import IEventBusy from '~icons/material-symbols/event-busy-outline-rounded';
 import IEventRepeat from '~icons/material-symbols/event-repeat-outline-rounded';
 import IFlag from '~icons/material-symbols/flag-outline-rounded';
 import IGroup from '~icons/material-symbols/group-outline-rounded';
@@ -32,6 +33,7 @@ import IShield from '~icons/material-symbols/shield-outline-rounded';
 import IStickyNote2 from '~icons/material-symbols/sticky-note-2-outline-rounded';
 import ITaskAlt from '~icons/material-symbols/task-alt-outline-rounded';
 import ITouchApp from '~icons/material-symbols/touch-app-outline-rounded';
+import IUndo from '~icons/material-symbols/undo-outline-rounded';
 import IVisibility from '~icons/material-symbols/visibility-outline-rounded';
 import ICheckCircleFilled from '~icons/material-symbols/check-circle-rounded';
 
@@ -51,6 +53,7 @@ export const ICONS = {
   edit_calendar: IEditCalendar,
   event: IEvent,
   event_available: IEventAvailable,
+  event_busy: IEventBusy,
   event_repeat: IEventRepeat,
   flag: IFlag,
   group: IGroup,
@@ -69,6 +72,7 @@ export const ICONS = {
   sticky_note_2: IStickyNote2,
   task_alt: ITaskAlt,
   touch_app: ITouchApp,
+  undo: IUndo,
   visibility: IVisibility,
 } satisfies Record<string, IconComponent>;
 

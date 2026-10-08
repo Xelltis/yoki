@@ -209,6 +209,23 @@ await withDevServer(async (base) => {
       await page.waitForSelector('#prepModal', { state: 'hidden' });
     });
 
+    await step('参加者は「行けなくなった」を一言付きでGMに伝えられ、管理者は日を組み直す窓を開ける。取り消せる', async () => {
+      await tab('cal');
+      const s = (await D()).sessions.find((x) => x.name === '連れて帰る');
+      await page.evaluate((k) => window.yoki.selectDay(k), s.date);
+      await page.click(`#dayBody button[data-absent="${s.id}"]`);
+      await page.fill('#absenceText', 'e2eの急用');
+      await page.click('#absenceSend');
+      await until((d, id) => d.sessions.find((x) => x.id === id).absent.some((a) => a.name === 'ひより' && a.note === 'e2eの急用'), s.id);
+      assert.match(await page.textContent(`#dayBody [data-absent-of="${s.id}"]`), /行けなくなった: ひより（e2eの急用）/);
+      assert.match(await page.textContent('#notices'), /行けなくなった人がいます/);
+      await page.click(`#dayBody button[data-reschedule="${s.id}"]`);
+      assert.equal(await page.inputValue('#status'), '調整中', '状態を調整中にした変更の窓が開く');
+      await page.click('#formClose');
+      await page.click(`#dayBody button[data-absent="${s.id}"][data-on="1"]`);
+      await until((d, id) => d.sessions.find((x) => x.id === id).absent.length === 0, s.id);
+    });
+
     await step('募集中の卓に参加希望を付け、取り消せる', async () => {
       await tab('recruit');
       const s = (await D()).sessions.find((x) => x.name === '雪原の古城');

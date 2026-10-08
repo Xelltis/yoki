@@ -1,7 +1,7 @@
 // Discordに送る文面。データを読まずに、作った卓をそのまま渡して文を確かめる
 import { describe, expect, test } from 'vitest';
 import {
-  announcePayload, askPayload, bulkPayload, changePayload, decidedPayload, mentionsOf, pollPayload, pollReadyPayload, recruitDuePayload, recruitLink, sessionEmbed, testPayload, whenText,
+  absencePayload, announcePayload, askPayload, bulkPayload, changePayload, decidedPayload, mentionsOf, pollPayload, pollReadyPayload, recruitDuePayload, recruitLink, sessionEmbed, testPayload, whenText,
 } from '../../src/worker/discord/payloads';
 import type { Ctx, GroupRow, Member, Session } from '../../src/worker/domain/types';
 
@@ -29,7 +29,7 @@ function session(o: Partial<Session> = {}): Session {
   return {
     rowId: 1, id: 'S001', seq: 1, name: '港', gm: '', members: [], want: [], interest: [], date: null, start: '', end: '', status: '開催',
     place: '', memo: '', series: '', seriesEnd: null, windowFrom: null, windowTo: null, candidates: [], editor: '', updatedAt: '',
-    notifiedAt: null, askedAt: null, urgedAt: null, soonAt: null, pollReadyAt: null, scenarioId: null, sheetDue: null, sheetUrgedAt: null, slots: [], sheets: [], capacity: null, recruitDue: null, dueUrgedAt: null, ...o,
+    notifiedAt: null, askedAt: null, urgedAt: null, soonAt: null, pollReadyAt: null, scenarioId: null, sheetDue: null, sheetUrgedAt: null, slots: [], sheets: [], capacity: null, recruitDue: null, dueUrgedAt: null, absent: [], ...o,
   };
 }
 
@@ -57,6 +57,12 @@ describe('日時と卓の埋め込み', () => {
     const held = sessionEmbed(ctxOf(), session({ gm: 'ひより', members: ['ソラ'], want: ['こまち'], date: '2026-10-17' }));
     expect(held.title).toBe('港');
     expect(held.description).toBe('GM: ひより\n日時: 10/17（土） 時間未定\n参加者: ソラ');
+  });
+
+  test('行けなくなった知らせ: GMにIDが無ければ名前で、GMがいなければ呼ばない。アプリのURLが無ければリンクを付けない', () => {
+    const s = session({ gm: 'こまち', members: ['ソラ'], date: TODAY, start: '20:00' });
+    expect(absencePayload(ctxOf({ appUrl: '' }), s, 'ソラ', '').content).toBe('🙇 「港」（10/10（土） 20:00〜）に、ソラが行けなくなりました。 こまちさん\nYokiで「日を組み直す」か、参加者を見直してください。');
+    expect(absencePayload(ctxOf({ appUrl: '' }), { ...s, gm: '' }, 'ソラ', '').content).toContain('ソラが行けなくなりました。\nYoki');
   });
 
   test('締め切りの知らせ: GMにIDが無ければ名前で呼ぶ。アプリのURLが無ければリンクを付けない', () => {

@@ -17,6 +17,9 @@ export const SESSION_DATES_MAX = 20;
 /** 日付メモを期間で書くときの、いちばん長い日数（始まりの日を含む） */
 export const DAY_NOTE_SPAN_MAX = 92;
 
+/** 行けなくなったときの、GMへの一言の長さの上限 */
+export const ABSENCE_NOTE_MAX = 200;
+
 /** 募集の定員の上限（シナリオのPLの人数の上限と同じ） */
 export const CAPACITY_MAX = 20;
 
@@ -32,7 +35,7 @@ export const RPC_FUNCS = [
   'saveSession', 'deleteSession', 'saveMember', 'deleteMember', 'saveConsoleSettings', 'saveSeriesNotify', 'renameGroup', 'startPoll', 'setPollVote',
   'setPollVoteAll', 'setPollVoteFromAvail', 'cancelPoll', 'decidePoll', 'setAdmin', 'deleteGroup', 'getDiscordChannels', 'saveCalendarFeed', 'deleteCalendarFeed',
   'saveGoogleSettings', 'syncGoogleNow', 'unlinkGoogle', 'unlinkGoogleLogin', 'saveScenario', 'deleteScenario', 'setScenarioMark',
-  'savePrep', 'saveSlotSecret', 'assignSlots', 'setSlotHope', 'submitSheet',
+  'savePrep', 'saveSlotSecret', 'assignSlots', 'setSlotHope', 'submitSheet', 'setAbsence',
 ] as const;
 export type RpcName = (typeof RPC_FUNCS)[number];
 
@@ -78,6 +81,8 @@ export type ConsoleSession = {
   capacity: number;
   /** 募集の締め切り（参加希望・興味ありを受ける最後の日。YYYY-MM-DD）。決めていなければ空 */
   recruitDue: string;
+  /** 行けなくなった参加者（開催の卓）。noteはGMへの一言、atは伝えた日時 */
+  absent: { name: string; note: string; at: string }[];
 };
 
 /** 卓の準備（HOの枠と、出したキャラシ） */

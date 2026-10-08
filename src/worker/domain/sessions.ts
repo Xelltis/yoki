@@ -31,6 +31,20 @@ const INSERT_SESSION = `INSERT INTO sessions (group_id, seq, name, status, date,
   VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, '[]', ?14, ?15, ?16, ?17, ?18)`;
 
 /**
+ * 行けなくなった印を片付ける文。開催でなくなった卓と、参加者でなくなった人の印を消す。allなら（開催日が変わったとき）卓の印を全部消す。
+ * 関わる人を書き直す文のあとに、同じbatchで流す
+ */
+function absenceCleanupStmt(ctx: Ctx, rowIds: number[], all: boolean): D1PreparedStatement {
+  return ctx.db
+    .prepare(
+      `DELETE FROM session_absences WHERE session_id IN (SELECT value FROM json_each(?1)) AND (?2
+         OR (SELECT status FROM sessions WHERE id = session_absences.session_id) <> '開催'
+         OR member_id NOT IN (SELECT member_id FROM session_people p WHERE p.session_id = session_absences.session_id AND p.role = 'member' AND p.member_id IS NOT NULL))`,
+    )
+    .bind(JSON.stringify(rowIds), all ? 1 : 0);
+}
+
+/**
  * 募集の定員と締め切りを読む。持つのは募集の卓だけ（ほかの状態ならnull）。
  * 送られなければ今のまま（古い画面から保存しても消えないように）。空なら決めない
  */
@@ -122,6 +136,8 @@ export async function saveSession(ctx: Ctx, form: Form) {
     if (existing.slots.some((x) => x.memberId !== null)) stmts.push(unassignGoneStmt(ctx, [existing.rowId]));
     // 調整中でなくなったら、日程調整の回答も消す（候補日と一緒に）
     if (status !== STATUS.ADJUSTING) stmts.push(db.prepare('DELETE FROM poll_votes WHERE session_id = ?').bind(existing.rowId));
+    // 開催日が変わったり、開催でなくなったり、参加者から外れたりしたら、行けなくなった印を消す
+    if (existing.absent.length) stmts.push(absenceCleanupStmt(ctx, [existing.rowId], dateChanged));
   } else {
     const seq = await allocateSeq(ctx, 1);
     id = sessionCode(seq);
@@ -337,6 +353,9 @@ export async function bulkUpdateSessions(ctx: Ctx, form: Form) {
   // 参加者から外した人のHOの割り当ても外す
   const assigned = peopleChanges.filter((c) => targets.find((s) => s.rowId === c.rowId)!.slots.some((x) => x.memberId !== null));
   if (assigned.length) stmts.push(unassignGoneStmt(ctx, assigned.map((c) => c.rowId)));
+  // 行けなくなった印も片付ける（開催日をずらしたら全部）
+  const absent = targets.filter((s) => s.absent.length);
+  if (absent.length && action !== 'delete') stmts.push(absenceCleanupStmt(ctx, absent.map((s) => s.rowId), action === 'shiftDays'));
   await db.batch(stmts);
   let message = targets.length + '件の卓' + done + ': ' + targets.map((s) => s.name).join('、');
   if (promoted.length) message += '　参加希望の人を参加者に加えました: ' + promoted.join('、');

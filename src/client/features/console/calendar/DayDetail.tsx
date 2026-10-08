@@ -1,8 +1,9 @@
 // 選んだ日の内訳（その日の卓・メンバーの予定・日付のメモ）。卓ごとにDiscordへの通知・編集・続きの登録
 import { useReducer, useState } from 'react';
-import { type ConsoleData, DAY_NOTE_SPAN_MAX } from '../../../../shared/api';
+import { ABSENCE_NOTE_MAX, type ConsoleData, type ConsoleSession, DAY_NOTE_SPAN_MAX, type RpcResult } from '../../../../shared/api';
 import { askConfirm } from '../../../ui/confirm';
 import { Icon } from '../../../ui/Icon';
+import { Modal } from '../../../ui/Modal';
 import { useStore } from '../../../ui/store';
 import { toast } from '../../../ui/toast';
 import { openForm, openPoll, openPrep } from '../actions';
@@ -13,9 +14,10 @@ import { googleAddUrl } from '../model/calendar';
 import { addDaysYmd, daysBetween, fmtJa, parseYmd, timeRange } from '../model/dates';
 import { hasPoll, isActive, isAdjusting, isDated, me, notesOn, peopleOf, pollCount, scenarioOf, seriesNames, sortSessions, targetPeople, windowByDay } from '../model/model';
 import { hookFor, kindOf, notifyState } from '../model/notify';
+import { withSession } from '../model/optimistic';
 import { useGoRecruit } from '../shell/nav';
 import { Place } from '../Place';
-import { people as peopleRow, personChip, res, row2 } from '../styles';
+import { notice, people as peopleRow, personChip, res, row2 } from '../styles';
 
 /** 内訳のカード（狭い画面では、日を選ぶまで隠す）。上の帯と下のタブに隠れないように送る */
 const detailCard = 'card mb-0 scroll-mt-[calc(var(--appbar-h)+12px)] scroll-mb-[calc(var(--nav-h)+12px)]';
@@ -33,6 +35,8 @@ export function DayDetail({ d, target }: { d: ConsoleData; target: string }) {
   const [, redraw] = useReducer((n: number) => n + 1, 0);
   const [notifying, setNotifying] = useState<Record<string, boolean>>({});
   const [note, setNote] = useState({ saving: false, msg: '' });
+  /** 行けなくなったことをGMに伝える窓（卓のIDと一言） */
+  const [absence, setAbsence] = useState<{ id: string; text: string } | null>(null);
   if (!selDay) {
     return (
       <div className={detailCard + ' max-lg:hidden'} id="dayDetail">
@@ -65,6 +69,17 @@ export function DayDetail({ d, target }: { d: ConsoleData; target: string }) {
       });
     });
   };
+  const mine = me(d);
+  /** 行けなくなった印を付ける（一言を添えて、GMに知らせる）・外す。押した瞬間に画面へ出す */
+  const sendAbsence = (s: ConsoleSession, absent: boolean, text: string) => {
+    setAbsence(null);
+    const optimistic = (cur: ConsoleData) => withSession(cur, s.id, (x) => ({
+      ...x, absent: absent ? x.absent.filter((a) => a.name !== mine).concat({ name: mine, note: text.trim(), at: 'いま' }) : x.absent.filter((a) => a.name !== mine),
+    }));
+    sync.write<RpcResult>('setAbsence', { id: s.id, name: mine, absent, note: text }, { optimistic })
+      .then((r) => toast(r.message), (e: Error) => { toast(e.message); void sync.refresh('quiet'); });
+  };
+  const absS = absence ? d.sessions.filter((x) => x.id === absence.id)[0] : undefined;
   const saveNote = () => {
     const day = selDay, text = draft.text, to = draft.to > day ? draft.to : '';
     if (to && daysBetween(day, to) >= DAY_NOTE_SPAN_MAX) { setNote({ saving: false, msg: '期間のメモは' + DAY_NOTE_SPAN_MAX + '日までです。' }); return; }
@@ -96,6 +111,9 @@ export function DayDetail({ d, target }: { d: ConsoleData; target: string }) {
           const cand = isAdjusting(s) && s.date !== selDay, pollDay = cand && hasPoll(s);
           const done = s.status === '終了', cancel = s.status === '中止';
           const ppl = peopleOf(s);
+          // これから開く卓。参加者（GMでない）は「行けなくなった」を伝えられ、GMと管理者は行けなくなった人がいれば日を組み直せる
+          const upcoming = isDated(s) && !!s.date && s.date >= d.today;
+          const imAbsent = s.absent.some((a) => a.name === mine), canAbsent = upcoming && !!mine && s.gm !== mine && s.members.indexOf(mine) >= 0;
           return (
             <div className={'mt-10 rounded-md border border-line bg-card p-12 tabular-nums' + (done ? ' opacity-80' : '')} data-id={s.id} key={s.id + ':' + i}>
               <div className="flex flex-wrap items-baseline gap-x-10 gap-y-4">
@@ -105,13 +123,19 @@ export function DayDetail({ d, target }: { d: ConsoleData; target: string }) {
               </div>
               <div className={peopleRow}>
                 {ppl.map((p) => {
-                  const isGm = p === s.gm, known = d.members.some((m) => m.name === p);
-                  return <span className={personChip(isGm, !known)} title={known ? '' : 'メンバーに未登録'} key={p}>{(isGm ? 'GM ' : '') + p}</span>;
+                  const isGm = p === s.gm, known = d.members.some((m) => m.name === p), away = s.absent.some((a) => a.name === p);
+                  return <span className={personChip(isGm, !known) + (away ? ' line-through opacity-70' : '')} title={away ? '行けなくなりました' : known ? '' : 'メンバーに未登録'} key={p}>{(isGm ? 'GM ' : '') + p}</span>;
                 })}
                 {!ppl.length && <span className={personChip(false, true)}>参加者 未定</span>}
               </div>
               {scenarioOf(d, s) && <div className={row2 + ' hint'} data-scenario-of={s.id}>{'シナリオ: ' + scenarioOf(d, s)!.name}</div>}
               {prepSummary(d, s) && <div className={row2 + ' hint'} data-prep-of={s.id}>{prepSummary(d, s)}</div>}
+              {s.absent.length > 0 && (
+                <div className={notice('adjust', false) + ' mt-8'} data-absent-of={s.id}>
+                  <Icon name="warning" />{'行けなくなった: ' + s.absent.map((a) => a.name + (a.note ? '（' + a.note + '）' : '')).join('、')}
+                  {upcoming && (s.gm === mine || d.isAdmin) && <span className="block text-12">「日を組み直す」で候補日を出し直すか、「編集」で参加者を見直してください。</span>}
+                </div>
+              )}
               {s.place && <Place place={s.place} className={row2} />}
               {s.memo && <div className={row2 + ' hint'}>{s.memo}</div>}
               {s.notified ? <div className={row2 + ' hint'}>{'開催前の知らせは' + s.notified + 'に送りました'}</div>
@@ -121,6 +145,9 @@ export function DayDetail({ d, target }: { d: ConsoleData; target: string }) {
                 {isAdjusting(s) && (hasPoll(s)
                   ? <button type="button" className="btn small primary" data-goto-recruit onClick={() => goRecruit(s.id)}><Icon name="how_to_vote" size="sm" />回答する</button>
                   : <button type="button" className="btn small primary" data-poll={s.id} onClick={() => openPoll(ui, s.id)}><Icon name="how_to_vote" size="sm" />日程を調整する</button>)}
+                {upcoming && s.absent.length > 0 && (s.gm === mine || d.isAdmin) && (
+                  <button type="button" className="btn small primary" data-reschedule={s.id} title="状態を「調整中」に戻して、候補日を選び直します（参加者はそのまま）" onClick={() => openForm(ui, { id: s.id, status: '調整中' })}><Icon name="edit_calendar" size="sm" />日を組み直す</button>
+                )}
                 <button type="button" className="btn small" data-edit={s.id} onClick={() => openForm(ui, { id: s.id })}><Icon name="edit" size="sm" />編集</button>
                 {(s.status === '開催' || s.status === '調整中') && (
                   <button type="button" className="btn small" data-prep={s.id} title="HO・秘匿HO・キャラシ" onClick={() => openPrep(ui, s.id)}><Icon name="checklist" size="sm" />準備</button>
@@ -132,6 +159,9 @@ export function DayDetail({ d, target }: { d: ConsoleData; target: string }) {
                 {isActive(s) && (
                   <button type="button" className="btn small" data-notify={s.id} disabled={!hookFor(d, s.series, kindOf(s)) || !!notifying[s.id]} title={hookFor(d, s.series, kindOf(s)) ? '卓の案内をDiscordに送る' : 'チャンネル未設定'} onClick={() => notify(s.id)}><Icon name="notifications" size="sm" />Discordに通知</button>
                 )}
+                {canAbsent && (imAbsent
+                  ? <button type="button" className="btn small" data-absent={s.id} data-on="1" onClick={() => sendAbsence(s, false, '')}><Icon name="undo" size="sm" />行けなくなったを取り消す</button>
+                  : <button type="button" className="btn small" data-absent={s.id} onClick={() => setAbsence({ id: s.id, text: '' })}><Icon name="event_busy" size="sm" />行けなくなった</button>)}
                 <span className={res} data-res={s.id}>{notifyRes[s.id] || ''}</span>
               </div>
             </div>
@@ -197,6 +227,19 @@ export function DayDetail({ d, target }: { d: ConsoleData; target: string }) {
           </div>
         </div>
       </div>
+      {/* 行けなくなったことを、一言を添えてGMに伝える */}
+      <Modal id="absenceModal" open={!!absS} onClose={() => setAbsence(null)}>
+        <form className="box" id="absenceForm" role="dialog" aria-modal="true" aria-labelledby="absenceTitle" tabIndex={-1} onSubmit={(ev) => { ev.preventDefault(); if (absS && absence) sendAbsence(absS, true, absence.text); }}>
+          <h3 id="absenceTitle">{absS ? '「' + absS.name + '」に行けなくなりましたか？' : '行けなくなった'}</h3>
+          <p className="hint">{absS ? fmtJa(absS.date) + ' ' + timeRange(absS) + 'の卓です。GMにDiscordで知らせます。GMが日を組み直すか、参加者を見直します。' : ''}</p>
+          <label htmlFor="absenceText">GMへの一言 <small>{'任意。' + ABSENCE_NOTE_MAX + '文字まで'}</small></label>
+          <textarea id="absenceText" maxLength={ABSENCE_NOTE_MAX} placeholder="例: 急な出張が入りました。翌週なら行けます" value={absence ? absence.text : ''} onChange={(ev) => setAbsence((a) => (a ? { ...a, text: ev.target.value } : a))} />
+          <div className="btns">
+            <button type="button" className="btn" id="absenceCancel" onClick={() => setAbsence(null)}>やめる</button>
+            <button type="submit" className="btn primary" id="absenceSend">GMに伝える</button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }

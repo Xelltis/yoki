@@ -33,12 +33,12 @@ export function calendarItem(ctx: Pick<Ctx, 'appUrl' | 'group'>, s: Session & { 
   };
 }
 
-/** 載せる卓。whoが空ならグループの卓すべて、名前ならその人がGMか参加者として入っている卓。過ぎた卓はsinceDays日前まで */
+/** 載せる卓。whoが空ならグループの卓すべて、名前ならその人がGMか参加者として入っている卓（行けなくなった卓は除く）。過ぎた卓はsinceDays日前まで */
 export function calendarSessions(ctx: Pick<Ctx, 'sessions' | 'today'>, who: string, sinceDays = FEED_PAST_DAYS): (Session & { date: string })[] {
   const since = addDays(ctx.today, -sinceDays);
   return ctx.sessions.filter(
     (s): s is Session & { date: string } =>
-      CALENDAR_STATUSES.includes(s.status) && !!s.date && s.date >= since && (!who || s.gm === who || s.members.includes(who)),
+      CALENDAR_STATUSES.includes(s.status) && !!s.date && s.date >= since && (!who || s.gm === who || (s.members.includes(who) && !s.absent.some((a) => a.name === who))),
   );
 }
 

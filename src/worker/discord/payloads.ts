@@ -26,6 +26,7 @@ export function sessionEmbed(ctx: PayloadCtx, s: Session): Embed {
   const lines = ['GM: ' + (s.gm || '未定'), '日時: ' + whenText(s), '参加者: ' + (s.members.length ? s.members.join('、') : '未定')];
   if (s.status === STATUS.RECRUIT && (s.want.length || s.capacity)) lines.push('参加希望: ' + (s.want.join('、') || 'まだいません') + (s.capacity ? '（' + s.want.length + '/' + s.capacity + '人）' : ''));
   if (s.status === STATUS.RECRUIT && s.recruitDue) lines.push('締め切り: ' + fmtDateJa(s.recruitDue));
+  if (s.status === STATUS.HELD && s.absent.length) lines.push('行けなくなった: ' + s.absent.map((a) => a.name).join('、'));
   if (s.place) lines.push('場所: ' + s.place);
   if (s.memo) lines.push('メモ: ' + s.memo);
   return {
@@ -108,6 +109,18 @@ export function pollReadyPayload(ctx: PayloadCtx, s: Session): Payload {
     });
   return {
     content: ['📝 「' + s.name + '」の日程調整の回答がそろいました。' + call, days.join('\n'), 'Yokiの「募集・調整」タブで、開催日を選んでください。' + (ctx.appUrl ? '\n' + ctx.appUrl : '')].join('\n'),
+  };
+}
+
+/** 参加者が行けなくなった。GMを呼び、本人の一言を添える。開催日のある卓だけに使う（absence.tsが確かめてから呼ぶ） */
+export function absencePayload(ctx: PayloadCtx, s: Session, name: string, note: string): Payload {
+  const gmId = discordIdOf(ctx, s.gm);
+  const call = gmId ? ' <@' + gmId + '>' : s.gm ? ' ' + s.gm + 'さん' : '';
+  return {
+    content: '🙇 「' + s.name + '」（' + fmtDateJa(s.date!) + ' ' + timeRange(s) + '）に、' + name + 'が行けなくなりました。' + call +
+      (note ? '\n💬 ' + note.replace(/\s+/g, ' ').replace(/@/g, '@\u200b') : '') +
+      '\nYokiで「日を組み直す」か、参加者を見直してください。' + (ctx.appUrl ? '\n🔗 ' + ctx.appUrl : ''),
+    embeds: [sessionEmbed(ctx, s)],
   };
 }
 
