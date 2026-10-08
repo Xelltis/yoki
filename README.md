@@ -7,6 +7,18 @@
 <p align="center">TRPGの卓の予定を、Discordサーバーの仲間と決めるWebアプリ</p>
 
 <p align="center">
+  <a href="https://github.com/Xelltis/yoki/releases/latest"><img src="https://img.shields.io/github/v/release/Xelltis/yoki?logo=github" alt="Latest release"></a>
+  <a href="https://github.com/Xelltis/yoki/actions/workflows/deploy.yml"><img src="https://img.shields.io/github/actions/workflow/status/Xelltis/yoki/deploy.yml?branch=main&label=Deploy&logo=githubactions&logoColor=white" alt="Deploy"></a>
+  <a href="https://xelltis.github.io/yoki/"><img src="https://img.shields.io/badge/Docs-使い方-5C73E7?logo=vitepress&logoColor=white" alt="Docs: 使い方"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"></a>
+  <br>
+  <a href="https://developers.cloudflare.com/workers/"><img src="https://img.shields.io/badge/Cloudflare_Workers-F38020?logo=cloudflareworkers&logoColor=white" alt="Cloudflare Workers"></a>
+  <a href="https://react.dev/"><img src="https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black" alt="React 19"></a>
+  <a href="https://hono.dev/"><img src="https://img.shields.io/badge/Hono-4-E36002?logo=hono&logoColor=white" alt="Hono 4"></a>
+  <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-7.0-3178C6?logo=typescript&logoColor=white" alt="TypeScript 7.0"></a>
+</p>
+
+<p align="center">
   <a href="https://deploy.workers.cloudflare.com/?url=https://github.com/Xelltis/yoki/tree/release"><img src="https://deploy.workers.cloudflare.com/button" alt="Deploy to Cloudflare"></a>
 </p>
 
