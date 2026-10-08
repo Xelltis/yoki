@@ -670,6 +670,12 @@ await withDevServer(async (base) => {
       assert.equal((await page.evaluate(() => fetch('/api/me').then((r) => r.json()))).registration, false);
       await page.click('#opRegToggle');
       await page.waitForSelector('#opReg >> text=受け付けています', { timeout: 15000 });
+      // Discordのボタン: 手元にはBotが無いので、入れようとしても断られる（400は見込みどおりなので、そのエラーは数えない）
+      assert.match(await page.textContent('#opButtons'), /付けていません/);
+      const errorsBefore = errors.length;
+      await page.click('#opButtonsToggle');
+      await page.waitForSelector('#toast >> text=Botのトークンが無い', { timeout: 15000 });
+      errors.splice(errorsBefore);
       await main();
       // 開いた直後は、ブラウザの控え（消す前のデータ）が出ることがある。最新を読んで、ソラがメンバーから外れるのを待つ
       await until((d) => !d.members.some((m) => m.name === 'ソラ'));

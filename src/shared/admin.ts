@@ -34,6 +34,8 @@ export type AdminOverview = {
   failures: { day: number; week: number; recent: AdminFailure[] };
   /** 新規登録を受け付けているか */
   registrationOpen: boolean;
+  /** 日程調整と募集の知らせにボタンを付けて、Discordで答えられるようにしているか */
+  discordButtons: boolean;
 };
 
 /** グループの一覧の1行（GET /api/admin/groups） */

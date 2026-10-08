@@ -8,6 +8,7 @@ import { AppError } from './lib/errors';
 import { adminRoutes } from './routes/admin';
 import { authRoutes } from './routes/auth';
 import { calendarRoutes } from './routes/calendar';
+import { discordRoutes } from './routes/discord';
 import { googleRoutes } from './routes/google';
 import { noticePage } from './routes/html';
 import { meRoutes } from './routes/me';
@@ -32,6 +33,7 @@ app.route('/', rpcRoutes);
 app.route('/', adminRoutes);
 app.route('/', calendarRoutes);
 app.route('/', googleRoutes);
+app.route('/', discordRoutes);
 /* istanbul ignore else -- @preserve 本番の組み立てではDEVが偽になり、開発用ログインごと消える（テストは開発の形で動く） */
 if (import.meta.env?.DEV) {
   registerDevRoutes(app);

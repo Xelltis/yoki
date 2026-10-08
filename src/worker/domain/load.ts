@@ -16,7 +16,7 @@ type SessionRow = {
 type SlotJson = { pos: number; label: string; summary: string; member: number | null; secret: string | null; has: number; hopes: [number, number][] };
 
 /** グループの行と、一緒に読むシナリオ（JSON）。読み込みの文を増やさないため、グループを読む文の中で読む */
-type GroupWithExtras = GroupRow & { scenarios_json: string; marks_json: string };
+type GroupWithExtras = GroupRow & { scenarios_json: string; marks_json: string; buttons_on: number | null };
 type ScenarioJson = { id: number; name: string; system: string; min: number | null; max: number | null; hours: string; url: string; memo: string; by: number | null; at: string };
 
 export const sessionCode = (seq: number) => 'S' + String(seq).padStart(3, '0');
@@ -49,7 +49,8 @@ export async function loadGroup(
                      'hours', s.hours, 'url', s.url, 'memo', s.memo, 'by', s.created_by, 'at', s.updated_at))
               FROM scenarios s WHERE s.group_id = g.id) AS scenarios_json,
            (SELECT json_group_array(json_array(ms.scenario_id, ms.member_id, ms.kind))
-              FROM member_scenarios ms JOIN scenarios s ON s.id = ms.scenario_id WHERE s.group_id = g.id) AS marks_json
+              FROM member_scenarios ms JOIN scenarios s ON s.id = ms.scenario_id WHERE s.group_id = g.id) AS marks_json,
+           (SELECT value FROM meta WHERE key = 'discord_buttons') = '1' AS buttons_on
          FROM groups g WHERE g.id = ?`,
       )
       .bind(groupId),
@@ -116,7 +117,7 @@ export async function loadGroup(
   const rows = <T>(i: number) => res[i]!.results as T[];
   const groupRow = rows<GroupWithExtras>(1)[0];
   if (!groupRow) throw new Error('グループが見つかりません: ' + groupId);
-  const { scenarios_json, marks_json, ...group } = groupRow;
+  const { scenarios_json, marks_json, buttons_on, ...group } = groupRow;
   const scenarios: Scenario[] = (JSON.parse(scenarios_json) as ScenarioJson[])
     .map((s) => ({ id: s.id, name: s.name, system: s.system, playersMin: s.min, playersMax: s.max, hours: s.hours, url: s.url, memo: s.memo, createdBy: s.by, updatedAt: s.at }))
     .sort((a, b) => a.name.localeCompare(b.name, 'ja'));
@@ -237,6 +238,7 @@ export async function loadGroup(
     actor,
     appUrl,
     bot,
+    buttons: buttons_on === 1,
     feed: rows<{ token: string; scope: FeedScope }>(11)[0] ?? null,
     google: rows<GoogleLinkRow>(12)[0] ?? null,
     googleReady,

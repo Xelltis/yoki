@@ -99,3 +99,5 @@ Yokiの利用規約とプライバシーポリシーを整えたら（[設置す
 左の「一般情報」を開き、下の方の「利用規約URL」に `https://<公開のアドレス>/terms` を（1）、「プライバシーポリシーURL」に `https://<公開のアドレス>/privacy` を入れて（2）、「変更を保存」を押します（3）。
 
 [![一般情報の画面の下の方。1は利用規約URL、2はプライバシーポリシーURLの欄、3は画面の下の「変更を保存」のボタン](/setup/discord/11-terms-privacy.png)](/setup/discord/11-terms-privacy.png)
+
+同じ「一般情報」の画面にある「Interactions Endpoint URL」は、空のままでかまいません。運営の管理画面で「Discordのボタン」を入れると、YokiがBotのトークンを使って、ここにYokiのアドレスを入れます（[運営の管理画面](./admin#discordのボタン)）。

@@ -8,6 +8,7 @@ import { isOperator, requireOperator } from '../auth/operator';
 import type { Viewer } from '../auth/session';
 import { changeGuild, deleteUser, groupDetail, listGroups, listUsers, logoutUser, overview, setBan, setGroupAdmin } from '../domain/admin';
 import { readForm, str } from '../domain/form';
+import { setButtons } from '../discord/interactions';
 import { deleteGroupById } from '../domain/groups';
 import { readLegal, saveLegal } from '../domain/legal';
 import { setRegistrationOpen } from '../domain/registration';
@@ -40,6 +41,14 @@ adminRoutes.post('/api/admin/registration', async (c) => {
   await setRegistrationOpen(c.env.DB, open);
   audit(op, 'setRegistration', open ? 'open' : 'closed');
   return c.json(done(open ? '新規登録を受け付けます。' : '新規登録の受付を止めました。もう使っている人と運営者は、そのまま使えます。'));
+});
+
+adminRoutes.post('/api/admin/discord-buttons', async (c) => {
+  const op = await requireOperator(c);
+  const on = (await readForm(c.req)).on === true;
+  const message = await setButtons(c.env, on, appOrigin(c.env, c.req.url));
+  audit(op, 'setDiscordButtons', on ? 'on' : 'off');
+  return c.json(done(message));
 });
 
 adminRoutes.get('/api/admin/legal', async (c) => {

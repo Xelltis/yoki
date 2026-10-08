@@ -53,6 +53,7 @@ import ISwapHoriz from '~icons/material-symbols/swap-horiz-outline-rounded';
 import ISync from '~icons/material-symbols/sync-outline-rounded';
 import ITaskAlt from '~icons/material-symbols/task-alt-outline-rounded';
 import IToday from '~icons/material-symbols/today-outline-rounded';
+import ITouchApp from '~icons/material-symbols/touch-app-outline-rounded';
 import IUndo from '~icons/material-symbols/undo-outline-rounded';
 import IUpgrade from '~icons/material-symbols/upgrade-outline-rounded';
 import IWarning from '~icons/material-symbols/warning-outline-rounded';
@@ -115,6 +116,7 @@ export const ICONS = {
   sync: ISync,
   task_alt: ITaskAlt,
   today: IToday,
+  touch_app: ITouchApp,
   undo: IUndo,
   upgrade: IUpgrade,
   warning: IWarning,

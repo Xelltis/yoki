@@ -27,6 +27,7 @@ Worker 1つで、次の3つを受け持つ。
 | `GET` / `POST /api/admin/*` | 運営の管理画面が使う（下の「運営の管理画面」） |
 | `GET /cal/<token>.ics` | 購読URL（iCalendar）。ログインせずに読む（下の「カレンダーとの連携」） |
 | `/auth/google/start` `/auth/google/login` `/auth/google/callback` | Googleカレンダーとの連携と、Googleでのログイン（OAuth） |
+| `POST /api/discord/interactions` | Discordのボタンの受け口（下の「Discordへの送信」） |
 | `POST /dev/login` `POST /dev/reset` | 開発用ログイン（開発サーバーだけ）。`/dev/reset` は、開発用の人のGoogle連携と偽のGoogleの中身も消す |
 | `/dev/google/authorize` `/dev/google/state` `POST /dev/google/busy` | 開発用の偽のGoogle（開発サーバーでGoogleの値が空のときだけ） |
 
@@ -186,6 +187,10 @@ usersの行は消さない（印がそこにあるため）。Discordのユー�
 - 運営者がサーバーを付け替えると、前のサーバーのイベントを消して、新しいサーバーに作り直す（控えに作ったサーバーを持つ）。グループが消えたイベントは、毎時の片付け（`sweepOrphanEvents`）が消す
 - イベントはサーバーの全員に見える。プライバシーポリシーの既定の文に書いてある
 
+**Discordのボタン**（`discord/buttons.ts`・`discord/interactions.ts`・`routes/discord.ts`）。運営者が運営の管理画面で入れると（`meta` の `discord_buttons`）、日程調整の知らせに「予定表から答える」「どの日でもいい」と行ける日を選ぶ欄、募集の知らせに「参加希望」「興味あり」「取り消す」を付ける（message components。IDは `yoki:グループ:卓の番号:操作`）。入れるときは、Botのトークンで `GET /applications/@me` からPublic Keyを読んで `meta` に控え、`PATCH /applications/@me` でInteractions Endpoint URL（`/api/discord/interactions`）を入れる（Discordがそのとき確かめの要求を送るので、Public Keyを先に控える）。新しいsecretは要らない。
+
+受け口は、署名（Ed25519。`X-Signature-Ed25519`・`X-Signature-Timestamp`）を確かめてから受ける。Discordからの要求にOriginは付かないので、CSRFの確かめはそのまま通る。返事は3秒以内に返す決まりなので、すぐに「考え中」（本人にだけ見える）を返し、書き込みは返事のあと（`waitUntil`）で行って、`PATCH /webhooks/{アプリ}/{トークン}/messages/@original` で書き直す。押した人は、DiscordのユーザーIDで、ログインしたことのあるメンバー（`user_id`）を先に、無ければDiscordのIDを入れたメンバーに結びつける。ボタンはサーバーの中でしか押せないので、そのサーバーにいることはDiscordが確かめている。グループのサーバーと押したサーバーが違えば断る。締め出した人は断る。書き込みは画面と同じ関数（`setPollVoteFromAvail`・`setPollVoteAll`・`setPollVoteDays`・`setInterest`）で、本人の分だけを書く。
+
 サンプルのグループのチャンネル（IDが全部0）には送らず、送ったことにする（開発用ログインとスクリーンショットのため）。
 
 ## シナリオと卓の準備
@@ -278,6 +283,7 @@ Googleを呼ぶのは1回の要求で35回まで。Workersが1回の要求で外
 | `GET /api/admin/users` `POST /api/admin/users/:id/logout` `POST /api/admin/users/:id/ban` | 利用者の一覧、ログインを切る、締め出す・戻す |
 | `POST /api/admin/users/:id/delete` | 利用者を消す（本人から頼まれたとき）。usersの行（ログインとサーバーの控えは表の決まりで一緒に消える）と、どのグループでもその人のメンバーの行（`user_id` か `discord_id` が同じもの）を消し、グループの `created_by` を空にする。メンバーの行の消し方はグループの管理者がメンバーを消すときと同じ（予定とメモは消え、卓と回答はゲストの名前になる）。運営者と、締め出している人（消すと印も消える）は断る。Googleカレンダーと連携していれば、書き込んだ予定を消し、Googleの許可を取り消してから消す |
 | `POST /api/admin/registration` | 新規登録を受け付ける・止める（`{open}`） |
+| `POST /api/admin/discord-buttons` | 知らせにDiscordのボタンを付ける・やめる（`{on}`。付けるときは、Interactions Endpoint URLをDiscordアプリに入れる） |
 | `GET /api/admin/legal` `POST /api/admin/legal` | 利用規約とプライバシーポリシーの、運営者の名前・問い合わせ先・本文を読む・保存する（`{operator?, contact?, terms?, privacy?}`。省いたものは変えない） |
 | `GET /api/admin/update` `POST /api/admin/update` | 動いているバージョンと、元のリポジトリの最新のバージョンを比べる（`?refresh=1` でGitHubを読み直す）・最新のバージョンへの更新を始める（下の「バージョンと更新」） |
 

@@ -3,11 +3,13 @@ import { STATUS } from '../domain/constants';
 import { peopleOf, pollVoters, windowInfo } from '../domain/model';
 import type { Ctx, Session } from '../domain/types';
 import { fmtDateJa, timeRange } from '../lib/jst';
+import { type Component, pollComponents, recruitComponents } from './buttons';
 
 export type Embed = { title: string; description: string; color: number; footer: { text: string } };
-export type Payload = { content: string; embeds?: Embed[] };
+export type Payload = { content: string; embeds?: Embed[]; components?: Component[] };
 
-type PayloadCtx = Pick<Ctx, 'group' | 'memberByName' | 'appUrl' | 'votes' | 'today'>;
+/** 文面を作るのに使う一式。buttonsは、知らせにボタンを付けるか（運営者が入れたYokiだけ） */
+type PayloadCtx = Pick<Ctx, 'group' | 'memberByName' | 'appUrl' | 'votes' | 'today'> & { buttons?: boolean };
 
 const label = (s: Session) => windowInfo(s.windowFrom, s.windowTo)?.label ?? '';
 
@@ -60,6 +62,7 @@ export function changePayload(ctx: PayloadCtx, s: Session, verb: '登録' | '変
     content: icon + ' 卓の予定が' + verb + 'されました' + (editor ? '（' + editor + '）' : '') +
       (verb === '削除' ? '：' + s.name : (mentions ? '\n' + mentions : '') + recruitLink(ctx, s)),
     embeds: verb === '削除' ? [] : [sessionEmbed(ctx, s)],
+    components: verb === '削除' ? undefined : recruitComponents(ctx, s),
   };
 }
 
@@ -69,6 +72,7 @@ export function announcePayload(ctx: PayloadCtx, s: Session, me: string): Payloa
   return {
     content: '📣 卓の案内: ' + s.name + '（' + whenText(s) + '）' + (me ? '　by ' + me : '') + (mentions ? '\n' + mentions : '') + recruitLink(ctx, s),
     embeds: [sessionEmbed(ctx, s)],
+    components: recruitComponents(ctx, s),
   };
 }
 
@@ -80,7 +84,7 @@ export function askPayload(ctx: PayloadCtx, s: Session, me: string, message: str
   const msg = message.trim();
   if (msg) lines.push('💬 ' + msg + (me ? '（' + me + '）' : ''));
   lines.push('参加希望であれば、Yokiの「募集・調整」タブで「参加希望」を押してください。' + (me && !msg ? '　by ' + me : '') + (ctx.appUrl ? '\n' + ctx.appUrl : ''));
-  return { content: lines.join('\n'), embeds: [sessionEmbed(ctx, s)] };
+  return { content: lines.join('\n'), embeds: [sessionEmbed(ctx, s)], components: recruitComponents(ctx, s) };
 }
 
 /** 日程調整の知らせ。GMと参加者を呼び、候補日と答え方を書く */
@@ -90,9 +94,10 @@ export function pollPayload(ctx: PayloadCtx, s: Session, me: string): Payload {
   const lines = [
     '🗓️ 「' + s.name + '」の日程を決めます。' + call,
     '候補日: ' + s.candidates.map(fmtDateJa).join('、') + (s.start || s.end ? '　' + timeRange(s) : ''),
-    'Yokiの「募集・調整」タブで、候補日ごとに ◯・△（調整すれば行ける）・× を押してください。全員の回答がそろったら、GMが開催日を選びます。' + (me ? '　by ' + me : '') + (ctx.appUrl ? '\n' + ctx.appUrl : ''),
+    (ctx.buttons ? '下のボタンでも答えられます。' : '') +
+      'Yokiの「募集・調整」タブで、候補日ごとに ◯・△（調整すれば行ける）・× を押してください。全員の回答がそろったら、GMが開催日を選びます。' + (me ? '　by ' + me : '') + (ctx.appUrl ? '\n' + ctx.appUrl : ''),
   ];
-  return { content: lines.join('\n'), embeds: [sessionEmbed(ctx, s)] };
+  return { content: lines.join('\n'), embeds: [sessionEmbed(ctx, s)], components: pollComponents(ctx, s) };
 }
 
 /** 日程調整の回答がそろった。GMだけを呼び、候補日ごとの ◯ と △ の数を並べる */

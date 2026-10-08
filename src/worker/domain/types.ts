@@ -152,6 +152,8 @@ export type Ctx = {
   appUrl: string;
   /** 知らせを送るBot（YokiのDiscordアプリ）。tokenが空なら送れない。clientIdはBotを招くURLに使う */
   bot: Bot;
+  /** 知らせにボタンを付けるか（運営者が運営の管理画面で入れたYokiだけ。discord/buttons.ts） */
+  buttons: boolean;
   /** 本人の購読URL（このグループ。作っていなければnull） */
   feed: { token: string; scope: FeedScope } | null;
   /** 本人のGoogle連携（していなければnull） */

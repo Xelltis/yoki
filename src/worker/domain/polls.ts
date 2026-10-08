@@ -169,6 +169,26 @@ export async function setPollVoteAll(ctx: Ctx, form: Form, io: Io) {
 }
 
 /**
+ * 行ける日を選んで答える（Discordの選ぶ欄から）。選んだ候補日に ◯、選ばなかった、これからの候補日に × を付ける。form: { id, name, days }
+ */
+export async function setPollVoteDays(ctx: Ctx, form: Form, io: Io) {
+  const name = requireSelf(ctx, form.name);
+  const s = findAdjusting(ctx, form.id);
+  if (!peopleOf(s).includes(name)) throw badRequest(name + 'は「' + s.name + '」のGMでも参加者でもないので、回答できません。');
+  const future = s.candidates.filter((k) => k >= ctx.today);
+  if (!future.length) throw badRequest('「' + s.name + '」には、これからの候補日がありません。');
+  const ok = list(form.days);
+  const rows = future.map((date) => ({ date, vote: ok.includes(date) ? POLL_MARKS[0]! : '×' }));
+  const wasComplete = pollComplete(ctx, s);
+  await voteRowsStmt(ctx, s, rows).run();
+  const after = await afterVote(ctx, s.id, wasComplete, io);
+  const yes = rows.filter((r) => r.vote !== '×');
+  const what = !yes.length ? 'どの日も ×' : yes.length === rows.length ? 'どの日も ◯' : yes.map((r) => fmtDateJa(r.date)).join('・') + 'は ◯、ほかの日は ×';
+  const message = name + ': 「' + s.name + '」に、' + what + ' で答えました' + after.message;
+  return { ok: true, id: s.id, ready: after.ready, notified: after.notified, message, data: consoleData(after.fresh) };
+}
+
+/**
  * 予定表から答える。まだ答えていない、これからの候補日に、本人の予定表の印から回答を入れる（voteFromAvail）。
  * 答えた日は変えない。予定表の範囲の外の候補日は、印が分からないので入れない。form: { id, name }
  */

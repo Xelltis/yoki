@@ -52,6 +52,8 @@ Bot: 「トークンをリセット」でトークンを作って控える。「
 
 インストール: 「インストールリンク」は「なし」（Botを招くURLはYokiが作る。求める権限は「チャンネルを見る」「メッセージを送信」「埋め込みリンク」。卓をDiscordのイベントに出すグループだけ、「イベントを作成」も）。
 
+一般情報: 「Interactions Endpoint URL」は空のままでよい。運営の管理画面の「Discordのボタン」を入れると、YokiがBotのトークンでアプリのPublic Keyを読み、このURLに `https://<公開するアドレス>/api/discord/interactions` を入れる（新しいsecretは要らない）。
+
 ### 3. CloudflareでD1とAPIトークンを作る
 
 D1: `npx wrangler login` のあと `npx wrangler d1 create yoki`（Cloudflareの画面のD1で作ってもよい）。出てきたdatabase IDを控える。

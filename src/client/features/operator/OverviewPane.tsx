@@ -1,4 +1,4 @@
-// 運営者の管理画面の「様子」。新しい版の知らせ・数・新規登録の受付・知らせの見回り（cron）・Discordへの送信の失敗
+// 運営者の管理画面の「様子」。新しい版の知らせ・数・新規登録の受付・Discordのボタン・知らせの見回り（cron）・Discordへの送信の失敗
 import { Link } from '@tanstack/react-router';
 import type { AdminOverview, AdminUpdate } from '../../../shared/admin';
 import { askConfirm } from '../../ui/confirm';
@@ -28,6 +28,7 @@ export function OverviewPane() {
       <div data-pane="overview">
         <div className={counts} id="opCounts"></div>
         <div className="card" id="opReg"></div>
+        <div className="card" id="opButtons"></div>
         <div className="card" id="opPatrol"></div>
         <Fails o={o} />
       </div>
@@ -65,6 +66,12 @@ export function OverviewPane() {
         <p className={stateCls(o.registrationOpen ? 'ok' : 'warn')}>{o.registrationOpen ? '受け付けています' : '止めています'}</p>
         <p className="hint">止めると、新しいグループの作成と、初めての人のログインを断ります。もう使っている人と今あるグループは、そのまま使えます。運営者は、止めていてもログインでき、グループも作れます。</p>
         <button type="button" className="btn small" id="opRegToggle" data-open={o.registrationOpen ? '0' : '1'} onClick={toggleReg}>{o.registrationOpen ? '受付を止める' : '受け付ける'}</button>
+      </div>
+      <div className="card" id="opButtons">
+        <h3><Icon name="touch_app" size="sm" />Discordのボタン</h3>
+        <p className={stateCls(o.discordButtons ? 'ok' : 'warn')}>{o.discordButtons ? '日程調整と募集の知らせにボタンを付けています' : '付けていません'}</p>
+        <p className="hint">入れると、日程調整と募集の知らせにボタンが付き、Discordのまま「予定表から答える」「どの日でもいい」「行ける日を選ぶ」「参加希望」「興味あり」を押せます。入れるときは、YokiのBotのトークンで、DiscordアプリのInteractions Endpoint URLにこのYokiのアドレスを入れます。公開のアドレスで開いた、この画面から入れてください。</p>
+        <button type="button" className="btn small" id="opButtonsToggle" data-on={o.discordButtons ? '0' : '1'} onClick={() => { void act('/api/admin/discord-buttons', { on: !o.discordButtons }); }}>{o.discordButtons ? 'ボタンを付けない' : 'ボタンを付ける'}</button>
       </div>
       <div className="card" id="opPatrol">
         <h3><Icon name="monitor_heart" size="sm" />知らせの見回り（cron、5分おき）</h3>
