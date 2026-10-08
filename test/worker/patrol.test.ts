@@ -104,6 +104,16 @@ describe('開催前の知らせ', () => {
     expect(await env.DB.prepare('SELECT result FROM notify_log ORDER BY id DESC').first('result')).toBe('送らず: 送り先のチャンネルが未設定');
   });
 
+  test('ほかの知らせ（キャラシの催促・期間前の催促）でグループを読んでも、止めている開催前の知らせは送らない', async () => {
+    await addSession({ name: '明日の卓', date: addDays(DAY, 1), gm: 'ひより', members: ['ソラ'] });
+    await addSession({ name: '古城', status: '募集', windowFrom: addDays(DAY, 1), windowTo: addDays(DAY, 10), gm: 'ひより' });
+    await env.DB.prepare("UPDATE sessions SET sheet_due = ? WHERE name = '明日の卓'").bind(addDays(DAY, 1)).run();
+    await env.DB.prepare("UPDATE groups SET remind_enabled = 0 WHERE id = 'g'").run();
+    await patrol(env, at('20:00'), noWait);
+    expect(posts.map((p) => [...p.content][0])).toEqual(['⏳', '📝']);
+    expect(await mark('明日の卓', 'notified_at')).toBeNull();
+  });
+
   test('Botのトークンが無ければ（運営者の設定）送らずに失敗を記録し、印を戻す', async () => {
     await addSession({ name: '明日の卓', date: addDays(DAY, 1), gm: 'ひより' });
     // 本番ではsecretのDISCORD_BOT_TOKENを入れ忘れることがある
@@ -123,6 +133,15 @@ describe('期間前の催促と開始直前の知らせ', () => {
     expect(await mark('古城', 'urged_at')).not.toBeNull();
     await patrol(env, at('21:00'), noWait);
     expect(posts).toHaveLength(1);
+  });
+
+  test('期間前の催促を止めたグループには、ほかの知らせ（開催前の知らせ）でグループを読んでも送らない', async () => {
+    await addSession({ name: '古城', status: '募集', windowFrom: addDays(DAY, 1), windowTo: addDays(DAY, 10), gm: 'ひより' });
+    await addSession({ name: '明日の卓', date: addDays(DAY, 1), gm: 'ひより' });
+    await env.DB.prepare("UPDATE groups SET urge = 0 WHERE id = 'g'").run();
+    await patrol(env, at('20:00'), noWait);
+    expect(posts.map((p) => [...p.content][0])).toEqual(['📢']);
+    expect(await mark('古城', 'urged_at')).toBeNull();
   });
 
   test('開始のN分前を過ぎた最初の見回りで、GMと参加者に知らせる（ONのときだけ）', async () => {

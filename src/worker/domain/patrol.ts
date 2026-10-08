@@ -156,6 +156,8 @@ const logTo = (ctx: Ctx) => ({ db: ctx.db, groupId: ctx.group.id, token: ctx.bot
  * 送り先と「あと何日」ごとに1通にまとめ（10卓ごとに分ける）、どこか1か所に届いた卓を送った扱いにする
  */
 export async function sendReminders(ctx: Ctx, hour: number, deps: Deps): Promise<void> {
+  // ほかの知らせのためにグループを読んだときも、止めていれば送らない
+  if (!ctx.group.remind_enabled) return;
   const kind = '開催前の知らせ';
   const due = ctx.sessions.filter((s) => DATED.includes(s.status) && s.date && !s.notifiedAt && notifyYmdOf(ctx, s) === ctx.today && notifyHourOf(ctx, s) <= hour);
   if (!due.length) return;
@@ -192,6 +194,7 @@ export async function sendReminders(ctx: Ctx, hour: number, deps: Deps): Promise
 
 /** 期間前の催促。募集中・調整中のまま、期間の始まりが明日に迫った卓をGMに知らせる。送る時刻は開催前の知らせと同じ */
 export async function sendUrges(ctx: Ctx, hour: number, deps: Deps): Promise<void> {
+  if (!ctx.group.urge) return;
   const kind = '期間前の催促';
   const tomorrow = addDays(ctx.today, 1);
   const due = ctx.sessions.filter((s) => (s.status === STATUS.RECRUIT || s.status === STATUS.ADJUSTING) && !s.urgedAt && s.windowFrom === tomorrow && notifyHourOf(ctx, s) <= hour);
