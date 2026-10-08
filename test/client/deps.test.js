@@ -32,3 +32,15 @@ test('semantic-releaseのmicromatchとnpmプラグインは、tools/shimsの差�
   expect(await npmPlugin.publish()).toBe(false);
   expect(await npmPlugin.verifyConditions()).toBeUndefined();
 });
+
+// READMEのバッジに書いた版（React・Hono・TypeScript）は、package.jsonの版とそろえる（依存を上げたら、バッジも直す）
+test('READMEのバッジの版は、package.jsonの版と同じ（React・Honoは大きい数字、TypeScriptは小さい数字まで）', () => {
+  const pkg = json('package.json');
+  const deps = { ...pkg.dependencies, ...pkg.devDependencies };
+  const readme = fs.readFileSync(path.join(root, 'README.md'), 'utf8');
+  const badge = (name) => readme.match(new RegExp(`img\\.shields\\.io/badge/${name}-([0-9.]+)-`))?.[1];
+  const ver = (name) => deps[name].replace(/^[^0-9]*/, '').split('.');
+  expect(badge('React')).toBe(ver('react')[0]);
+  expect(badge('Hono')).toBe(ver('hono')[0]);
+  expect(badge('TypeScript')).toBe(ver('typescript').slice(0, 2).join('.'));
+});
