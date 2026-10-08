@@ -11,7 +11,7 @@ type SessionRow = {
   candidates: string; editor: string; updated_at: string; notified_at: string | null; asked_at: string | null;
   urged_at: string | null; soon_at: string | null; poll_ready_at: string | null; scenario_id: number | null;
   sheet_due: string | null; sheet_urged_at: string | null; slots_json: string; sheets_json: string;
-  capacity: number | null; recruit_due: string | null; due_urged_at: string | null; absent_json: string;
+  capacity: number | null; recruit_due: string | null; due_urged_at: string | null; absent_json: string; thread_id: string | null; thread_parent: string | null;
 };
 type SlotJson = { pos: number; label: string; summary: string; member: number | null; secret: string | null; has: number; hopes: [number, number][] };
 
@@ -186,6 +186,8 @@ export async function loadGroup(
       recruitDue: r.recruit_due,
       dueUrgedAt: r.due_urged_at,
       absent: (JSON.parse(r.absent_json) as [number, string, string][]).map(([id, note, at]) => ({ name: nameOf.get(id)!, note, at })).sort((a, b) => a.at.localeCompare(b.at)),
+      threadId: r.thread_id,
+      threadParent: r.thread_parent,
     };
   });
 

@@ -47,7 +47,7 @@ async function checkChannel(ctx: Ctx, channelId: string): Promise<string> {
 
 /**
  * 設定を書く。送られた項目だけを変える。
- * form: { channelId（'' なら外す）, kindChannel: { kind, channelId（'' なら基本へ） }, remind, days, hour, notifyOnSave, urge, soon, soonMinutes, autoFinish, dayParts, calMonths, availDays,
+ * form: { channelId（'' なら外す）, kindChannel: { kind, channelId（'' なら基本へ） }, remind, days, hour, notifyOnSave, urge, soon, soonMinutes, autoFinish, dayParts, threads, calMonths, availDays,
  *   discordEvents（卓をDiscordのイベントにも出す。入れるときは、Botがイベントを作れるかを確かめる） }
  */
 export async function saveConsoleSettings(ctx: Ctx, form: Form) {
@@ -92,6 +92,7 @@ export async function saveConsoleSettings(ctx: Ctx, form: Form) {
   if (soonMinutes !== undefined) { set.soon_minutes = soonMinutes; changes.push('開始直前の知らせを' + soonMinutes + '分前に'); }
   if (form.soon !== undefined) { set.soon = form.soon ? 1 : 0; changes.push('開始直前の知らせを' + onOff(form.soon)); }
   if (form.autoFinish !== undefined) { set.auto_finish = form.autoFinish ? 1 : 0; changes.push('過ぎた卓の自動終了を' + onOff(form.autoFinish)); }
+  if (form.threads !== undefined) { set.threads = form.threads ? 1 : 0; changes.push('卓ごとのスレッドを' + onOff(form.threads)); }
   if (form.dayParts !== undefined) { set.day_parts = form.dayParts ? 1 : 0; changes.push('予定の昼と夜を分けるのを' + onOff(form.dayParts)); }
   const calMonths = intIn(form.calMonths, 1, 12, 'カレンダーの表示月数は1〜12です。');
   if (calMonths !== undefined) { set.cal_months = calMonths; changes.push('表示月数を' + calMonths + 'に'); }

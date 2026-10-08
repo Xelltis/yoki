@@ -190,9 +190,9 @@ export type ConsoleData = {
   recruitChannelSet: boolean;
   /**
    * 知らせを送るBot。ready: サーバーにBotのトークンがある（運営者の設定）。inviteUrl: このグループのサーバーにBotを招くURL。
-   * eventsInviteUrl: 「イベントを作成」の権限も付けて招くURL（卓をDiscordのイベントに出すとき）
+   * eventsInviteUrl: 「イベントを作成」の権限も付けて招くURL（卓をDiscordのイベントに出すとき）。threadsInviteUrl: スレッドの権限も付けて招くURL（卓ごとのスレッド）
    */
-  bot: { ready: boolean; inviteUrl: string; eventsInviteUrl: string };
+  bot: { ready: boolean; inviteUrl: string; eventsInviteUrl: string; threadsInviteUrl: string };
   notifyDefault: boolean;
   /** 開催前の知らせを有効にした人（無効なら空） */
   notifySetter: string;
@@ -217,6 +217,8 @@ export type ConsoleData = {
     discordEvents: boolean;
     /** イベントの最後の失敗（うまくいけば空） */
     eventsError: string;
+    /** 卓の知らせを、卓ごとのスレッドにまとめる */
+    threads: boolean;
   };
   seriesNotify: SeriesNotifyView[];
   /** カレンダーとの連携（本人のぶん） */

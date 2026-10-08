@@ -167,6 +167,7 @@ export function NotifyPane() {
         <p className="hint">開催前の知らせは、0日前なら当日、1日前なら前日です。開始直前の知らせをONにすると見回りが5分ごとになり、指定した時刻を過ぎた最初の見回りで届きます。送り先は下の「チャンネル」で決めます。</p>
       </div>
 
+      <ThreadsCard />
       <EventsCard />
 
       {!setupFirst && channels}
@@ -177,6 +178,33 @@ export function NotifyPane() {
           <SeriesNotify />
         </div>
       </details>
+    </div>
+  );
+}
+
+/**
+ * 卓ごとのスレッド。卓の知らせを、卓ごとのスレッドにまとめる。Botに「公開スレッドの作成」と「スレッドでメッセージを送信」の権限が要るので、
+ * 権限を足して招き直すボタンを出す
+ */
+function ThreadsCard() {
+  const d = useData();
+  const { busy, msg, call } = useCall();
+  const st = d.settings;
+  return (
+    <div className="card" id="threadsCard">
+      <h3><Icon name="forum" size="sm" />卓ごとのスレッド <small className="hint">卓の知らせを、卓ごとにまとめる</small></h3>
+      <div className="flex items-start gap-12">
+        <p className="hint m-0 flex-1">
+          入れると、卓の最初の知らせのメッセージからスレッドを作り、その卓の知らせ（変更・日程調整・準備・催促・開始直前など）をスレッドに書きます。チャンネルが流れにくくなります。何卓かをまとめた開催前の知らせは、チャンネルに書きます。
+        </p>
+        <Switch id="stThreads" on={!!st.threads} label="卓の知らせを、卓ごとのスレッドにまとめる" busy={!!busy.stThreads}
+          onClick={() => void call('stThreads', 'thMsg', 'saveConsoleSettings', { threads: !st.threads })} />
+      </div>
+      <div className="btns">
+        <a className="btn" id="threadsInvite" href={d.bot.threadsInviteUrl || '#'} target="_blank" rel="noopener" hidden={!d.bot.threadsInviteUrl}><Icon name="add" size="sm" />スレッドの権限を付けてBotを招き直す</a>
+        <span className="hint" id="thMsg">{msg.thMsg || ''}</span>
+      </div>
+      {d.bot.threadsInviteUrl && <p className="hint mb-0">Botに「公開スレッドの作成」と「スレッドでメッセージを送信」の権限が要ります。すでにBotを招いていても、スレッドを使うなら、このボタンから招き直して権限を足してください。スレッドを作れないときは、送信の記録に理由が出て、知らせはチャンネルに書きます。</p>}
     </div>
   );
 }

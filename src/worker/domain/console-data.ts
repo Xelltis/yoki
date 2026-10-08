@@ -1,7 +1,7 @@
 // 画面に渡す一式（GAS版consoleData_）。形はsrc/shared/api.tsのConsoleData（画面と共有する）。日時の書き方はGAS版のまま。
 // 外したもの: url（シート）・hasPassword・adminSet。足したもの: me・group・members[].linked / admin・settings.remind
 import type { ConsoleData, ConsolePrep, ConsoleScenario } from '../../shared/api';
-import { botInviteUrl } from '../discord/channel';
+import { botInviteUrl, CREATE_EVENTS, THREAD_PERMISSIONS } from '../discord/channel';
 import { addDays, fmtDateTime, stampText } from '../lib/jst';
 import { STATUS_LIST } from './constants';
 import { bookedMap, bookedPartsMap, windowInfo } from './model';
@@ -65,7 +65,10 @@ export function consoleData(ctx: Ctx): ConsoleData {
     channelSet: !!g.channel_id,
     remindChannelSet: !!g.remind_channel_id,
     recruitChannelSet: !!g.recruit_channel_id,
-    bot: { ready: !!ctx.bot.token, inviteUrl: botInviteUrl(ctx.bot.clientId, g.guild_id), eventsInviteUrl: botInviteUrl(ctx.bot.clientId, g.guild_id, true) },
+    bot: {
+      ready: !!ctx.bot.token, inviteUrl: botInviteUrl(ctx.bot.clientId, g.guild_id), eventsInviteUrl: botInviteUrl(ctx.bot.clientId, g.guild_id, CREATE_EVENTS),
+      threadsInviteUrl: botInviteUrl(ctx.bot.clientId, g.guild_id, THREAD_PERMISSIONS),
+    },
     notifyDefault: g.notify_on_save === 1,
     notifySetter: setter,
     settings: {
@@ -85,6 +88,7 @@ export function consoleData(ctx: Ctx): ConsoleData {
       availDays: g.avail_days,
       setter,
       discordEvents: g.discord_events === 1,
+      threads: g.threads === 1,
       eventsError: g.events_error,
     },
     seriesNotify: Object.keys(ctx.seriesNotify)

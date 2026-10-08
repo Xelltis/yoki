@@ -27,6 +27,7 @@ import IEventBusy from '~icons/material-symbols/event-busy-outline-rounded';
 import IEventRepeat from '~icons/material-symbols/event-repeat-outline-rounded';
 import IExpandMore from '~icons/material-symbols/expand-more-rounded';
 import IFlag from '~icons/material-symbols/flag-outline-rounded';
+import IForum from '~icons/material-symbols/forum-outline-rounded';
 import IGavel from '~icons/material-symbols/gavel-outline-rounded';
 import IGroup from '~icons/material-symbols/group-outline-rounded';
 import IHelp from '~icons/material-symbols/help-outline-rounded';
@@ -90,6 +91,7 @@ export const ICONS = {
   event_repeat: IEventRepeat,
   expand_more: IExpandMore,
   flag: IFlag,
+  forum: IForum,
   gavel: IGavel,
   group: IGroup,
   help: IHelp,

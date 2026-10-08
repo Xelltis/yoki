@@ -8,7 +8,8 @@ import { SYSTEM_ACTOR } from '../auth/guard';
 import { savedOrigin } from '../auth/origin';
 import { EVENT_BUDGET, processDiscordEvents, sweepOrphanEvents } from '../discord/events';
 import { mentionsOf, recruitDuePayload, recruitLink, sessionEmbed, sheetUrgePayload } from '../discord/payloads';
-import { appendLog, discordCalls, postDiscord, postToTargets, realSleep, type Sleep } from '../discord/send';
+import { appendLog, discordCalls, postDiscord, realSleep, type Sleep } from '../discord/send';
+import { postSessionNotice } from '../discord/threads';
 import { sessionTargets, type Target, targetNote } from '../discord/targets';
 import type { Bindings } from '../env';
 import { googleDeps } from '../google/config';
@@ -214,7 +215,7 @@ export async function sendUrges(ctx: Ctx, hour: number, deps: Deps): Promise<voi
       ? '⏳ 明日から「' + s.name + '」の募集の期間です。まだ参加者を集めている途中です。'
       : '⏳ 明日から「' + s.name + '」の候補の期間です。まだ開催日が決まっていません。';
     const payload = { content: head + (gmId ? ' <@' + gmId + '>' : '') + recruitLink(ctx, s), embeds: [sessionEmbed(ctx, s)] };
-    if (!(await postToTargets(logTo(ctx), payload, kind, s.name, targets, deps.sleep))) await releaseMark(ctx, 'urged_at', [s.rowId]);
+    if (!(await postSessionNotice(ctx, s, payload, kind, targets, deps.sleep))) await releaseMark(ctx, 'urged_at', [s.rowId]);
   }
 }
 
@@ -230,7 +231,7 @@ export async function sendRecruitDue(ctx: Ctx, hour: number, deps: Deps): Promis
     if (!(await claimMark(ctx, 'due_urged_at', [s])).size) continue;
     const targets = sessionTargets(ctx, s);
     if (!targets.length) { await appendLog(logTo(ctx), kind, s.name, '送らず: 送り先のチャンネルが未設定'); continue; }
-    if (!(await postToTargets(logTo(ctx), recruitDuePayload(ctx, s), kind, s.name, targets, deps.sleep))) await releaseMark(ctx, 'due_urged_at', [s.rowId]);
+    if (!(await postSessionNotice(ctx, s, recruitDuePayload(ctx, s), kind, targets, deps.sleep))) await releaseMark(ctx, 'due_urged_at', [s.rowId]);
   }
 }
 
@@ -250,7 +251,7 @@ export async function sendSheetUrges(ctx: Ctx, hour: number, deps: Deps): Promis
     if (!missing.length) continue;
     const targets = sessionTargets(ctx, s, 'remind');
     if (!targets.length) { await appendLog(logTo(ctx), kind, s.name, '送らず: 送り先のチャンネルが未設定'); continue; }
-    if (!(await postToTargets(logTo(ctx), sheetUrgePayload(ctx, s, missing), kind, s.name, targets, deps.sleep))) await releaseMark(ctx, 'sheet_urged_at', [s.rowId]);
+    if (!(await postSessionNotice(ctx, s, sheetUrgePayload(ctx, s, missing), kind, targets, deps.sleep))) await releaseMark(ctx, 'sheet_urged_at', [s.rowId]);
   }
 }
 
@@ -274,7 +275,7 @@ export async function sendStartingSoon(ctx: Ctx, deps: Deps): Promise<void> {
     const mentions = mentionsOf(ctx, [s]);
     const head = left <= 0 ? '⏰ まもなく「' + s.name + '」が始まります。' : '⏰ あと' + left + '分で「' + s.name + '」が始まります。';
     const payload = { content: head + (mentions ? ' ' + mentions : ''), embeds: [sessionEmbed(ctx, s)] };
-    if (!(await postToTargets(logTo(ctx), payload, kind, s.name, targets, deps.sleep))) await releaseMark(ctx, 'soon_at', [s.rowId]);
+    if (!(await postSessionNotice(ctx, s, payload, kind, targets, deps.sleep))) await releaseMark(ctx, 'soon_at', [s.rowId]);
   }
 }
 

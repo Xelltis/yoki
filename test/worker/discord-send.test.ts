@@ -2,7 +2,9 @@
 import { env } from 'cloudflare:test';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import type { Payload } from '../../src/worker/discord/payloads';
-import { classifyFailure, discordAttempt, discordCalls, type LogTo, postDiscord, postToTargets, realSleep, SAMPLE_CHANNEL } from '../../src/worker/discord/send';
+import { classifyFailure, discordAttempt, discordCalls, type LogTo, postDiscord, realSleep, SAMPLE_CHANNEL } from '../../src/worker/discord/send';
+import { postSessionNotice } from '../../src/worker/discord/threads';
+import type { GroupRow, Session } from '../../src/worker/domain/types';
 import type { Target } from '../../src/worker/discord/targets';
 import { makeGroup } from './helpers';
 
@@ -78,6 +80,12 @@ describe('1回だけ送る', () => {
     expect(r).toMatchObject({ ok: true, code: 200, retryable: false, waitMs: 0, reason: null, attempt: 2, maxTries: 3, result: 'OK (200)（2回目）' });
     expect(posts).toHaveLength(1);
     expect(await logs()).toEqual([{ at: AT, kind: '案内', target: '港', result: 'OK (200)（2回目）' }]);
+  });
+
+  test('届いたメッセージのIDを返す（卓のスレッドを作るのに使う）。本文がJSONでなければ空', async () => {
+    mockFetch([Response.json({ id: '42' }), new Response('ok', { status: 200 })]);
+    expect((await discordAttempt(LOG, P, '案内', '港', 1, CH(1))).messageId).toBe('42');
+    expect((await discordAttempt(LOG, P, '案内', '港', 1, CH(1))).messageId).toBe('');
   });
 
   test('チャンネルが空なら送らず、記録もしない', async () => {
@@ -241,16 +249,20 @@ describe('いくつかの送り先へ', () => {
   const recruit: Target = { channelId: CH(2), label: '募集のチャンネル', series: '', kind: 'recruit' };
   const base: Target = { channelId: CH(1), label: '基本のチャンネル', series: '' };
 
+  // 卓の知らせ（スレッドを使わないグループ）
+  const ctx = { db: env.DB, group: { id: 'g', threads: 0 } as GroupRow, bot: { token: env.DISCORD_BOT_TOKEN }, now: new Date(AT) };
+  const s = (name: string) => ({ rowId: 1, name, threadId: null, threadParent: null }) as Session;
+
   test('1か所でも届かなければfalse。残りの送り先にも送る。記録の対象に送り先を添える', async () => {
     const posts = mockFetch([404, 200, 200]);
-    expect(await postToTargets(LOG, P, '案内', '港 #1', [series, recruit, base], async () => {})).toBe(false);
+    expect(await postSessionNotice(ctx, s('港 #1'), P, '案内', [series, recruit, base], async () => {})).toBe(false);
     expect(posts.map((p) => p.url)).toEqual([MESSAGES(CH(3)), MESSAGES(CH(2)), MESSAGES(CH(1))]);
-    expect((await logs()).map((l) => l.target)).toEqual(['港 #1（シリーズ「港」のチャンネル）', '港 #1（募集のチャンネル）', '港 #1']);
+    expect((await logs()).map((l) => l.target).sort()).toEqual(['港 #1', '港 #1（シリーズ「港」のチャンネル）', '港 #1（募集のチャンネル）']);
   });
 
   test('すべて届けばtrue。送り先が無ければfalse', async () => {
     mockFetch();
-    expect(await postToTargets(LOG, P, '案内', '港', [series, base])).toBe(true);
-    expect(await postToTargets(LOG, P, '案内', '港', [])).toBe(false);
+    expect(await postSessionNotice(ctx, s('港'), P, '案内', [series, base], realSleep)).toBe(true);
+    expect(await postSessionNotice(ctx, s('港'), P, '案内', [], realSleep)).toBe(false);
   });
 });

@@ -5,8 +5,8 @@ import { STATUS } from '../domain/constants';
 import type { Ctx, Session } from '../domain/types';
 
 export type Kind = 'remind' | 'recruit' | '';
-/** 送り先。channelIdはDiscordのチャンネルのID。labelは送信記録と画面に出す名前 */
-export type Target = { channelId: string; label: string; series: string; kind?: Kind };
+/** 送り先。channelIdはDiscordのチャンネルのID。labelは送信記録と画面に出す名前。threadは卓のスレッド（channelIdはスレッドのID） */
+export type Target = { channelId: string; label: string; series: string; kind?: Kind; thread?: boolean };
 
 const KIND_LABEL: Record<'remind' | 'recruit', string> = { remind: '開催前の知らせのチャンネル', recruit: '募集のチャンネル' };
 
@@ -46,5 +46,5 @@ export function unionTargets(lists: Target[][]): Target[] {
 
 /** 送信記録の「対象」に添える送り先。基本のチャンネルなら何も付けない */
 export function targetNote(t: Target | undefined): string {
-  return t && t.series ? '（シリーズ「' + t.series + '」のチャンネル）' : t && t.kind ? '（' + t.label + '）' : '';
+  return t && t.thread ? '（卓のスレッド）' : t && t.series ? '（シリーズ「' + t.series + '」のチャンネル）' : t && t.kind ? '（' + t.label + '）' : '';
 }

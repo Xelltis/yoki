@@ -87,7 +87,7 @@ usersの行は消さない（印がそこにあるため）。Discordのユー�
 
 ## データベース（D1）
 
-表の定義は `migrations/`（`0001_init.sql` が最初の形、`0002_admin.sql` が締め出し・最後に使われた日と索引、`0003_bot.sql` が知らせのBot、`0004_calendar.sql` がカレンダーとの連携、`0005_member_check.sql` がBotで確かめた日時、`0006_google_login.sql` がGoogleでのログイン、`0007_scenarios.sql` がシナリオと通過、`0008_prep.sql` が卓の準備、`0009_discord_events.sql` がDiscordのイベント、`0010_note_ranges.sql` が期間の日付メモ、`0011_poll_maybe.sql` が日程調整の △、`0012_recruit_limits.sql` が募集の定員と締め切り、`0013_absences.sql` が行けなくなった印、`0014_day_parts.sql` が予定の時間帯、`0015_share_busy.sql` がほかのグループの卓）。日付（開催日・予定・メモ）は日本時間の `YYYY-MM-DD`、日時（〜した時刻）はUTCのISO文字列。
+表の定義は `migrations/`（`0001_init.sql` が最初の形、`0002_admin.sql` が締め出し・最後に使われた日と索引、`0003_bot.sql` が知らせのBot、`0004_calendar.sql` がカレンダーとの連携、`0005_member_check.sql` がBotで確かめた日時、`0006_google_login.sql` がGoogleでのログイン、`0007_scenarios.sql` がシナリオと通過、`0008_prep.sql` が卓の準備、`0009_discord_events.sql` がDiscordのイベント、`0010_note_ranges.sql` が期間の日付メモ、`0011_poll_maybe.sql` が日程調整の △、`0012_recruit_limits.sql` が募集の定員と締め切り、`0013_absences.sql` が行けなくなった印、`0014_day_parts.sql` が予定の時間帯、`0015_share_busy.sql` がほかのグループの卓、`0016_threads.sql` が卓ごとのスレッド）。日付（開催日・予定・メモ）は日本時間の `YYYY-MM-DD`、日時（〜した時刻）はUTCのISO文字列。
 
 `users`・`user_guilds`・`auth_sessions`: ログイン。`users.banned_at`・`banned_reason` は締め出し。
 
@@ -186,6 +186,8 @@ usersの行は消さない（印がそこにあるため）。Discordのユー�
 - Botには「イベントを作成」（`1<<44`。作ったイベントの書き換えと削除もできる）が要る。基本の招待の権限には足さず、イベントの欄にだけ、足した招待URL（`bot.eventsInviteUrl`）を出す。入れるときは、`botCanCreateEvents` で、Botのロールの権限を確かめる（BotのIDは `/users/@me` で読む）
 - 運営者がサーバーを付け替えると、前のサーバーのイベントを消して、新しいサーバーに作り直す（控えに作ったサーバーを持つ）。グループが消えたイベントは、毎時の片付け（`sweepOrphanEvents`）が消す
 - イベントはサーバーの全員に見える。プライバシーポリシーの既定の文に書いてある
+
+**卓ごとのスレッド**（`discord/threads.ts`）。グループの管理者が入れると（`groups.threads`）、卓の知らせを卓ごとのスレッドにまとめる。スレッドは、その卓の知らせがチャンネルに届いたとき、そのメッセージから作り（`POST /channels/{id}/messages/{id}/threads`）、`sessions.thread_id`・`thread_parent` に控える。次からは、卓の知らせの最初の送り先がそのチャンネルなら、スレッドへ送る。スレッドが消えた・入れない（404・403）ときは控えを消し、チャンネルへ送り直してスレッドを作り直す。サーバーから送る卓の知らせ（回答そろい・日程決定・行けなくなった・期間前の催促・締め切り・キャラシの催促・開始直前）は `postSessionNotice`、画面から送る知らせは `sendDiscordStep` が使う。何卓かを1通にまとめる開催前の知らせは、チャンネルへ送る。Botには「公開スレッドの作成」と「スレッドでメッセージを送信」の権限が要り、知らせの区分に、それを足した招待URL（`bot.threadsInviteUrl`）を出す。
 
 **Discordのボタン**（`discord/buttons.ts`・`discord/interactions.ts`・`routes/discord.ts`）。運営者が運営の管理画面で入れると（`meta` の `discord_buttons`）、日程調整の知らせに「予定表から答える」「どの日でもいい」と行ける日を選ぶ欄、募集の知らせに「参加希望」「興味あり」「取り消す」を付ける（message components。IDは `yoki:グループ:卓の番号:操作`）。入れるときは、Botのトークンで `GET /applications/@me` からPublic Keyを読んで `meta` に控え、`PATCH /applications/@me` でInteractions Endpoint URL（`/api/discord/interactions`）を入れる（Discordがそのとき確かめの要求を送るので、Public Keyを先に控える）。新しいsecretは要らない。
 

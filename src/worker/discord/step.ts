@@ -12,6 +12,7 @@ import { isGmOf } from '../domain/prep';
 import { announcePayload, askPayload, bulkPayload, changePayload, mentionsOf, type Payload, pollPayload, pollReadyPayload, prepPayload, decidedPayload, testPayload } from './payloads';
 import { discordAttempt } from './send';
 import { discordTargets, type Kind, kindBase, sessionTargets, type Target, targetNote, unionTargets } from './targets';
+import { forgetThread, startThread, threadGone, threadTarget } from './threads';
 
 /** 画面から受け取った文（消した卓の名前・まとめての見出し）。1行にして長さを切り、@ のあとに見えない文字をはさんでメンションにしない */
 export function plainText(s: string, max = 100): string {
@@ -150,10 +151,19 @@ export async function sendDiscordStep(ctx: Ctx, form: Form, io: { data: () => Pr
   }
   if (!targets.length) throw badRequest('送り先のチャンネルが決まっていません。管理画面の「知らせ」でチャンネルを選んでから送ってください。');
   const to = Math.min(Math.max(Math.trunc(Number(form.to)) || 0, 0), targets.length - 1);
-  const t = targets[to]!;
-  const r = await discordAttempt({ db: ctx.db, groupId: ctx.group.id, token: ctx.bot.token }, payload, label, target + targetNote(t), Number(form.attempt) || 1, t.channelId);
-  const out: Record<string, unknown> = { ...r, to, targetCount: targets.length, targetLabel: t.label };
   const sent = s as Session | null;
+  const log = { db: ctx.db, groupId: ctx.group.id, token: ctx.bot.token };
+  // 卓の知らせは、最初の送り先だけ卓のスレッドを使う（threads.ts）。スレッドが消えた・入れないなら、チャンネルへ送り直す
+  const base = targets[to]!;
+  let t = sent && to === 0 ? threadTarget(ctx, sent, base) : base;
+  let r = await discordAttempt(log, payload, label, target + targetNote(t), Number(form.attempt) || 1, t.channelId);
+  if (sent && threadGone(t, r)) {
+    await forgetThread(ctx, sent);
+    t = base;
+    r = await discordAttempt(log, payload, label, target + targetNote(t), Number(form.attempt) || 1, t.channelId);
+  }
+  if (sent && r.ok && to === 0 && !t.thread && ctx.group.threads && r.messageId) await startThread(ctx, sent, t.channelId, r.messageId);
+  const out: Record<string, unknown> = { ...r, to, targetCount: targets.length, targetLabel: t.label };
   if (r.ok && kind === 'ask' && sent) {
     // 送った日時を卓に控える。カードに「確認文を送りました」と出す
     await ctx.db.prepare('UPDATE sessions SET asked_at = ? WHERE id = ?').bind(ctx.now.toISOString(), sent.rowId).run();

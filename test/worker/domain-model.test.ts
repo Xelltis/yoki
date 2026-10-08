@@ -9,7 +9,7 @@ function session(over: Partial<Session>): Session {
   return {
     rowId: 0, id: 'S000', seq: 0, name: '卓', gm: '', members: [], want: [], interest: [], date: null, start: '', end: '',
     status: STATUS.HELD, place: '', memo: '', series: '', seriesEnd: null, windowFrom: null, windowTo: null, candidates: [],
-    editor: '', updatedAt: '', notifiedAt: null, askedAt: null, urgedAt: null, soonAt: null, pollReadyAt: null, scenarioId: null, sheetDue: null, sheetUrgedAt: null, slots: [], sheets: [], capacity: null, recruitDue: null, dueUrgedAt: null, absent: [],
+    editor: '', updatedAt: '', notifiedAt: null, askedAt: null, urgedAt: null, soonAt: null, pollReadyAt: null, scenarioId: null, sheetDue: null, sheetUrgedAt: null, slots: [], sheets: [], capacity: null, recruitDue: null, dueUrgedAt: null, absent: [], threadId: null, threadParent: null,
     ...over,
   };
 }

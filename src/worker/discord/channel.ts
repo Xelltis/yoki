@@ -14,10 +14,13 @@ export const BOT_PERMISSIONS = 1024 + 2048 + 16384;
 /** 「イベントを作成」（1<<44）。イベントを作り、自分が作ったイベントを書き換え・消せる。卓をDiscordのイベントに出すグループだけが求める */
 export const CREATE_EVENTS = 2 ** 44;
 
-/** グループのサーバーにBotを招くURL。eventsなら「イベントを作成」の権限も求める。DiscordアプリのClient IDが無ければ空 */
-export function botInviteUrl(clientId: string | undefined, guildId: string, events = false): string {
+/** 「公開スレッドの作成」（1<<35）と「スレッドでメッセージを送信」（1<<38）。卓ごとのスレッドを使うグループだけが求める */
+export const THREAD_PERMISSIONS = 2 ** 35 + 2 ** 38;
+
+/** グループのサーバーにBotを招くURL。extraは足して求める権限（イベント・スレッド）。DiscordアプリのClient IDが無ければ空 */
+export function botInviteUrl(clientId: string | undefined, guildId: string, extra = 0): string {
   if (!clientId) return '';
-  const permissions = String(BOT_PERMISSIONS + (events ? CREATE_EVENTS : 0));
+  const permissions = String(BOT_PERMISSIONS + extra);
   const q = new URLSearchParams({ client_id: clientId, scope: 'bot', permissions, guild_id: guildId, disable_guild_select: 'true' });
   return 'https://discord.com/oauth2/authorize?' + q.toString();
 }

@@ -1,7 +1,7 @@
 // 行けなくなった。開催の卓の参加者が、行けなくなったことをGMに伝える（本人だけが付け外しする）。
 // 付けたら、サーバーがその場でGMに知らせる。GMは「日を組み直す」（状態を調整中に戻して候補日を出す）か、参加者を見直す
 import { absencePayload } from '../discord/payloads';
-import { postToTargets } from '../discord/send';
+import { postSessionNotice } from '../discord/threads';
 import { sessionTargets } from '../discord/targets';
 import { badRequest } from '../lib/errors';
 import { ABSENCE_NOTE_MAX, STATUS } from './constants';
@@ -34,7 +34,7 @@ export async function setAbsence(ctx: Ctx, form: Form, io: Io) {
   if (again) return { ok: true, id: s.id, message: '「' + s.name + '」への一言を直しました。' };
   const targets = sessionTargets(ctx, s);
   const notified = targets.length
-    ? await postToTargets({ db, groupId: ctx.group.id, token: ctx.bot.token }, absencePayload(ctx, s, name, note), '行けなくなった', s.name, targets, io.sleep)
+    ? await postSessionNotice(ctx, s, absencePayload(ctx, s, name, note), '行けなくなった', targets, io.sleep)
     : null;
   if (notified !== null) await reloadLog(ctx);
   return { ok: true, id: s.id, notified, message: '「' + s.name + '」に行けなくなったことを、GMに伝えました。' + noticeNote(notified, 'GMへの知らせ') };

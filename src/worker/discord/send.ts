@@ -4,7 +4,6 @@ import { DISCORD_API } from '../auth/oauth';
 import { discordFetch } from './calls';
 import { isChannelId } from './channel';
 import type { Payload } from './payloads';
-import { targetNote, type Target } from './targets';
 
 export const RETRY_WAITS_MS = [3000, 8000];
 /** サンプルのグループのチャンネル（実在しない）。ここへは送らずに、送ったことにする（開発用ログインとスクリーンショット用） */
@@ -22,6 +21,8 @@ export type Reason = { kind: string; label: string; toolFault: boolean; text: st
 
 export type Attempt = {
   ok: boolean;
+  /** 届いたメッセージのID（卓のスレッドを作るのに使う。届かなかったとき・サンプルのチャンネルでは空） */
+  messageId: string;
   code: number;
   retryable: boolean;
   waitMs: number;
@@ -91,7 +92,7 @@ export { discordCalls } from './calls';
  */
 export async function discordAttempt(log: LogTo, payload: Payload, kind: string, target: string, attemptIn: number, channelId: string): Promise<Attempt> {
   const attempt = Math.min(Math.max(Math.trunc(attemptIn) || 1, 1), MAX_TRIES);
-  if (!channelId) return { ok: false, code: 0, retryable: false, waitMs: 0, result: '送らず: 送り先のチャンネルが未設定', raw: '', reason: null, attempt, maxTries: MAX_TRIES };
+  if (!channelId) return { ok: false, messageId: '', code: 0, retryable: false, waitMs: 0, result: '送らず: 送り先のチャンネルが未設定', raw: '', reason: null, attempt, maxTries: MAX_TRIES };
   let code = 0, body = '', retryAfter = 0, errText = '';
   if (channelId === SAMPLE_CHANNEL) {
     code = 200;
@@ -128,14 +129,18 @@ export async function discordAttempt(log: LogTo, payload: Payload, kind: string,
       (reason!.toolFault ? '' : '　このツールの不具合ではありません。');
   }
   await appendLog(log, kind, target, result);
-  return { ok, code, retryable: canRetry && !last, waitMs, result, raw, reason, attempt, maxTries: MAX_TRIES };
+  let messageId = '';
+  if (ok && body) {
+    try { messageId = String((JSON.parse(body) as { id?: unknown }).id ?? ''); } catch { messageId = ''; }
+  }
+  return { ok, messageId, code, retryable: canRetry && !last, waitMs, result, raw, reason, attempt, maxTries: MAX_TRIES };
 }
 
 export type Sleep = (ms: number) => Promise<void>;
 export const realSleep: Sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-/** 送り直しも含めて送る（サーバーから送るとき。画面からは1回ずつsendDiscordStepを呼ぶ） */
-export async function postDiscord(log: LogTo, payload: Payload, kind: string, target: string, channelId: string, sleep: Sleep = realSleep): Promise<boolean> {
+/** 送り直しも含めて送り、最後の結果を返す（サーバーから送るとき。画面からは1回ずつsendDiscordStepを呼ぶ） */
+export async function postDiscordResult(log: LogTo, payload: Payload, kind: string, target: string, channelId: string, sleep: Sleep): Promise<Attempt> {
   // 送り直してよいのはMAX_TRIES回目の手前まで（discordAttemptがretryableで決める）。届いたときもretryableはfalse
   let attempt = 1;
   let r = await discordAttempt(log, payload, kind, target, attempt, channelId);
@@ -143,12 +148,10 @@ export async function postDiscord(log: LogTo, payload: Payload, kind: string, ta
     await sleep(r.waitMs);
     r = await discordAttempt(log, payload, kind, target, ++attempt, channelId);
   }
-  return r.ok;
+  return r;
 }
 
-/** いくつかの送り先へ同じ文を送る。すべて届けばtrue（GAS版postToTargets_） */
-export async function postToTargets(log: LogTo, payload: Payload, kind: string, target: string, targets: Target[], sleep: Sleep = realSleep): Promise<boolean> {
-  let all = targets.length > 0;
-  for (const t of targets) if (!(await postDiscord(log, payload, kind, target + targetNote(t), t.channelId, sleep))) all = false;
-  return all;
+/** 送り直しも含めて送る。届けばtrue */
+export async function postDiscord(log: LogTo, payload: Payload, kind: string, target: string, channelId: string, sleep: Sleep = realSleep): Promise<boolean> {
+  return (await postDiscordResult(log, payload, kind, target, channelId, sleep)).ok;
 }

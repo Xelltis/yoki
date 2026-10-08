@@ -31,6 +31,8 @@ export type GroupRow = {
   events_error: string;
   /** 予定の印を昼と夜に分ける（1） */
   day_parts: number;
+  /** 卓の知らせを、卓ごとのスレッドにまとめる（1） */
+  threads: number;
 };
 
 /**
@@ -84,6 +86,9 @@ export type Session = {
   dueUrgedAt: string | null;
   /** 行けなくなった参加者（名前・GMへの一言・伝えた日時） */
   absent: Absence[];
+  /** 卓のスレッド（DiscordのチャンネルのID）と、スレッドを作ったチャンネルのID。無ければnull */
+  threadId: string | null;
+  threadParent: string | null;
 };
 
 /** 行けなくなった参加者 */
