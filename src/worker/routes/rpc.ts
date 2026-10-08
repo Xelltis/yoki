@@ -23,6 +23,7 @@ import { hasGoogleWriters, syncGroupWrites } from '../google/sync';
 import { saveGoogleSettings, syncGoogleNow, unlinkGoogle, unlinkGoogleLogin } from '../domain/google';
 import { deleteGroup } from '../domain/groups';
 import { deleteScenario, saveScenario, setScenarioMark } from '../domain/scenarios';
+import { assignSlots, savePrep, saveSlotSecret, setSlotHope, submitSheet } from '../domain/prep';
 import { AppError, adminError, authError, goneError, notFound } from '../lib/errors';
 import type { RpcName } from '../../shared/api';
 
@@ -70,6 +71,12 @@ export const RPC: Record<Exclude<RpcName, 'getConsoleData'>, Entry> = {
   // 消せるのは登録した人と管理者（中で確かめる）
   deleteScenario: { run: deleteScenario, data: true, calendar: true },
   setScenarioMark: { run: setScenarioMark, data: true },
+  // 卓の準備。だれが書けるかは中で確かめる（GM・管理者・本人）
+  savePrep: { run: savePrep, data: true },
+  saveSlotSecret: { run: saveSlotSecret, data: true },
+  assignSlots: { run: assignSlots, data: true },
+  setSlotHope: { run: setSlotHope, data: true },
+  submitSheet: { run: submitSheet, data: true },
   // 消したあとは画面のデータを読めないのでdataを付けない
   deleteGroup: { run: deleteGroup, admin: 'グループを消すこと' },
 };

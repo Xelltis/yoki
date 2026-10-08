@@ -9,7 +9,9 @@ type SessionRow = {
   place: string; memo: string; series: string; series_end: string | null; window_from: string | null; window_to: string | null;
   candidates: string; editor: string; updated_at: string; notified_at: string | null; asked_at: string | null;
   urged_at: string | null; soon_at: string | null; poll_ready_at: string | null; scenario_id: number | null;
+  sheet_due: string | null; sheet_urged_at: string | null; slots_json: string; sheets_json: string;
 };
+type SlotJson = { pos: number; label: string; summary: string; member: number | null; secret: string | null; has: number; hopes: [number, number][] };
 
 /** グループの行と、一緒に読むシナリオ（JSON）。読み込みの文を増やさないため、グループを読む文の中で読む */
 type GroupWithExtras = GroupRow & { scenarios_json: string; marks_json: string };
@@ -50,7 +52,21 @@ export async function loadGroup(
       )
       .bind(groupId),
     db.prepare('SELECT id, name, discord_id, note, is_admin, user_id FROM members WHERE group_id = ? ORDER BY id').bind(groupId),
-    db.prepare('SELECT * FROM sessions WHERE group_id = ? ORDER BY seq').bind(groupId),
+    // 卓と、その準備（HOの枠・希望・キャラシ）。秘匿HOは、読み込む人（?2。0は人でない読み込み）がGMか割り当てた本人の枠だけ読む
+    db
+      .prepare(
+        `SELECT s.*,
+           (SELECT json_group_array(json_object('pos', sl.pos, 'label', sl.label, 'summary', sl.summary, 'member', sl.member_id,
+                     'secret', CASE WHEN ?2 > 0 AND (sl.member_id = ?2 OR EXISTS (
+                                 SELECT 1 FROM session_people gp WHERE gp.session_id = s.id AND gp.role = 'gm' AND gp.member_id = ?2)) THEN sl.secret END,
+                     'has', sl.secret <> '',
+                     'hopes', json((SELECT json_group_array(json_array(h.member_id, h.rank)) FROM slot_hopes h WHERE h.slot_id = sl.id))))
+              FROM session_slots sl WHERE sl.session_id = s.id) AS slots_json,
+           (SELECT json_group_array(json_array(sh.member_id, sh.url, sh.pc_name, sh.updated_at))
+              FROM session_sheets sh WHERE sh.session_id = s.id) AS sheets_json
+         FROM sessions s WHERE s.group_id = ?1 ORDER BY s.seq`,
+      )
+      .bind(groupId, actor.memberId),
     db
       .prepare(
         `SELECT p.session_id, p.role, COALESCE(m.name, p.guest_name) AS name
@@ -138,6 +154,15 @@ export async function loadGroup(
       soonAt: r.soon_at,
       pollReadyAt: r.poll_ready_at,
       scenarioId: r.scenario_id,
+      sheetDue: r.sheet_due,
+      sheetUrgedAt: r.sheet_urged_at,
+      slots: (JSON.parse(r.slots_json) as SlotJson[])
+        .map((x) => ({
+          pos: x.pos, label: x.label, summary: x.summary, memberId: x.member, secret: x.secret, hasSecret: x.has === 1,
+          hopes: x.hopes.map(([memberId, rank]) => ({ memberId, rank })),
+        }))
+        .sort((a, b) => a.pos - b.pos),
+      sheets: (JSON.parse(r.sheets_json) as [number, string, string, string][]).map(([memberId, url, pc, at]) => ({ memberId, url, pc, at })),
     };
   });
 

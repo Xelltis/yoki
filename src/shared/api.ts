@@ -26,6 +26,7 @@ export const RPC_FUNCS = [
   'saveSession', 'deleteSession', 'saveMember', 'deleteMember', 'saveConsoleSettings', 'saveSeriesNotify', 'renameGroup', 'startPoll', 'setPollVote',
   'setPollVoteAll', 'cancelPoll', 'decidePoll', 'setAdmin', 'deleteGroup', 'getDiscordChannels', 'saveCalendarFeed', 'deleteCalendarFeed',
   'saveGoogleSettings', 'syncGoogleNow', 'unlinkGoogle', 'unlinkGoogleLogin', 'saveScenario', 'deleteScenario', 'setScenarioMark',
+  'savePrep', 'saveSlotSecret', 'assignSlots', 'setSlotHope', 'submitSheet',
 ] as const;
 export type RpcName = (typeof RPC_FUNCS)[number];
 
@@ -65,7 +66,40 @@ export type ConsoleSession = {
   votes: Record<string, Record<string, string>>;
   /** 遊ぶシナリオ（ConsoleScenarioのid）。無ければ空 */
   scenarioId: string;
+  /** 卓の準備（HO・キャラシ） */
+  prep: ConsolePrep;
 };
+
+/** 卓の準備（HOの枠と、出したキャラシ） */
+export type ConsolePrep = {
+  /** キャラシの締め切り（YYYY-MM-DD）。無ければ空 */
+  sheetDue: string;
+  /** HOの枠（posの順） */
+  slots: ConsoleSlot[];
+  /** 出したキャラシ{ 名前: { url, pc（キャラクターの名前）, at（出した日時） } } */
+  sheets: Record<string, { url: string; pc: string; at: string }>;
+};
+
+/** HOの枠 */
+export type ConsoleSlot = {
+  /** 卓の中の番号（消しても詰めない） */
+  pos: number;
+  /** HO1・探偵 など */
+  label: string;
+  /** 公開HO（全員に見せる） */
+  summary: string;
+  /** 割り当てた人の名前（無ければ空） */
+  assigned: string;
+  /** 秘匿HO。その卓のGMと、割り当てた本人にだけ入る。ほかの人にはnull */
+  secret: string | null;
+  /** 秘匿HOがあるか（中身を見られない人にも、あることだけを出す） */
+  hasSecret: boolean;
+  /** 希望{ 名前: 1 | 2 }（第1・第2希望）。GM・管理者・本人の分だけ入る */
+  hopes: Record<string, number>;
+};
+
+/** 卓の準備に書ける長さと数の上限（画面は入力欄に、サーバーは受け取るときに使う） */
+export const PREP_MAX = { slots: 12, label: 30, summary: 500, secret: 2000, url: 500, pc: 50 } as const;
 
 /** 画面のデータのシナリオ */
 export type ConsoleScenario = {

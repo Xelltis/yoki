@@ -1,11 +1,11 @@
 // 画面に渡す一式（GAS版consoleData_）。形はsrc/shared/api.tsのConsoleData（画面と共有する）。日時の書き方はGAS版のまま。
 // 外したもの: url（シート）・hasPassword・adminSet。足したもの: me・group・members[].linked / admin・settings.remind
-import type { ConsoleData, ConsoleScenario } from '../../shared/api';
+import type { ConsoleData, ConsolePrep, ConsoleScenario } from '../../shared/api';
 import { botInviteUrl } from '../discord/channel';
 import { addDays, fmtDateTime, stampText } from '../lib/jst';
 import { STATUS_LIST } from './constants';
 import { bookedMap, windowInfo } from './model';
-import type { Ctx } from './types';
+import type { Ctx, Session } from './types';
 
 export function consoleData(ctx: Ctx): ConsoleData {
   const g = ctx.group;
@@ -49,6 +49,7 @@ export function consoleData(ctx: Ctx): ConsoleData {
         window: w?.text ?? '', windowFrom: w?.from ?? '', windowTo: w?.to ?? '', windowLabel: w?.label ?? '', windowKey: w?.from ?? '',
         candidates: s.candidates, votes: ctx.votes.get(s.rowId) ?? {},
         scenarioId: s.scenarioId === null ? '' : String(s.scenarioId),
+        prep: prepView(ctx, s),
       };
     }),
     avail: ctx.avail,
@@ -89,6 +90,27 @@ export function consoleData(ctx: Ctx): ConsoleData {
     availGoogle: ctx.availGoogle,
     googleLogin: { ready: ctx.googleReady, email: ctx.googleLoginEmail },
     scenarios: scenarioViews(ctx),
+  };
+}
+
+/**
+ * 卓の準備。人は名前で出す。秘匿HOは読み込みで絞ってある（GMと割り当てた本人の分だけ）。
+ * 希望は、GM・管理者・本人の分だけを出す（ほかのPLの希望は見せない）
+ */
+function prepView(ctx: Ctx, s: Session): ConsolePrep {
+  const nameOf = new Map(ctx.members.map((m) => [m.id, m.name]));
+  const seesAllHopes = ctx.actor.isAdmin || (!!s.gm && s.gm === ctx.actor.name);
+  const sheets: ConsolePrep['sheets'] = {};
+  // キャラシと希望の行はメンバーが消えたら一緒に消え、割り当てはnullになるので、名前はいつもある
+  for (const sh of s.sheets) sheets[nameOf.get(sh.memberId)!] = { url: sh.url, pc: sh.pc, at: stampText(sh.at) };
+  return {
+    sheetDue: s.sheetDue ?? '',
+    slots: s.slots.map((sl) => {
+      const hopes: Record<string, number> = {};
+      for (const h of sl.hopes) if (seesAllHopes || h.memberId === ctx.actor.memberId) hopes[nameOf.get(h.memberId)!] = h.rank;
+      return { pos: sl.pos, label: sl.label, summary: sl.summary, assigned: sl.memberId === null ? '' : nameOf.get(sl.memberId)!, secret: sl.secret, hasSecret: sl.hasSecret, hopes };
+    }),
+    sheets,
   };
 }
 

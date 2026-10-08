@@ -60,7 +60,31 @@ export type Session = {
   pollReadyAt: string | null;
   /** 遊ぶシナリオ（scenarios.id）。無ければnull */
   scenarioId: number | null;
+  /** キャラシの締め切り（YYYY-MM-DD）と、締め切り前の催促を送った日時 */
+  sheetDue: string | null;
+  sheetUrgedAt: string | null;
+  /** HOの枠（posの順） */
+  slots: Slot[];
+  /** 出したキャラシ */
+  sheets: Sheet[];
 };
+
+/**
+ * HOの枠。secretは、読み込んだ人（Ctx.actor）がその卓のGMか、割り当てた本人のときだけ入る（読み込みのSQLで絞る）。ほかはnull。
+ * hasSecretは、秘匿HOがあるか（中身は見せずに、あることだけを出す）
+ */
+export type Slot = {
+  pos: number;
+  label: string;
+  summary: string;
+  memberId: number | null;
+  secret: string | null;
+  hasSecret: boolean;
+  hopes: { memberId: number; rank: number }[];
+};
+
+/** 出したキャラシ */
+export type Sheet = { memberId: number; url: string; pc: string; at: string };
 
 /** グループのシナリオ。createdByは登録したメンバー（members.id。メンバーでなくなればnull） */
 export type Scenario = {

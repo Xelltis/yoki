@@ -7,6 +7,7 @@ import { type Form, list, requireSelf, str } from './form';
 import { sessionCode } from './load';
 import { findSession, peopleOf, readWindow, windowInfo } from './model';
 import { insertPeopleForNext, insertPeopleForSeq, type People, peopleOfSession, replacePeople } from './people';
+import { checkGmChange, unassignGoneStmt } from './prep';
 import { findScenario, keepPassesStmt, readScenarioId } from './scenarios';
 import type { Ctx } from './types';
 
@@ -44,6 +45,7 @@ export async function saveSession(ctx: Ctx, form: Form) {
   const series = str(form.series);
   let members = uniq(splitNames(list(form.members).join('、') + '、' + str(form.extra)));
   const existing = form.id ? findSession(ctx, form.id) : null;
+  if (existing) checkGmChange(ctx, existing, gm);
   // シナリオ。送られなければ今のまま（古い画面から保存しても外れないように）
   const scenarioId = form.scenarioId === undefined ? (existing?.scenarioId ?? null) : readScenarioId(ctx, form.scenarioId);
   const dateChanged = !existing || existing.date !== date;
@@ -91,6 +93,8 @@ export async function saveSession(ctx: Ctx, form: Form) {
         ),
       ...replacePeople(ctx, [{ rowId: existing.rowId, people }]),
     );
+    // HOを割り当てた人が参加者でなくなったら、割り当てを外す（秘匿HOを読めなくする）
+    if (existing.slots.some((x) => x.memberId !== null)) stmts.push(unassignGoneStmt(ctx, [existing.rowId]));
     // 調整中でなくなったら、日程調整の回答も消す（候補日と一緒に）
     if (status !== STATUS.ADJUSTING) stmts.push(db.prepare('DELETE FROM poll_votes WHERE session_id = ?').bind(existing.rowId));
   } else {
@@ -217,6 +221,7 @@ export async function bulkUpdateSessions(ctx: Ctx, form: Form) {
     done = 'の状態を「' + value + '」にしました';
   } else if (action === 'addMember' || action === 'removeMember' || action === 'setGm') {
     if (!value) throw badRequest('名前を選んでください。');
+    if (action === 'setGm') targets.forEach((s) => checkGmChange(ctx, s, value));
     label = action === 'addMember' ? '参加者に' + value + 'を追加' : action === 'removeMember' ? '参加者から' + value + 'を外す' : 'GMを' + value + 'に';
     done = action === 'addMember' ? 'の参加者に' + value + 'を足しました' : action === 'removeMember' ? 'の参加者から' + value + 'を外しました' : 'のGMを' + value + 'にしました';
   } else if (action === 'shiftDays') {
@@ -296,6 +301,9 @@ export async function bulkUpdateSessions(ctx: Ctx, form: Form) {
     stmts.push(db.prepare(`UPDATE sessions SET ${stamp} WHERE ${inTargets}`).bind(rowIds, ctx.actor.name, at));
   }
   stmts.push(...replacePeople(ctx, peopleChanges));
+  // 参加者から外した人のHOの割り当ても外す
+  const assigned = peopleChanges.filter((c) => targets.find((s) => s.rowId === c.rowId)!.slots.some((x) => x.memberId !== null));
+  if (assigned.length) stmts.push(unassignGoneStmt(ctx, assigned.map((c) => c.rowId)));
   await db.batch(stmts);
   let message = targets.length + '件の卓' + done + ': ' + targets.map((s) => s.name).join('、');
   if (promoted.length) message += '　参加希望の人を参加者に加えました: ' + promoted.join('、');
