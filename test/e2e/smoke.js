@@ -2,6 +2,7 @@
 // 画面の主な操作（タブ・カレンダー・卓の登録と変更・募集・日程調整・予定・グループの管理画面）をして、
 // データに入ったことと、画面にエラーが出ないことを見る。npm testには入れない（ブラウザが要るため）
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { chromium } from 'playwright';
 import { devLogin, withDevServer } from './dev-server.js';
 
@@ -479,6 +480,25 @@ await withDevServer(async (base) => {
       await admin('table');
       await page.click('#stDayParts');
       await until((d) => d.settings.dayParts === false);
+      await main();
+    });
+
+    await step('管理画面: グループの中身をJSONとCSVで書き出せる', async () => {
+      await admin('table');
+      const save = async (sel) => {
+        const [dl] = await Promise.all([page.waitForEvent('download'), page.click(sel)]);
+        return [dl.suggestedFilename(), readFileSync(await dl.path(), 'utf8')];
+      };
+      const [jsonName, json] = await save('#exportJson');
+      const x = JSON.parse(json);
+      const n = await page.evaluate(() => window.yoki.D.sessions.length);
+      assert.match(jsonName, /^yoki-.+\.json$/);
+      assert.equal(x.format, 'yoki-group-export');
+      assert.ok(x.sessions.length >= n);
+      await page.waitForSelector('#exportMsg:has-text("書き出しました")');
+      const [csvName, csv] = await save('#exportCsv');
+      assert.match(csvName, /-sessions\.csv$/);
+      assert.ok(csv.startsWith('\uFEFF"卓のID","名前"'));
       await main();
     });
 

@@ -20,6 +20,7 @@ import IDarkMode from '~icons/material-symbols/dark-mode-outline-rounded';
 import IDateRange from '~icons/material-symbols/date-range-outline-rounded';
 import IDelete from '~icons/material-symbols/delete-outline-rounded';
 import IDevices from '~icons/material-symbols/devices-outline-rounded';
+import IDownload from '~icons/material-symbols/download-outline-rounded';
 import IEdit from '~icons/material-symbols/edit-outline-rounded';
 import IEditCalendar from '~icons/material-symbols/edit-calendar-outline-rounded';
 import IEvent from '~icons/material-symbols/event-outline-rounded';
@@ -86,6 +87,7 @@ export const ICONS = {
   date_range: IDateRange,
   delete: IDelete,
   devices: IDevices,
+  download: IDownload,
   edit: IEdit,
   edit_calendar: IEditCalendar,
   event: IEvent,

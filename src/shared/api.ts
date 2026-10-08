@@ -36,7 +36,7 @@ export const RPC_FUNCS = [
   'saveSession', 'deleteSession', 'saveMember', 'deleteMember', 'saveConsoleSettings', 'saveSeriesNotify', 'renameGroup', 'startPoll', 'setPollVote',
   'setPollVoteAll', 'setPollVoteFromAvail', 'cancelPoll', 'decidePoll', 'setAdmin', 'deleteGroup', 'getDiscordChannels', 'saveCalendarFeed', 'deleteCalendarFeed',
   'saveGoogleSettings', 'syncGoogleNow', 'unlinkGoogle', 'unlinkGoogleLogin', 'saveScenario', 'deleteScenario', 'setScenarioMark',
-  'savePrep', 'saveSlotSecret', 'assignSlots', 'setSlotHope', 'submitSheet', 'setAbsence', 'setShareBusy', 'getSessionHistory', 'saveRecord', 'setPcRecord',
+  'savePrep', 'saveSlotSecret', 'assignSlots', 'setSlotHope', 'submitSheet', 'setAbsence', 'setShareBusy', 'getSessionHistory', 'saveRecord', 'setPcRecord', 'exportGroup',
 ] as const;
 export type RpcName = (typeof RPC_FUNCS)[number];
 
@@ -279,6 +279,32 @@ export type RpcResult = {
 
 /** 卓の変更の履歴の1件（getSessionHistoryの返事のitems。新しい順）。atは「2026/10/09（金）21:16」の形 */
 export type SessionHistoryItem = { at: string; by: string; action: string; detail: string };
+
+/**
+ * グループの書き出し（exportGroupの返事のexport。管理者だけ）。グループの中身を、手元に控えるためのJSON。
+ * 秘匿HO・Discordのチャンネル・購読URL・Googleの情報は入れない
+ */
+export type GroupExport = {
+  format: 'yoki-group-export';
+  /** 書き出したYokiのバージョンと、書き出した日時（ISO） */
+  version: string;
+  exportedAt: string;
+  group: { id: string; title: string; guildName: string };
+  members: { name: string; discordId: string; note: string; admin: boolean }[];
+  sessions: {
+    id: string; name: string; status: string; date: string; start: string; end: string; place: string; memo: string; series: string; seriesEnd: string;
+    windowFrom: string; windowTo: string; gm: string; members: string[]; want: string[]; interest: string[]; scenario: string;
+    candidates: string[]; votes: Record<string, Record<string, string>>; capacity: number; recruitDue: string; absent: { name: string; note: string }[];
+    prep: { sheetDue: string; slots: { label: string; summary: string; assigned: string }[]; sheets: Record<string, { url: string; pc: string; outcome: string }> };
+    record: ConsoleRecord;
+    history: { at: string; by: string; action: string; detail: string }[];
+  }[];
+  /** 予定の印（残っている日すべて。partは '' が1日、'昼'・'夜' が時間帯） */
+  availability: { date: string; name: string; part: string; mark: string }[];
+  availNotes: { date: string; name: string; text: string }[];
+  dayNotes: { date: string; to: string; text: string; by: string }[];
+  scenarios: { name: string; system: string; playersMin: number | null; playersMax: number | null; hours: string; url: string; memo: string; marks: Record<string, ScenarioMark> }[];
+};
 
 /** 届かなかった理由 */
 export type DiscordReason = { kind: string; label: string; toolFault: boolean; text: string; advice: string };

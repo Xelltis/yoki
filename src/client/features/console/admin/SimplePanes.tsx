@@ -1,10 +1,12 @@
-// 管理画面の小さな区分: 管理者・このグループ（名前・後始末・表示）・送信の記録・グループを消す
+// 管理画面の小さな区分: 管理者・このグループ（名前・後始末・書き出し・予定の時間帯・表示）・送信の記録・グループを消す
 import { useState } from 'react';
+import type { GroupExport } from '../../../../shared/api';
 import { askConfirm } from '../../../ui/confirm';
 import { checkRow, field, fieldLabel, fieldNote } from '../../../ui/fields';
 import { Icon } from '../../../ui/Icon';
 import { toast } from '../../../ui/toast';
 import { useConsole, useData } from '../context';
+import { saveFile, sessionsCsv } from './exportFile';
 import { useCall } from './useCall';
 
 /** 管理者の区分。名簿と、管理者を足す・外す */
@@ -79,6 +81,7 @@ export function TablePane() {
         <label className={checkRow}><input type="checkbox" id="stAutoFinish" checked={!!d.settings.autoFinish} onChange={(ev) => { void call('stSave', 'stMsg', 'saveConsoleSettings', { autoFinish: ev.target.checked }); }} /> 開催日を過ぎた卓を「終了」にする</label>
         <p className="hint">終了になってもカレンダーからは消えず、灰色で残ります。「卓をまとめて変える」で見るには「終了・中止も表示」を付けてください。</p>
       </div>
+      <ExportCard />
       <div className="card">
         <h3>予定の時間帯</h3>
         <label className={checkRow}><input type="checkbox" id="stDayParts" checked={!!d.settings.dayParts} onChange={(ev) => { void call('stSave', 'stMsg', 'saveConsoleSettings', { dayParts: ev.target.checked }); }} /> メンバーの予定を、昼と夜に分けて入れる</label>
@@ -90,6 +93,36 @@ export function TablePane() {
           <div><label className={fieldLabel} htmlFor="stAvailDays">メンバーの予定の日数 <small className={fieldNote}>7〜366</small></label><input type="text" className="w-[8em] max-w-640" id="stAvailDays" inputMode="numeric" value={daysV} onChange={(ev) => setDays(ev.target.value)} /></div>
         </div>
         <div className="btns"><button type="button" className="btn primary" id="stSave" disabled={!!busy.stSave || daysV.trim() === String(d.settings.availDays || 60)} onClick={() => { void call('stSave', 'stMsg', 'saveConsoleSettings', { availDays: daysV.trim() }).then((r) => { if (r) setDays(null); }); }}>保存</button><span className="hint" id="stMsg">{msg.stMsg || ''}</span></div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * グループの書き出し。卓・メンバー・予定・メモ・日程調整・シナリオ・記録・履歴を、手元に控える（JSON。卓の一覧はCSVも）。
+ * 秘匿HOは入らない（管理者も読めないもの）
+ */
+function ExportCard() {
+  const d = useData();
+  const { sync, groupId } = useConsole();
+  const [st, setSt] = useState({ busy: false, msg: '' });
+  const run = (kind: 'json' | 'csv') => {
+    setSt({ busy: true, msg: '書き出しています…' });
+    sync.call<{ message: string; export: GroupExport }>('exportGroup').then((r) => {
+      const base = 'yoki-' + groupId + '-' + d.today;
+      if (kind === 'json') saveFile(base + '.json', JSON.stringify(r.export, null, 2), 'application/json');
+      else saveFile(base + '-sessions.csv', sessionsCsv(r.export), 'text/csv');
+      setSt({ busy: false, msg: r.message });
+    }, (e: Error) => setSt({ busy: false, msg: e.message }));
+  };
+  return (
+    <div className="card" id="exportCard">
+      <h3><Icon name="download" size="sm" />書き出し</h3>
+      <p className="hint">グループの中身（卓・メンバー・予定とメモ・日程調整・シナリオ・記録・変更の履歴）を、ファイルにして手元に控えます。運営者はグループの中身を見ないので、控えを取れるのは管理者だけです。秘匿HOは入りません。</p>
+      <div className="btns">
+        <button type="button" className="btn" id="exportJson" disabled={st.busy} onClick={() => run('json')}>すべてをJSONで</button>
+        <button type="button" className="btn" id="exportCsv" disabled={st.busy} onClick={() => run('csv')}>卓の一覧をCSVで</button>
+        <span className="hint" id="exportMsg">{st.msg}</span>
       </div>
     </div>
   );
