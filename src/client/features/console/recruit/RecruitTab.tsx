@@ -14,7 +14,7 @@ import { prepSummary } from '../prep/PrepModal';
 import { discordSend, failToast } from '../api/discord';
 import { useConsole, useData } from '../context';
 import { fmtJa, holidayName, parseYmd, timeRange } from '../model/dates';
-import { byId, hasPoll, isAdjusting, isRecruit, me, peopleOf, periodOfSession, pollPending, pollVoters, scenarioOf, sortSessions } from '../model/model';
+import { byId, hasPoll, isAdjusting, isRecruit, me, peopleOf, periodOfSession, pollCount, pollFillDays, pollPending, pollVoters, scenarioOf, sortSessions, voteFromAvail } from '../model/model';
 import { hookFor } from '../model/notify';
 import { withSession } from '../model/optimistic';
 import { Place } from '../Place';
@@ -43,8 +43,11 @@ const next = 'mt-10 mb-0 flex items-start gap-6 rounded-md bg-accent-soft px-10 
 const nextIcon = 'mt-1 text-accent-text';
 /** 何も無いときのカード */
 const empty = 'card flex flex-col items-start gap-10';
-/** 候補日への ◯ × のボタン */
-const vote = 'btn small min-w-44 text-14';
+/** 候補日への ◯ △ × のボタン */
+const vote = 'btn small min-w-40 text-14';
+/** 押してある回答の色 */
+const VOTE_ON: Record<string, string> = { '◯': ' border-ok-text bg-ok text-ok-text', '△': ' border-ok-text bg-soft text-ok-text', '×': ' border-err-text bg-warn text-err-text' };
+const VOTE_WORD: Record<string, string> = { '◯': '◯', '△': '△（調整すれば行ける）', '×': '×' };
 
 /** 卓の人の札（GMと参加者。メンバーに無い人は印を付ける） */
 function People({ d, s, none }: { d: ConsoleData; s: ConsoleSession; none: string }) {
@@ -60,10 +63,10 @@ function People({ d, s, none }: { d: ConsoleData; s: ConsoleSession; none: strin
   );
 }
 
-/** 卓の、ある日の自分の回答を変える（空なら消す） */
-const withVote = (d: ConsoleData, id: string, days: string[], name: string, vote: string) => withSession(d, id, (s) => {
+/** 卓の、ある日の自分の回答を変える（空なら消す）。voteを関数にすると、日ごとに決める */
+const withVote = (d: ConsoleData, id: string, days: string[], name: string, vote: string | ((k: string) => string)) => withSession(d, id, (s) => {
   const votes = { ...s.votes };
-  days.forEach((k) => { const v = { ...votes[k] }; if (vote) v[name] = vote; else delete v[name]; votes[k] = v; });
+  days.forEach((k) => { const v = { ...votes[k] }, x = typeof vote === 'function' ? vote(k) : vote; if (x) v[name] = x; else delete v[name]; votes[k] = v; });
   return { ...s, votes };
 });
 
@@ -131,9 +134,20 @@ export function RecruitTab() {
     else if (ng.length) askConfirm({ title: 'どの日でもいい、にしますか？', message: '× を付けた' + ng.length + '日も ◯ に変わります。候補日' + days.length + '日すべてに ◯ を付けます。', ok: '◯ を付ける' }, go);
     else go();
   };
+  /** 予定表から答える。まだ答えていない候補日に、予定表の印（空欄は ◯、△、× と卓のある日は ×）を入れる */
+  const castFromAvail = (s: ConsoleSession) => {
+    if (!mine) return;
+    const days = pollFillDays(d, s, mine);
+    if (!days.length) { toast('予定表から入れられる候補日はありません'); return; }
+    sync.write<RpcResult>('setPollVoteFromAvail', { id: s.id, name: mine }, { optimistic: (x) => withVote(x, s.id, days, mine, (k) => voteFromAvail(x, mine, k)) }).then((res) => {
+      toast(res.message);
+      if (res.ready && res.notified === false && res.id) notifyReady(sync, res.id, res.message);
+    }, (e: Error) => { toast(e.message); void sync.refresh('quiet'); });
+  };
   const decide = (s: ConsoleSession, k: string) => {
-    const v = (s.votes || {})[k] || {}, notOk = peopleOf(s).filter((n) => v[n] !== '◯');
-    askConfirm({ title: fmtJa(k) + 'に決めますか？', message: '「' + s.name + '」の開催日を' + fmtJa(k) + 'にして、状態を「開催」にします。候補日とみんなの回答は消えます。' + (notOk.length ? '　◯ でない人: ' + notOk.join('、') : ''), ok: 'この日に決める' }, () => {
+    const v = (s.votes || {})[k] || {}, maybe = peopleOf(s).filter((n) => v[n] === '△'), notOk = peopleOf(s).filter((n) => v[n] !== '◯' && v[n] !== '△');
+    const who = (maybe.length ? '　△ の人: ' + maybe.join('、') : '') + (notOk.length ? '　× か未回答の人: ' + notOk.join('、') : '');
+    askConfirm({ title: fmtJa(k) + 'に決めますか？', message: '「' + s.name + '」の開催日を' + fmtJa(k) + 'にして、状態を「開催」にします。候補日とみんなの回答は消えます。' + who, ok: 'この日に決める' }, () => {
       const key = 'decide:' + s.id + ':' + k;
       setFlag(setOff, key, true);
       sync.write<RpcResult>('decidePoll', { id: s.id, ymd: k, me: mine }).then((res) => {
@@ -234,7 +248,7 @@ export function RecruitTab() {
       </div>
       <div className={bar}>
         <h2 className={barTitle}><Icon name="edit_calendar" size="sm" />日程調整中{adjList.length > 0 && <span className={count}>{adjList.length}</span>}</h2>
-        <Tip className="ml-2" text="開催日を選んでいる卓です。GMが候補日を出すと知らせが届き、候補日ごとに ◯ か × を押します。全員が答えるとGMに知らせが届き、GMが選んだ日に決まって、状態は「開催」になります。" label="日程調整中とは" />
+        <Tip className="ml-2" text="開催日を選んでいる卓です。GMが候補日を出すと知らせが届き、候補日ごとに ◯・△（調整すれば行ける）・× を押します。全員が答えるとGMに知らせが届き、GMが選んだ日に決まって、状態は「開催」になります。" label="日程調整中とは" />
         <button type="button" className="btn small" id="barAdjust" onClick={() => openForm(ui, { status: '調整中' })}><Icon name="add" size="sm" />日程調整を始める</button>
       </div>
       <div id="adjustList" className={cards}>
@@ -250,6 +264,7 @@ export function RecruitTab() {
           const canDecide = (!!mine && mine === s.gm) || d.isAdmin !== false;
           const futureDays = s.candidates.filter((k) => k >= d.today);
           const allOk = isVoter && futureDays.length > 0 && futureDays.every((k) => ((s.votes || {})[k] || {})[mine] === '◯');
+          const fillDays = isVoter ? pollFillDays(d, s, mine) : [];
           // 回答は本人だけが入れる。ゲストと、DiscordのIDの無いメンバーは答えられないので数えない
           const cant = peopleOf(s).filter((n) => voters.indexOf(n) < 0);
           return (
@@ -272,25 +287,33 @@ export function RecruitTab() {
                     <Icon name="how_to_vote" size="sm" />候補日
                     {(s.start || s.end) && <span className="font-normal">{timeRange(s)}</span>}
                     {isVoter && futureDays.length > 0 && (
-                      <button type="button" className={'btn small ml-auto' + (allOk ? ' border-ok bg-ok text-ok-text' : '')} data-any={s.id} aria-pressed={allOk} title={allOk ? 'いまは「どの日でもいい」です。押すと回答を取り消します' : 'これからの候補日すべてに ◯ を付けます'} onClick={() => castAny(s, allOk)}>
-                        <Icon name="check" size="sm" />どの日でもいい
-                      </button>
+                      <span className="ml-auto flex flex-wrap justify-end gap-6">
+                        {fillDays.length > 0 && (
+                          <button type="button" className="btn small" data-fill={s.id} title="まだ答えていない候補日に、予定表の印を入れます（空欄は ◯、△ は △、× と卓のある日は ×）" onClick={() => castFromAvail(s)}>
+                            <Icon name="event_available" size="sm" />予定表から入れる
+                          </button>
+                        )}
+                        <button type="button" className={'btn small' + (allOk ? ' border-ok bg-ok text-ok-text' : '')} data-any={s.id} aria-pressed={allOk} title={allOk ? 'いまは「どの日でもいい」です。押すと回答を取り消します' : 'これからの候補日すべてに ◯ を付けます'} onClick={() => castAny(s, allOk)}>
+                          <Icon name="check" size="sm" />どの日でもいい
+                        </button>
+                      </span>
                     )}
                   </div>
                   <p className="hint mt-2 mb-4">全員が答えたら、GMが開催日を選びます</p>
                   {s.candidates.map((k) => {
                     const v = (s.votes || {})[k] || {}, past = k < d.today, dow = parseYmd(k).getDay(), hol = holidayName(k);
-                    const ok = voters.filter((n) => v[n] === '◯'), ng = voters.filter((n) => v[n] === '×'), no = voters.filter((n) => !v[n]);
+                    const ok = voters.filter((n) => v[n] === '◯'), maybe = voters.filter((n) => v[n] === '△'), ng = voters.filter((n) => v[n] === '×'), no = voters.filter((n) => !v[n]);
                     const my = v[mine] || '';
                     return (
                       // 1段目に日付・自分の ◯ ×・「この日に決める」（入りきらなければ、決めるボタンだけ次の行の右へ）、2段目にみんなの回答（幅いっぱい）
                       <div className={'border-b border-line py-8 last-of-type:border-b-0' + (past ? ' opacity-55' : '')} data-day={k} key={k}>
                         <div className="flex flex-wrap items-center gap-x-8 gap-y-6">
-                          <div className="flex min-w-[7.5em] flex-1 items-baseline gap-8"><b className={dow === 0 || hol ? 'text-sun' : dow === 6 ? 'text-sat' : ''}>{fmtJa(k)}</b><span className="text-12 text-muted">{'◯ ' + ok.length + '/' + voters.length}</span></div>
+                          <div className="flex min-w-[7.5em] flex-1 items-baseline gap-8 whitespace-nowrap"><b className={dow === 0 || hol ? 'text-sun' : dow === 6 ? 'text-sat' : ''}>{fmtJa(k)}</b><span className="text-12 text-muted">{pollCount(d, s, k)}</span></div>
                           {isVoter && !past && (
                             <div className="flex gap-4">
-                              <button type="button" className={vote + (my === '◯' ? ' border-ok-text bg-ok text-ok-text' : '')} data-vote="◯" data-id={s.id} data-day={k} aria-pressed={my === '◯'} aria-label={fmtJa(k) + 'は ◯'} onClick={() => castVote(s, k, '◯')}>◯</button>
-                              <button type="button" className={vote + (my === '×' ? ' border-err-text bg-warn text-err-text' : '')} data-vote="×" data-id={s.id} data-day={k} aria-pressed={my === '×'} aria-label={fmtJa(k) + 'は ×'} onClick={() => castVote(s, k, '×')}>×</button>
+                              {['◯', '△', '×'].map((m) => (
+                                <button type="button" className={vote + (my === m ? VOTE_ON[m] : '')} data-vote={m} data-id={s.id} data-day={k} aria-pressed={my === m} aria-label={fmtJa(k) + 'は ' + VOTE_WORD[m]} title={m === '△' ? '調整すれば行ける' : undefined} key={m} onClick={() => castVote(s, k, m)}>{m}</button>
+                              ))}
                             </div>
                           )}
                           {/* 開催日を決めるボタン（全員が ◯ なら青く） */}
@@ -298,7 +321,7 @@ export function RecruitTab() {
                             <button type="button" className={'btn small ml-auto' + (ok.length === voters.length ? ' primary' : '')} data-decide={s.id} data-day={k} disabled={!!off['decide:' + s.id + ':' + k]} onClick={() => decide(s, k)}><Icon name="event_available" size="sm" />この日に決める</button>
                           )}
                         </div>
-                        <div className="hint mt-4">{[ok.length ? '◯ ' + ok.join('、') : '', ng.length ? '× ' + ng.join('、') : '', no.length ? '未回答' + no.join('、') : ''].filter(Boolean).join('　')}</div>
+                        <div className="hint mt-4">{[ok.length ? '◯ ' + ok.join('、') : '', maybe.length ? '△ ' + maybe.join('、') : '', ng.length ? '× ' + ng.join('、') : '', no.length ? '未回答' + no.join('、') : ''].filter(Boolean).join('　')}</div>
                       </div>
                     );
                   })}

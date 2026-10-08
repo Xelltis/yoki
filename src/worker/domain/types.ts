@@ -122,7 +122,7 @@ export type Ctx = {
   availNotes: Record<string, Record<string, { text: string; at: string }>>;
   /** 日付メモ{ 始まりの日: { text, by, at, to } }。toは期間の終わり（1日だけなら空） */
   dayNotes: Record<string, { text: string; by: string; at: string; to: string }>;
-  /** 卓（rowId）ごとの回答{ 'YYYY-MM-DD': { 名前: '◯' | '×' } } */
+  /** 卓（rowId）ごとの回答{ 'YYYY-MM-DD': { 名前: '◯' | '△' | '×' } } */
   votes: Map<number, Record<string, Record<string, string>>>;
   seriesNotify: Record<string, SeriesNotify>;
   log: LogRow[];

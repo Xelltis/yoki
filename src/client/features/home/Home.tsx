@@ -37,7 +37,7 @@ const TONE: Record<'info' | 'ok' | 'warn' | 'bad', [string, IconName]> = {
 /** できることの紹介（ログインの前）。[アイコン, 題, 一言, アイコンの色] */
 const FEATURES: [IconName, string, string, string][] = [
   ['calendar_month', 'みんなの予定が一目で', '空いている日に色が付きます', 'bg-accent-soft text-accent-text'],
-  ['campaign', '募集と日程調整', '候補日に ◯ × で答えるだけ', 'bg-soon text-soon-text'],
+  ['campaign', '募集と日程調整', '候補日に ◯ △ × で答えるだけ', 'bg-soon text-soon-text'],
   ['notifications', 'Discordに知らせる', '開催前に自動でお知らせ', 'bg-warn text-err-text'],
 ];
 

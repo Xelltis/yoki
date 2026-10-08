@@ -31,7 +31,7 @@ export const FLOW: Record<string, { icon: IconName; lead: string; steps: string[
   '調整中': { icon: 'edit_calendar', lead: 'メンバーは決まった。みんなで日を選ぶ卓', steps: [
     '参加者と候補の期間を入れて登録する',
     '候補日を選んで聞く（登録するとそのまま窓が開く）',
-    '参加者が ◯ か × を押す。全員が答えるとGMに知らせが届く',
+    '参加者が ◯・△・× で答える。全員が答えるとGMに知らせが届く',
     'GMが「この日に決める」で開催日を選ぶ。状態は「開催」になる'] },
   '終了': { icon: 'task_alt', lead: '終わった卓。カレンダーには灰色で残る', steps: [] },
   '中止': { icon: 'block', lead: '開けなくなった卓。カレンダーには残り、開催前の知らせは送らない', steps: [] },

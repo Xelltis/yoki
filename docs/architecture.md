@@ -86,7 +86,7 @@ usersの行は消さない（印がそこにあるため）。Discordのユー�
 
 ## データベース（D1）
 
-表の定義は `migrations/`（`0001_init.sql` が最初の形、`0002_admin.sql` が締め出し・最後に使われた日と索引、`0003_bot.sql` が知らせのBot、`0004_calendar.sql` がカレンダーとの連携、`0005_member_check.sql` がBotで確かめた日時、`0006_google_login.sql` がGoogleでのログイン、`0007_scenarios.sql` がシナリオと通過、`0008_prep.sql` が卓の準備、`0009_discord_events.sql` がDiscordのイベント、`0010_note_ranges.sql` が期間の日付メモ）。日付（開催日・予定・メモ）は日本時間の `YYYY-MM-DD`、日時（〜した時刻）はUTCのISO文字列。
+表の定義は `migrations/`（`0001_init.sql` が最初の形、`0002_admin.sql` が締め出し・最後に使われた日と索引、`0003_bot.sql` が知らせのBot、`0004_calendar.sql` がカレンダーとの連携、`0005_member_check.sql` がBotで確かめた日時、`0006_google_login.sql` がGoogleでのログイン、`0007_scenarios.sql` がシナリオと通過、`0008_prep.sql` が卓の準備、`0009_discord_events.sql` がDiscordのイベント、`0010_note_ranges.sql` が期間の日付メモ、`0011_poll_maybe.sql` が日程調整の △）。日付（開催日・予定・メモ）は日本時間の `YYYY-MM-DD`、日時（〜した時刻）はUTCのISO文字列。
 
 `users`・`user_guilds`・`auth_sessions`: ログイン。`users.banned_at`・`banned_reason` は締め出し。
 
@@ -96,7 +96,7 @@ usersの行は消さない（印がそこにあるため）。Discordのユー�
 
 `sessions`・`session_people`: 卓と、関わる人（GM・参加者・参加希望・興味あり）。
 
-`availability`・`avail_notes`・`day_notes`・`poll_votes`・`series_notify`・`notify_log`。`day_notes.end_date` は期間のメモの終わり（1日だけなら `NULL`）で、メモは始まりの日（`date`）に1つだけ持つ。
+`availability`・`avail_notes`・`day_notes`・`poll_votes`・`series_notify`・`notify_log`。`day_notes.end_date` は期間のメモの終わり（1日だけなら `NULL`）で、メモは始まりの日（`date`）に1つだけ持つ。`poll_votes.vote` は ◯・△（調整すれば行ける）・× で、△ も答えたものとして「全員そろった」に数える。「予定表から入れる」（`setPollVoteFromAvail`）は、まだ答えていない候補日に、本人の予定表の印（空欄は ◯、△ は △、× とほかの卓のある日は ×）を入れる。
 
 `scenarios`・`member_scenarios`: グループのシナリオと、本人や管理者が付けた通過の印（`played` 遊んだ・`gm` GMできる）。`sessions.scenario_id` は卓で遊ぶシナリオ（シナリオを消したら `NULL`）。
 

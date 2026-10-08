@@ -11,7 +11,7 @@ import { discordSend, failToast } from '../api/discord';
 import { useConsole } from '../context';
 import { googleAddUrl } from '../model/calendar';
 import { addDaysYmd, daysBetween, fmtJa, parseYmd, timeRange } from '../model/dates';
-import { hasPoll, isActive, isAdjusting, isDated, me, notesOn, peopleOf, pollOk, pollVoters, scenarioOf, seriesNames, sortSessions, targetPeople, windowByDay } from '../model/model';
+import { hasPoll, isActive, isAdjusting, isDated, me, notesOn, peopleOf, pollCount, scenarioOf, seriesNames, sortSessions, targetPeople, windowByDay } from '../model/model';
 import { hookFor, kindOf, notifyState } from '../model/notify';
 import { useGoRecruit } from '../shell/nav';
 import { Place } from '../Place';
@@ -100,7 +100,7 @@ export function DayDetail({ d, target }: { d: ConsoleData; target: string }) {
             <div className={'mt-10 rounded-md border border-line bg-card p-12 tabular-nums' + (done ? ' opacity-80' : '')} data-id={s.id} key={s.id + ':' + i}>
               <div className="flex flex-wrap items-baseline gap-x-10 gap-y-4">
                 <b className={'text-15' + (done ? ' text-muted' : cancel ? ' text-muted line-through' : '')}>{s.name}</b>
-                <span>{pollDay ? '日程調整の候補日　◯ ' + pollOk(d, s, selDay).length + '/' + pollVoters(d, s).length : cand ? '候補の期間　' + s.windowLabel + 'のどこか' : timeRange(s)}</span>
+                <span>{pollDay ? '日程調整の候補日　' + pollCount(d, s, selDay) : cand ? '候補の期間　' + s.windowLabel + 'のどこか' : timeRange(s)}</span>
                 <span className="rounded-full bg-head px-8 py-1 text-11 font-semibold text-muted">{s.status + (s.status === '募集' ? '（仮の日）' : cand ? '（候補日）' : '')}</span>
               </div>
               <div className={peopleRow}>

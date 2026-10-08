@@ -10,7 +10,8 @@ export const DATED: Status[] = [STATUS.HELD];
 export const PROMOTE: Status[] = [STATUS.ADJUSTING, STATUS.HELD];
 
 export const MARKS = ['△', '×'];          // 予定の印。空欄は参加できる
-export const POLL_MARKS = ['◯', '×'];
+/** 日程調整の回答。△ は調整すれば行ける */
+export const POLL_MARKS = ['◯', '△', '×'];
 export const POLL_MAX_DATES = 20;
 export const AVAIL_NOTE_MAX = 200;
 export const DAY_NOTE_MAX = 500;

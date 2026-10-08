@@ -205,6 +205,48 @@ describe('日程調整', () => {
     expect(posts).toHaveLength(2);
   });
 
+  test('△（調整すれば行ける）でも答えられ、答えたことになる。そろった知らせに △ の数が出る', async () => {
+    await ok(G.admin, G.id, 'startPoll', { id: 'S001', dates: [T(5)] });
+    mockBot();
+    const r = await ok(G.sora, G.id, 'setPollVote', { id: 'S001', ymd: T(5), name: 'ソラ', vote: '△' });
+    expect(r).toMatchObject({ ready: true, message: fmtDateJa(T(5)) + ' ソラ: △　全員の回答がそろいました。　GMへの知らせをDiscordに送りました。' });
+    expect(r.data.sessions[0].votes[T(5)]).toEqual({ ひより: '◯', ソラ: '△' });
+    expect(posts[0]).toContain('・' + fmtDateJa(T(5)) + '　◯ 1/2　△ 1\n');
+  });
+
+  test('予定表から答える: まだ答えていない候補日に、空欄は ◯、△ は △、× と卓のある日は × を入れる', async () => {
+    await ok(G.admin, G.id, 'startPoll', { id: 'S001', dates: [T(3), T(4), T(5), T(6), T(7), T(100)] });
+    await ok(G.sora, G.id, 'setAvailability', { name: 'ソラ', ymd: T(4), mark: '△' });
+    await ok(G.sora, G.id, 'setAvailability', { name: 'ソラ', ymd: T(5), mark: '×' });
+    await ok(G.admin, G.id, 'saveSession', { name: '別の卓', gm: 'こまち', members: ['ソラ'], date: T(6), status: '開催' });
+    // 答えた日は変えない
+    await ok(G.sora, G.id, 'setPollVote', { id: 'S001', ymd: T(7), name: 'ソラ', vote: '×' });
+    mockBot();
+    let r = await ok(G.sora, G.id, 'setPollVoteFromAvail', { id: 'S001', name: 'ソラ' });
+    expect(r.message).toBe('ソラ: 予定表から4日に答えました（◯ 1日・△ 1日・× 2日）');
+    expect(r).toMatchObject({ count: 4, ready: false });
+    const v = r.data.sessions[0].votes;
+    expect([T(3), T(4), T(5), T(6), T(7), T(100)].map((k) => v[k]?.ソラ)).toEqual(['◯', '△', '×', '×', '×', undefined]);
+    // もう入れる日が無い（予定表の範囲の外の日は入れない）
+    r = await ok(G.sora, G.id, 'setPollVoteFromAvail', { id: 'S001', name: 'ソラ' });
+    expect(r).toMatchObject({ count: 0, message: 'ソラ: 予定表から入れられる候補日はありません（まだ答えていない、予定表の範囲の日がありません）。' });
+    expect(r.data.sessions[0].votes[T(3)].ソラ).toBe('◯');
+    expect(posts).toHaveLength(0);
+  });
+
+  test('予定表から答えて全員がそろえば、GMに知らせる。答えられるのは本人で、GMか参加者だけ', async () => {
+    // 卓に入っていない人が始めると、だれの回答も無いところから始まる
+    await ok(G.komachi, G.id, 'startPoll', { id: 'S001', dates: [T(3)] });
+    expect((await fail(G.admin, G.id, 'setPollVoteFromAvail', { id: 'S001', name: 'ソラ' })).error).toBe('入れられるのは自分のぶんだけです。');
+    expect((await fail(G.komachi, G.id, 'setPollVoteFromAvail', { id: 'S001', name: 'こまち' })).error).toContain('GMでも参加者でもない');
+    mockBot();
+    let r = await ok(G.sora, G.id, 'setPollVoteFromAvail', { id: 'S001', name: 'ソラ' });
+    expect(r).toMatchObject({ ready: false, message: 'ソラ: 予定表から1日に答えました（◯ 1日）' });
+    r = await ok(G.admin, G.id, 'setPollVoteFromAvail', { id: 'S001', name: 'ひより' });
+    expect(r).toMatchObject({ ready: true, notified: true });
+    expect(r.message).toBe('ひより: 予定表から1日に答えました（◯ 1日）　全員の回答がそろいました。　GMへの知らせをDiscordに送りました。');
+  });
+
   test('回答できるのはGMと参加者だけ。候補日でない日は断る', async () => {
     await ok(G.admin, G.id, 'startPoll', { id: 'S001', dates: [T(5)] });
     expect((await fail(G.komachi, G.id, 'setPollVote', { id: 'S001', ymd: T(5), name: 'こまち', vote: '◯' })).error).toContain('GMでも参加者でもない');

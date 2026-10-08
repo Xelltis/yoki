@@ -1,4 +1,4 @@
-// 日程調整（GAS版Polls.js）。調整中の卓に候補日を出し、GMと参加者が候補日ごとに ◯ か × を付ける。
+// 日程調整（GAS版Polls.js）。調整中の卓に候補日を出し、GMと参加者が候補日ごとに ◯・△・× を付ける（△ は調整すれば行ける）。
 // 開催日は自動では決めない。全員の回答がそろったらGMに知らせ、GMが候補日から選んで「開催」にする
 import { decidedPayload, pollReadyPayload } from '../discord/payloads';
 import { appendLog, postToTargets, type Sleep } from '../discord/send';
@@ -6,10 +6,10 @@ import { sessionTargets } from '../discord/targets';
 import { adminError, badRequest } from '../lib/errors';
 import { consoleData } from './console-data';
 import { reloadLog } from './load';
-import { fmtDateJa, normTime, parseYmd } from '../lib/jst';
+import { addDays, fmtDateJa, normTime, parseYmd } from '../lib/jst';
 import { POLL_MARKS, POLL_MAX_DATES, STATUS } from './constants';
 import { type Form, list, requireSelf, str } from './form';
-import { findAdjusting, findSession, peopleOf, pollComplete } from './model';
+import { bookedMap, findAdjusting, findSession, peopleOf, pollComplete } from './model';
 import type { GoogleDeps } from '../google/config';
 import type { Ctx, Session } from './types';
 
@@ -24,16 +24,28 @@ export type Io = {
   defer?: (work: Promise<unknown>) => void;
 };
 
-/** 本人（ログインした人）の回答を書く文。voteが空なら消す。回答は本人だけが入れるので、いつもメンバーの行で書く */
-function voteStmts(ctx: Ctx, s: Session, days: string[], vote: string): D1PreparedStatement {
-  const json = JSON.stringify(days), memberId = ctx.actor.memberId;
-  if (!vote) return ctx.db.prepare('DELETE FROM poll_votes WHERE session_id = ?1 AND date IN (SELECT value FROM json_each(?2)) AND member_id = ?3').bind(s.rowId, json, memberId);
+/** 本人（ログインした人）の回答を書く文。日ごとに違う回答を1文で書く。回答は本人だけが入れるので、いつもメンバーの行で書く */
+function voteRowsStmt(ctx: Ctx, s: Session, rows: { date: string; vote: string }[]): D1PreparedStatement {
   return ctx.db
     .prepare(
-      `INSERT INTO poll_votes (session_id, date, member_id, vote, updated_at) SELECT ?1, value, ?3, ?4, ?5 FROM json_each(?2) WHERE true
+      `INSERT INTO poll_votes (session_id, date, member_id, vote, updated_at)
+       SELECT ?1, json_extract(value, '$.date'), ?3, json_extract(value, '$.vote'), ?4 FROM json_each(?2) WHERE true
        ON CONFLICT (session_id, date, member_id) WHERE member_id IS NOT NULL DO UPDATE SET vote = excluded.vote, updated_at = excluded.updated_at`,
     )
-    .bind(s.rowId, json, memberId, vote, ctx.now.toISOString());
+    .bind(s.rowId, JSON.stringify(rows), ctx.actor.memberId, ctx.now.toISOString());
+}
+
+/** 本人の回答を、いくつかの日に同じ印で書く文。voteが空なら消す */
+function voteStmts(ctx: Ctx, s: Session, days: string[], vote: string): D1PreparedStatement {
+  if (vote) return voteRowsStmt(ctx, s, days.map((date) => ({ date, vote })));
+  return ctx.db.prepare('DELETE FROM poll_votes WHERE session_id = ?1 AND date IN (SELECT value FROM json_each(?2)) AND member_id = ?3').bind(s.rowId, JSON.stringify(days), ctx.actor.memberId);
+}
+
+/** 予定表の印から決める回答。ほかの卓のある日と × は ×、△ は △、空欄は ◯ */
+function voteFromAvail(ctx: Pick<Ctx, 'avail'>, booked: Record<string, Record<string, string>>, name: string, day: string): string {
+  if (booked[day]?.[name]) return '×';
+  const m = ctx.avail[day]?.[name];
+  return m === '×' || m === '△' ? m : '◯';
 }
 
 /** 送った結果を、返事の文に添える */
@@ -114,11 +126,11 @@ export async function startPoll(ctx: Ctx, form: Form) {
   return { ok: true, id: s.id, dates, fresh, message: '「' + s.name + '」の日程調整を' + (fresh ? '始めました' : '更新しました') + '（候補' + dates.length + '日）。' };
 }
 
-/** 候補日に回答する。form: { id, ymd, name, vote: '◯' | '×' | '' }。この回答で全員がそろったら、GMに知らせる */
+/** 候補日に回答する。form: { id, ymd, name, vote: '◯' | '△' | '×' | '' }。この回答で全員がそろったら、GMに知らせる */
 export async function setPollVote(ctx: Ctx, form: Form, io: Io) {
   const name = requireSelf(ctx, form.name);
   const vote = str(form.vote);
-  if (vote && !POLL_MARKS.includes(vote)) throw badRequest('回答は ◯ か × です。');
+  if (vote && !POLL_MARKS.includes(vote)) throw badRequest('回答は ◯・△・× のどれかです。');
   const s = findAdjusting(ctx, form.id);
   const k = parseYmd(form.ymd);
   if (!k) throw badRequest('日付が読めません: ' + str(form.ymd));
@@ -150,6 +162,26 @@ export async function setPollVoteAll(ctx: Ctx, form: Form, io: Io) {
   const after = await afterVote(ctx, s.id, wasComplete, io);
   const message = (vote ? name + ': 候補日' + days.length + '日すべてに ◯ を付けました（どの日でもいい）' : name + ': 「' + s.name + '」の回答を取り消しました') + after.message;
   return { ok: true, id: s.id, days, vote, ready: after.ready, notified: after.notified, message, data: consoleData(after.fresh) };
+}
+
+/**
+ * 予定表から答える。まだ答えていない、これからの候補日に、本人の予定表の印から回答を入れる（voteFromAvail）。
+ * 答えた日は変えない。予定表の範囲の外の候補日は、印が分からないので入れない。form: { id, name }
+ */
+export async function setPollVoteFromAvail(ctx: Ctx, form: Form, io: Io) {
+  const name = requireSelf(ctx, form.name);
+  const s = findAdjusting(ctx, form.id);
+  if (!peopleOf(s).includes(name)) throw badRequest(name + 'は「' + s.name + '」のGMでも参加者でもないので、回答できません。');
+  const votes = ctx.votes.get(s.rowId) ?? {};
+  const last = addDays(ctx.today, ctx.group.avail_days), booked = bookedMap(ctx.sessions);
+  const rows = s.candidates.filter((k) => k >= ctx.today && k < last && !votes[k]?.[name]).map((date) => ({ date, vote: voteFromAvail(ctx, booked, name, date) }));
+  if (!rows.length) return { ok: true, id: s.id, count: 0, message: name + ': 予定表から入れられる候補日はありません（まだ答えていない、予定表の範囲の日がありません）。' };
+  const wasComplete = pollComplete(ctx, s);
+  await voteRowsStmt(ctx, s, rows).run();
+  const after = await afterVote(ctx, s.id, wasComplete, io);
+  const tally = POLL_MARKS.map((m) => [m, rows.filter((r) => r.vote === m).length] as const).filter(([, n]) => n).map(([m, n]) => m + ' ' + n + '日').join('・');
+  const message = name + ': 予定表から' + rows.length + '日に答えました（' + tally + '）' + after.message;
+  return { ok: true, id: s.id, count: rows.length, ready: after.ready, notified: after.notified, message, data: consoleData(after.fresh) };
 }
 
 /** GMが候補日から開催日を選ぶ（GMのほかは管理者だけ）。決めたら「日程が決まりました」をサーバーから送る。form: { id, ymd } */

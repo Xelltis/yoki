@@ -14,7 +14,7 @@ import { consoleData } from '../domain/console-data';
 import { type Form, readForm } from '../domain/form';
 import { loadGroup } from '../domain/load';
 import { deleteMember, saveMember, setAdmin } from '../domain/members';
-import { cancelPoll, decidePoll, type Io, setPollVote, setPollVoteAll, startPoll } from '../domain/polls';
+import { cancelPoll, decidePoll, type Io, setPollVote, setPollVoteAll, setPollVoteFromAvail, startPoll } from '../domain/polls';
 import { bulkUpdateSessions, deleteSession, saveSession, setInterest } from '../domain/sessions';
 import { getDiscordChannels, renameGroup, saveConsoleSettings, saveSeriesNotify } from '../domain/settings';
 import type { Ctx } from '../domain/types';
@@ -54,6 +54,7 @@ export const RPC: Record<Exclude<RpcName, 'getConsoleData'>, Entry> = {
   startPoll: { run: startPoll, data: true, calendar: true },
   setPollVote: { run: setPollVote, data: true },
   setPollVoteAll: { run: setPollVoteAll, data: true },
+  setPollVoteFromAvail: { run: setPollVoteFromAvail, data: true },
   decidePoll: { run: decidePoll, data: true, calendar: true },
   cancelPoll: { run: cancelPoll, data: true, calendar: true },
   saveConsoleSettings: { run: saveConsoleSettings, admin: '設定を変えること', data: true },

@@ -149,7 +149,7 @@ describe('日程調整の知らせ', () => {
     expect(bot.posts()[0]!.content).toBe(
       '🗓️ 「迷宮」の日程を決めます。' + ID.ひより + ' ' + ID.ソラ + '\n' +
       '候補日: ' + fmtDateJa(T(5)) + '、' + fmtDateJa(T(6)) + '　20:00〜23:00\n' +
-      'Yokiの「募集・調整」タブで、候補日ごとに ◯ か × を押してください。全員の回答がそろったら、GMが開催日を選びます。　by ひより\nhttps://yoki.test/g/grp/',
+      'Yokiの「募集・調整」タブで、候補日ごとに ◯・△（調整すれば行ける）・× を押してください。全員の回答がそろったら、GMが開催日を選びます。　by ひより\nhttps://yoki.test/g/grp/',
     );
     expect(await lastLog()).toMatchObject({ kind: '日程調整', target: '迷宮' });
 

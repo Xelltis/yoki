@@ -88,7 +88,7 @@ describe('日程調整', () => {
     const vote = async (sid: string, form: Form) => (await fail(sid, G.id, 'setPollVote', { id: 'S001', ...form })).error;
     expect(await vote(G.admin, { ymd: T(5), name: '', vote: '◯' })).toBe('入れられるのは自分のぶんだけです。');
     // 似た字の ○ は受け付けない
-    expect(await vote(G.sora, { ymd: T(5), name: 'ソラ', vote: '○' })).toBe('回答は ◯ か × です。');
+    expect(await vote(G.sora, { ymd: T(5), name: 'ソラ', vote: '○' })).toBe('回答は ◯・△・× のどれかです。');
     expect(await vote(G.sora, { ymd: 'あした', name: 'ソラ', vote: '◯' })).toBe('日付が読めません: あした');
     await withPastCandidate();
     expect(await vote(G.sora, { ymd: T(-1), name: 'ソラ', vote: '◯' })).toBe('過ぎた候補日には回答できません。');

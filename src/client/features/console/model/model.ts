@@ -52,6 +52,24 @@ export function pollVoters(d: ConsoleData, s: ConsoleSession): string[] {
 }
 /** その候補日に ◯ を付けた人 */
 export function pollOk(d: ConsoleData, s: ConsoleSession, k: string): string[] { const v = (s.votes || {})[k] || {}; return pollVoters(d, s).filter((n) => v[n] === '◯'); }
+/** その候補日に △（調整すれば行ける）を付けた人 */
+export function pollMaybe(d: ConsoleData, s: ConsoleSession, k: string): string[] { const v = (s.votes || {})[k] || {}; return pollVoters(d, s).filter((n) => v[n] === '△'); }
+/** 候補日の数の見出し。「◯ 2/3」、△ があれば △ の数も添える */
+export function pollCount(d: ConsoleData, s: ConsoleSession, k: string): string {
+  const maybe = pollMaybe(d, s, k).length;
+  return '◯ ' + pollOk(d, s, k).length + '/' + pollVoters(d, s).length + (maybe ? '　△ ' + maybe : '');
+}
+/** 予定表の印から決める回答（サーバーと同じ決まり）。卓のある日と × は ×、△ は △、空欄は ◯ */
+export function voteFromAvail(d: ConsoleData, name: string, day: string): string {
+  if ((d.booked[day] || {})[name]) return '×';
+  const m = (d.avail[day] || {})[name];
+  return m === '×' || m === '△' ? m : '◯';
+}
+/** 予定表から答えられる候補日（これからの、予定表の範囲の日で、まだ答えていない日） */
+export function pollFillDays(d: ConsoleData, s: ConsoleSession, name: string): string[] {
+  const v = s.votes || {};
+  return (s.candidates || []).filter((k) => k >= d.today && d.availDays.indexOf(k) >= 0 && !(v[k] && v[k][name]));
+}
 /** これからの候補日に、まだ答えていない日がある人 */
 export function pollPending(d: ConsoleData, s: ConsoleSession): string[] {
   const vs = s.votes || {}, fut = (s.candidates || []).filter((k) => k >= d.today);

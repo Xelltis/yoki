@@ -1,24 +1,24 @@
-<!-- 試せる例: 日程調整に ◯ か × で答える。全員が答えると、GMに知らせが届く -->
+<!-- 試せる例: 日程調整に ◯・△・× で答える。全員が答えると、GMに知らせが届く -->
 <script setup lang="ts">
 import Ms from './Ms.vue';
 import { computed, ref } from 'vue';
 import { addDays, mdw, useMonday } from './demo';
 
-type Vote = '◯' | '×';
+type Vote = '◯' | '△' | '×';
 const VOTERS = ['ダン', 'アリス', 'あなた'];
-const first = (): Record<string, Vote>[] => [{ ダン: '◯', アリス: '◯' }, { ダン: '◯', アリス: '◯' }, { ダン: '◯', アリス: '×' }];
+const first = (): Record<string, Vote>[] => [{ ダン: '◯', アリス: '◯' }, { ダン: '◯', アリス: '△' }, { ダン: '◯', アリス: '×' }];
 
 const monday = useMonday();
 const cands = computed(() => [11, 12, 13].map((n) => addDays(monday.value, n)));
 const votes = ref(first());
-const say = ref('あなたの行の ◯ か × を押してください。');
+const say = ref('あなたの行の ◯・△・× を押してください。△ は「調整すれば行ける」です。');
 const complete = computed(() => votes.value.every((v) => VOTERS.every((n) => !!v[n])));
 const rows = computed(() => cands.value.map((d, i) => {
   const v = votes.value[i];
-  const ok = VOTERS.filter((n) => v[n] === '◯'), ng = VOTERS.filter((n) => v[n] === '×'), no = VOTERS.filter((n) => !v[n]);
+  const ok = VOTERS.filter((n) => v[n] === '◯'), maybe = VOTERS.filter((n) => v[n] === '△'), ng = VOTERS.filter((n) => v[n] === '×'), no = VOTERS.filter((n) => !v[n]);
   return {
-    d, i, ok, my: v['あなた'] ?? '',
-    names: [ok.length ? '◯ ' + ok.join('、') : '', ng.length ? '× ' + ng.join('、') : '', no.length ? '未回答' + no.join('、') : ''].filter(Boolean).join('　'),
+    d, i, ok, maybe, my: v['あなた'] ?? '',
+    names: [ok.length ? '◯ ' + ok.join('、') : '', maybe.length ? '△ ' + maybe.join('、') : '', ng.length ? '× ' + ng.join('、') : '', no.length ? '未回答' + no.join('、') : ''].filter(Boolean).join('　'),
   };
 }));
 
@@ -43,9 +43,10 @@ function reset() {
     <div class="people"><span class="gm">GM ダン</span><span>アリス</span><span class="you">あなた</span></div>
     <div class="poll">
       <div v-for="r in rows" :key="r.i" class="poll-row" :class="{ all: r.ok.length === VOTERS.length }">
-        <span class="poll-date">{{ mdw(r.d) }}<span class="cnt">◯ {{ r.ok.length }}/{{ VOTERS.length }}</span></span>
+        <span class="poll-date">{{ mdw(r.d) }}<span class="cnt">◯ {{ r.ok.length }}/{{ VOTERS.length }}<template v-if="r.maybe.length">　△ {{ r.maybe.length }}</template></span></span>
         <span class="row-btns tight">
           <button type="button" class="pill-btn vote" :class="{ 'on-ok': r.my === '◯' }" :aria-pressed="r.my === '◯'" :aria-label="mdw(r.d) + 'は ◯'" @click="vote(r.i, '◯')">◯</button>
+          <button type="button" class="pill-btn vote" :class="{ 'on-soft': r.my === '△' }" :aria-pressed="r.my === '△'" :aria-label="mdw(r.d) + 'は △（調整すれば行ける）'" @click="vote(r.i, '△')">△</button>
           <button type="button" class="pill-btn vote" :class="{ 'on-ng': r.my === '×' }" :aria-pressed="r.my === '×'" :aria-label="mdw(r.d) + 'は ×'" @click="vote(r.i, '×')">×</button>
         </span>
         <span class="poll-names">{{ r.names }}</span>

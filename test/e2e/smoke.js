@@ -231,10 +231,13 @@ await withDevServer(async (base) => {
       await page.waitForSelector(`#tab-recruit [data-card="${maze.id}"].ring-2`, { timeout: 15000 });
       const today = (await D()).today;
       const open = maze.candidates.filter((k) => k >= today && !(maze.votes[k] && maze.votes[k]['ひより']));
-      for (const k of open) {
-        await page.click(`button[data-vote="◯"][data-id="${maze.id}"][data-day="${k}"]`);
-        await until((d, a) => d.sessions.find((s) => s.id === a[0]).votes[a[1]]?.['ひより'] === '◯', [maze.id, k]);
-      }
+      assert.ok(open.length > 0, 'まだ答えていない候補日がある');
+      // 予定表から入れる（答えていない日だけ）。そのあと1日を △ にする
+      await page.click(`button[data-fill="${maze.id}"]`);
+      await until((d, a) => a[1].every((k) => !!d.sessions.find((s) => s.id === a[0]).votes[k]?.['ひより']), [maze.id, open]);
+      await page.click(`button[data-vote="△"][data-id="${maze.id}"][data-day="${open[0]}"]`);
+      await until((d, a) => d.sessions.find((s) => s.id === a[0]).votes[a[1]]?.['ひより'] === '△', [maze.id, open[0]]);
+      assert.equal(await page.locator(`button[data-fill="${maze.id}"]`).count(), 0, '答え終えたら「予定表から入れる」は消える');
       await page.waitForFunction((n) => +(document.querySelector('#recruitCount').textContent.replace(/\D/g, '') || 0) === n, before - 1, { timeout: 15000 });
     });
 

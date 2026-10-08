@@ -88,12 +88,12 @@ export function pollPayload(ctx: PayloadCtx, s: Session, me: string): Payload {
   const lines = [
     '🗓️ 「' + s.name + '」の日程を決めます。' + call,
     '候補日: ' + s.candidates.map(fmtDateJa).join('、') + (s.start || s.end ? '　' + timeRange(s) : ''),
-    'Yokiの「募集・調整」タブで、候補日ごとに ◯ か × を押してください。全員の回答がそろったら、GMが開催日を選びます。' + (me ? '　by ' + me : '') + (ctx.appUrl ? '\n' + ctx.appUrl : ''),
+    'Yokiの「募集・調整」タブで、候補日ごとに ◯・△（調整すれば行ける）・× を押してください。全員の回答がそろったら、GMが開催日を選びます。' + (me ? '　by ' + me : '') + (ctx.appUrl ? '\n' + ctx.appUrl : ''),
   ];
   return { content: lines.join('\n'), embeds: [sessionEmbed(ctx, s)] };
 }
 
-/** 日程調整の回答がそろった。GMだけを呼び、候補日ごとの ◯ の数を並べる */
+/** 日程調整の回答がそろった。GMだけを呼び、候補日ごとの ◯ と △ の数を並べる */
 export function pollReadyPayload(ctx: PayloadCtx, s: Session): Payload {
   const gmId = discordIdOf(ctx, s.gm);
   const call = gmId ? '<@' + gmId + '>' : s.gm ? s.gm + 'さん' : '';
@@ -102,8 +102,8 @@ export function pollReadyPayload(ctx: PayloadCtx, s: Session): Payload {
   const days = s.candidates
     .filter((k) => k >= ctx.today)
     .map((k) => {
-      const ok = voters.filter((n) => votes[k]?.[n] === '◯');
-      return '・' + fmtDateJa(k) + '　◯ ' + ok.length + '/' + voters.length + (ok.length === voters.length ? '（全員 ◯）' : '');
+      const ok = voters.filter((n) => votes[k]?.[n] === '◯'), maybe = voters.filter((n) => votes[k]?.[n] === '△');
+      return '・' + fmtDateJa(k) + '　◯ ' + ok.length + '/' + voters.length + (maybe.length ? '　△ ' + maybe.length : '') + (ok.length === voters.length ? '（全員 ◯）' : '');
     });
   return {
     content: ['📝 「' + s.name + '」の日程調整の回答がそろいました。' + call, days.join('\n'), 'Yokiの「募集・調整」タブで、開催日を選んでください。' + (ctx.appUrl ? '\n' + ctx.appUrl : '')].join('\n'),

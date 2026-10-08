@@ -27,7 +27,7 @@ export type ScenarioMark = 'played' | 'gm';
 export const RPC_FUNCS = [
   'getConsoleData', 'sendDiscordStep', 'setDayNote', 'setInterest', 'bulkUpdateSessions', 'setAvailability', 'setAvailabilityBulk', 'setAvailNote',
   'saveSession', 'deleteSession', 'saveMember', 'deleteMember', 'saveConsoleSettings', 'saveSeriesNotify', 'renameGroup', 'startPoll', 'setPollVote',
-  'setPollVoteAll', 'cancelPoll', 'decidePoll', 'setAdmin', 'deleteGroup', 'getDiscordChannels', 'saveCalendarFeed', 'deleteCalendarFeed',
+  'setPollVoteAll', 'setPollVoteFromAvail', 'cancelPoll', 'decidePoll', 'setAdmin', 'deleteGroup', 'getDiscordChannels', 'saveCalendarFeed', 'deleteCalendarFeed',
   'saveGoogleSettings', 'syncGoogleNow', 'unlinkGoogle', 'unlinkGoogleLogin', 'saveScenario', 'deleteScenario', 'setScenarioMark',
   'savePrep', 'saveSlotSecret', 'assignSlots', 'setSlotHope', 'submitSheet',
 ] as const;
@@ -65,7 +65,7 @@ export type ConsoleSession = {
   windowKey: string;
   /** 日程調整の候補日 */
   candidates: string[];
-  /** 日程調整の回答{ 'YYYY-MM-DD': { 名前: '◯' | '×' } } */
+  /** 日程調整の回答{ 'YYYY-MM-DD': { 名前: '◯' | '△' | '×' } }。△ は調整すれば行ける */
   votes: Record<string, Record<string, string>>;
   /** 遊ぶシナリオ（ConsoleScenarioのid）。無ければ空 */
   scenarioId: string;

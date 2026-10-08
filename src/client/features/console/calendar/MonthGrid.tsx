@@ -3,7 +3,7 @@ import { useRef } from 'react';
 import type { ConsoleData, ConsoleSession } from '../../../../shared/api';
 import { Icon } from '../../../ui/Icon';
 import { WD, fmtJa, holidayName, ymdOf } from '../model/dates';
-import { STATUS_ICON, active, availMap, hasPoll, isActive, isAdjusting, notesOn, pollOk, pollVoters, sortSessions, windowByDay } from '../model/model';
+import { STATUS_ICON, active, availMap, hasPoll, isActive, isAdjusting, notesOn, pollCount, sortSessions, windowByDay } from '../model/model';
 
 type Props = {
   d: ConsoleData;
@@ -95,7 +95,7 @@ export function MonthGrid({ d, view, target, selDay, onPick, onShift }: Props) {
           <span className="mt-3 flex flex-[0_0_100%] flex-wrap gap-3">
             {icos.map((s, j) => {
               const poll = hasPoll(s);
-              const label = s.name + (poll ? '（日程調整の候補日　◯ ' + pollOk(d, s, key).length + '/' + pollVoters(d, s).length + '）' : '（調整中' + (s.windowLabel ? '　' + s.windowLabel + 'のどこか' : '') + '）');
+              const label = s.name + (poll ? '（日程調整の候補日　' + pollCount(d, s, key) + '）' : '（調整中' + (s.windowLabel ? '　' + s.windowLabel + 'のどこか' : '') + '）');
               return (
                 <span className={'inline-flex h-20 w-20 items-center justify-center rounded-sm bg-card max-sm:h-16 max-sm:w-16 ' + (poll ? 'text-accent-text shadow-[0_0_0_1px_var(--accent-line)]' : 'text-muted shadow-[0_0_0_1px_var(--line)]')}
                   key={s.id + ':' + j} role="img" aria-label={label} title={label}>

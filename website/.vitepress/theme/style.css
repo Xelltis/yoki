@@ -180,6 +180,7 @@
 .poll-names { grid-column: 1 / -1; font-size: 12px; color: var(--y-muted); }
 .vote { min-width: 46px; font-size: 15px; }
 .vote.on-ok { background: var(--y-ok); border-color: var(--y-ok-text); color: var(--y-ok-text); }
+.vote.on-soft { background: var(--y-soft); border-color: var(--y-ok-text); color: var(--y-ok-text); }
 .vote.on-ng { background: var(--y-warn); border-color: var(--y-err-text); color: var(--y-err-text); }
 .decided { display: flex; align-items: center; gap: 8px; margin-top: 14px; padding: 10px 14px; border-radius: 12px; background: var(--y-ok); color: var(--y-ok-text); font-weight: 600; font-size: 14px; animation: y-pop .18s ease-out; }
 @keyframes y-pop { from { opacity: 0; transform: translateY(4px); } }
