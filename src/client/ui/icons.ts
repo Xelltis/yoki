@@ -5,6 +5,7 @@ import type { ComponentType, SVGProps } from 'react';
 import IAdd from '~icons/material-symbols/add-outline-rounded';
 import IArrowBack from '~icons/material-symbols/arrow-back-outline-rounded';
 import IArrowForward from '~icons/material-symbols/arrow-forward-outline-rounded';
+import IAutoStories from '~icons/material-symbols/auto-stories-outline-rounded';
 import IBlock from '~icons/material-symbols/block-outline-rounded';
 import ICalendarMonth from '~icons/material-symbols/calendar-month-outline-rounded';
 import ICampaign from '~icons/material-symbols/campaign-outline-rounded';
@@ -51,6 +52,7 @@ import IToday from '~icons/material-symbols/today-outline-rounded';
 import IUndo from '~icons/material-symbols/undo-outline-rounded';
 import IUpgrade from '~icons/material-symbols/upgrade-outline-rounded';
 import IWarning from '~icons/material-symbols/warning-outline-rounded';
+import IAutoStoriesFilled from '~icons/material-symbols/auto-stories-rounded';
 import ICalendarMonthFilled from '~icons/material-symbols/calendar-month-rounded';
 import ICampaignFilled from '~icons/material-symbols/campaign-rounded';
 import IEventAvailableFilled from '~icons/material-symbols/event-available-rounded';
@@ -61,6 +63,7 @@ export const ICONS = {
   add: IAdd,
   arrow_back: IArrowBack,
   arrow_forward: IArrowForward,
+  auto_stories: IAutoStories,
   block: IBlock,
   calendar_month: ICalendarMonth,
   campaign: ICampaign,
@@ -113,6 +116,7 @@ export type IconName = keyof typeof ICONS;
 
 /** 塗りつぶした形（いま開いているタブなど、押してあることを示すとき）。無い名前は線の形のまま */
 export const FILLED: Partial<Record<IconName, IconComponent>> = {
+  auto_stories: IAutoStoriesFilled,
   calendar_month: ICalendarMonthFilled,
   campaign: ICampaignFilled,
   event_available: IEventAvailableFilled,

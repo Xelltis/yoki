@@ -6,6 +6,7 @@ import { SAMPLE_CHANNEL } from '../discord/send';
 import { setAvailability, setAvailabilityBulk, setAvailNote, setDayNote } from '../domain/availability';
 import { loadGroup } from '../domain/load';
 import { setPollVote, startPoll } from '../domain/polls';
+import { saveScenario, setScenarioMark } from '../domain/scenarios';
 import { saveSession, setInterest } from '../domain/sessions';
 import { addDays, fmtDateTime, jst } from '../lib/jst';
 
@@ -45,17 +46,31 @@ export async function seedSample(db: D1Database, groupId: string, appUrl: string
   const nextTo = addDays(nmM === 12 ? nmY + 1 + '-01-01' : nmY + '-' + String(nmM + 1).padStart(2, '0') + '-01', -1);
   const S = async (o: Record<string, unknown>, by = 'ひより') =>
     (await saveSession(await as(by), { extra: '', members: [], start: '', end: '', place: '', memo: '', series: '', ...o })) as { id: string };
+  /** シナリオを登録して、そのIDを返す */
+  const SC = async (by: string, o: Record<string, unknown>) => (await saveScenario(await as(by), o)).id;
+  const mark = async (id: string, name: string, kind: string) => { await setScenarioMark(await as(name), { id, name, kind }); };
+
+  // シナリオ（卓に付けるものと、まだ遊んでいないもの）
+  const scBring = await SC('ソラ', { name: '連れて帰る', system: 'クトゥルフ神話TRPG', playersMin: 2, playersMax: 3, hours: '4時間', memo: '現代日本が舞台。初めての人にもおすすめ' });
+  const scLibrary = await SC('レン', { name: '灰色の図書館', system: 'クトゥルフ神話TRPG', playersMin: 3, playersMax: 4, hours: '5時間', url: 'https://example.com/library' });
+  const scCastle = await SC('こまち', { name: '雪原の古城', system: 'ソード・ワールド2.5', playersMin: 3, playersMax: 4, hours: '6時間', memo: 'キャラクターは2レベルで作る' });
+  const scPort = await SC('ミナト', { name: '星降る港の依頼', system: 'ソード・ワールド2.5', playersMin: 2, playersMax: 3, hours: '3時間' });
+  const scPromise = await SC('ひより', { name: 'あの日の約束', system: 'エモクロアTRPG', playersMin: 1, playersMax: 2, hours: '3時間', memo: 'タイマンでも遊べる' });
+  await mark(scPromise, 'ひより', 'gm');
+  await mark(scPromise, 'ソラ', 'played');
+  await mark(scLibrary, 'ミナト', 'played');
+  await mark(scCastle, 'ユズ', 'played');
 
   // キャンペーン（シリーズ）
   await S({ name: '鉄鳴界の夜明け #1', series: '鉄鳴界の夜明け', gm: 'ひより', members: ['ソラ', 'こまち', 'レン'], date: T(-6), start: '20:00', end: '23:00', status: '開催', place: 'ユドナリウムアックス', memo: 'キャンペーン第1回。キャラクター作成から' });
   await S({ name: '鉄鳴界の夜明け #2', series: '鉄鳴界の夜明け', seriesEnd: T(40), gm: 'ひより', members: ['ソラ', 'こまち', 'レン'], dates: [T(2), T(9), T(16)], date: T(2), start: '20:00', end: '23:00', status: '開催', place: 'ユドナリウムアックス', memo: '前回の続きから' });
   // 単発
   await S({ name: '今夜の短編', gm: 'ユズ', members: ['ひより', 'ミナト'], date: T(0), start: '21:00', end: '23:00', status: '開催', place: 'Discordボイス', memo: '2時間で終わる短いシナリオ' });
-  const port = await S({ name: '星降る港の依頼', gm: 'ミナト', members: ['ソラ', 'レン'], date: T(1), start: '20:30', end: '23:00', status: '開催', place: 'Discordボイス', memo: 'ミナトさんの初GM' });
-  await S({ name: '連れて帰る', gm: 'ソラ', members: ['ひより', 'ミナト', 'ユズ'], date: T(5), start: '14:00', end: '18:00', status: '開催', place: 'ユドナリウムアックス', memo: '初めての人も歓迎' });
-  await S({ name: '灰色の図書館', gm: 'レン', members: ['こまち', 'ユズ', 'ひより'], date: T(12), start: '21:00', end: '23:30', status: '開催', place: 'Discordボイス', memo: '' });
+  const port = await S({ name: '星降る港の依頼', gm: 'ミナト', members: ['ソラ', 'レン'], date: T(1), start: '20:30', end: '23:00', status: '開催', place: 'Discordボイス', memo: 'ミナトさんの初GM', scenarioId: scPort });
+  await S({ name: '連れて帰る', gm: 'ソラ', members: ['ひより', 'ミナト', 'ユズ'], date: T(5), start: '14:00', end: '18:00', status: '開催', place: 'ユドナリウムアックス', memo: '初めての人も歓迎', scenarioId: scBring });
+  await S({ name: '灰色の図書館', gm: 'レン', members: ['こまち', 'ユズ', 'ひより'], date: T(12), start: '21:00', end: '23:30', status: '開催', place: 'Discordボイス', memo: '', scenarioId: scLibrary });
   // 募集
-  const castle = await S({ name: '雪原の古城', gm: 'こまち', status: '募集', windowFrom: nextFrom, windowTo: nextMid, memo: '3〜4人で。ボイスあり' });
+  const castle = await S({ name: '雪原の古城', gm: 'こまち', status: '募集', windowFrom: nextFrom, windowTo: nextMid, memo: '3〜4人で。ボイスあり', scenarioId: scCastle });
   await setInterest(await as('ソラ'), { id: castle.id, name: 'ソラ', level: 'want' });
   await setInterest(await as('レン'), { id: castle.id, name: 'レン', level: 'interest' });
   await setInterest(await as('ユズ'), { id: castle.id, name: 'ユズ', level: 'interest' });

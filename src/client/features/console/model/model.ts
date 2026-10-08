@@ -1,5 +1,5 @@
 // 卓とメンバーの読み方（状態・人・日程調整・並び）。画面のデータdを受け取って読むだけで、書き換えない
-import type { ConsoleData, ConsoleSession } from '../../../../shared/api';
+import type { ConsoleData, ConsoleScenario, ConsoleSession } from '../../../../shared/api';
 import type { IconName } from '../../../ui/icons';
 import { addDaysYmd } from './dates';
 
@@ -148,3 +148,8 @@ export function seriesNames(d: ConsoleData): string[] {
 /* ---- あなた ---- */
 /** 「あなた」（ログインした本人）。予定・参加希望・日程調整の回答は、本人のぶんだけ入れる */
 export function me(d: ConsoleData): string { return d.me ? d.me.name : ''; }
+
+/** 卓のシナリオ（付いていなければundefined） */
+export function scenarioOf(d: ConsoleData, s: ConsoleSession): ConsoleScenario | undefined {
+  return s.scenarioId ? d.scenarios.find((x) => x.id === s.scenarioId) : undefined;
+}

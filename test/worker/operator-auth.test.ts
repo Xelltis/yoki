@@ -81,7 +81,7 @@ describe('運営者の管理画面のリンク', () => {
 
 describe('ログインのあとの戻り先', () => {
   test('入口・グループのページとタブ・グループの管理画面と区分・運営者の管理画面と区分だけ', () => {
-    for (const ok of ['/', '/g/abc/', '/g/abc/recruit/', '/g/abc/settings/', '/g/abc/admin/', '/g/abc/admin/danger/', '/g/abc/admin/admins/', '/admin/', '/admin/legal/']) {
+    for (const ok of ['/', '/g/abc/', '/g/abc/recruit/', '/g/abc/scenario/', '/g/abc/settings/', '/g/abc/admin/', '/g/abc/admin/danger/', '/g/abc/admin/admins/', '/admin/', '/admin/legal/']) {
       expect(isReturnPath(ok), ok).toBe(true);
     }
     for (const ng of ['/admin', '/g/abc/x/', '/g/abc/recruit', '/g/abc/admin/x/', '/g/abc/admin/admin/', '/g/ABC/', '/g/' + 'a'.repeat(41) + '/', '//evil.example/', 'https://evil.example/', '/admin/x/', '/admin/legal']) {

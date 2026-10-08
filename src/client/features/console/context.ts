@@ -7,15 +7,15 @@ import type { ConsoleSync } from './api/sync';
 
 /** 区域。/g/:id/ はふだんの画面、/g/:id/admin/ はグループの管理画面 */
 export type Area = 'main' | 'admin';
-/** タブ。ふだんの画面はカレンダー・募集・調整・メンバーの予定・設定、管理画面は管理の1枚 */
-export type Tab = 'cal' | 'recruit' | 'avail' | 'settings' | 'admin';
+/** タブ。ふだんの画面はカレンダー・募集・調整・シナリオ・メンバーの予定・設定、管理画面は管理の1枚 */
+export type Tab = 'cal' | 'recruit' | 'scenario' | 'avail' | 'settings' | 'admin';
 
 /**
  * 卓の登録の窓・変更の窓を開く頼み。idがあれば、その卓の変更の窓。contはその卓の設定を引き継いで翌日の卓を登録する、
  * date・status・seriesは新しく登録するときの初めの値（seriesを選ぶと直前の回から引き継ぐ。statusは変える卓にも当てる）。
- * focusは、開いたときに入る欄（無ければ卓の名前）
+ * focusは、開いたときに入る欄（無ければ卓の名前）。scenarioId・gmは、シナリオのタブの「この日で卓を立てる」が入れる初めの値
  */
-export type FormReq = { id?: string; cont?: string; date?: string; status?: string; series?: string; focus?: 'date' };
+export type FormReq = { id?: string; cont?: string; date?: string; status?: string; series?: string; focus?: 'date'; scenarioId?: string; gm?: string };
 
 /** 画面の状態（サーバーには送らない） */
 export type ConsoleUi = {

@@ -7,8 +7,8 @@ import { formActions, wideBar, wideBarTitle } from '../../../ui/modalParts';
 import { openForm } from '../actions';
 import { type FormReq, useConsole, useData } from '../context';
 import { byId, hasPoll, isRecruit, STATUS_PROMOTE } from '../model/model';
-import { checkForm, collect, conflictText, type Fields, fieldsOf, FLOW, type Msg, patchFields } from './model';
-import { ConflictWarn, DateRow, FormMsg, NameRow, NotifyCheck, PeopleFields, PlaceMemo, SeriesRow, WindowRow } from './parts';
+import { checkForm, collect, conflictText, type Fields, fieldsOf, FLOW, type Msg, passWarnText, patchFields } from './model';
+import { ConflictWarn, DateRow, FormMsg, NameRow, NotifyCheck, PeopleFields, PlaceMemo, ScenarioRow, SeriesRow, WindowRow } from './parts';
 import { type PromoteAsk, PromoteModal } from './PromoteModal';
 import { useSessionSave } from './save';
 
@@ -25,7 +25,7 @@ export function EditSessionForm({ req, onClose, reopen }: { req: FormReq; onClos
   const s = byId(d, f.id);
   const st = f.status, noDate = st === '募集' || st === '調整中';
   const changed = !!s && s.status !== st && FLOW[st];
-  const conflict = conflictText(d, collect(d, f, ''));
+  const conflict = conflictText(d, collect(d, f, '')), passWarn = passWarnText(d, collect(d, f, ''));
   const wantInfo = s && isRecruit(s) && (s.want.length || s.interest.length)
     ? { text: '参加希望: ' + (s.want.length ? s.want.join('、') : 'なし') + '　／　興味あり: ' + (s.interest.length ? s.interest.join('、') : 'なし'), promote: STATUS_PROMOTE.indexOf(st) >= 0 && s.want.length > 0 }
     : null;
@@ -73,9 +73,11 @@ export function EditSessionForm({ req, onClose, reopen }: { req: FormReq; onClos
             </>
           )}
         </div>
+        <ScenarioRow f={f} set={set} />
         <SeriesRow f={f} set={set} hint="何日かに分けて開く卓の名前" />
         {noDate ? <WindowRow f={f} set={set} /> : <><DateRow f={f} set={set} /><ConflictWarn text={conflict} /></>}
         <PeopleFields f={f} set={set} />
+        <ConflictWarn text={passWarn} id="passWarn" />
         <div className="mt-12 rounded-md bg-soon px-12 py-8 text-13" id="wantInfo" hidden={!wantInfo}>{wantInfo && <>{wantInfo.text}{wantInfo.promote && <><br />{'状態を「' + st + '」にして保存すると、参加希望の人が参加者に加わります。'}</>}</>}</div>
         <PlaceMemo f={f} set={set} />
         <NotifyCheck f={f} set={set} label="Discordに知らせる" />

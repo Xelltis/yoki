@@ -48,10 +48,26 @@ export function DateRow({ f, set }: Props) {
   );
 }
 
-/** 同じ日の重なりや × の注意。止めはせず、気づけるようにするだけ */
-export function ConflictWarn({ text }: { text: string }) {
+/** 遊ぶシナリオ。選ぶと、通過した人が参加者にいるときに注意が出る */
+export function ScenarioRow({ f, set }: Props) {
+  const d = useData();
   return (
-    <div id="conflictWarn" className="mt-12 flex items-start gap-8 rounded-md bg-soon px-12 py-10 text-13 leading-[1.6] text-fg" hidden={!text}>
+    <div className="row" id="scenarioRow">
+      <div>
+        <label htmlFor="scenario">シナリオ <small>{d.scenarios.length ? '通過した人が参加者にいると、注意が出ます' : '「シナリオ」のタブで登録すると選べます'}</small></label>
+        <select id="scenario" value={f.scenarioId} onChange={(ev) => set({ scenarioId: ev.target.value })}>
+          <option value="">（なし）</option>
+          {d.scenarios.map((s) => <option value={s.id} key={s.id}>{s.name + (s.system ? '（' + s.system + '）' : '')}</option>)}
+        </select>
+      </div>
+    </div>
+  );
+}
+
+/** 同じ日の重なりや × の注意（idがconflictWarn）、通過した人の注意（passWarn）。止めはせず、気づけるようにするだけ */
+export function ConflictWarn({ text, id = 'conflictWarn' }: { text: string; id?: string }) {
+  return (
+    <div id={id} className="mt-12 flex items-start gap-8 rounded-md bg-soon px-12 py-10 text-13 leading-[1.6] text-fg" hidden={!text}>
       {text && <><Icon name="warning" size="sm" className="mt-2 text-soon-text" /><span>{text}</span></>}
     </div>
   );

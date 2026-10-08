@@ -50,7 +50,7 @@ await withDevServer(async (base) => {
     });
 
     await step('タブと見た目（ライト・ダーク）を切り替えられる', async () => {
-      for (const t of ['recruit', 'avail', 'settings', 'cal']) {
+      for (const t of ['recruit', 'scenario', 'avail', 'settings', 'cal']) {
         await tab(t);
         assert.equal(await page.getAttribute('body', 'data-tab'), t);
       }
@@ -135,7 +135,41 @@ await withDevServer(async (base) => {
       await until((d, id) => !d.sessions.some((x) => x.id === id), s.id);
     });
 
+    await step('シナリオ: 登録して自分の通過を付け、遊べる日から卓を立てるとシナリオとGMが入る。通過した人が参加者にいると注意が出る', async () => {
+      await tab('scenario');
+      assert.equal(await page.locator('#scenarioList button[data-scenario]').count(), 5, 'サンプルのシナリオは5件');
+      await page.click('#newScenario');
+      await page.fill('#scName', 'e2eのシナリオ');
+      await page.fill('#scMin', '1');
+      await page.click('#scSave');
+      await until((d) => d.scenarios.some((s) => s.name === 'e2eのシナリオ'));
+      await page.waitForFunction(() => document.getElementById('scenarioTitle')?.textContent === 'e2eのシナリオ');
+      await page.click('#scenarioPeople input[data-mark="ひより"][data-kind="gm"]');
+      await until((d) => d.scenarios.find((s) => s.name === 'e2eのシナリオ').marks['ひより'] === 'gm');
+      const id = (await D()).scenarios.find((s) => s.name === 'e2eのシナリオ').id;
+      await page.click('#playDays button[data-start-day] >> nth=0');
+      await page.waitForFunction(() => document.getElementById('formTitle')?.textContent === '卓を登録');
+      assert.equal(await page.inputValue('#scenario'), id);
+      assert.equal(await page.inputValue('#name'), 'e2eのシナリオ');
+      assert.equal(await page.inputValue('#gm'), 'ひより');
+      // 通過した人（「あの日の約束」のソラ）を参加者にすると、注意が出る
+      const promise = (await D()).scenarios.find((s) => s.name === 'あの日の約束').id;
+      await page.selectOption('#scenario', promise);
+      await page.check('#membersBox input[value="ソラ"]');
+      assert.match(await page.textContent('#passWarn'), /ソラ/);
+      await page.click('#f button[type=submit]');
+      await until((d, sid) => d.sessions.some((s) => s.scenarioId === sid && s.members.includes('ソラ') && !String(s.id).startsWith('__tmp__')), promise);
+      // シナリオを消すと、確かめる窓を通って一覧から消える
+      await tab('scenario');
+      await page.click(`#scenarioList button[data-scenario="${id}"]`);
+      await page.click('#scenarioEdit');
+      await page.click('#scDelete');
+      await confirm();
+      await until((d, sid) => !d.scenarios.some((s) => s.id === sid), id);
+    });
+
     await step('募集中の卓に参加希望を付け、取り消せる', async () => {
+      await tab('recruit');
       const s = (await D()).sessions.find((x) => x.name === '雪原の古城');
       await page.click(`#recruitList button[data-level="want"][data-id="${s.id}"]`);
       await until((d, id) => d.sessions.find((x) => x.id === id).want.includes('ひより'), s.id);
@@ -306,9 +340,10 @@ await withDevServer(async (base) => {
       const urge = (await D()).settings.urge;
       await page.locator('#stUrge').dispatchEvent('click');
       await until((d, v) => d.settings.urge === !v, urge);
-      const logs = (await D()).log.length;
+      // 送信記録は新しい10件までなので、件数ではなく、いちばん新しい記録が変わったかで見る
+      const top = JSON.stringify((await D()).log[0] ?? null);
       await page.locator('#stTest').dispatchEvent('click');
-      await until((d, n) => d.log.length > n, logs);
+      await until((d, t) => JSON.stringify(d.log[0] ?? null) !== t && d.log[0].kind === '接続テスト', top);
       await page.click('#setNav button[data-set="table"]');
       await page.fill('#stName', 'e2eのグループ');
       await page.click('#stNameSave');
@@ -325,6 +360,15 @@ await withDevServer(async (base) => {
       await page.click('#bulkRun');
       await confirm();
       await until((d, id) => d.sessions.find((x) => x.id === id)?.status === '中止', s.id);
+      // シナリオをまとめて付け替える（中止にした卓は一覧から外れるので、稼働中の卓で）
+      const bring = (await D()).sessions.find((x) => x.name === '連れて帰る');
+      const castle = (await D()).scenarios.find((x) => x.name === '雪原の古城').id;
+      await page.check(`#matrix input.rowsel[data-id="${bring.id}"]`);
+      await page.selectOption('#bulkAction', 'setScenario');
+      await page.selectOption('#bulkScenario', castle);
+      await page.click('#bulkRun');
+      await confirm();
+      await until((d, a) => d.sessions.find((x) => x.id === a[0])?.scenarioId === a[1], [bring.id, castle]);
     });
 
     await step('管理画面から予定の画面へ戻れる', async () => {

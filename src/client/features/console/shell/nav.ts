@@ -11,6 +11,7 @@ import { isActive } from '../model/model';
 export const TAB_TO = {
   cal: '/g/$groupId/',
   recruit: '/g/$groupId/recruit/',
+  scenario: '/g/$groupId/scenario/',
   avail: '/g/$groupId/avail/',
   settings: '/g/$groupId/settings/',
 } as const;
@@ -44,7 +45,7 @@ export function useGoPane(): (pane: AdminPane) => void {
 /** 道からタブを決める */
 export function tabOf(pathname: string): Tab {
   if (/^\/g\/[^/]+\/admin\//.test(pathname)) return 'admin';
-  const m = /^\/g\/[^/]+\/(recruit|avail|settings)\//.exec(pathname);
+  const m = /^\/g\/[^/]+\/(recruit|scenario|avail|settings)\//.exec(pathname);
   return m ? (m[1] as Tab) : 'cal';
 }
 

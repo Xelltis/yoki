@@ -11,7 +11,7 @@ import { byId, isActive, isAdjusting, isRecruit, me, sortSessions, sortedActive 
 
 const ACTIONS = [
   ['status', '状態を変更'], ['addMember', '参加者を追加'], ['removeMember', '参加者から外す'], ['setGm', 'GMを変更'],
-  ['shiftDays', '開催日をずらす'], ['setSeries', 'シリーズを変更'], ['delete', '削除'],
+  ['shiftDays', '開催日をずらす'], ['setSeries', 'シリーズを変更'], ['setScenario', 'シナリオを変更'], ['delete', '削除'],
 ] as const;
 type Action = (typeof ACTIONS)[number][0];
 /** 広い画面だけに出す列 */
@@ -30,6 +30,7 @@ export function OpsPane() {
   const [member, setMember] = useState('');
   const [days, setDays] = useState('');
   const [series, setSeries] = useState('');
+  const [scenario, setScenario] = useState('');
   const [notify, setNotify] = useState(false);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
@@ -47,10 +48,11 @@ export function OpsPane() {
   });
   const run = () => {
     if (!ids.length) return;
-    const value = action === 'status' ? statusV : action === 'shiftDays' ? days.trim() : action === 'setSeries' ? series.trim() : memberV;
+    const value = action === 'status' ? statusV : action === 'shiftDays' ? days.trim() : action === 'setSeries' ? series.trim() : action === 'setScenario' ? scenario : memberV;
     const label = ACTIONS.filter((x) => x[0] === action)[0]![1];
-    const what = label + (action === 'delete' ? '' : '（' + (value || (action === 'setSeries' ? '外す' : '')) + '）');
-    if (action !== 'delete' && action !== 'setSeries' && !value) { setMsg('値を選んでください。'); return; }
+    const shown = action === 'setScenario' ? (d.scenarios.find((x) => x.id === value)?.name ?? '') : value;
+    const what = label + (action === 'delete' ? '' : '（' + (shown || (action === 'setSeries' || action === 'setScenario' ? '外す' : '')) + '）');
+    if (action !== 'delete' && action !== 'setSeries' && action !== 'setScenario' && !value) { setMsg('値を選んでください。'); return; }
     const sel = ids.slice(), selNames = sel.map((id) => { const s = byId(d, id); return s ? s.name : id; });
     askConfirm({ title: sel.length + '件の卓で「' + what + '」を実行しますか？', message: selNames.join('、'), ok: action === 'delete' ? '削除する' : '実行する', danger: action === 'delete' }, () => {
       setBusy(true); setMsg('保存しています…');
@@ -124,6 +126,10 @@ export function OpsPane() {
           </select>
           <input type="text" className="w-[9em] max-w-640" id="bulkDays" inputMode="numeric" placeholder="日数（7や -1）" hidden={action !== 'shiftDays'} value={days} onChange={(ev) => setDays(ev.target.value)} />
           <input type="text" className="w-[14em] max-w-640" id="bulkSeries" list="seriesList" placeholder="シリーズ名（空で外す）" hidden={action !== 'setSeries'} value={series} onChange={(ev) => setSeries(ev.target.value)} />
+          <select className={bulkField} id="bulkScenario" hidden={action !== 'setScenario'} value={scenario} onChange={(ev) => setScenario(ev.target.value)}>
+            <option value="">（外す）</option>
+            {d.scenarios.map((x) => <option value={x.id} key={x.id}>{x.name}</option>)}
+          </select>
           <label className="chk"><input type="checkbox" id="bulkNotify" disabled={!d.channelSet} checked={notify} onChange={(ev) => setNotify(ev.target.checked)} /> Discordに知らせる</label>
           <button type="button" className={'btn ' + (action === 'delete' ? 'danger' : 'primary')} id="bulkRun" disabled={busy || !ids.length} onClick={run}>実行</button>
           <span id="bulkMsg" className="hint">{msg}</span>

@@ -1,6 +1,6 @@
 // 返事を待たずに見せる形（押した瞬間の仮の反映）。データdを受け取り、変えた新しいdを返す（dは書き換えない）。
 // 仮の卓のIDは '__tmp__'（何日かまとめて登録するときは '__tmp__0'・'__tmp__1'…）。返事のデータで本物に置き換わる
-import type { ConsoleData, ConsoleSession } from '../../../../shared/api';
+import type { ConsoleData, ConsoleSession, ScenarioMark } from '../../../../shared/api';
 
 export const TMP = '__tmp__';
 export const isTmp = (id: string) => String(id).indexOf(TMP) === 0;
@@ -42,4 +42,17 @@ export function withAvailNote(d: ConsoleData, day: string, name: string, text: s
   const notes = { ...(d.availNotes || {})[day] };
   if (text.trim()) notes[name] = { text: text.trim(), at: 'いま' }; else delete notes[name];
   return { ...d, availNotes: { ...d.availNotes, [day]: notes } };
+}
+
+/** 通過の印を付ける・外す（kindが空なら外す） */
+export function withScenarioMark(d: ConsoleData, id: string, name: string, kind: ScenarioMark | ''): ConsoleData {
+  return {
+    ...d,
+    scenarios: d.scenarios.map((s) => {
+      if (s.id !== id) return s;
+      const marks = { ...s.marks };
+      if (kind) marks[name] = kind; else delete marks[name];
+      return { ...s, marks };
+    }),
+  };
 }

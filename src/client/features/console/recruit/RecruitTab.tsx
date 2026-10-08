@@ -13,7 +13,7 @@ import { openForm, openPoll } from '../actions';
 import { discordSend, failToast } from '../api/discord';
 import { useConsole, useData } from '../context';
 import { fmtJa, holidayName, parseYmd, timeRange } from '../model/dates';
-import { byId, hasPoll, isAdjusting, isRecruit, me, peopleOf, periodOfSession, pollPending, pollVoters, sortSessions } from '../model/model';
+import { byId, hasPoll, isAdjusting, isRecruit, me, peopleOf, periodOfSession, pollPending, pollVoters, scenarioOf, sortSessions } from '../model/model';
 import { hookFor } from '../model/notify';
 import { withSession } from '../model/optimistic';
 import { Place } from '../Place';
@@ -201,6 +201,7 @@ export function RecruitTab() {
               </div>
               <div className={rcWhen}>{periodOfSession(s)}</div>
               {s.series && <div className="hint">{'シリーズ: ' + s.series}</div>}
+              {scenarioOf(d, s) && <div className="hint" data-scenario-of={s.id}>{'シナリオ: ' + scenarioOf(d, s)!.name}</div>}
               <People d={d} s={s} none="GM・参加者 未定" />
               <div className="mt-10 grid grid-cols-[max-content_minmax(0,1fr)] gap-x-12 gap-y-2 text-13">
                 <div className="contents"><b className="font-semibold text-muted">参加希望</b>{s.want.length ? s.want.join('、') : <span className="hint">まだいません</span>}</div>
@@ -258,6 +259,7 @@ export function RecruitTab() {
               </div>
               <div className={rcWhen}>{s.windowLabel ? s.windowLabel + 'のどこか' : '候補の期間は未定'}</div>
               {s.series && <div className="hint">{'シリーズ: ' + s.series}</div>}
+              {scenarioOf(d, s) && <div className="hint" data-scenario-of={s.id}>{'シナリオ: ' + scenarioOf(d, s)!.name}</div>}
               <People d={d} s={s} none="GM・参加者 未定" />
               {s.place && <Place place={s.place} className={rcRow} />}
               {s.memo && <div className={rcRow + ' hint'}>{s.memo}</div>}

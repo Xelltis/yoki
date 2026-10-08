@@ -1,5 +1,6 @@
 // 卓の登録の窓と変更の窓で共通の決まり（入力の形・サーバーへ送る形・重なりの注意・状態ごとの手順・シリーズの引き継ぎ）
 import { type ConsoleData, type ConsoleSession, SESSION_DATES_MAX } from '../../../../shared/api';
+import { passesOf } from '../../../../shared/scenario';
 import type { IconName } from '../../../ui/icons';
 import { addDaysYmd, fmtJa } from '../model/dates';
 import { isActive, me, peopleOf, sortSessions, splitNames, STATUS_DATED } from '../model/model';
@@ -9,6 +10,8 @@ import { hookFor, kindSet, seriesHook, snEntry } from '../model/notify';
 export type Fields = {
   id: string; series: string; seriesEnd: string; name: string; status: string; date: string; start: string; end: string;
   winFrom: string; winTo: string; gm: string; members: string[]; extra: string; place: string; memo: string; notify: boolean;
+  /** 遊ぶシナリオ（ConsoleScenarioのid）。無ければ空 */
+  scenarioId: string;
   /** まとめて登録する日（開催日のほかに足した日） */
   more: { key: number; v: string }[];
 };
@@ -75,6 +78,7 @@ export function fieldsOf(d: ConsoleData, s: ConsoleSession | null): Fields {
     id: s ? s.id : '', series: s ? (s.series || '') : '', seriesEnd: s ? (s.seriesEnd || '') : '', name: s ? s.name : '', status: s ? s.status : '開催',
     date: s ? s.date : '', start: s ? s.start : '', end: s ? s.end : '', winFrom: s ? (s.windowFrom || '') : '', winTo: s ? (s.windowTo || '') : '',
     gm: s ? s.gm : '', ...splitMembers(d, s ? s.members : []), place: s ? s.place : '', memo: s ? s.memo : '', notify: false, more: [],
+    scenarioId: s ? s.scenarioId : '',
   };
   f.notify = canNotify(d, f) && !!d.notifyDefault;
   return f;
@@ -92,7 +96,7 @@ export function inheritSeries(d: ConsoleData, base: Fields, name: string): { f: 
   if (!t || base.id) return null;
   const cur = base.name.trim();
   return {
-    f: { ...base, gm: t.gm, ...splitMembers(d, t.members), place: t.place, memo: t.memo, start: t.start, end: t.end,
+    f: { ...base, gm: t.gm, ...splitMembers(d, t.members), place: t.place, memo: t.memo, start: t.start, end: t.end, scenarioId: t.scenarioId,
       name: !cur || /#\d+$/.test(cur) || cur === t.name ? name + ' #' + (d.sessions.filter((x) => x.series === name).length + 1) : base.name },
     msg: '「' + name + '」の直前の回（' + t.name + '）からGM・参加者・時間・場所・メモを引き継ぎました。名前と開催日を確かめてください。',
   };
@@ -122,7 +126,7 @@ export function collect(d: ConsoleData, f: Fields, seriesFrom: string) {
     dates: ds.length > 1 ? ds : undefined,
     date: noDate ? '' : f.date, start: noDate ? '' : f.start, end: noDate ? '' : f.end, status: st,
     windowFrom: noDate ? f.winFrom : '', windowTo: noDate ? f.winTo : '',
-    place: f.place, memo: f.memo, notify: f.notify,
+    place: f.place, memo: f.memo, notify: f.notify, scenarioId: f.scenarioId,
   };
 }
 export type SessionForm = ReturnType<typeof collect>;
@@ -156,4 +160,17 @@ export function conflictText(d: ConsoleData, form: SessionForm): string {
   if (ng.length) parts.push('この日に × を付けています: ' + ng.join('、'));
   if (soft.length) parts.push('この日に △ を付けています: ' + soft.join('、'));
   return parts.length ? fmtJa(form.date) + '　' + parts.join('　／　') : '';
+}
+
+/**
+ * シナリオを通過した人が、参加者に入っていれば注意する（PLとしては遊べないため。GMはよい）。登録は止めない。
+ * 変える卓そのものから出る通過（終了の卓）は数えない
+ */
+export function passWarnText(d: ConsoleData, form: SessionForm): string {
+  const sc = form.scenarioId ? d.scenarios.find((x) => x.id === form.scenarioId) : undefined;
+  if (!sc) return '';
+  const passes = passesOf(sc, d.sessions.filter((s) => s.id !== form.id), new Set(d.members.map((m) => m.name)));
+  const gm = String(form.gm || '').trim();
+  const hit = (form.members || []).concat(splitNames(form.extra)).filter((n, i, a) => a.indexOf(n) === i && n !== gm && passes[n]);
+  return hit.length ? '「' + sc.name + '」を通過している人が参加者にいます: ' + hit.map((n) => n + (passes[n]!.kind === 'gm' ? '（GMできる）' : '')).join('、') : '';
 }

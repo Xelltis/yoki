@@ -6,8 +6,8 @@ import { Icon } from '../../../ui/Icon';
 import { formActions, wideBar, wideBarTitle } from '../../../ui/modalParts';
 import { type FormReq, useData } from '../context';
 import { byId } from '../model/model';
-import { canNotify, checkForm, collect, conflictText, continueFrom, type Fields, fieldsOf, FLOW, inheritSeries, KINDS, type Msg, patchFields } from './model';
-import { ConflictWarn, DateRow, FormMsg, NameRow, NotifyCheck, PeopleFields, PlaceMemo, SeriesRow, WindowRow } from './parts';
+import { canNotify, checkForm, collect, conflictText, continueFrom, type Fields, fieldsOf, FLOW, inheritSeries, KINDS, type Msg, passWarnText, patchFields } from './model';
+import { ConflictWarn, DateRow, FormMsg, NameRow, NotifyCheck, PeopleFields, PlaceMemo, ScenarioRow, SeriesRow, WindowRow } from './parts';
 import { useSessionSave } from './save';
 
 /** 開く頼みから、初めの入力を作る（続きの登録・日・状態・シリーズ） */
@@ -20,6 +20,9 @@ function initial(d: ConsoleData, req: FormReq): { f: Fields; seriesFrom: string;
   } else {
     if (req.status) f = { ...f, status: req.status };
     if (req.date) f = { ...f, date: req.date };
+    // シナリオのタブの「この日で卓を立てる」から開いたとき
+    if (req.scenarioId) f = { ...f, scenarioId: req.scenarioId, name: d.scenarios.find((x) => x.id === req.scenarioId)?.name ?? '' };
+    if (req.gm) f = { ...f, gm: req.gm };
     if (req.series) {
       f = { ...f, series: req.series };
       const r = inheritSeries(d, f, req.series);
@@ -48,7 +51,7 @@ export function NewSessionForm({ req, onClose, reopen }: { req: FormReq; onClose
   const { save } = useSessionSave();
   const set = (patch: Partial<Fields>) => setF((cur) => patchFields(d, cur, patch));
   const st = f.status, dated = st === '開催', flow = FLOW[st]!;
-  const conflict = conflictText(d, collect(d, f, init.seriesFrom));
+  const conflict = conflictText(d, collect(d, f, init.seriesFrom)), passWarn = passWarnText(d, collect(d, f, init.seriesFrom));
   const nDates = new Set([f.date].concat(f.more.map((x) => x.v)).filter(Boolean)).size;
   const submit = () => {
     const form = collect(d, f, init.seriesFrom);
@@ -88,6 +91,7 @@ export function NewSessionForm({ req, onClose, reopen }: { req: FormReq; onClose
           </ol>
         </div>
         <NameRow f={f} set={set} />
+        <ScenarioRow f={f} set={set} />
         <SeriesRow f={f} set={set} hint="何日かに分けて開く卓の名前。選ぶと直前の回の内容を引き継ぎます"
           onPick={(name) => { const r = inheritSeries(d, f, name); if (r) { setF(r.f); setMsg({ text: r.msg, cls: 'ok' }); } }} />
         {dated ? (
@@ -109,6 +113,7 @@ export function NewSessionForm({ req, onClose, reopen }: { req: FormReq; onClose
           </>
         ) : <WindowRow f={f} set={set} />}
         <PeopleFields f={f} set={set} />
+        <ConflictWarn text={passWarn} id="passWarn" />
         <PlaceMemo f={f} set={set} />
         <NotifyCheck f={f} set={set} label="Discordに知らせる" />
         <div className={formActions}>

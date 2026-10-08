@@ -10,7 +10,7 @@ import { discordSend, failToast } from '../api/discord';
 import { useConsole } from '../context';
 import { googleAddUrl } from '../model/calendar';
 import { daysBetween, fmtJa, timeRange } from '../model/dates';
-import { hasPoll, isActive, isAdjusting, isDated, me, peopleOf, pollOk, pollVoters, seriesNames, sortSessions, targetPeople, windowByDay } from '../model/model';
+import { hasPoll, isActive, isAdjusting, isDated, me, peopleOf, pollOk, pollVoters, scenarioOf, seriesNames, sortSessions, targetPeople, windowByDay } from '../model/model';
 import { hookFor, kindOf, notifyState } from '../model/notify';
 import { useGoRecruit } from '../shell/nav';
 import { Place } from '../Place';
@@ -103,6 +103,7 @@ export function DayDetail({ d, target }: { d: ConsoleData; target: string }) {
                 })}
                 {!ppl.length && <span className={personChip(false, true)}>参加者 未定</span>}
               </div>
+              {scenarioOf(d, s) && <div className={row2 + ' hint'} data-scenario-of={s.id}>{'シナリオ: ' + scenarioOf(d, s)!.name}</div>}
               {s.place && <Place place={s.place} className={row2} />}
               {s.memo && <div className={row2 + ' hint'}>{s.memo}</div>}
               {s.notified ? <div className={row2 + ' hint'}>{'開催前の知らせは' + s.notified + 'に送りました'}</div>
