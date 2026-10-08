@@ -2,7 +2,7 @@
 
 開発する人向けに、Yokiの作りと、そう決めた理由をまとめる。使う人向けの説明はサイト（`website/`、GitHub Pages）、手元で動かす方法は [CONTRIBUTING.md](../CONTRIBUTING.md)、公開と更新の仕組みは [deployment.md](deployment.md) にある。
 
-2026-10-03に、Google Apps Script（GAS）＋スプレッドシートの版から作り直した。業務の決まり（卓の状態、参加希望の扱い、日程調整の流れなど）はGAS版のまま移し、関数ごとに元の関数名をコメントに残してある。GAS版のコードと文書（旧いガイド・セキュリティレビュー・UIの再設計案）は、gitの `gas-final` タグで読める（`git show gas-final:src/server/Polls.js` など）。
+2026-10-03に、Google Apps Script（GAS）＋スプレッドシートで動いていたバージョンから作り直した。業務の決まり（卓の状態、参加希望の扱い、日程調整の流れなど）はGASのバージョンのまま移し、関数ごとに元の関数名をコメントに残してある。GASのバージョンのコードと文書（旧いガイド・セキュリティレビュー・UIの再設計案）は、gitの `gas-final` タグで読める（`git show gas-final:src/server/Polls.js` など）。
 
 ## 全体
 
@@ -116,7 +116,7 @@ usersの行は消さない（印がそこにあるため）。Discordのユー�
 
 `google_dismissed`: Googleの予定から入った印を、本人が消した日（その日には、もう入れない）。`availability.source` は、本人が入れた印なら空、Googleの予定から入れた印なら `google`。
 
-**メンバーは中ではIDで持つ**。画面とのやり取りはGAS版と同じく名前で行い、`domain/people.ts` で変換する。名前を変えても1か所を直すだけで済む（GAS版では、名前の変更が一部の表に伝わらなかった）。メンバーに無い人（ゲスト）は、`guest_name` に名前だけで持つ。メンバーを消すと、その人が入っていた卓と回答はゲストの名前に置き換わり、予定とメモは消える。
+**メンバーは中ではIDで持つ**。画面とのやり取りはGASのバージョンと同じく名前で行い、`domain/people.ts` で変換する。名前を変えても1か所を直すだけで済む（GASのバージョンでは、名前の変更が一部の表に伝わらなかった）。メンバーに無い人（ゲスト）は、`guest_name` に名前だけで持つ。メンバーを消すと、その人が入っていた卓と回答はゲストの名前に置き換わり、予定とメモは消える。
 
 グループを消すと、中身（メンバー・卓・予定・メモ・回答・送信の記録）は、表の決まり（`ON DELETE CASCADE`）で一緒に消える。
 
@@ -124,7 +124,7 @@ usersの行は消さない（印がそこにあるため）。Discordのユー�
 
 ## 画面からの呼び出し
 
-`POST /api/g/:id/:fn` に、GAS版と同じ形のformをJSONで送り、同じ形の返事（`{ ok, message, data }`）を返す。画面は `rpc()`（`src/client/features/console/api/rpc.ts`）で呼び、読み込みと書き込みの順番は `ConsoleSync`（同じフォルダの `sync.ts`。下の「画面」）が整える。
+`POST /api/g/:id/:fn` に、GASのバージョンと同じ形のformをJSONで送り、同じ形の返事（`{ ok, message, data }`）を返す。画面は `rpc()`（`src/client/features/console/api/rpc.ts`）で呼び、読み込みと書き込みの順番は `ConsoleSync`（同じフォルダの `sync.ts`。下の「画面」）が整える。
 
 画面とサーバーの約束（呼べる関数の名前・画面データ `ConsoleData`・返事の形・卓の状態）は `src/shared/api.ts` に置き、両方から読む。サーバーの一覧（`routes/rpc.ts`）は名前の型で固めてあり、足りなくても多すぎても型の確認で止まる。`consoleData()` は `ConsoleData` を返すと書いてあるので、返す形が変わると型の確認で分かる。
 
@@ -138,7 +138,7 @@ usersの行は消さない（印がそこにあるため）。Discordのユー�
 
 **読み込み**（`domain/load.ts`）。グループ1つ分を1回の `db.batch` で読む。開催日が過ぎた「開催」の卓を「終了」にするUPDATEも、同じ回に入れてある。
 
-**書き込み**。読み込んだデータで確かめてから、1回の `db.batch`（全部成功か全部失敗）で書く。GAS版のロックは要らない（行番号がずれることが無いため）。同じ卓を2人が同時に直すと、あとから保存したほうが残る（GAS版と同じ）。
+**書き込み**。読み込んだデータで確かめてから、1回の `db.batch`（全部成功か全部失敗）で書く。GASのバージョンのロックは要らない（行番号がずれることが無いため）。同じ卓を2人が同時に直すと、あとから保存したほうが残る（GASのバージョンと同じ）。
 
 **D1の上限**。1回の呼び出しで使える問い合わせの数に上限がある（無料のプランで50）。卓の数だけ文を作らず、JSONの配列を `json_each` で展開して1文にまとめる（`domain/people.ts`・`domain/sessions.ts` のまとめての変更など）。1回の呼び出しは、入れるかの確かめ（3文ほど）・読み込み（14文）・書き込み・返事のための読み直し（14文）で、40文近くを使う。読み込みには文を足さず、新しいデータは今ある文の中の副問い合わせ（`json_group_array`）で読む（シナリオはグループを読む文、卓の準備は卓を読む文）。日程調整の書き込みは、そろったかを見るために読み直した中身を、返事にそのまま使う。呼び出しごとの文の数は、テスト（`test/worker/query-budget.test.ts`）が45文以下かを確かめる。
 
@@ -166,7 +166,7 @@ usersの行は消さない（印がそこにあるため）。Discordのユー�
 
 失敗の種類: 401（Botのトークン）・403（チャンネルの権限）・404（チャンネルが無いか、Botが外された）・429・5xx・400・通信。
 
-画面からの送信は `sendDiscordStep`（`discord/step.ts`）で1回ずつ。待ちと送り直しは画面が回す（GAS版と同じ）。本文に入る文は、サーバーがグループのデータから作る。画面から受け取る文（卓を消したときの卓名・一括の変更の卓名と中身）は管理者からだけ受け取り、メンション（`@everyone`・`<@…>`）が効かないように崩して、長さを切る（`plainText`）。卓を消したときの知らせは管理者だけが送れ、一括の知らせは、管理者でなければ卓のIDから名前を引き、メンションも付けて「登録」として送る。
+画面からの送信は `sendDiscordStep`（`discord/step.ts`）で1回ずつ。待ちと送り直しは画面が回す（GASのバージョンと同じ）。本文に入る文は、サーバーがグループのデータから作る。画面から受け取る文（卓を消したときの卓名・一括の変更の卓名と中身）は管理者からだけ受け取り、メンション（`@everyone`・`<@…>`）が効かないように崩して、長さを切る（`plainText`）。卓を消したときの知らせは管理者だけが送れ、一括の知らせは、管理者でなければ卓のIDから名前を引き、メンションも付けて「登録」として送る。
 
 回答そろい・日程決定は、回答や決定を受けたサーバーがその場で送る（画面を閉じられても届くように）。
 
@@ -273,7 +273,7 @@ Googleを呼ぶのは1回の要求で35回まで。Workersが1回の要求で外
 | `POST /api/admin/users/:id/delete` | 利用者を消す（本人から頼まれたとき）。usersの行（ログインとサーバーの控えは表の決まりで一緒に消える）と、どのグループでもその人のメンバーの行（`user_id` か `discord_id` が同じもの）を消し、グループの `created_by` を空にする。メンバーの行の消し方はグループの管理者がメンバーを消すときと同じ（予定とメモは消え、卓と回答はゲストの名前になる）。運営者と、締め出している人（消すと印も消える）は断る。Googleカレンダーと連携していれば、書き込んだ予定を消し、Googleの許可を取り消してから消す |
 | `POST /api/admin/registration` | 新規登録を受け付ける・止める（`{open}`） |
 | `GET /api/admin/legal` `POST /api/admin/legal` | 利用規約とプライバシーポリシーの、運営者の名前・問い合わせ先・本文を読む・保存する（`{operator?, contact?, terms?, privacy?}`。省いたものは変えない） |
-| `GET /api/admin/update` `POST /api/admin/update` | 動いている版と、元のリポジトリの最新の版を比べる（`?refresh=1` でGitHubを読み直す）・最新の版への更新を始める（下の「版と更新」） |
+| `GET /api/admin/update` `POST /api/admin/update` | 動いているバージョンと、元のリポジトリの最新のバージョンを比べる（`?refresh=1` でGitHubを読み直す）・最新のバージョンへの更新を始める（下の「バージョンと更新」） |
 
 どの道も、ログインしていなければ `AUTH:` の401、運営者でなければ403。返事は `Cache-Control: no-store`。
 
@@ -293,27 +293,27 @@ Googleを呼ぶのは1回の要求で35回まで。Workersが1回の要求で外
 
 Discordサーバーを付け替えると、新しいサーバーの人は、控えが5分より古くなったときに黙って読み直して入れるようになり、古いサーバーの人は入れなくなる。
 
-## 版と更新
+## バージョンと更新
 
-YokiはOSSとして、ほかの人が自分のCloudflareに設置して公開する。設置の主な道は「Deploy to Cloudflare」のボタンで、フォークしてGitHub Actionsで公開する道もある（下の「公開」）。元のリポジトリが出す版に、各地のYokiが運営の管理画面から追いつけるようにする（WordPressの更新と同じ役目）。Workerは自分のコードを書き換えない。取り込みは、各地のリポジトリのGitHub Actionsがする。
+YokiはOSSとして、ほかの人が自分のCloudflareに設置して公開する。設置の主な道は「Deploy to Cloudflare」のボタンで、フォークしてGitHub Actionsで公開する道もある（下の「公開」）。元のリポジトリが出すバージョンに、各地のYokiが運営の管理画面から追いつけるようにする（WordPressの更新と同じ役目）。Workerは自分のコードを書き換えない。取り込みは、各地のリポジトリのGitHub Actionsがする。
 
-**版**: `package.json` の `version`。`vite.config.ts` が組み立てのときに読み、`__APP_VERSION__` としてWorkerに入れる（`src/worker/version.ts`）。ボタンで作ったリポジトリは、元の履歴とタグを持たない（中身を1つのコミットにしたもの）ので、版はタグではなくファイルに持たせる。元のリポジトリでは、公開のワークフローの中でsemantic-release（`.releaserc.json`）がConventional Commitsから次の版を決める。`tools/release/commit-version.mjs` が `package.json` と `package-lock.json` の版を書き換えてコミットし（`[skip ci]`。`GITHUB_TOKEN` のpushなので、公開のワークフローは二度動かない）、semantic-releaseがそのコミットにタグとGitHubのReleaseを作る。最後に `release` のブランチをそのコミットに合わせる。ボタンは `release` を指すので、設置する人はいつも版を出したときの中身を受け取る。版のコミットはActionsのボットが作るので、署名は付かない。公開のワークフローは、版を出したならそのコミットを、出さなければ確かめたコミットを取って組み立てる。mainの今は取らない（確かめているあいだに入った、まだ確かめていないコミットを公開しないため）。
+**バージョン**: `package.json` の `version`。`vite.config.ts` が組み立てのときに読み、`__APP_VERSION__` としてWorkerに入れる（`src/worker/version.ts`）。ボタンで作ったリポジトリは、元の履歴とタグを持たない（中身を1つのコミットにしたもの）ので、バージョンはタグではなくファイルに持たせる。元のリポジトリでは、公開のワークフローの中でsemantic-release（`.releaserc.json`）がConventional Commitsから次のバージョンを決める。`tools/release/commit-version.mjs` が `package.json` と `package-lock.json` のバージョンを書き換えてコミットし（`[skip ci]`。`GITHUB_TOKEN` のpushなので、公開のワークフローは二度動かない）、semantic-releaseがそのコミットにタグとGitHubのReleaseを作る。最後に `release` のブランチをそのコミットに合わせる。ボタンは `release` を指すので、設置する人はいつもバージョンを出したときの中身を受け取る。バージョンのコミットはActionsのボットが作るので、署名は付かない。公開のワークフローは、バージョンを出したならそのコミットを、出さなければ確かめたコミットを取って組み立てる。mainの今は取らない（確かめているあいだに入った、まだ確かめていないコミットを公開しないため）。
 
-**新しい版を知る**（`domain/update.ts`）: 元のリポジトリ（`UPSTREAM_REPOSITORY`。無ければ `update/config.ts` の既定）の最新のReleaseをGitHubのAPIで読み、今の版と比べる。新しければ、2つのタグのあいだに変わったファイル（compare）に `migrations/` があるかで、表の変更を含むかを出す。読んだ結果は `meta` の `update_check` に控え、1時間は読み直さない（GitHubのAPIは、トークンなしでは1時間に60回まで）。Releaseが404なら、リポジトリそのものも読む。リポジトリも見えなければ（非公開・名前の誤り）、「版がまだ無い」とは言わずに理由を出す。読めなければ理由を出し、前に読めた最新の版は残す。
+**新しいバージョンを知る**（`domain/update.ts`）: 元のリポジトリ（`UPSTREAM_REPOSITORY`。無ければ `update/config.ts` の既定）の最新のReleaseをGitHubのAPIで読み、今のバージョンと比べる。新しければ、2つのタグのあいだに変わったファイル（compare）に `migrations/` があるかで、表の変更を含むかを出す。読んだ結果は `meta` の `update_check` に控え、1時間は読み直さない（GitHubのAPIは、トークンなしでは1時間に60回まで）。Releaseが404なら、リポジトリそのものも読む。リポジトリも見えなければ（非公開・名前の誤り）、「バージョンがまだ無い」とは言わずに理由を出す。読めなければ理由を出し、前に読めた最新のバージョンは残す。
 
-**更新する**（`.github/workflows/update.yml`。各地のリポジトリで動く）: 元のリポジトリのタグをfetchし、履歴がつながっているかで取り込み方を変える。版の形（`vX.Y.Z`）を確かめてから使い、入力は式の中に直に書かない（スクリプトの差し込みを防ぐ）。
+**更新する**（`.github/workflows/update.yml`。各地のリポジトリで動く）: 元のリポジトリのタグをfetchし、履歴がつながっているかで取り込み方を変える。バージョンの形（`vX.Y.Z`）を確かめてから使い、入力は式の中に直に書かない（スクリプトの差し込みを防ぐ）。
 
-ボタンで作ったリポジトリ（履歴がつながっていない）: 版のファイルで入れ替える。Cloudflareが設置のときに `wrangler.jsonc` に書いた値（Workerの名前・D1の名前とID）は、`tools/update/carry-wrangler.mjs` が新しい版の `wrangler.jsonc` に引き継ぐ（コメント付きの文のまま、値の行だけを書き換える）。入れ替える前に、今のコードが今の版（`package.json` の版のタグ。`wrangler.jsonc` は除く）と同じかを比べ、違えば設置した人が変えたものとして、mainを変えずにPRを作って止まる。mainへのpushで、Workers Buildsが表の変更を当てて公開する。
+ボタンで作ったリポジトリ（履歴がつながっていない）: バージョンのファイルで入れ替える。Cloudflareが設置のときに `wrangler.jsonc` に書いた値（Workerの名前・D1の名前とID）は、`tools/update/carry-wrangler.mjs` が新しいバージョンの `wrangler.jsonc` に引き継ぐ（コメント付きの文のまま、値の行だけを書き換える）。入れ替える前に、今のコードが今のバージョン（`package.json` のバージョンのタグ。`wrangler.jsonc` は除く）と同じかを比べ、違えば設置した人が変えたものとして、mainを変えずにPRを作って止まる。mainへのpushで、Workers Buildsが表の変更を当てて公開する。
 
 フォーク（履歴がつながっている）: タグをmainにマージし、GitHub Actionsで公開すると決めていれば（`YOKI_DEPLOY_WITH_ACTIONS`）、公開のワークフローを動かす。ぶつかったらmainを変えずに `update/vX.Y.Z` のブランチとPRを作って止まる。
 
 **2つのトークン**: 管理画面のボタンは、Workerのsecretの `UPDATE_DISPATCH_TOKEN`（そのリポジトリのActionsを動かすだけの権限）で、更新のワークフローを `workflow_dispatch` で動かし、その実行の一覧を読む。運営者のDiscordのアカウントを取られても、コードは書き換えられない。mainへの書き込みは、更新のワークフローがActionsのsecretの `UPDATE_PUSH_TOKEN`（ContentsとWorkflows）で行う。既定の `GITHUB_TOKEN` は `.github/workflows/` を書き換えられず、書き込んだpushでは公開のワークフローも動かないので、そのときは更新のワークフローが公開のワークフローを動かす。
 
-**表の変更**: 公開のワークフローは、当てる前にD1のTime Travelの地点（bookmark）をSummaryに控える。Workers Buildsは控えないので、時刻で戻す。表の変更は戻せないので、困ったらWorkerを前の版に戻し、D1を更新の前に戻す。
+**表の変更**: 公開のワークフローは、当てる前にD1のTime Travelの地点（bookmark）をSummaryに控える。Workers Buildsは控えないので、時刻で戻す。表の変更は戻せないので、困ったらWorkerを前のバージョンに戻し、D1を更新の前に戻す。
 
 `APP_REPOSITORY`（公開しているリポジトリ）は、組み立てのときにvarsに入れる。公開のワークフローは `github.repository` を渡し、Workers Buildsでは組み立てる場所のGitのoriginから読む（`vite.config.ts` の `appRepository`）。`owner/name` の形でなければ使わない（APIの道に入れるため）。
 
-開発サーバーでは `APP_REPOSITORY` が空なので、開発用の偽のGitHub（`update/dev.ts`。最新はいつも今の小さい版を1つ上げたもの）を使う。偽物を選ぶ道は `import.meta.env.DEV` のときだけ。
+開発サーバーでは `APP_REPOSITORY` が空なので、開発用の偽のGitHub（`update/dev.ts`。最新はいつも今のマイナーバージョンを1つ上げたもの）を使う。偽物を選ぶ道は `import.meta.env.DEV` のときだけ。
 
 ## 日本時間
 
@@ -453,7 +453,7 @@ Viteは `wrangler deploy` の行き先（`.wrangler/deploy/config.json`）を、
 
 写した先では、公開のワークフロー（`deploy.yml`）は動かない（動くのは、元のリポジトリと、`YOKI_DEPLOY_WITH_ACTIONS` を入れたリポジトリ。フォークも、入れなければ動かない。PRを出すためだけのフォークで、公開しようとして止まらないように）。サイトの公開（`pages.yml`）は、元のリポジトリでだけ動く。
 
-**GitHub Actions**（`.github/workflows/deploy.yml`。元のリポジトリと、`YOKI_DEPLOY_WITH_ACTIONS` を入れたリポジトリ）。mainにアプリの変更が入ったときに公開する。公開するのは、型の確認・lint・テストとカバレッジ・e2eが全部通ったときだけ。1つでも通らなければ、版も出さない。PRは、確かめのワークフロー（`ci.yml`）が、公開と同じ確かめと、サイトの組み立て・コミットの説明の形を確かめる。本番の値はGitHubのenvironment「production」に置く。組み立てのとき、`vite.config.ts` がD1のID（`YOKI_D1_DATABASE_ID`）とリポジトリの名前（`YOKI_REPOSITORY`・`YOKI_UPSTREAM`）を、組み立てた設定（`dist/yoki/wrangler.json`）に入れる。`YOKI_DEPLOY=1` のときにD1のIDが無ければ、組み立てを止める。ほかの値は、公開のたびに `wrangler deploy --secrets-file` でWorkerのsecretとして版と一緒に送る。varsにしないのは、ボタンの道と置き場所をそろえるためと、varsは公開のログに出るため（公開のリポジトリでは、Actionsのログはだれでも読める）。マイグレーションと公開は、どちらも組み立てた設定（`--config dist/yoki/wrangler.json`）で行う。
+**GitHub Actions**（`.github/workflows/deploy.yml`。元のリポジトリと、`YOKI_DEPLOY_WITH_ACTIONS` を入れたリポジトリ）。mainにアプリの変更が入ったときに公開する。公開するのは、型の確認・lint・テストとカバレッジ・e2eが全部通ったときだけ。1つでも通らなければ、バージョンも出さない。PRは、確かめのワークフロー（`ci.yml`）が、公開と同じ確かめと、サイトの組み立て・コミットの説明の形を確かめる。本番の値はGitHubのenvironment「production」に置く。組み立てのとき、`vite.config.ts` がD1のID（`YOKI_D1_DATABASE_ID`）とリポジトリの名前（`YOKI_REPOSITORY`・`YOKI_UPSTREAM`）を、組み立てた設定（`dist/yoki/wrangler.json`）に入れる。`YOKI_DEPLOY=1` のときにD1のIDが無ければ、組み立てを止める。ほかの値は、公開のたびに `wrangler deploy --secrets-file` でWorkerのsecretとしてバージョンと一緒に送る。varsにしないのは、ボタンの道と置き場所をそろえるためと、varsは公開のログに出るため（公開のリポジトリでは、Actionsのログはだれでも読める）。マイグレーションと公開は、どちらも組み立てた設定（`--config dist/yoki/wrangler.json`）で行う。
 
 **公開のアドレス**（`auth/origin.ts`）。`APP_URL` は無くてもよい（workers.devのまま公開するとき）。そのときは届いた要求のアドレスを使う。要求の無い見回り（cron）が知らせのリンクに使うために、Discordでログインするたびに、`meta` の `app_origin` に控える（変わったときだけ書く）。
 

@@ -121,7 +121,7 @@ export default defineConfig({
         {
           text: '設置したあとに',
           items: [
-            { text: '新しい版に上げる', link: '/setup/update' },
+            { text: '新しいバージョンに上げる', link: '/setup/update' },
             { text: 'Googleと連携する', link: '/setup/google' },
             { text: '独自のドメインで公開する', link: '/setup/domain' },
             { text: '運営の管理画面', link: '/setup/admin' },

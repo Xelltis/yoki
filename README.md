@@ -46,7 +46,7 @@ Yokiは、TRPGの卓の予定をDiscordサーバーの仲間と管理するWeb�
 | Discordへの知らせ | 開催前の知らせ・日程調整の呼びかけ・回答がそろったことを、Botがチャンネルに送る。メンションも付く。開催の卓を、サーバーのイベントにも出せる |
 | Discordでログイン | 入れるかは、Discordサーバーにいるかで決まる。Googleのアカウントを結びつければ、Googleでもログインできる |
 | カレンダーに出す | 参加する卓を、購読URLかGoogleカレンダーとの連携で、自分のカレンダーに出す |
-| 運営の管理画面 | 設置した人が、利用者・グループ・新規登録の受付・規約・新しい版への更新を扱う |
+| 運営の管理画面 | 設置した人が、利用者・グループ・新規登録の受付・規約・新しいバージョンへの更新を扱う |
 
 画面の使い方をまとめたのが、[使い方のサイト](https://xelltis.github.io/yoki/)です。
 
@@ -60,7 +60,7 @@ Yokiは、TRPGの卓の予定をDiscordサーバーの仲間と管理するWeb�
 | 2 | ボタンを押し、控えた値とあなたのDiscordユーザーIDを入れる。CloudflareがGitHubのリポジトリとデータベースを作り、公開まで済ませる |
 | 3 | 公開のアドレスを、Discordアプリの「リダイレクト」に入れる |
 
-くわしい手順は、サイトの「[設置する](https://xelltis.github.io/yoki/setup/)」にあります。新しい版が出たら、運営の管理画面の「更新」から取り込めます（[新しい版に上げる](https://xelltis.github.io/yoki/setup/update)）。
+くわしい手順は、サイトの「[設置する](https://xelltis.github.io/yoki/setup/)」にあります。新しいバージョンが出たら、運営の管理画面の「更新」から取り込めます（[新しいバージョンに上げる](https://xelltis.github.io/yoki/setup/update)）。
 
 ## 仕組み
 
@@ -71,8 +71,8 @@ Yokiは、TRPGの卓の予定をDiscordサーバーの仲間と管理するWeb�
 | 読む人 | 文書 | 中身 |
 |---|---|---|
 | 使う人 | [使い方のサイト](https://xelltis.github.io/yoki/) | 予定の入れ方・卓の登録・日程調整・シナリオ・卓の準備・Discordへの知らせ・グループの管理 |
-| 設置する人 | [設置する](https://xelltis.github.io/yoki/setup/) | ボタンでの設置・新しい版に上げる・Googleとの連携・独自のドメイン・運営の管理画面 |
-| 開発する人 | [CONTRIBUTING.md](CONTRIBUTING.md) | 手元で動かす・テスト・書くときの決まり・コミット・版を出す |
+| 設置する人 | [設置する](https://xelltis.github.io/yoki/setup/) | ボタンでの設置・新しいバージョンに上げる・Googleとの連携・独自のドメイン・運営の管理画面 |
+| 開発する人 | [CONTRIBUTING.md](CONTRIBUTING.md) | 手元で動かす・テスト・書くときの決まり・コミット・バージョンを出す |
 | 開発する人 | [docs/architecture.md](docs/architecture.md) | 作りと、そう決めた理由 |
 | 開発する人 | [docs/deployment.md](docs/deployment.md) | 公開と更新の仕組み、GitHub Actionsでの公開 |
 | 弱いところを見つけた人 | [SECURITY.md](SECURITY.md) | セキュリティの問題を、Issueに書かずに非公開で知らせる方法 |

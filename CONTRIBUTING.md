@@ -1,6 +1,6 @@
 # 開発に参加する
 
-Yokiの開発に参加する人向けの説明。不具合の知らせや、こうしたいという案は、Issueに書く。コードを直すときは、mainに向けてPRを出す。PRは、確かめのワークフロー（`.github/workflows/ci.yml`）が、型・lint・日本語の検査・テストとカバレッジ・e2e・サイトの組み立て・コミットの説明の形を確かめる。マージされると元のリポジトリの版が出て、各地のYokiの「更新」に届く。
+Yokiの開発に参加する人向けの説明。不具合の知らせや、こうしたいという案は、Issueに書く。コードを直すときは、mainに向けてPRを出す。PRは、確かめのワークフロー（`.github/workflows/ci.yml`）が、型・lint・日本語の検査・テストとカバレッジ・e2e・サイトの組み立て・コミットの説明の形を確かめる。マージされると元のリポジトリのバージョンが出て、各地のYokiの「更新」に届く。
 
 セキュリティの問題（ログインを飛ばせる・ほかのグループの中身が読めるなど）は、Issueに書かない。[SECURITY.md](SECURITY.md) のとおり、GitHubの非公開の報告で知らせる。
 
@@ -35,7 +35,7 @@ GoogleでのログインとGoogleカレンダーとの連携は、Googleの値�
 src/worker/        サーバー（TypeScript、Hono）
   routes/          道。auth（ログイン）・me（入口の API）・pages（グループと管理画面のページ、利用規約とプライバシーポリシー）・rpc（画面からの呼び出し）・admin（運営者の API）・calendar（購読 URL）・google（Google との連携の OAuth）
   auth/            Discord の OAuth・ログインの続き・グループに入れるかの確認・運営者の確認・CSRF・開発用ログイン
-  domain/          卓・メンバー・予定・日程調整・設定・知らせの見回り・グループを消す・運営者の操作・利用規約とプライバシーポリシー（GAS 版の Sessions.js などを移したもの）
+  domain/          卓・メンバー・予定・日程調整・設定・知らせの見回り・グループを消す・運営者の操作・利用規約とプライバシーポリシー（GASのバージョンの Sessions.js などを移したもの）
   discord/         Bot の API（チャンネル）・送り先の選び方・文面・送信と送り直し
   google/          Google カレンダーの API・開発用の偽の Google・同期（卓を書き込む・予定から印を入れる）
   lib/             日本時間の日付・文字・エラー・ID・規約の本文の書き方
@@ -56,18 +56,18 @@ test/e2e/          ブラウザで通しで確かめる（npm run e2e）。開�
 brand/             サービスアイコンの元の絵（yoki.png。配らない。ファビコンなどは npm run icons で書き出す）と、配色を選んだときのデザイン案の控え（mocks/）
 website/           サイト（VitePress。GitHub Pages に公開する）。紹介と使い方
   guide/           使い方のページ（Markdown）
-  setup/           設置する人向けのページ（ボタンでの設置・Discordアプリを作る・新しい版に上げるなど）
+  setup/           設置する人向けのページ（ボタンでの設置・Discordアプリを作る・新しいバージョンに上げるなど）
   .vitepress/      サイトの設定と見た目・試せる例の部品
   public/          アイコン・SNS 用の画像（og.png）・アプリのスクリーンショット
   tools/           スクリーンショット・SNS 用の画像・アイコンを作る道具
-.github/workflows/ PR を確かめる（ci.yml）。アプリを Cloudflare に（deploy.yml）、サイトを GitHub Pages に（pages.yml）公開する。設置した Yoki を新しい版に上げる（update.yml。設置した人のリポジトリで動く）
+.github/workflows/ PR を確かめる（ci.yml）。アプリを Cloudflare に（deploy.yml）、サイトを GitHub Pages に（pages.yml）公開する。設置した Yoki を新しいバージョンに上げる（update.yml。設置した人のリポジトリで動く）
 docs/              作りの説明（architecture.md）と、公開と更新の仕組み（deployment.md）
 wrangler.jsonc     Worker の設定（D1・cron）。公開する Cloudflare ごとの値（D1 の ID など）は書かない
 vite.config.ts     開発サーバーと組み立て。公開のときに、Cloudflare ごとの値を組み立てた設定に入れる
 tools/lint-ja.mjs  文書の日本語の検査（yomiyasu。tools/yomiyasu/ に本家のまま置いたものを動かす）
 tools/shims/       npm audit に出る部品の差し替え（package.json の overrides）
 tools/icons.ts     アイコン（unplugin-icons）の決まり。使ってよい集まりとライセンス、SVG を React の部品にする変換（アプリとサイトで使う）
-tools/release/     版を出すときに package.json の版を書き換えてコミットする（semantic-release のプラグイン）
+tools/release/     バージョンを出すときに package.json のバージョンを書き換えてコミットする（semantic-release のプラグイン）
 tools/update/      更新のワークフローが、ボタンで設置したリポジトリの wrangler.jsonc の値を引き継ぐ
 tools/licenses/    第三者のライセンスの本文（THIRD_PARTY_NOTICES.md に載せる）
 tools/third-party.mjs 第三者のライセンスの断り書き（THIRD_PARTY_NOTICES.md）を書き出す（npm run notices）
@@ -104,9 +104,9 @@ lintはoxlint（`.oxlintrc.json`）。ESLintのTypeScript対応（typescript-esl
 
 依存のインストールスクリプトは、`package.json` の `allowScripts` で信頼したもの（workerd・esbuild・lefthook）だけを動かす。足すときは中身を確かめてから `npm approve-scripts --no-allow-scripts-pin <パッケージ>` で足す。
 
-Workersのテスト用の道具（`@cloudflare/vitest-pool-workers`）は、古いwranglerとminiflareを固定して抱えている（npm auditに出る）。`package.json` の `overrides` で、アプリと同じ版にそろえている。wranglerを上げたら、`overrides` のminiflareもwranglerが使う版に合わせる（テストが確かめる）。
+Workersのテスト用の道具（`@cloudflare/vitest-pool-workers`）は、古いwranglerとminiflareを固定して抱えている（npm auditに出る）。`package.json` の `overrides` で、アプリと同じバージョンにそろえている。wranglerを上げたら、`overrides` のminiflareもwranglerが使うバージョンに合わせる（テストが確かめる）。
 
-miniflareが固定している `sharp`（画像の部品）は、npm auditに指摘が出た版なので、`overrides` で直った版に上げている。miniflareが直った版を使うようになったら、外す。
+miniflareが固定している `sharp`（画像の部品）は、npm auditに指摘が出たバージョンなので、`overrides` で直ったバージョンに上げている。miniflareが直ったバージョンを使うようになったら、外す。
 
 ## ほかのコマンド
 
@@ -143,7 +143,7 @@ npm run site:build   組み立てる（website/.vitepress/dist/）
 
 ## 書くときの決まり
 
-**日本語は[yomiyasu](https://github.com/nanaism/yomiyasu)の書き方にそろえる。** 英数字の前後に半角空白を入れない（「Googleでログイン」「1つ」）。画面の文・文書・コミットの説明のどれも同じ。ただし、日付と時刻・IDと名前のような区切りの空白と、絵文字のあとの空白は残す。Markdownの文書は `npm run lint:ja`（`tools/lint-ja.mjs`）が、`tools/yomiyasu/` に置いたyomiyasuの検査（`yomiyasu_lint.py`。Python 3の標準ライブラリだけで動く）で確かめ、指摘があれば止まる。lefthookはコミットするMarkdownを、`npm run lint` とCIは全部を確かめる。検査を新しい版にするときは、本家の `scripts/yomiyasu_lint.py` と `LICENSE` をそのまま置き換える。Claude Codeには、yomiyasuのプラグイン（`.claude/settings.json`）が入る。
+**日本語は[yomiyasu](https://github.com/nanaism/yomiyasu)の書き方にそろえる。** 英数字の前後に半角空白を入れない（「Googleでログイン」「1つ」）。画面の文・文書・コミットの説明のどれも同じ。ただし、日付と時刻・IDと名前のような区切りの空白と、絵文字のあとの空白は残す。Markdownの文書は `npm run lint:ja`（`tools/lint-ja.mjs`）が、`tools/yomiyasu/` に置いたyomiyasuの検査（`yomiyasu_lint.py`。Python 3の標準ライブラリだけで動く）で確かめ、指摘があれば止まる。lefthookはコミットするMarkdownを、`npm run lint` とCIは全部を確かめる。検査を新しいバージョンにするときは、本家の `scripts/yomiyasu_lint.py` と `LICENSE` をそのまま置き換える。Claude Codeには、yomiyasuのプラグイン（`.claude/settings.json`）が入る。
 
 **日付は日本時間で扱う。** WorkersはUTCで動く。日付と時刻は `src/worker/lib/jst.ts` を使い、`new Date(y, m, d)` や `getHours()` は使わない。
 
@@ -173,26 +173,26 @@ npm run site:build   組み立てる（website/.vitepress/dist/）
 
 [Conventional Commits](https://www.conventionalcommits.org/ja/v1.0.0/) の形で、説明は日本語で書く（`feat(client): 予定表の上に絞り込みのボタンを出す` など）。typeの一覧・書き方・例は、[CLAUDE.md](CLAUDE.md) の「コミット」にある。人もClaude Codeも、同じ決まりで書く。
 
-typeは、版の上げ方と、各地のYokiの「更新」に出る変わったことの一覧を決める（下の「版を出す」）。正しく付ける。
+typeは、バージョンの上げ方と、各地のYokiの「更新」に出る変わったことの一覧を決める（下の「バージョンを出す」）。正しく付ける。
 
 コミットのときは、lefthook（`lefthook.yml`）が型の確認・lint・テスト・日本語の検査と、説明の形（commitlint）を確かめる。止まったら直してからコミットし直す（`LEFTHOOK=0` や `--no-verify` で飛ばさない）。
 
-## 版を出す
+## バージョンを出す
 
-版は [semantic-release](https://github.com/semantic-release/semantic-release)（設定は `.releaserc.json`）が、mainにアプリの変更が入ったときに、公開のワークフロー（`.github/workflows/deploy.yml`）の中で出す。PRは使わない。コミットをmainに入れる（PRをマージする）だけで、版を出すところまで進む。フォークでは動かない。
+バージョンは [semantic-release](https://github.com/semantic-release/semantic-release)（設定は `.releaserc.json`）が、mainにアプリの変更が入ったときに、公開のワークフロー（`.github/workflows/deploy.yml`）の中で出す。PRは使わない。コミットをmainに入れる（PRをマージする）だけで、バージョンを出すところまで進む。フォークでは動かない。
 
-公開のワークフローは、確かめる（型・lint・テストとカバレッジ・e2e）→ 版を出す → 公開する、の順に進む。テストが1つでも通らなければ、版も出さず、公開もしない。e2eは、まっさらな手元のD1に表を作ってから動かす（`npm run db:migrate:local`）。公開するのは、版を出したならそのコミット、出さなければ確かめたコミット（確かめているあいだにmainに入った、まだ確かめていないコミットは公開しない）。
+公開のワークフローは、確かめる（型・lint・テストとカバレッジ・e2e）→ バージョンを出す → 公開する、の順に進む。テストが1つでも通らなければ、バージョンも出さず、公開もしない。e2eは、まっさらな手元のD1に表を作ってから動かす（`npm run db:migrate:local`）。公開するのは、バージョンを出したならそのコミット、出さなければ確かめたコミット（確かめているあいだにmainに入った、まだ確かめていないコミットは公開しない）。
 
-前の版のタグから後のコミット（Conventional Commits）を見て、`feat` は小さい版（1.1.0 → 1.2.0）、`fix`・`perf`・`revert` はいちばん小さい版（1.1.0 → 1.1.1）、`!` 付き（互換を壊す変更）は大きい版（2.0.0）を上げる。`docs`・`ci` などだけなら、版は出さない。
+前のバージョンのタグから後のコミット（Conventional Commits）を見て、`feat` はマイナーバージョン（1.1.0 → 1.2.0）、`fix`・`perf`・`revert` はパッチバージョン（1.1.0 → 1.1.1）、`!` 付き（互換を壊す変更）はメジャーバージョン（2.0.0）を上げる。`docs`・`ci` などだけなら、バージョンは出さない。
 
-版を出すときは、`package.json` と `package-lock.json` の `version` を新しい版にしてコミットし（`chore(release): vX.Y.Z [skip ci]`）、mainにpushする（`tools/release/commit-version.mjs`）。そのコミットにタグ `vX.Y.Z` が付き、GitHubのRelease（変わったことの一覧。`feat`・`fix`・`perf`・`revert` だけ）ができる。各地のYokiの「更新」に、変わったこととして出る。最後に `release` のブランチをそのコミットに合わせる（ボタンが指す先）。mainに保護（PRを必須にするなど）を付けると、このpushが止まるので付けない。
+バージョンを出すときは、`package.json` と `package-lock.json` の `version` を新しいバージョンにしてコミットし（`chore(release): vX.Y.Z [skip ci]`）、mainにpushする（`tools/release/commit-version.mjs`）。そのコミットにタグ `vX.Y.Z` が付き、GitHubのRelease（変わったことの一覧。`feat`・`fix`・`perf`・`revert` だけ）ができる。各地のYokiの「更新」に、変わったこととして出る。最後に `release` のブランチをそのコミットに合わせる（ボタンが指す先）。mainに保護（PRを必須にするなど）を付けると、このpushが止まるので付けない。
 
-アプリに入れる版は、`package.json` の `version` から読む（`vite.config.ts`）。ボタンで作ったリポジトリには、元の履歴とタグが無いため。`version` は手で書き換えない。変わったことの一覧（コミットの説明そのまま）は、ファイルに書かずGitHubのReleasesに置く。
+アプリに入れるバージョンは、`package.json` の `version` から読む（`vite.config.ts`）。ボタンで作ったリポジトリには、元の履歴とタグが無いため。`version` は手で書き換えない。変わったことの一覧（コミットの説明そのまま）は、ファイルに書かずGitHubのReleasesに置く。
 
-使う人向けの説明は、サイトのリリースノート（`website/releases/`）に置く。版が出たら、その版のページ（`vX.Y.Z.md`）を足し、一覧（`index.md`）のいちばん上にも足す（`docs(site)` のコミット。版は出ない）。サイドバーは、ページから自動で作る（`website/.vitepress/config.ts`）。一覧とページがそろっているかは、テスト（`test/client/website.test.js`）が確かめる。版の番号と日付（日本時間）は、出たReleaseに合わせる。使う人と運営者に関わることだけを、画面の言葉で書き、作りの変更・テスト・リポジトリの扱いは書かない。運営者だけに関わることは「運営者の方へ」に分ける。
+使う人向けの説明は、サイトのリリースノート（`website/releases/`）に置く。バージョンが出たら、そのバージョンのページ（`vX.Y.Z.md`）を足し、一覧（`index.md`）のいちばん上にも足す（`docs(site)` のコミット。バージョンは出ない）。サイドバーは、ページから自動で作る（`website/.vitepress/config.ts`）。一覧とページがそろっているかは、テスト（`test/client/website.test.js`）が確かめる。バージョンの番号と日付（日本時間）は、出たReleaseに合わせる。使う人と運営者に関わることだけを、画面の言葉で書き、作りの変更・テスト・リポジトリの扱いは書かない。運営者だけに関わることは「運営者の方へ」に分ける。
 
-コミットのtypeが版の上げ方を決めるので、typeを正しく付ける。各地のYokiは、版を飛ばして上げることがある。表の変更（`migrations/`）は、前の版から順に当たれば動くように書く。
+コミットのtypeがバージョンの上げ方を決めるので、typeを正しく付ける。各地のYokiは、バージョンを飛ばして上げることがある。表の変更（`migrations/`）は、前のバージョンから順に当たれば動くように書く。
 
-`semantic-release` と、見出しを日本語にする `conventional-changelog-conventionalcommits` は開発用の依存に入れる。手元で `GITHUB_TOKEN=$(gh auth token) npx semantic-release --dry-run --no-ci` とすると、次の版と変わったことの一覧を、何も作らずに確かめられる。`conventional-changelog-conventionalcommits` は、semantic-releaseが使う書き出しの部品と同じ世代（今は9）にそろえる（10はsemantic-release 25では動かない）。
+`semantic-release` と、見出しを日本語にする `conventional-changelog-conventionalcommits` は開発用の依存に入れる。手元で `GITHUB_TOKEN=$(gh auth token) npx semantic-release --dry-run --no-ci` とすると、次のバージョンと変わったことの一覧を、何も作らずに確かめられる。`conventional-changelog-conventionalcommits` は、semantic-releaseが使う書き出しの部品と同じ世代（今は9）にそろえる（10はsemantic-release 25では動かない）。
 
-npm auditは0件に保つ。semantic-releaseが抱える2つは、`tools/shims/` の差し替えに替えている（`package.json` の `overrides`）。`micromatch` は直った版の無い `braces` に頼るので、同じ呼び方を `picomatch` で動かすものに替える。`@semantic-release/npm` はnpm本体を同梱し、その中の部品が指摘されるので、何もしないものに替える（npmには公開しない。`.releaserc.json` でプラグインを決めているので、ふだんは読み込まれない）。semantic-releaseを上げたら、`npm audit` と `--dry-run` で確かめる。
+npm auditは0件に保つ。semantic-releaseが抱える2つは、`tools/shims/` の差し替えに替えている（`package.json` の `overrides`）。`micromatch` は直ったバージョンの無い `braces` に頼るので、同じ呼び方を `picomatch` で動かすものに替える。`@semantic-release/npm` はnpm本体を同梱し、その中の部品が指摘されるので、何もしないものに替える（npmには公開しない。`.releaserc.json` でプラグインを決めているので、ふだんは読み込まれない）。semantic-releaseを上げたら、`npm audit` と `--dry-run` で確かめる。

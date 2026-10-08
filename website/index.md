@@ -46,5 +46,5 @@ points:
     details: 参加する卓を、ふだん使っているカレンダーに出せます。購読URLか、Googleカレンダーとの連携を選べます。
   - icon: rocket_launch
     title: 自分で設置できる
-    details: MIT LicenseのOSSです。「Deploy to Cloudflare」のボタンから自分のCloudflareに設置でき、無料のプランで動きます。新しい版にも、管理画面から追いつけます。
+    details: MIT LicenseのOSSです。「Deploy to Cloudflare」のボタンから自分のCloudflareに設置でき、無料のプランで動きます。新しいバージョンにも、管理画面から追いつけます。
 ---

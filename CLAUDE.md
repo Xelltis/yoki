@@ -83,13 +83,13 @@ Googleカレンダーと連携した人のrefresh tokenだけは持つ（本人�
 
 利用者そのものはDiscordのアカウント（`users.id`）のままにする。Googleでのログインは、結びつけた入り口（`google_logins`）として扱い、Googleのアカウントだけではグループに入れない。グループに入れるかの確かめ直しは、BotがいるサーバーではBotで、いなければDiscordで行う（`auth/guard.ts`）。
 
-版は、mainに入ったコミットからsemantic-releaseが決め、`package.json` の `version` を書き換えたコミットと、タグ `vX.Y.Z`・GitHubのReleaseを作り、`release` のブランチをそこに合わせる（公開のワークフローの中。設定は `.releaserc.json`）。`version` とタグを手で書き換えない。アプリの版は `package.json` から読む（ボタンで設置したリポジトリにはタグが無いため）。コミットのtypeが版の上げ方と変わったことの一覧を決めるので、typeを正しく付ける（`feat`・`fix`・`perf` は各地の運営の管理画面に出る）。
+バージョンは、mainに入ったコミットからsemantic-releaseが決め、`package.json` の `version` を書き換えたコミットと、タグ `vX.Y.Z`・GitHubのReleaseを作り、`release` のブランチをそこに合わせる（公開のワークフローの中。設定は `.releaserc.json`）。`version` とタグを手で書き換えない。アプリのバージョンは `package.json` から読む（ボタンで設置したリポジトリにはタグが無いため）。コミットのtypeがバージョンの上げ方と変わったことの一覧を決めるので、typeを正しく付ける（`feat`・`fix`・`perf` は各地の運営の管理画面に出る）。
 
-npm auditは0件に保つ。出たら、依存の版をそろえる（`overrides`）。直った版が無く、使わない・使い方が狭い部品は、`tools/shims/` に差し替えを置いて `overrides` で替える（今はsemantic-releaseの `micromatch` と `@semantic-release/npm`。CONTRIBUTING.mdの「版を出す」）。
+npm auditは0件に保つ。出たら、依存のバージョンをそろえる（`overrides`）。直ったバージョンが無く、使わない・使い方が狭い部品は、`tools/shims/` に差し替えを置いて `overrides` で替える（今はsemantic-releaseの `micromatch` と `@semantic-release/npm`。CONTRIBUTING.mdの「バージョンを出す」）。
 
-版が出たら、サイトのリリースノートに、その版のページ（`website/releases/vX.Y.Z.md`）を足し、一覧（`website/releases/index.md`）のいちばん上にも足す。サイドバーはページから自動で作る。使う人と運営者に関わることだけを画面の言葉で書き、作りの変更・テスト・リポジトリの扱いは書かない（CONTRIBUTING.mdの「版を出す」）。
+バージョンが出たら、サイトのリリースノートに、そのバージョンのページ（`website/releases/vX.Y.Z.md`）を足し、一覧（`website/releases/index.md`）のいちばん上にも足す。サイドバーはページから自動で作る。使う人と運営者に関わることだけを画面の言葉で書き、作りの変更・テスト・リポジトリの扱いは書かない（CONTRIBUTING.mdの「バージョンを出す」）。
 
-各地のYokiは、版を飛ばして更新する。表の変更（`migrations/`）は、前の版から順に当たれば動くように書く。
+各地のYokiは、バージョンを飛ばして更新する。表の変更（`migrations/`）は、前のバージョンから順に当たれば動くように書く。
 
 更新のボタンのトークン（`UPDATE_DISPATCH_TOKEN`）はWorkerのsecretに置き、画面・ログ・運営者のAPIには出さない。権限は、そのリポジトリのActionsを動かすだけにする（Workerからコードを書き換えられないように）。
 

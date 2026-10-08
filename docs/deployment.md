@@ -1,6 +1,6 @@
 # 公開と更新
 
-Yokiを自分のCloudflareに公開する仕組みと、新しい版に上げる仕組み。開発の始め方は [CONTRIBUTING.md](../CONTRIBUTING.md)、作りとその理由は [architecture.md](architecture.md) にある。
+Yokiを自分のCloudflareに公開する仕組みと、新しいバージョンに上げる仕組み。開発の始め方は [CONTRIBUTING.md](../CONTRIBUTING.md)、作りとその理由は [architecture.md](architecture.md) にある。
 
 公開のしかたは2つある。設置する人（運営者）には、ボタンをすすめる。
 
@@ -17,13 +17,13 @@ Yokiを自分のCloudflareに公開する仕組みと、新しい版に上げる
 
 [![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/Xelltis/yoki/tree/release)
 
-ボタンは `release` のブランチを指す。`release` は、版を出すたびにその版のコミットに合わせる（[CONTRIBUTING.md](../CONTRIBUTING.md) の「版を出す」）。なので設置する人は、いつも版を出したときの中身を受け取る。版を出すのは、元のリポジトリの公開のワークフローで、テスト（型・lint・カバレッジ・e2e）が全部通ったときだけ。Workers Buildsはテストを動かさないが、ボタンでの設置も更新も、テストを通った版だけを受け取る。
+ボタンは `release` のブランチを指す。`release` は、バージョンを出すたびにそのバージョンのコミットに合わせる（[CONTRIBUTING.md](../CONTRIBUTING.md) の「バージョンを出す」）。なので設置する人は、いつもバージョンを出したときの中身を受け取る。バージョンを出すのは、元のリポジトリの公開のワークフローで、テスト（型・lint・カバレッジ・e2e）が全部通ったときだけ。Workers Buildsはテストを動かさないが、ボタンでの設置も更新も、テストを通ったバージョンだけを受け取る。
 
 ボタンを押すと、Cloudflareが次をする。
 
 | Cloudflareがすること | リポジトリの側の用意 |
 |---|---|
-| 設置する人のGitHubに、中身を写したリポジトリを作る（フォークではない。元の履歴とタグは無い） | 版は `package.json` の `version` に持たせる（タグに頼らない） |
+| 設置する人のGitHubに、中身を写したリポジトリを作る（フォークではない。元の履歴とタグは無い） | バージョンは `package.json` の `version` に持たせる（タグに頼らない） |
 | D1を作り、そのIDを写したリポジトリの `wrangler.jsonc` に書き込む | `wrangler.jsonc` にはD1のIDを書かない |
 | Workerのsecretの値を聞く | 聞く名前は `.dev.vars.example` のコメントでない行（Discordアプリの3つと `OPERATOR_IDS`）。説明は `package.json` の `"cloudflare"` |
 | 組み立てて公開する（Workers Builds）。この後も、mainが変わるたびに公開し直す | `npm run build` と `npm run deploy`（表の変更を当ててから `wrangler deploy`） |
@@ -32,11 +32,11 @@ Viteは、`wrangler deploy` の行き先（`.wrangler/deploy/config.json`）を 
 
 Workerの値は、どれもsecretにする（varsにしない）。Workers Buildsは公開のたびに、設定に無いvarsを消すため。公開のアドレス（`APP_URL`）は無くてもよい。そのときは届いた要求のアドレスを使い、要求の無い見回り（cron）のために、ログインのたびにD1に控える（`auth/origin.ts`）。公開しているリポジトリの名前（運営の管理画面の「更新」）は、組み立てのときにGitのoriginから読む。
 
-写したリポジトリでは、公開のワークフロー（`deploy.yml`）とサイトの公開（`pages.yml`）は動かない。更新のワークフロー（`update.yml`）は動く（下の「新しい版に上げる」）。
+写したリポジトリでは、公開のワークフロー（`deploy.yml`）とサイトの公開（`pages.yml`）は動かない。更新のワークフロー（`update.yml`）は動く（下の「新しいバージョンに上げる」）。
 
 ## GitHub Actionsで公開する
 
-元のリポジトリと、フォークして自分で公開するときのやり方。公開するCloudflareごとの値は、GitHubのenvironment「production」に置く。D1のIDとリポジトリの名前は組み立てた設定（`dist/yoki/wrangler.json`）に入れ（`vite.config.ts`）、ほかはWorkerのsecretとして公開する版と一緒に送る（`deploy.yml`）。
+元のリポジトリと、フォークして自分で公開するときのやり方。公開するCloudflareごとの値は、GitHubのenvironment「production」に置く。D1のIDとリポジトリの名前は組み立てた設定（`dist/yoki/wrangler.json`）に入れ（`vite.config.ts`）、ほかはWorkerのsecretとして公開するバージョンと一緒に送る（`deploy.yml`）。
 
 ### 1. 公開するアドレスを決める
 
@@ -79,7 +79,7 @@ APIトークン: アカウントのAPIトークンを作る（Cloudflareの画�
 | 変数（任意） | `YOKI_GOOGLE_CLIENT_ID` | Googleカレンダーとの連携を使うときだけ。下の「Googleでのログインと、Googleカレンダーとの連携」 |
 | 秘密（任意） | `GOOGLE_CLIENT_SECRET` | 同じく。GoogleのOAuthクライアントのシークレット |
 | 秘密（任意） | `GOOGLE_TOKEN_KEY` | 同じく。Googleのrefresh tokenを暗号にする鍵 |
-| 秘密（任意） | `UPDATE_DISPATCH_TOKEN` | 運営の管理画面のボタンで更新するときだけ。下の「新しい版に上げる」 |
+| 秘密（任意） | `UPDATE_DISPATCH_TOKEN` | 運営の管理画面のボタンで更新するときだけ。下の「新しいバージョンに上げる」 |
 
 DiscordのユーザーIDは、Discordのユーザー設定の「開発者」で開発者モードをONにし、左下の自分のアイコンを押して「ユーザーIDをコピー」で取れる。
 
@@ -89,7 +89,7 @@ DiscordのユーザーIDは、Discordのユーザー設定の「開発者」で�
 
 ### 5. 公開する
 
-mainにアプリの変更（`src/`・`migrations/`・設定）をpushすると動く。Actionsの画面の「アプリを公開する」から、手で動かすこともできる。型の確認 → テスト（カバレッジ100%）→ 組み立て（D1のIDが無ければ止まる。開発用ログインが残っていても止まる）→ 本番のD1にマイグレーション → 公開、の順に進む。Workerのsecretは、公開する版と一緒に送る。
+mainにアプリの変更（`src/`・`migrations/`・設定）をpushすると動く。Actionsの画面の「アプリを公開する」から、手で動かすこともできる。型の確認 → テスト（カバレッジ100%）→ 組み立て（D1のIDが無ければ止まる。開発用ログインが残っていても止まる）→ 本番のD1にマイグレーション → 公開、の順に進む。Workerのsecretは、公開するバージョンと一緒に送る。
 
 ### 6. 利用規約とプライバシーポリシーを整える
 
@@ -143,20 +143,20 @@ Googleでのログインと、Googleカレンダーとの連携は、同じOAuth
 
 Googleでログインした人がグループに入れるかは、Discordのサーバーの一覧の控えで決める。控えが24時間より古くなったら、そのサーバーに知らせのBotがいればBotで確かめ（Discordのログインの画面は出ない）、いなければDiscordに聞き直す。
 
-## 新しい版に上げる（更新）
+## 新しいバージョンに上げる（更新）
 
-元のリポジトリ（[Xelltis/yoki](https://github.com/Xelltis/yoki)）は、版（`v1.4.0` など）をGitHubのReleaseとして出す（[CONTRIBUTING.md](../CONTRIBUTING.md) の「版を出す」）。設置したYokiは、運営の管理画面の「更新」で新しい版と変わったことを見て、ボタンかGitHubの画面で取り込む。コードを触らずに追いつける。設置する人向けの手順は、サイトの「[新しい版に上げる](https://xelltis.github.io/yoki/setup/update)」。
+元のリポジトリ（[Xelltis/yoki](https://github.com/Xelltis/yoki)）は、バージョン（`v1.4.0` など）をGitHubのReleaseとして出す（[CONTRIBUTING.md](../CONTRIBUTING.md) の「バージョンを出す」）。設置したYokiは、運営の管理画面の「更新」で新しいバージョンと変わったことを見て、ボタンかGitHubの画面で取り込む。コードを触らずに追いつける。設置する人向けの手順は、サイトの「[新しいバージョンに上げる](https://xelltis.github.io/yoki/setup/update)」。
 
-**新しい版を知る**: 運営の管理画面の「様子」のいちばん上と、「更新」の区分に出る。元のリポジトリのReleaseを、1時間に1回まで読む（トークンは要らない）。表（D1）の変更を含む版は、そう出る。トークンなしで読むので、元のリポジトリが非公開だと読めず、その理由が出る。
+**新しいバージョンを知る**: 運営の管理画面の「様子」のいちばん上と、「更新」の区分に出る。元のリポジトリのReleaseを、1時間に1回まで読む（トークンは要らない）。表（D1）の変更を含むバージョンは、そう出る。トークンなしで読むので、元のリポジトリが非公開だと読めず、その理由が出る。
 
 **更新する**: 「更新」の区分のボタンか、GitHubのActionsの「Yokiを更新する」（`.github/workflows/update.yml`）の「Run workflow」。ワークフローは、設置した人のリポジトリの作り方で、取り込み方を変える。
 
 | リポジトリ | 見分け方 | 取り込み方 | 公開 |
 |---|---|---|---|
-| ボタンで作った | 元の履歴とつながっていない | 版のファイルで入れ替える。Cloudflareが `wrangler.jsonc` に書いた値（Workerの名前・D1の名前とID）は引き継ぐ（`tools/update/carry-wrangler.mjs`） | mainへのpushで、Workers Buildsが表の変更を当てて公開する |
-| フォーク | 元の履歴とつながっている | 版のタグをマージする | 公開のワークフローが、表を変える前のD1の地点（bookmark）をSummaryに控えてから、表の変更を当てて公開する（`YOKI_DEPLOY_WITH_ACTIONS` が `true` のとき） |
+| ボタンで作った | 元の履歴とつながっていない | バージョンのファイルで入れ替える。Cloudflareが `wrangler.jsonc` に書いた値（Workerの名前・D1の名前とID）は引き継ぐ（`tools/update/carry-wrangler.mjs`） | mainへのpushで、Workers Buildsが表の変更を当てて公開する |
+| フォーク | 元の履歴とつながっている | バージョンのタグをマージする | 公開のワークフローが、表を変える前のD1の地点（bookmark）をSummaryに控えてから、表の変更を当てて公開する（`YOKI_DEPLOY_WITH_ACTIONS` が `true` のとき） |
 
-**mainに入れずにPRにするとき**: ボタンで作ったリポジトリのコードが、今の版（`package.json` の版のタグ）から変わっているとき（入れ替えると、その変更が消えるため。`wrangler.jsonc` は比べない）と、フォークでマージがぶつかったとき。どちらも `update/v1.4.0` のブランチとPRを作って止まる。GitHubの画面で確かめてマージすると公開される。サーバーごとの値はsecretかenvironmentに、規約の文はD1にあるので、コードを直さずに使っていればPRにならない。
+**mainに入れずにPRにするとき**: ボタンで作ったリポジトリのコードが、今のバージョン（`package.json` のバージョンのタグ）から変わっているとき（入れ替えると、その変更が消えるため。`wrangler.jsonc` は比べない）と、フォークでマージがぶつかったとき。どちらも `update/v1.4.0` のブランチとPRを作って止まる。GitHubの画面で確かめてマージすると公開される。サーバーごとの値はsecretかenvironmentに、規約の文はD1にあるので、コードを直さずに使っていればPRにならない。
 
 初めの1回だけ、次を準備する。
 
@@ -166,7 +166,7 @@ Googleでログインした人がグループに入れるかは、Discordのサ�
 
 ### 2. mainに書き込むトークン（おすすめ）
 
-元のリポジトリが `.github/workflows/` を変えた版は、Actionsの既定のトークンではmainに書き込めない。GitHubのSettings → Developer settings → Fine-grained tokensで、このリポジトリだけに「Contents」と「Workflows」のRead and writeを付けたトークンを作り、リポジトリのSettings → Secrets and variables → ActionsのRepository secretsに `UPDATE_PUSH_TOKEN` として入れる（environmentではなく、リポジトリのsecret）。
+元のリポジトリが `.github/workflows/` を変えたバージョンは、Actionsの既定のトークンではmainに書き込めない。GitHubのSettings → Developer settings → Fine-grained tokensで、このリポジトリだけに「Contents」と「Workflows」のRead and writeを付けたトークンを作り、リポジトリのSettings → Secrets and variables → ActionsのRepository secretsに `UPDATE_PUSH_TOKEN` として入れる（environmentではなく、リポジトリのsecret）。
 
 ### 3. 管理画面のボタンで更新する（任意）
 
@@ -174,15 +174,15 @@ Googleでログインした人がグループに入れるかは、Discordのサ�
 
 ### 4. 元のリポジトリを変える（任意。フォークのフォークなど）
 
-リポジトリのSettings → Secrets and variables → ActionsのRepository variablesに `YOKI_UPSTREAM`（`owner/name`）を入れる（更新のワークフローが取り込む元）。運営の管理画面が新しい版を見に行く先は、組み立てのときの `YOKI_UPSTREAM` で決まる。ボタンで設置したなら、Workers Buildsの組み立ての変数（Settings → Build）にも入れる。
+リポジトリのSettings → Secrets and variables → ActionsのRepository variablesに `YOKI_UPSTREAM`（`owner/name`）を入れる（更新のワークフローが取り込む元）。運営の管理画面が新しいバージョンを見に行く先は、組み立てのときの `YOKI_UPSTREAM` で決まる。ボタンで設置したなら、Workers Buildsの組み立ての変数（Settings → Build）にも入れる。
 
 困ったときは、次の順に戻す。
 
-Worker: Cloudflareの画面のWorkers → `yoki` → Deploymentsで、前の版に戻す（`npx wrangler rollback` でもよい）。
+Worker: Cloudflareの画面のWorkers → `yoki` → Deploymentsで、前のバージョンに戻す（`npx wrangler rollback` でもよい）。
 
-D1: 表を変えた版なら、Time Travelで更新の前に戻す。`npx wrangler d1 time-travel restore yoki --timestamp=<更新の前の時刻>`（GitHub Actionsで公開しているなら、公開のワークフローのSummaryに出たbookmarkを `--bookmark=<bookmark>` で渡してもよい）。その地点より後に書かれたもの（予定・回答など）は消える。
+D1: 表を変えたバージョンなら、Time Travelで更新の前に戻す。`npx wrangler d1 time-travel restore yoki --timestamp=<更新の前の時刻>`（GitHub Actionsで公開しているなら、公開のワークフローのSummaryに出たbookmarkを `--bookmark=<bookmark>` で渡してもよい）。その地点より後に書かれたもの（予定・回答など）は消える。
 
-コード: mainの取り込みのコミットをrevertする（そのままだと、次の公開でまた新しい版が出る）。
+コード: mainの取り込みのコミットをrevertする（そのままだと、次の公開でまた新しいバージョンが出る）。
 
 ## 独自のドメインで公開する（Route 53とCloudFront）
 
