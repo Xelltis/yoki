@@ -74,7 +74,7 @@ describe('ページ', () => {
     expect(t.html).toContain('<title>利用規約 - Yoki</title>');
     expect(t.html).toContain('<h1>利用規約</h1>');
     expect(t.html).toContain('<dt>運営者</dt><dd><span class="unset">まだ設定されていません</span></dd>');
-    expect(t.html).toContain('<dt>更新日</dt><dd>2026年10月6日</dd>');
+    expect(t.html).toContain('<dt>更新日</dt><dd>2026年10月8日</dd>');
     expect(t.html).toContain('<h2>7. 保証と責任</h2>');
     // もう一方のページへの道。いまのページはリンクにしない
     expect(t.html).toContain('<span>利用規約</span><a href="/privacy">プライバシーポリシー</a>');
@@ -109,7 +109,7 @@ describe('運営者のAPI', () => {
     expect(t).toContain('<h2>決まり</h2>\n<ul><li>仲良く</li></ul>');
     expect(t).toContain('<dd>' + jst(new Date()).year + '年');
     // プライバシーポリシーは既定の文のまま（行を作らない）
-    expect((await page('/privacy')).html).toContain('<dt>更新日</dt><dd>2026年10月6日</dd>');
+    expect((await page('/privacy')).html).toContain('<dt>更新日</dt><dd>2026年10月8日</dd>');
     expect(await metaKeys()).toEqual(['legal_contact', 'legal_operator', 'legal_terms']);
     expect(logs.map((l) => JSON.parse(l))).toEqual([{ audit: 'operator', by: OP.id, action: 'setLegal', target: 'legal', operator: ' <卓>運営 ', contact: 'https://example.com/contact', changed: ['terms'] }]);
   });
