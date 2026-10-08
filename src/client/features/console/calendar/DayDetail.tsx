@@ -6,7 +6,8 @@ import { Icon } from '../../../ui/Icon';
 import { Modal } from '../../../ui/Modal';
 import { useStore } from '../../../ui/store';
 import { toast } from '../../../ui/toast';
-import { openForm, openPoll, openPrep } from '../actions';
+import { openForm, openPoll, openPrep, openRecord } from '../actions';
+import { isFinished } from '../records/ledger';
 import { prepSummary } from '../prep/PrepModal';
 import { discordSend, failToast } from '../api/discord';
 import { useConsole } from '../context';
@@ -151,6 +152,9 @@ export function DayDetail({ d, target }: { d: ConsoleData; target: string }) {
                 <button type="button" className="btn small" data-edit={s.id} onClick={() => openForm(ui, { id: s.id })}><Icon name="edit" size="sm" />編集</button>
                 {(s.status === '開催' || s.status === '調整中') && (
                   <button type="button" className="btn small" data-prep={s.id} title="HO・秘匿HO・キャラシ" onClick={() => openPrep(ui, s.id)}><Icon name="checklist" size="sm" />準備</button>
+                )}
+                {isFinished(d, s) && (s.gm === mine || d.isAdmin || s.members.indexOf(mine) >= 0) && (
+                  <button type="button" className="btn small" data-record={s.id} title="ログ・振り返り・PCの結果" onClick={() => openRecord(ui, s.id)}><Icon name="history_edu" size="sm" />記録</button>
                 )}
                 <button type="button" className="btn small" data-cont={s.id} title="設定を引き継いで翌日の卓を登録" onClick={() => openForm(ui, { cont: s.id })}><Icon name="add" size="sm" />続きを登録</button>
                 {isDated(s) && s.date && (

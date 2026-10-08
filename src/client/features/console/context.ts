@@ -7,8 +7,8 @@ import type { ConsoleSync } from './api/sync';
 
 /** 区域。/g/:id/ はふだんの画面、/g/:id/admin/ はグループの管理画面 */
 export type Area = 'main' | 'admin';
-/** タブ。ふだんの画面はカレンダー・募集・調整・シナリオ・メンバーの予定・設定、管理画面は管理の1枚 */
-export type Tab = 'cal' | 'recruit' | 'scenario' | 'avail' | 'settings' | 'admin';
+/** タブ。ふだんの画面はカレンダー・募集・調整・シナリオ・メンバーの予定・記録・設定、管理画面は管理の1枚 */
+export type Tab = 'cal' | 'recruit' | 'scenario' | 'avail' | 'records' | 'settings' | 'admin';
 
 /**
  * 卓の登録の窓・変更の窓を開く頼み。idがあれば、その卓の変更の窓。contはその卓の設定を引き継いで翌日の卓を登録する、
@@ -37,6 +37,8 @@ export type ConsoleUi = {
   poll: { seq: number; id: string } | null;
   /** 卓の準備の窓（HO・秘匿HO・キャラシ） */
   prep: { seq: number; id: string } | null;
+  /** 卓の記録の窓（ログ・振り返り・自分のPC） */
+  record: { seq: number; id: string } | null;
 };
 
 export type ConsoleCtx = { groupId: string; area: Area; sync: ConsoleSync; ui: Store<ConsoleUi> };

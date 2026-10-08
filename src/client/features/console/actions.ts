@@ -15,6 +15,11 @@ export function openPrep(ui: Store<ConsoleUi>, id: string): void {
   ui.set((s) => ({ ...s, prep: { seq: ++seq, id } }));
 }
 
+/** 卓の記録の窓を開く（ログ・振り返り・自分のPC） */
+export function openRecord(ui: Store<ConsoleUi>, id: string): void {
+  ui.set((s) => ({ ...s, record: { seq: ++seq, id } }));
+}
+
 /** 候補日を選ぶ窓を開く（日程調整を始める・候補日を選び直す） */
 export function openPoll(ui: Store<ConsoleUi>, id: string): void {
   ui.set((s) => ({ ...s, poll: { seq: ++seq, id } }));

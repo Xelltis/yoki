@@ -67,7 +67,7 @@ await withDevServer(async (base) => {
       await pg.click('#newSession'); await pg.waitForTimeout(400);
       await shot(pg, 'pc-new-session.png');
       await pg.click('#formClose'); await pg.waitForTimeout(200);
-      for (const [tab, name] of [['recruit', 'recruit'], ['scenario', 'scenario'], ['avail', 'availability']]) {
+      for (const [tab, name] of [['recruit', 'recruit'], ['scenario', 'scenario'], ['avail', 'availability'], ['records', 'records']]) {
         await pg.click(`nav.tabs button[data-tab=${tab}]`); await pg.waitForTimeout(400);
         await shot(pg, `pc-${name}.png`);
       }

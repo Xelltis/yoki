@@ -26,6 +26,7 @@ const TABS: [MainTab, IconName, string][] = [
   ['recruit', 'campaign', '募集・調整'],
   ['scenario', 'auto_stories', 'シナリオ'],
   ['avail', 'event_available', 'メンバーの予定'],
+  ['records', 'history_edu', '記録'],
 ];
 
 /** 読み込んだ時刻の見た目。前の丸は、自動更新しているあいだは緑、読めなかったら赤。狭い画面では丸だけ */
@@ -186,7 +187,7 @@ export function Header({ tab }: { tab: Tab }) {
       {/* tabsはe2eが探す印。管理画面と、グループが消された・ログインし直せなかったときは出さない */}
       <nav className={'tabs -mx-6 min-w-0 items-center gap-2 overflow-x-auto px-6 [grid-area:tabs] max-lg:mt-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden '
         + (admin || dead ? 'hidden! ' : 'flex ')
-        + 'max-sm:fixed max-sm:inset-x-0 max-sm:bottom-0 max-sm:z-(--z-appbar) max-sm:m-0 max-sm:grid max-sm:grid-cols-4 max-sm:gap-0 max-sm:overflow-visible max-sm:border-t max-sm:border-chrome-line max-sm:bg-chrome '
+        + 'max-sm:fixed max-sm:inset-x-0 max-sm:bottom-0 max-sm:z-(--z-appbar) max-sm:m-0 max-sm:grid max-sm:grid-cols-5 max-sm:gap-0 max-sm:overflow-visible max-sm:border-t max-sm:border-chrome-line max-sm:bg-chrome '
         + 'max-sm:pt-6 max-sm:pr-[max(4px,env(safe-area-inset-right))] max-sm:pb-[max(8px,env(safe-area-inset-bottom))] max-sm:pl-[max(4px,env(safe-area-inset-left))]'} aria-label="画面">
         {TABS.map(([key, icon, label]) => (
           <button type="button" key={key} data-tab={key} className={tabBtn + (tab === key ? 'bg-chrome-active text-chrome-active-ink max-sm:text-chrome-text max-sm:before:bg-chrome-active' : 'bg-transparent text-chrome-muted hover:bg-chrome-hover hover:text-chrome-text max-sm:before:bg-transparent')} aria-current={tab === key ? 'page' : undefined} onClick={() => goTab(key)}>

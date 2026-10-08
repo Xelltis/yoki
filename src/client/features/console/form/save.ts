@@ -42,6 +42,8 @@ export function useSessionSave() {
       capacity: +form.capacity || 0, recruitDue: form.recruitDue,
       // 行けなくなった印は、開催日がそのままで開催のままなら残る（外した参加者の分は消える）
       absent: prev && prev.date === form.date && form.status === '開催' ? prev.absent.filter((a) => form.members.indexOf(a.name) >= 0) : [],
+      // 記録は卓の窓では変えないので、今のまま
+      record: prev ? prev.record : { logUrl: '', recap: '' },
     };
     let tmps = [tmp];
     if (form.dates) {

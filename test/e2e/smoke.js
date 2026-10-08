@@ -50,7 +50,7 @@ await withDevServer(async (base) => {
     });
 
     await step('タブと見た目（ライト・ダーク）を切り替えられる', async () => {
-      for (const t of ['recruit', 'scenario', 'avail', 'settings', 'cal']) {
+      for (const t of ['recruit', 'scenario', 'avail', 'records', 'settings', 'cal']) {
         await tab(t);
         assert.equal(await page.getAttribute('body', 'data-tab'), t);
       }
@@ -247,6 +247,19 @@ await withDevServer(async (base) => {
       await page.click('#formClose');
       await page.click(`#dayBody button[data-absent="${s.id}"][data-on="1"]`);
       await until((d, id) => d.sessions.find((x) => x.id === id).absent.length === 0, s.id);
+    });
+
+    await step('記録のタブ: 終わった卓の記録とPCの台帳が出る。GMは記録を書ける', async () => {
+      await tab('records');
+      const s = (await D()).sessions.find((x) => x.name === '鉄鳴界の夜明け #1');
+      assert.match(await page.textContent(`#doneList [data-done="${s.id}"]`), /ソラ（カイ・ハーツ・継続）/);
+      assert.match(await page.textContent('#pcLedger [data-ledger="ソラ"]'), /カイ・ハーツ/);
+      await page.click(`#doneList button[data-record="${s.id}"]`);
+      await page.fill('#recordRecap', 'e2eの振り返り');
+      await page.click('#recordSave');
+      await until((d, id) => d.sessions.find((x) => x.id === id).record.recap === 'e2eの振り返り', s.id);
+      await page.click('#recordClose');
+      await tab('cal');
     });
 
     await step('募集中の卓に参加希望を付け、取り消せる', async () => {

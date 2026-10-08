@@ -12,6 +12,7 @@ type SessionRow = {
   urged_at: string | null; soon_at: string | null; poll_ready_at: string | null; scenario_id: number | null;
   sheet_due: string | null; sheet_urged_at: string | null; slots_json: string; sheets_json: string;
   capacity: number | null; recruit_due: string | null; due_urged_at: string | null; absent_json: string; thread_id: string | null; thread_parent: string | null;
+  log_url: string; recap: string;
 };
 type SlotJson = { pos: number; label: string; summary: string; member: number | null; secret: string | null; has: number; hopes: [number, number][] };
 
@@ -75,7 +76,7 @@ export async function loadGroup(
                      'has', sl.secret <> '',
                      'hopes', json((SELECT json_group_array(json_array(h.member_id, h.rank)) FROM slot_hopes h WHERE h.slot_id = sl.id))))
               FROM session_slots sl WHERE sl.session_id = s.id) AS slots_json,
-           (SELECT json_group_array(json_array(sh.member_id, sh.url, sh.pc_name, sh.updated_at))
+           (SELECT json_group_array(json_array(sh.member_id, sh.url, sh.pc_name, sh.updated_at, sh.outcome))
               FROM session_sheets sh WHERE sh.session_id = s.id) AS sheets_json,
            (SELECT json_group_array(json_array(a.member_id, a.note, a.at)) FROM session_absences a WHERE a.session_id = s.id) AS absent_json
          FROM sessions s WHERE s.group_id = ?1 ORDER BY s.seq`,
@@ -181,13 +182,15 @@ export async function loadGroup(
           hopes: x.hopes.map(([memberId, rank]) => ({ memberId, rank })),
         }))
         .sort((a, b) => a.pos - b.pos),
-      sheets: (JSON.parse(r.sheets_json) as [number, string, string, string][]).map(([memberId, url, pc, at]) => ({ memberId, url, pc, at })),
+      sheets: (JSON.parse(r.sheets_json) as [number, string, string, string, string][]).map(([memberId, url, pc, at, outcome]) => ({ memberId, url, pc, at, outcome })),
       capacity: r.capacity,
       recruitDue: r.recruit_due,
       dueUrgedAt: r.due_urged_at,
       absent: (JSON.parse(r.absent_json) as [number, string, string][]).map(([id, note, at]) => ({ name: nameOf.get(id)!, note, at })).sort((a, b) => a.at.localeCompare(b.at)),
       threadId: r.thread_id,
       threadParent: r.thread_parent,
+      logUrl: r.log_url,
+      recap: r.recap,
     };
   });
 

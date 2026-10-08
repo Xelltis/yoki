@@ -6,6 +6,7 @@ import IAdd from '~icons/material-symbols/add-outline-rounded';
 import IArrowBack from '~icons/material-symbols/arrow-back-outline-rounded';
 import IArrowForward from '~icons/material-symbols/arrow-forward-outline-rounded';
 import IAutoStories from '~icons/material-symbols/auto-stories-outline-rounded';
+import IBadge from '~icons/material-symbols/badge-outline-rounded';
 import IBlock from '~icons/material-symbols/block-outline-rounded';
 import ICalendarMonth from '~icons/material-symbols/calendar-month-outline-rounded';
 import ICampaign from '~icons/material-symbols/campaign-outline-rounded';
@@ -32,6 +33,7 @@ import IGavel from '~icons/material-symbols/gavel-outline-rounded';
 import IGroup from '~icons/material-symbols/group-outline-rounded';
 import IHelp from '~icons/material-symbols/help-outline-rounded';
 import IHistory from '~icons/material-symbols/history-outline-rounded';
+import IHistoryEdu from '~icons/material-symbols/history-edu-outline-rounded';
 import IHowToVote from '~icons/material-symbols/how-to-vote-outline-rounded';
 import ILightMode from '~icons/material-symbols/light-mode-outline-rounded';
 import ILink from '~icons/material-symbols/link-outline-rounded';
@@ -70,6 +72,7 @@ export const ICONS = {
   arrow_back: IArrowBack,
   arrow_forward: IArrowForward,
   auto_stories: IAutoStories,
+  badge: IBadge,
   block: IBlock,
   calendar_month: ICalendarMonth,
   campaign: ICampaign,
@@ -96,6 +99,7 @@ export const ICONS = {
   group: IGroup,
   help: IHelp,
   history: IHistory,
+  history_edu: IHistoryEdu,
   how_to_vote: IHowToVote,
   light_mode: ILightMode,
   link: ILink,

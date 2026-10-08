@@ -71,13 +71,14 @@ const calRoute = createRoute({
   beforeLoad: ({ context, params }) => {
     if (!context.firstVisit) return;
     const t = load(lastTabKey(params.groupId));
-    if (t === 'recruit' || t === 'scenario' || t === 'avail') throw redirect({ to: `/g/$groupId/${t}/`, params });
+    if (t === 'recruit' || t === 'scenario' || t === 'avail' || t === 'records') throw redirect({ to: `/g/$groupId/${t}/`, params });
   },
   component: lazyRouteComponent(() => import('./features/console/calendar/CalendarTab'), 'CalendarTab'),
 });
 const recruitRoute = createRoute({ getParentRoute: () => groupRoute, path: 'recruit', component: lazyRouteComponent(() => import('./features/console/recruit/RecruitTab'), 'RecruitTab') });
 const scenarioRoute = createRoute({ getParentRoute: () => groupRoute, path: 'scenario', component: lazyRouteComponent(() => import('./features/console/scenario/ScenarioTab'), 'ScenarioTab') });
 const availRoute = createRoute({ getParentRoute: () => groupRoute, path: 'avail', component: lazyRouteComponent(() => import('./features/console/avail/AvailTab'), 'AvailTab') });
+const recordsRoute = createRoute({ getParentRoute: () => groupRoute, path: 'records', component: lazyRouteComponent(() => import('./features/console/records/RecordsTab'), 'RecordsTab') });
 const settingsRoute = createRoute({ getParentRoute: () => groupRoute, path: 'settings', component: lazyRouteComponent(() => import('./features/console/settings/SettingsTab'), 'SettingsTab') });
 
 /* グループの管理画面（/g/:id/admin/<区分>/） */
@@ -133,7 +134,7 @@ const operatorPaneRoute = createRoute({
 
 const routeTree = rootRoute.addChildren([
   homeRoute,
-  groupRoute.addChildren([calRoute, recruitRoute, scenarioRoute, availRoute, settingsRoute, adminRoute.addChildren([adminIndexRoute, adminPaneRoute])]),
+  groupRoute.addChildren([calRoute, recruitRoute, scenarioRoute, availRoute, recordsRoute, settingsRoute, adminRoute.addChildren([adminIndexRoute, adminPaneRoute])]),
   operatorRoute.addChildren([operatorIndexRoute, operatorPaneRoute]),
 ]);
 

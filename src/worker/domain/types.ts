@@ -89,6 +89,9 @@ export type Session = {
   /** 卓のスレッド（DiscordのチャンネルのID）と、スレッドを作ったチャンネルのID。無ければnull */
   threadId: string | null;
   threadParent: string | null;
+  /** 卓の記録。ログ（リプレイ）のURLと振り返り */
+  logUrl: string;
+  recap: string;
 };
 
 /** 行けなくなった参加者 */
@@ -108,8 +111,8 @@ export type Slot = {
   hopes: { memberId: number; rank: number }[];
 };
 
-/** 出したキャラシ */
-export type Sheet = { memberId: number; url: string; pc: string; at: string };
+/** 出したキャラシ。outcomeは終わった卓でのPCの結果（生還・ロストなど） */
+export type Sheet = { memberId: number; url: string; pc: string; at: string; outcome: string };
 
 /** グループのシナリオ。createdByは登録したメンバー（members.id。メンバーでなくなればnull） */
 export type Scenario = {

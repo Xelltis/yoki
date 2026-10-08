@@ -36,7 +36,7 @@ export const RPC_FUNCS = [
   'saveSession', 'deleteSession', 'saveMember', 'deleteMember', 'saveConsoleSettings', 'saveSeriesNotify', 'renameGroup', 'startPoll', 'setPollVote',
   'setPollVoteAll', 'setPollVoteFromAvail', 'cancelPoll', 'decidePoll', 'setAdmin', 'deleteGroup', 'getDiscordChannels', 'saveCalendarFeed', 'deleteCalendarFeed',
   'saveGoogleSettings', 'syncGoogleNow', 'unlinkGoogle', 'unlinkGoogleLogin', 'saveScenario', 'deleteScenario', 'setScenarioMark',
-  'savePrep', 'saveSlotSecret', 'assignSlots', 'setSlotHope', 'submitSheet', 'setAbsence', 'setShareBusy', 'getSessionHistory',
+  'savePrep', 'saveSlotSecret', 'assignSlots', 'setSlotHope', 'submitSheet', 'setAbsence', 'setShareBusy', 'getSessionHistory', 'saveRecord', 'setPcRecord',
 ] as const;
 export type RpcName = (typeof RPC_FUNCS)[number];
 
@@ -84,6 +84,8 @@ export type ConsoleSession = {
   recruitDue: string;
   /** 行けなくなった参加者（開催の卓）。noteはGMへの一言、atは伝えた日時 */
   absent: { name: string; note: string; at: string }[];
+  /** 卓の記録（ログのURL・振り返り） */
+  record: ConsoleRecord;
 };
 
 /** 卓の準備（HOの枠と、出したキャラシ） */
@@ -92,9 +94,18 @@ export type ConsolePrep = {
   sheetDue: string;
   /** HOの枠（posの順） */
   slots: ConsoleSlot[];
-  /** 出したキャラシ{ 名前: { url, pc（キャラクターの名前）, at（出した日時） } } */
-  sheets: Record<string, { url: string; pc: string; at: string }>;
+  /**
+   * 出したキャラシ{ 名前: { url, pc（キャラクターの名前）, at（出した日時）, outcome（終わった卓での結果。生還・ロストなど） } }。
+   * 終わった卓では、キャラシを出していない人もPCの名前と結果だけを書ける（urlは空）
+   */
+  sheets: Record<string, { url: string; pc: string; at: string; outcome: string }>;
 };
+
+/** 卓の記録（終わった卓）。logUrlはログ（リプレイ）のURL、recapは振り返り */
+export type ConsoleRecord = { logUrl: string; recap: string };
+
+/** 卓の記録に書ける長さ */
+export const RECORD_MAX = { url: 500, recap: 1000, outcome: 20 } as const;
 
 /** HOの枠 */
 export type ConsoleSlot = {

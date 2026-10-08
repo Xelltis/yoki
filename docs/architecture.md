@@ -87,7 +87,7 @@ usersの行は消さない（印がそこにあるため）。Discordのユー�
 
 ## データベース（D1）
 
-表の定義は `migrations/`（`0001_init.sql` が最初の形、`0002_admin.sql` が締め出し・最後に使われた日と索引、`0003_bot.sql` が知らせのBot、`0004_calendar.sql` がカレンダーとの連携、`0005_member_check.sql` がBotで確かめた日時、`0006_google_login.sql` がGoogleでのログイン、`0007_scenarios.sql` がシナリオと通過、`0008_prep.sql` が卓の準備、`0009_discord_events.sql` がDiscordのイベント、`0010_note_ranges.sql` が期間の日付メモ、`0011_poll_maybe.sql` が日程調整の △、`0012_recruit_limits.sql` が募集の定員と締め切り、`0013_absences.sql` が行けなくなった印、`0014_day_parts.sql` が予定の時間帯、`0015_share_busy.sql` がほかのグループの卓、`0016_threads.sql` が卓ごとのスレッド、`0017_session_history.sql` が卓の変更の履歴）。日付（開催日・予定・メモ）は日本時間の `YYYY-MM-DD`、日時（〜した時刻）はUTCのISO文字列。
+表の定義は `migrations/`（`0001_init.sql` が最初の形、`0002_admin.sql` が締め出し・最後に使われた日と索引、`0003_bot.sql` が知らせのBot、`0004_calendar.sql` がカレンダーとの連携、`0005_member_check.sql` がBotで確かめた日時、`0006_google_login.sql` がGoogleでのログイン、`0007_scenarios.sql` がシナリオと通過、`0008_prep.sql` が卓の準備、`0009_discord_events.sql` がDiscordのイベント、`0010_note_ranges.sql` が期間の日付メモ、`0011_poll_maybe.sql` が日程調整の △、`0012_recruit_limits.sql` が募集の定員と締め切り、`0013_absences.sql` が行けなくなった印、`0014_day_parts.sql` が予定の時間帯、`0015_share_busy.sql` がほかのグループの卓、`0016_threads.sql` が卓ごとのスレッド、`0017_session_history.sql` が卓の変更の履歴、`0018_records.sql` が卓の記録とPC）。日付（開催日・予定・メモ）は日本時間の `YYYY-MM-DD`、日時（〜した時刻）はUTCのISO文字列。
 
 `users`・`user_guilds`・`auth_sessions`: ログイン。`users.banned_at`・`banned_reason` は締め出し。
 
@@ -202,6 +202,8 @@ usersの行は消さない（印がそこにあるため）。Discordのユー�
 **シナリオと通過**（`domain/scenarios.ts`・`src/shared/scenario.ts`）。通過は、本人や管理者が付けた印（`member_scenarios`）と、そのシナリオの「終了」の卓から出すもの（GMは `gm`、参加者は `played`）を合わせたもので、`gm` が強い。卓から出す分は表に書かず、読み込んだ卓から計算する（問い合わせを増やさないため）。「終了」の卓を消すときだけ、消す前に参加者を印へ書き写す（`keepPassesStmt`。卓が消えても通過が残るように）。卓から付いた通過は、未通過に戻せない。
 
 計算（`passesOf`・`plannedOf`・`playableDays`）は `src/shared/` に置き、画面（シナリオのタブ・卓の窓の注意）とサーバー（印を外せるか）で使う。テストのカバレッジも、ここで測る。遊べる日は、未通過で、その日に × もほかの卓も無く、そのシナリオの「開催」「調整中」の卓に入っていない人をPLに数え、「GMできる」の人をGMに数える。
+
+**卓の記録とPC**（`domain/records.ts`）。終わった卓（「終了」か、開催日が今日までの「開催」）に、ログ（リプレイ）のURLと振り返り（`sessions.log_url`・`recap`。GMか管理者）と、参加者ごとのPCの名前と結果（`session_sheets.pc_name`・`outcome`。参加者本人）を書く。PCはキャラシと同じ行に持ち、キャラシを出していない人もURLを空のまま書ける。PCの台帳は、画面が終わった卓のPCの名前でまとめて作る（記録のタブ。`features/console/records/`）。
 
 **卓の準備**（`domain/prep.ts`）。HOの枠は番号（`pos`）で持ち、消しても詰めない（割り当てと秘匿HOが別の枠に移らないように）。書き換えは番号ごとのupsertで、消した番号の枠だけを消す（希望と秘匿HOを残す）。
 
@@ -344,7 +346,7 @@ TypeScriptとReact 19で書き、Viteが組み立てる。1つのSPAで、Worker
 | 道 | 中身 |
 |---|---|
 | `/` | 入口（`features/home/`）。ログイン・グループの一覧・グループを作る |
-| `/g/:id/`・`/g/:id/recruit/`・`avail/`・`settings/` | グループの画面のタブ。`/g/:id/` を初めて開いたときだけ、そのグループで前に見ていたタブ（募集・調整かメンバーの予定。設定は控えない）へ移る |
+| `/g/:id/`・`/g/:id/recruit/`・`scenario/`・`avail/`・`records/`・`settings/` | グループの画面のタブ。`/g/:id/` を初めて開いたときだけ、そのグループで前に見ていたタブ（募集・調整・シナリオ・メンバーの予定・記録。設定は控えない）へ移る |
 | `/g/:id/admin/<区分>/` | 管理の区域。区分は `members`・`ops`・`notify`・`table`・`admins`・`log`・`danger`。`/g/:id/admin/` は前に開いていた区分へ移る |
 | `/admin/<区分>/` | 運営の管理画面。区分は `overview`・`groups`・`users`・`legal`。開いているグループは `?open=<ID>` |
 
@@ -398,14 +400,14 @@ React向けの変換は、unplugin-iconsの既定（`@svgr` とBabelが要る）
 
 確かめの道具（e2e・スクリーンショット）は、要素のID・`data-*`・`body[data-area|data-tab]`・`window.yoki`（`D`・`selectDay`・`showTab`）を使う。変えるときは道具も直す。
 
-**グループの画面**（`features/console/`）。ふだんの区域（カレンダー・募集・調整・メンバーの予定の3つのタブと、あなたのメニューから開く設定）と、管理の区域（メンバーの登録・卓をまとめて変える・知らせ・このグループ・管理者・送信の記録・グループを消す）に分ける。外枠（`shell/ConsoleLayout.tsx`）は1つで、`body[data-area]` と `body[data-tab]` を置く。
+**グループの画面**（`features/console/`）。ふだんの区域（カレンダー・募集・調整・シナリオ・メンバーの予定・記録の5つのタブと、あなたのメニューから開く設定）と、管理の区域（メンバーの登録・卓をまとめて変える・知らせ・このグループ・管理者・送信の記録・グループを消す）に分ける。外枠（`shell/ConsoleLayout.tsx`）は1つで、`body[data-area]` と `body[data-tab]` を置く。
 
 | フォルダ | 中身 |
 |---|---|
 | `api/` | 呼び出し（`rpc.ts`）・読み書きの順番（`sync.ts`）・Discordへの送信（`discord.ts`） |
 | `model/` | 卓の読み方・日付・知らせの決まり・楽観的な書き換え（データを受けて返すだけの関数） |
 | `shell/` | 外枠・上の帯（ヘルプとあなたのメニュー・管理画面への入口）とタブ・読み込み中 |
-| `calendar/`・`recruit/`・`avail/`・`settings/` | タブ（募集・調整のタブには、候補日を選ぶ窓も） |
+| `calendar/`・`recruit/`・`scenario/`・`avail/`・`records/`・`settings/` | タブ（募集・調整のタブには候補日を選ぶ窓も、記録のタブには記録の窓も） |
 | `form/` | 卓の登録の窓と変更の窓（開く頼みに卓のIDがあれば変更の窓。共通の欄・入力の決まり・保存は分けて置く）と、参加者を決める窓 |
 | `admin/` | 管理の区域の区分 |
 

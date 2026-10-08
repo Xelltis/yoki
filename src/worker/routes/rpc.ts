@@ -26,6 +26,7 @@ import { deleteScenario, saveScenario, setScenarioMark } from '../domain/scenari
 import { assignSlots, savePrep, saveSlotSecret, setSlotHope, submitSheet } from '../domain/prep';
 import { setAbsence } from '../domain/absence';
 import { getSessionHistory } from '../domain/history';
+import { saveRecord, setPcRecord } from '../domain/records';
 import { AppError, adminError, authError, goneError, notFound } from '../lib/errors';
 import type { RpcName } from '../../shared/api';
 
@@ -86,6 +87,9 @@ export const RPC: Record<Exclude<RpcName, 'getConsoleData'>, Entry> = {
   setShareBusy: { run: setShareBusy, data: true },
   // 卓の変更の履歴を読む（書かないので、画面のデータは付けない）
   getSessionHistory: { run: getSessionHistory },
+  // 卓の記録（GMか管理者）と、自分のPC（参加者本人）。だれが書けるかは中で確かめる
+  saveRecord: { run: saveRecord, data: true },
+  setPcRecord: { run: setPcRecord, data: true },
   // 消したあとは画面のデータを読めないのでdataを付けない
   deleteGroup: { run: deleteGroup, admin: 'グループを消すこと' },
 };

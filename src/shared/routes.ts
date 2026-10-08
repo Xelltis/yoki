@@ -2,7 +2,7 @@
 // 末尾はいつも /。グループの画面は /g/:id/（カレンダー）と /g/:id/<タブ>/、グループの管理の区域は /g/:id/admin/<区分>/、運営の管理画面は /admin/<区分>/
 
 /** グループの画面のタブ（カレンダーは /g/:id/ そのもの） */
-export const TAB_PATHS = ['recruit', 'scenario', 'avail', 'settings'] as const;
+export const TAB_PATHS = ['recruit', 'scenario', 'avail', 'records', 'settings'] as const;
 /** グループの管理の区域の区分（/g/:id/admin/ は、前に開いていた区分かmembersへ移る） */
 export const ADMIN_PANES = ['members', 'ops', 'notify', 'table', 'admins', 'log', 'danger'] as const;
 /** 運営の管理画面の区分（/admin/ は、前に開いていた区分かoverviewへ移る） */

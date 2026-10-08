@@ -52,6 +52,7 @@ export function consoleData(ctx: Ctx): ConsoleData {
         prep: prepView(ctx, s),
         capacity: s.capacity ?? 0, recruitDue: s.recruitDue ?? '',
         absent: s.absent.map((a) => ({ name: a.name, note: a.note, at: stampText(a.at) })),
+        record: { logUrl: s.logUrl, recap: s.recap },
       };
     }),
     avail: ctx.avail,
@@ -113,7 +114,7 @@ function prepView(ctx: Ctx, s: Session): ConsolePrep {
   const seesAllHopes = ctx.actor.isAdmin || (!!s.gm && s.gm === ctx.actor.name);
   const sheets: ConsolePrep['sheets'] = {};
   // キャラシと希望の行はメンバーが消えたら一緒に消え、割り当てはnullになるので、名前はいつもある
-  for (const sh of s.sheets) sheets[nameOf.get(sh.memberId)!] = { url: sh.url, pc: sh.pc, at: stampText(sh.at) };
+  for (const sh of s.sheets) sheets[nameOf.get(sh.memberId)!] = { url: sh.url, pc: sh.pc, at: stampText(sh.at), outcome: sh.outcome };
   return {
     sheetDue: s.sheetDue ?? '',
     slots: s.slots.map((sl) => {

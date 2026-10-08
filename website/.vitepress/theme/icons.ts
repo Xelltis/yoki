@@ -19,6 +19,7 @@ import IEventRepeat from '~icons/material-symbols/event-repeat-outline-rounded';
 import IFlag from '~icons/material-symbols/flag-outline-rounded';
 import IGroup from '~icons/material-symbols/group-outline-rounded';
 import IHelp from '~icons/material-symbols/help-outline-rounded';
+import IHistoryEdu from '~icons/material-symbols/history-edu-outline-rounded';
 import IHowToVote from '~icons/material-symbols/how-to-vote-outline-rounded';
 import ILink from '~icons/material-symbols/link-outline-rounded';
 import ILogin from '~icons/material-symbols/login-outline-rounded';
@@ -58,6 +59,7 @@ export const ICONS = {
   flag: IFlag,
   group: IGroup,
   help: IHelp,
+  history_edu: IHistoryEdu,
   how_to_vote: IHowToVote,
   link: ILink,
   login: ILogin,

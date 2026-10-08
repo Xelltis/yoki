@@ -7,6 +7,7 @@ import { setAvailability, setAvailabilityBulk, setAvailNote, setDayNote } from '
 import { loadGroup } from '../domain/load';
 import { setPollVote, startPoll } from '../domain/polls';
 import { assignSlots, savePrep, saveSlotSecret, setSlotHope, submitSheet } from '../domain/prep';
+import { saveRecord, setPcRecord } from '../domain/records';
 import { saveScenario, setScenarioMark } from '../domain/scenarios';
 import { saveSession, setInterest } from '../domain/sessions';
 import { addDays, fmtDateTime, jst } from '../lib/jst';
@@ -62,8 +63,12 @@ export async function seedSample(db: D1Database, groupId: string, appUrl: string
   await mark(scLibrary, 'ミナト', 'played');
   await mark(scCastle, 'ユズ', 'played');
 
-  // キャンペーン（シリーズ）
-  await S({ name: '鉄鳴界の夜明け #1', series: '鉄鳴界の夜明け', gm: 'ひより', members: ['ソラ', 'こまち', 'レン'], date: T(-6), start: '20:00', end: '23:00', status: '開催', place: 'ユドナリウムアックス', memo: 'キャンペーン第1回。キャラクター作成から' });
+  // キャンペーン（シリーズ）。第1回は終わっていて、記録とPCがある
+  const first = await S({ name: '鉄鳴界の夜明け #1', series: '鉄鳴界の夜明け', gm: 'ひより', members: ['ソラ', 'こまち', 'レン'], date: T(-6), start: '20:00', end: '23:00', status: '開催', place: 'ユドナリウムアックス', memo: 'キャンペーン第1回。キャラクター作成から' });
+  await saveRecord(await as('ひより'), { id: first.id, logUrl: 'https://example.com/log/tetsunari-1', recap: '鉄道の町に着いたところまで。次回は廃坑から' });
+  for (const [name, pc, outcome] of [['ソラ', 'カイ・ハーツ', '継続'], ['こまち', 'ミレイユ', '継続'], ['レン', '灰島 透', '継続']] as const) {
+    await setPcRecord(await as(name), { id: first.id, name, pc, outcome });
+  }
   await S({ name: '鉄鳴界の夜明け #2', series: '鉄鳴界の夜明け', seriesEnd: T(40), gm: 'ひより', members: ['ソラ', 'こまち', 'レン'], dates: [T(2), T(9), T(16)], date: T(2), start: '20:00', end: '23:00', status: '開催', place: 'ユドナリウムアックス', memo: '前回の続きから' });
   // 単発
   await S({ name: '今夜の短編', gm: 'ユズ', members: ['ひより', 'ミナト'], date: T(0), start: '21:00', end: '23:00', status: '開催', place: 'Discordボイス', memo: '2時間で終わる短いシナリオ' });
