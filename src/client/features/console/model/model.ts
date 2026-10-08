@@ -1,5 +1,6 @@
 // 卓とメンバーの読み方（状態・人・日程調整・並び）。画面のデータdを受け取って読むだけで、書き換えない
 import type { ConsoleData, ConsoleScenario, ConsoleSession } from '../../../../shared/api';
+import { bookedAt, markAt, type Part, PARTS } from '../../../../shared/parts';
 import type { IconName } from '../../../ui/icons';
 import { addDaysYmd } from './dates';
 
@@ -59,10 +60,13 @@ export function pollCount(d: ConsoleData, s: ConsoleSession, k: string): string 
   const maybe = pollMaybe(d, s, k).length;
   return '◯ ' + pollOk(d, s, k).length + '/' + pollVoters(d, s).length + (maybe ? '　△ ' + maybe : '');
 }
-/** 予定表の印から決める回答（サーバーと同じ決まり）。卓のある日と × は ×、△ は △、空欄は ◯ */
-export function voteFromAvail(d: ConsoleData, name: string, day: string): string {
-  if ((d.booked[day] || {})[name]) return '×';
-  const m = (d.avail[day] || {})[name];
+/**
+ * 予定表の印から決める回答（サーバーと同じ決まり）。卓のある日と × は ×、△ は △、空欄は ◯。
+ * 昼と夜に分けるグループでは、卓の開始時刻の時間帯で見る（partはその時間帯。分けないなら ''）
+ */
+export function voteFromAvail(d: ConsoleData, name: string, day: string, part: Part | ''): string {
+  if (bookedOn(d, day, name, part)) return '×';
+  const m = markOn(d, day, name, part);
   return m === '×' || m === '△' ? m : '◯';
 }
 /** 予定表から答えられる候補日（これからの、予定表の範囲の日で、まだ答えていない日） */
@@ -128,22 +132,37 @@ export function targetPeople(d: ConsoleData, target: string): string[] {
   const s = active(d).filter((x) => x.name === target)[0];
   return s ? candidatesOf(s) : [];
 }
+/* ---- 時間帯（昼・夜） ---- */
+/** 予定を見る時間帯。昼と夜に分けるグループは昼と夜、分けないグループは ''（1日）だけ */
+export function dayParts(d: ConsoleData): (Part | '')[] { return d.settings.dayParts ? PARTS : ['']; }
+/** その時間帯の印（分けないグループや、分けていない日は1日の印） */
+export function markOn(d: ConsoleData, day: string, name: string, part: Part | ''): string { return markAt(d.avail, d.availParts || {}, day, name, part); }
+/** その時間帯に卓があるか（'' なら、その日のどこかに卓があるか） */
+export function bookedOn(d: ConsoleData, day: string, name: string, part: Part | ''): boolean { return bookedAt(d.bookedParts || {}, day, name, part); }
+
+/** その日のその時間帯の都合。'ok' は全員空き、'soft' は △ の人がいる、'' は × か卓のある人がいる */
+export function availAt(d: ConsoleData, people: string[], day: string, part: Part | ''): 'ok' | 'soft' | '' {
+  let allOk = true;
+  for (let i = 0; i < people.length; i++) {
+    const n = people[i]!, v = markOn(d, day, n, part);
+    if (v === '×' || bookedOn(d, day, n, part)) return '';
+    if (v === '△') allOk = false;
+  }
+  return allOk ? 'ok' : 'soft';
+}
 /**
  * 日ごとの都合（予定表の範囲の日）。'ok' は全員空き、'soft' は △ の人がいる。× か卓のある人がいれば出さない。
- * だれも印を付けていない日も全員空き（予定表の「全員空き」と同じ）
+ * だれも印を付けていない日も全員空き（予定表の「全員空き」と同じ）。昼と夜に分けるグループでは、よいほうの時間帯の都合で、
+ * partsに全員空きの時間帯を入れる（昼だけ空いていれば ['昼']）
  */
-export function availMap(d: ConsoleData, target: string): Record<string, 'ok' | 'soft'> {
-  const out: Record<string, 'ok' | 'soft'> = {}, people = targetPeople(d, target);
+export function availMap(d: ConsoleData, target: string): Record<string, { st: 'ok' | 'soft'; parts: Part[] }> {
+  const out: Record<string, { st: 'ok' | 'soft'; parts: Part[] }> = {}, people = targetPeople(d, target);
   if (!people.length) return out;
   d.availDays.forEach((key) => {
-    const marks = d.avail[key] || {}, bk = d.booked[key] || {};
-    let allOk = true;
-    for (let i = 0; i < people.length; i++) {
-      const n = people[i]!, v = marks[n] || '';
-      if (v === '×' || bk[n]) return;
-      if (v === '△') allOk = false;
-    }
-    out[key] = allOk ? 'ok' : 'soft';
+    const at = dayParts(d).map((p) => [p, availAt(d, people, key, p)] as const);
+    const okParts = at.filter(([, v]) => v === 'ok').map(([p]) => p).filter((p): p is Part => !!p);
+    const st = at.some(([, v]) => v === 'ok') ? 'ok' : at.some(([, v]) => v === 'soft') ? 'soft' : '';
+    if (st) out[key] = { st, parts: okParts };
   });
   return out;
 }

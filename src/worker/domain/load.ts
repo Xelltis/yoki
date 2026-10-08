@@ -1,5 +1,6 @@
 // グループ1つ分のデータを、1回のdb.batchで読む。過ぎた卓の自動終了（GAS版autoFinishPast_）も同じ回で行う
 import type { Actor } from '../auth/guard';
+import { combineMarks, type Part } from '../../shared/parts';
 import { addDays, jst } from '../lib/jst';
 import type { Status } from './constants';
 import type { Bot, Ctx, FeedScope, GoogleLinkRow, GroupRow, LogRow, Member, Role, Scenario, ScenarioMarkRow, Session } from './types';
@@ -78,7 +79,7 @@ export async function loadGroup(
       .bind(groupId),
     db
       .prepare(
-        `SELECT a.date, a.mark, a.source, m.name FROM availability a JOIN members m ON m.id = a.member_id
+        `SELECT a.date, a.part, a.mark, a.source, m.name FROM availability a JOIN members m ON m.id = a.member_id
           WHERE m.group_id = ?1 AND a.date >= ?2 AND a.date < ?3`,
       )
       .bind(groupId, today, '9999-12-31'),
@@ -176,12 +177,18 @@ export async function loadGroup(
 
   const lastDay = addDays(today, group.avail_days);
   const avail: Ctx['avail'] = {};
+  const availParts: Ctx['availParts'] = {};
   const availGoogle: Ctx['availGoogle'] = {};
-  for (const a of rows<{ date: string; mark: string; source: string; name: string }>(5)) {
+  for (const a of rows<{ date: string; part: '' | Part; mark: string; source: string; name: string }>(5)) {
     if (a.date >= lastDay) continue;
-    (avail[a.date] ??= {})[a.name] = a.mark;
-    if (a.source === 'google') (availGoogle[a.date] ??= []).push(a.name);
+    if (a.part) ((availParts[a.date] ??= {})[a.name] ??= ['', ''])[a.part === '昼' ? 0 : 1] = a.mark;
+    else (avail[a.date] ??= {})[a.name] = a.mark;
+    if (a.source !== 'google') continue;
+    const g = (availGoogle[a.date] ??= []);
+    if (!g.includes(a.name)) g.push(a.name);
   }
+  // 昼と夜に分けて入れた日は、1日の印にまとめた印も持つ（分けないところは、これを見る）
+  for (const [date, byName] of Object.entries(availParts)) for (const [name, [d, n]] of Object.entries(byName)) (avail[date] ??= {})[name] = combineMarks(d, n);
   const availNotes: Ctx['availNotes'] = {};
   for (const n of rows<{ date: string; text: string; updated_at: string; name: string }>(6)) (availNotes[n.date] ??= {})[n.name] = { text: n.text, at: n.updated_at };
   const dayNotes: Ctx['dayNotes'] = {};
@@ -206,6 +213,7 @@ export async function loadGroup(
     memberByName: new Map(members.map((m) => [m.name, m])),
     sessions,
     avail,
+    availParts,
     availNotes,
     dayNotes,
     votes,

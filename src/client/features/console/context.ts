@@ -13,9 +13,9 @@ export type Tab = 'cal' | 'recruit' | 'scenario' | 'avail' | 'settings' | 'admin
 /**
  * 卓の登録の窓・変更の窓を開く頼み。idがあれば、その卓の変更の窓。contはその卓の設定を引き継いで翌日の卓を登録する、
  * date・status・seriesは新しく登録するときの初めの値（seriesを選ぶと直前の回から引き継ぐ。statusは変える卓にも当てる）。
- * focusは、開いたときに入る欄（無ければ卓の名前）。scenarioId・gmは、シナリオのタブの「この日で卓を立てる」が入れる初めの値
+ * focusは、開いたときに入る欄（無ければ卓の名前）。scenarioId・gm・startは、シナリオのタブの「この日で卓を立てる」が入れる初めの値（startは時間帯の開始時刻）
  */
-export type FormReq = { id?: string; cont?: string; date?: string; status?: string; series?: string; focus?: 'date'; scenarioId?: string; gm?: string };
+export type FormReq = { id?: string; cont?: string; date?: string; status?: string; series?: string; focus?: 'date'; scenarioId?: string; gm?: string; start?: string };
 
 /** 画面の状態（サーバーには送らない） */
 export type ConsoleUi = {

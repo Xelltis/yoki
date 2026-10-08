@@ -1,5 +1,6 @@
 // 画面とサーバーの約束（POST /api/g/:groupId/:fn）。画面（src/client）とサーバー（src/worker）の両方から読む。
 // ブラウザの型もWorkersの型も使わない（どちらからも読めるように）
+import type { AvailParts, BookedParts } from './parts';
 
 /**
  * 卓の状態。募集 → 調整中 → 開催 → 終了 と進み、中止は別。
@@ -168,8 +169,10 @@ export type ConsoleData = {
   members: ConsoleMember[];
   statuses: Status[];
   sessions: ConsoleSession[];
-  /** メンバーの予定{ 'YYYY-MM-DD': { 名前: '△' | '×' } } */
+  /** メンバーの予定{ 'YYYY-MM-DD': { 名前: '△' | '×' } }。昼と夜に分けて入れた日は、まとめた印（src/shared/parts.tsのcombineMarks） */
   avail: Record<string, Record<string, string>>;
+  /** 昼と夜に分けて入れた予定{ 'YYYY-MM-DD': { 名前: [昼, 夜] } }（分けて入れた日だけ） */
+  availParts: AvailParts;
   /** 日付のメモ{ 始まりの日: { text, by, at, to } }。toは期間の終わり（1日だけのメモは空） */
   notes: Record<string, { text: string; by: string; at: string; to: string }>;
   /** 予定のメモ{ 'YYYY-MM-DD': { 名前: { text, at } } } */
@@ -177,6 +180,8 @@ export type ConsoleData = {
   log: { at: string; kind: string; target: string; result: string }[];
   /** 卓に入っている日{ 'YYYY-MM-DD': { 名前: '参' | 'GM' } } */
   booked: Record<string, Record<string, string>>;
+  /** 卓に入っている時間帯{ 'YYYY-MM-DD': { 名前: '昼' | '夜' | '' } }（'' は終日） */
+  bookedParts: BookedParts;
   /** 予定表に出す日（今日から） */
   availDays: string[];
   /** 知らせのチャンネル（DiscordのチャンネルのID）が決まっているか。基本と、種類ごと */
@@ -203,6 +208,8 @@ export type ConsoleData = {
     soonMinutes: number;
     notifyOnSave: boolean;
     autoFinish: boolean;
+    /** 予定の印を昼と夜に分ける */
+    dayParts: boolean;
     calMonths: number;
     availDays: number;
     setter: string;

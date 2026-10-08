@@ -12,7 +12,7 @@ import { discordSend, failToast } from '../api/discord';
 import { useConsole } from '../context';
 import { googleAddUrl } from '../model/calendar';
 import { addDaysYmd, daysBetween, fmtJa, parseYmd, timeRange } from '../model/dates';
-import { hasPoll, isActive, isAdjusting, isDated, me, notesOn, peopleOf, pollCount, scenarioOf, seriesNames, sortSessions, targetPeople, windowByDay } from '../model/model';
+import { bookedOn, dayParts, hasPoll, isActive, isAdjusting, isDated, markOn, me, notesOn, peopleOf, pollCount, scenarioOf, seriesNames, sortSessions, targetPeople, windowByDay } from '../model/model';
 import { hookFor, kindOf, notifyState } from '../model/notify';
 import { withSession } from '../model/optimistic';
 import { useGoRecruit } from '../shell/nav';
@@ -47,7 +47,7 @@ export function DayDetail({ d, target }: { d: ConsoleData; target: string }) {
   }
   const list = sortSessions(d.sessions.filter((s) => s.date === selDay)).concat(windowByDay(d)[selDay] || []);
   const n = daysBetween(d.today, selDay);
-  const marks = d.avail[selDay] || {}, bk = d.booked[selDay] || {};
+  const bk = d.booked[selDay] || {}, parts = dayParts(d);
   const people = targetPeople(d, target);
   const sn = seriesNames(d);
   const dayNote = (d.notes || {})[selDay];
@@ -172,8 +172,11 @@ export function DayDetail({ d, target }: { d: ConsoleData; target: string }) {
             <div className="hint mt-10">{'メンバーの予定（' + target + '）'}</div>
             <div className="mt-6 flex flex-wrap gap-4 tabular-nums">
               {people.map((p) => {
-                const v = bk[p] || marks[p] || '可';
-                const cls = v === '可' ? 'm-ok' : v === '△' ? 'm-soft' : v === '×' ? 'm-ng' : v === '参' || v === 'GM' ? 'm-bk' : '';
+                // 昼と夜に分けるグループでは「ソラ 昼× 夜可」のように時間帯ごとに出す。色は、時間帯で違えば △ の色
+                const vs = parts.map((pt) => (bookedOn(d, selDay, p, pt) ? bk[p] || '参' : markOn(d, selDay, p, pt) || '可'));
+                const v = parts.length > 1 ? parts.map((pt, i) => pt + vs[i]).join(' ') : vs[0]!;
+                const one = vs.every((x) => x === vs[0]) ? vs[0]! : '△';
+                const cls = one === '可' ? 'm-ok' : one === '△' ? 'm-soft' : one === '×' ? 'm-ng' : one === '参' || one === 'GM' ? 'm-bk' : '';
                 const chip = 'relative rounded-full border border-transparent px-10 py-1 text-12 ' + (MARK_BG[cls] || 'bg-head');
                 const mm = ((d.availNotes || {})[selDay] || {})[p];
                 if (!mm) return <span className={chip} key={p}>{p + ' ' + v}</span>;

@@ -1,6 +1,7 @@
 // 日程調整: 候補日を選ぶ窓。各日の右にGM・参加者の予定を出す。送ったら、Discordでみんなに聞く
 import { useState } from 'react';
 import type { ConsoleData, ConsoleSession, RpcResult } from '../../../../shared/api';
+import { type Part, partOf } from '../../../../shared/parts';
 import { Icon } from '../../../ui/Icon';
 import { Modal } from '../../../ui/Modal';
 import { formActions, wideBar, wideBarTitle } from '../../../ui/modalParts';
@@ -9,7 +10,7 @@ import { toast } from '../../../ui/toast';
 import { discordSend, failToast } from '../api/discord';
 import { useConsole, useData } from '../context';
 import { addDaysYmd, fmtJa, holidayName, parseYmd } from '../model/dates';
-import { byId, hasPoll, me, peopleOf } from '../model/model';
+import { bookedOn, byId, hasPoll, markOn, me, peopleOf } from '../model/model';
 import { hookFor } from '../model/notify';
 
 /** 選べる日。候補の期間があればその中、無ければ予定表の範囲。足した日と選んでいる日も入れる */
@@ -25,16 +26,14 @@ function pollRange(d: ConsoleData, s: ConsoleSession, sel: string[], extra: stri
 const avChip = 'rounded-full px-8 ';
 const AV_BG: Record<string, string> = { soft: 'bg-soft', ng: 'bg-warn', bk: 'bg-session' };
 
-/** その日のGM・参加者の予定。空欄は参加できる扱い */
-function dayAvail(d: ConsoleData, s: ConsoleSession, k: string): { free: boolean; items: { c: string; text: string }[] | null } {
+/** その日のGM・参加者の予定（partは時間帯。昼と夜に分けないなら ''）。空欄は参加できる扱い */
+function dayAvail(d: ConsoleData, s: ConsoleSession, k: string, part: Part | ''): { free: boolean; items: { c: string; text: string }[] | null } {
   if (d.availDays.indexOf(k) < 0) return { free: false, items: null };
-  const marks = d.avail[k] || {}, bk = d.booked[k] || {}, items: { c: string; text: string }[] = [];
+  const items: { c: string; text: string }[] = [];
   peopleOf(s).forEach((n) => {
-    let v = bk[n] || marks[n] || '';
-    if (v === '○') v = '';
-    if (!v) return;
-    const c = v === '△' ? 'soft' : v === '×' ? 'ng' : 'bk';
-    items.push({ c, text: (c === 'bk' ? '卓あり' : v) + ' ' + n });
+    if (bookedOn(d, k, n, part)) { items.push({ c: 'bk', text: '卓あり ' + n }); return; }
+    const v = markOn(d, k, n, part);
+    if (v) items.push({ c: v === '△' ? 'soft' : 'ng', text: v + ' ' + n });
   });
   return { free: !items.length, items };
 }
@@ -59,7 +58,9 @@ export function PollModal() {
   const close = () => { setOpen(false); ui.set((x) => ({ ...x, poll: null })); };
   const s = byId(d, st.id);
   const canPoll = s ? hookFor(d, s.series) : false;
-  const days = s ? pollRange(d, s, st.sel, st.extra).map((k) => ({ k, a: dayAvail(d, s, k), on: st.sel.indexOf(k) >= 0 })).filter((x) => !st.okOnly || x.a.free || x.on) : [];
+  // 昼と夜に分けるグループでは、開始時刻の時間帯の予定を見る
+  const part = d.settings.dayParts ? partOf(st.start) : '';
+  const days = s ? pollRange(d, s, st.sel, st.extra).map((k) => ({ k, a: dayAvail(d, s, k, part), on: st.sel.indexOf(k) >= 0 })).filter((x) => !st.okOnly || x.a.free || x.on) : [];
   const toggle = (k: string, on: boolean) => setSt((x) => ({ ...x, sel: on ? x.sel.concat(k) : x.sel.filter((y) => y !== k) }));
   const submit = () => {
     if (!s) return;
@@ -88,7 +89,7 @@ export function PollModal() {
           <div className="narrow"><label htmlFor="pollEnd">終了</label><input type="time" id="pollEnd" step="300" value={st.end} onChange={(ev) => setSt((x) => ({ ...x, end: ev.target.value }))} /></div>
         </div>
         <div className="mt-14 mb-8 flex flex-wrap items-center justify-between gap-8">
-          <span className="font-semibold">候補日 <small className="hint" id="pollCount">{st.sel.length ? st.sel.length + '日を選んでいます' : ''}</small></span>
+          <span className="font-semibold">候補日 <small className="hint" id="pollCount">{(st.sel.length ? st.sel.length + '日を選んでいます' : '') + (d.settings.dayParts ? (st.sel.length ? '。' : '') + (part ? part + 'の予定で見ています' : '開始時刻を入れると、昼か夜の予定で見ます') : '')}</small></span>
           <label className="chk"><input type="checkbox" id="pollOkOnly" checked={st.okOnly} onChange={(ev) => setSt((x) => ({ ...x, okOnly: ev.target.checked }))} /> 全員空きの日だけ</label>
         </div>
         <div id="pollDays" className="max-h-[calc(46dvh/var(--zoom,1))] overflow-auto rounded-md border border-line">

@@ -7,7 +7,8 @@
 import { SYSTEM_ACTOR } from '../auth/guard';
 import { calendarItem, calendarSessions } from '../domain/calendar';
 import { loadGroup } from '../domain/load';
-import { bookedMap } from '../domain/model';
+import { bookedPartsMap } from '../domain/model';
+import { bookedAt, type Part, PARTS } from '../../shared/parts';
 import type { Ctx, Session } from '../domain/types';
 import { jstMs } from '../lib/ics';
 import { sha256Hex } from '../lib/ids';
@@ -155,7 +156,13 @@ async function writeEvents(db: D1Database, deps: GoogleDeps, at: string, userId:
   return true;
 }
 
-/** 予定から都合の印を入れる。範囲は、グループごとの予定表の日数（今日から） */
+/** 昼と夜に分けるグループで、昼の印を決める時間帯（分）。夜の印は、本人が決めた時間帯で決める */
+const DAY_WINDOW: [number, number] = [10 * 60, 17 * 60];
+
+/**
+ * 予定から都合の印を入れる。範囲は、グループごとの予定表の日数（今日から）。
+ * 昼と夜に分けるグループでは、昼（10:00〜17:00）と夜（本人が決めた時間帯）の印を別々に入れる
+ */
 async function importBusy(db: D1Database, deps: GoogleDeps, at: string, link: LinkRow, groups: Joined[], now: Date, budget: Budget): Promise<void> {
   const today = jst(now).ymd;
   const days = Math.max(0, ...groups.map((g) => g.ctx.group.avail_days));
@@ -166,32 +173,39 @@ async function importBusy(db: D1Database, deps: GoogleDeps, at: string, link: Li
   const to = windowMinutes(link.busy_to) ?? 23 * 60;
   const stmts: D1PreparedStatement[] = [];
   for (const g of groups) {
-    const booked = bookedMap(g.ctx.sessions);
+    const booked = bookedPartsMap(g.ctx.sessions);
+    const parts: (Part | '')[] = g.ctx.group.day_parts ? PARTS : [''];
     const end = addDays(today, g.ctx.group.avail_days);
-    const marks: { d: string; m: string }[] = [];
+    const marks: { d: string; p: Part | ''; m: string }[] = [];
     for (let d = today; d < end; d = addDays(d, 1)) {
-      if (booked[d]?.[g.name]) continue;
-      const m = markOf(busy, jstMs(d, from), jstMs(d, to));
-      if (m) marks.push({ d, m });
+      for (const p of parts) {
+        if (bookedAt(booked, d, g.name, p)) continue;
+        const [a, b] = p === '昼' ? DAY_WINDOW : [from, to];
+        const m = markOf(busy, jstMs(d, a), jstMs(d, b));
+        if (m) marks.push({ d, p, m });
+      }
     }
     const json = JSON.stringify(marks);
     stmts.push(
-      // 本人が入れた印（sourceが空）は上書きしない。本人が消した日には入れない
-      db
-        .prepare(
-          `INSERT INTO availability (member_id, date, mark, source)
-           SELECT ?1, json_extract(value, '$.d'), json_extract(value, '$.m'), 'google' FROM json_each(?2)
-            WHERE NOT EXISTS (SELECT 1 FROM google_dismissed x WHERE x.member_id = ?1 AND x.date = json_extract(value, '$.d'))
-           ON CONFLICT (member_id, date) DO UPDATE SET mark = excluded.mark WHERE availability.source = 'google'`,
-        )
-        .bind(g.memberId, json),
-      // 予定が無くなった日の、Googleから入れた印を消す
+      // 予定が無くなった日（時間帯）の、Googleから入れた印を消す
       db
         .prepare(
           `DELETE FROM availability WHERE member_id = ?1 AND source = 'google' AND date >= ?3 AND date < ?4
-             AND date NOT IN (SELECT json_extract(value, '$.d') FROM json_each(?2))`,
+             AND date || '|' || part NOT IN (SELECT json_extract(value, '$.d') || '|' || json_extract(value, '$.p') FROM json_each(?2))`,
         )
         .bind(g.memberId, json, today, end),
+      // 本人が入れた印（sourceが空。その日の終日の印か、同じ時間帯の印）は上書きしない。本人が消した日には入れない。
+      // 終日の印は、本人が時間帯の印を入れた日にも入れない（1つの日には、終日の印か時間帯の印のどちらかだけ）
+      db
+        .prepare(
+          `INSERT INTO availability (member_id, date, part, mark, source)
+           SELECT ?1, json_extract(value, '$.d'), json_extract(value, '$.p'), json_extract(value, '$.m'), 'google' FROM json_each(?2)
+            WHERE NOT EXISTS (SELECT 1 FROM google_dismissed x WHERE x.member_id = ?1 AND x.date = json_extract(value, '$.d'))
+              AND NOT EXISTS (SELECT 1 FROM availability y WHERE y.member_id = ?1 AND y.date = json_extract(value, '$.d') AND y.source = ''
+                                AND (y.part = '' OR y.part = json_extract(value, '$.p') OR json_extract(value, '$.p') = ''))
+           ON CONFLICT (member_id, date, part) DO UPDATE SET mark = excluded.mark WHERE availability.source = 'google'`,
+        )
+        .bind(g.memberId, json),
     );
   }
   await db.batch(stmts);

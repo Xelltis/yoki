@@ -57,7 +57,10 @@ export function MonthGrid({ d, view, target, selDay, onPick, onShift }: Props) {
     const live = list.filter(isActive).length;
     const hol = holidayName(key);
     // マスの色: 全員空き・△あり・卓あり・終わった卓・土日と祝日の順
-    const bg = av[key] === 'ok' ? 'bg-ok' : av[key] === 'soft' ? 'bg-soft' : live ? 'bg-session' : list.length ? 'bg-past' : c === 0 || c === 6 || hol ? 'bg-weekend' : 'bg-card';
+    const st = av[key] ? av[key].st : '';
+    const bg = st === 'ok' ? 'bg-ok' : st === 'soft' ? 'bg-soft' : live ? 'bg-session' : list.length ? 'bg-past' : c === 0 || c === 6 || hol ? 'bg-weekend' : 'bg-card';
+    // 昼と夜に分けるグループで、片方だけ全員空きなら「昼◎」のように時間帯を添える
+    const okWhen = st === 'ok' && av[key]!.parts.length === 1 ? av[key]!.parts[0]! : '';
     const wins = wbd[key] || [];
     let cls = dayBase + 'cursor-pointer focus-visible:z-(--z-cell) focus-visible:outline-offset-[-2px] ' + bg;
     // 都合を見る卓の候補の期間は枠、選んでいる日は太い枠
@@ -66,7 +69,7 @@ export function MonthGrid({ d, view, target, selDay, onPick, onShift }: Props) {
     // その日にかかる日付のメモ（前の日から続く期間のメモも）
     const notes = notesOn(d, key);
     const aria = (m + 1) + '月' + day + '日（' + WD[c] + '）' + (hol ? ' ' + hol : '') + (key === d.today ? '、今日' : '') + (list.length ? '、卓' + list.length + '件' : '') +
-      (wins.length ? '、調整中' + wins.length + '件' : '') + (av[key] === 'ok' ? '、全員空き' : av[key] === 'soft' ? '、△あり' : '') + (notes.length ? '、メモあり' : '');
+      (wins.length ? '、調整中' + wins.length + '件' : '') + (st === 'ok' ? '、' + (okWhen ? okWhen + 'は' : '') + '全員空き' : st === 'soft' ? '、△あり' : '') + (notes.length ? '、メモあり' : '');
     const icos = list.filter((s) => isAdjusting(s) && wins.indexOf(s) < 0).concat(wins);
     // 調整中はアイコンだけ（下で並べる）。ほかは札にする
     const chips = list.filter((s) => !isAdjusting(s));
@@ -77,7 +80,7 @@ export function MonthGrid({ d, view, target, selDay, onPick, onShift }: Props) {
         <span className={'inline-flex h-24 min-w-24 items-center justify-center rounded-[12px] px-5 text-13 font-semibold max-sm:h-22 max-sm:min-w-22 max-sm:px-3 max-sm:text-12 '
           + (key === d.today ? 'bg-accent-strong text-accent-ink' : (c === 0 || hol ? 'text-sun' : c === 6 ? 'text-sat' : '') + (key < d.today ? ' opacity-50' : ''))} title={hol}>{day}</span>
         {hol && <span className="ml-2 text-10 text-sun max-sm:hidden">{hol}</span>}
-        {av[key] === 'ok' ? <span className={avMark}>◎</span> : av[key] === 'soft' ? <span className={avMark}>△</span> : null}
+        {st === 'ok' ? <span className={avMark}>{okWhen + '◎'}</span> : st === 'soft' ? <span className={avMark}>△</span> : null}
         {chips.slice(0, chips.length > MAX_CHIPS ? MAX_CHIPS - 1 : MAX_CHIPS).map((s) => {
           const today = s.status === '開催' && s.date === d.today;
           const k = s.status === '募集' ? 'adj' : today ? 'held' : s.status === '終了' ? 'done' : s.status === '中止' ? 'cancel' : '';

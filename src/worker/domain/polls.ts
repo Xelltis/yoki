@@ -9,7 +9,8 @@ import { reloadLog } from './load';
 import { addDays, fmtDateJa, normTime, parseYmd } from '../lib/jst';
 import { POLL_MARKS, POLL_MAX_DATES, STATUS } from './constants';
 import { type Form, list, requireSelf, str } from './form';
-import { bookedMap, findAdjusting, findSession, peopleOf, pollComplete } from './model';
+import { bookedAt, type BookedParts, markAt, type Part, partOf } from '../../shared/parts';
+import { bookedPartsMap, findAdjusting, findSession, peopleOf, pollComplete } from './model';
 import type { GoogleDeps } from '../google/config';
 import type { Ctx, Session } from './types';
 
@@ -41,10 +42,13 @@ function voteStmts(ctx: Ctx, s: Session, days: string[], vote: string): D1Prepar
   return ctx.db.prepare('DELETE FROM poll_votes WHERE session_id = ?1 AND date IN (SELECT value FROM json_each(?2)) AND member_id = ?3').bind(s.rowId, JSON.stringify(days), ctx.actor.memberId);
 }
 
-/** 予定表の印から決める回答。ほかの卓のある日と × は ×、△ は △、空欄は ◯ */
-function voteFromAvail(ctx: Pick<Ctx, 'avail'>, booked: Record<string, Record<string, string>>, name: string, day: string): string {
-  if (booked[day]?.[name]) return '×';
-  const m = ctx.avail[day]?.[name];
+/**
+ * 予定表の印から決める回答。ほかの卓のある日と × は ×、△ は △、空欄は ◯。
+ * 昼と夜に分けるグループでは、卓の開始時刻の時間帯（partOf）の印と卓で決める
+ */
+function voteFromAvail(ctx: Pick<Ctx, 'avail' | 'availParts'>, booked: BookedParts, name: string, day: string, part: Part | ''): string {
+  if (bookedAt(booked, day, name, part)) return '×';
+  const m = markAt(ctx.avail, ctx.availParts, day, name, part);
   return m === '×' || m === '△' ? m : '◯';
 }
 
@@ -173,8 +177,8 @@ export async function setPollVoteFromAvail(ctx: Ctx, form: Form, io: Io) {
   const s = findAdjusting(ctx, form.id);
   if (!peopleOf(s).includes(name)) throw badRequest(name + 'は「' + s.name + '」のGMでも参加者でもないので、回答できません。');
   const votes = ctx.votes.get(s.rowId) ?? {};
-  const last = addDays(ctx.today, ctx.group.avail_days), booked = bookedMap(ctx.sessions);
-  const rows = s.candidates.filter((k) => k >= ctx.today && k < last && !votes[k]?.[name]).map((date) => ({ date, vote: voteFromAvail(ctx, booked, name, date) }));
+  const last = addDays(ctx.today, ctx.group.avail_days), booked = bookedPartsMap(ctx.sessions), part = ctx.group.day_parts ? partOf(s.start) : '';
+  const rows = s.candidates.filter((k) => k >= ctx.today && k < last && !votes[k]?.[name]).map((date) => ({ date, vote: voteFromAvail(ctx, booked, name, date, part) }));
   if (!rows.length) return { ok: true, id: s.id, count: 0, message: name + ': 予定表から入れられる候補日はありません（まだ答えていない、予定表の範囲の日がありません）。' };
   const wasComplete = pollComplete(ctx, s);
   await voteRowsStmt(ctx, s, rows).run();

@@ -1,7 +1,8 @@
 // メンバーの予定のタブで見せる人と日（絞り込みを当てたもの）。画面のデータdと絞り込みを受け取って計算するだけ
 import type { ConsoleData, ConsoleSession } from '../../../../shared/api';
 import { holidayName, parseYmd } from '../model/dates';
-import { active, candidatesOf, memberOrder, targetPeople, windowByDay } from '../model/model';
+import type { Part } from '../../../../shared/parts';
+import { active, bookedOn, candidatesOf, dayParts, markOn, memberOrder, targetPeople, windowByDay } from '../model/model';
 
 export type Mark = '' | '△' | '×';
 /** 印の言い方（読み上げと日ごとのリスト）と、押したときの次の印 */
@@ -40,12 +41,20 @@ export function visibleNames(d: ConsoleData, f: AvailFilter, mine: string, sortB
   return all.filter((n) => members.indexOf(n) >= 0);
 }
 
-/** 表とリストの1日分 */
+/**
+ * 表とリストの1日分。partsは見る時間帯（昼と夜に分けるグループは昼と夜、ほかは ''）、freePartsは全員が空いている時間帯、
+ * freeはどれかの時間帯で全員が空いているか
+ */
 export type Row = {
   key: string; date: Date; dow: number; hol: string; wk: boolean;
   marks: Record<string, string>; bk: Record<string, string>; list: ConsoleSession[]; wins: ConsoleSession[];
-  free: boolean; notes: Record<string, { text: string; at: string }>;
+  parts: (Part | '')[]; freeParts: (Part | '')[]; free: boolean; notes: Record<string, { text: string; at: string }>;
 };
+
+/** その人のその時間帯の印（△ か ×）。分けないグループや、分けていない日は1日の印 */
+export function markAtRow(d: ConsoleData, r: Row, n: string, part: Part | ''): Mark { return markIn({ [n]: markOn(d, r.key, n, part) }, n); }
+/** 「全員空き」「昼は全員空き」 */
+export function freeText(r: Row): string { return r.freeParts.length === 1 && r.freeParts[0] ? r.freeParts[0] + 'は全員空き' : '全員空き'; }
 
 /** 出す日（予定表の範囲から、絞り込みに合う日） */
 export function availRows(d: ConsoleData, f: AvailFilter, names: string[]): Row[] {
@@ -60,11 +69,14 @@ export function availRows(d: ConsoleData, f: AvailFilter, names: string[]): Row[
     if (f.wds.indexOf(dow) < 0) return;
     if (f.cond === 'has' && !list.length) return;
     if (f.cond === 'free' && list.length) return;
-    if (f.cond === 'soft' && !(names.length && names.every((n) => !bk[n] && markIn(marks, n) !== '×'))) return;
-    const free = names.length > 0 && names.every((n) => !bk[n] && !markIn(marks, n));
+    // 昼と夜に分けるグループでは、時間帯ごとに見て、どれかの時間帯で合えば出す
+    const parts = dayParts(d);
+    if (f.cond === 'soft' && !(names.length && parts.some((p) => names.every((n) => !bookedOn(d, key, n, p) && markOn(d, key, n, p) !== '×')))) return;
+    const freeParts = names.length ? parts.filter((p) => names.every((n) => !bookedOn(d, key, n, p) && !markIn({ [n]: markOn(d, key, n, p) }, n))) : [];
+    const free = freeParts.length > 0;
     if (f.hol && !(wk || hol)) return;
     if (f.free && !free) return;
-    rows.push({ key, date, dow, hol, wk, marks, bk, list, wins: wbd[key] || [], free, notes: (d.availNotes || {})[key] || {} });
+    rows.push({ key, date, dow, hol, wk, marks, bk, list, wins: wbd[key] || [], parts, freeParts, free, notes: (d.availNotes || {})[key] || {} });
   });
   return rows;
 }

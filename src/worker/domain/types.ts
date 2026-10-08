@@ -1,6 +1,7 @@
 // 読み込んだグループのデータ（GAS版のctxに当たる）
 import type { Actor } from '../auth/guard';
 import type { ScenarioMark } from '../../shared/api';
+import type { AvailParts } from '../../shared/parts';
 import type { Status } from './constants';
 
 export type GroupRow = {
@@ -28,6 +29,8 @@ export type GroupRow = {
   discord_events: number;
   events_pending: number;
   events_error: string;
+  /** 予定の印を昼と夜に分ける（1） */
+  day_parts: number;
 };
 
 export type Member = { id: number; name: string; discordId: string; note: string; isAdmin: boolean; userId: string | null };
@@ -126,8 +129,10 @@ export type Ctx = {
   members: Member[];
   memberByName: Map<string, Member>;
   sessions: Session[];
-  /** { 'YYYY-MM-DD': { 名前: '△' | '×' } }（今日からavail_days日分） */
+  /** { 'YYYY-MM-DD': { 名前: '△' | '×' } }（今日からavail_days日分）。昼と夜に分けて入れた日は、まとめた印（combineMarks） */
   avail: Record<string, Record<string, string>>;
+  /** 昼と夜に分けて入れた印（分けて入れた日だけ） */
+  availParts: AvailParts;
   availNotes: Record<string, Record<string, { text: string; at: string }>>;
   /** 日付メモ{ 始まりの日: { text, by, at, to } }。toは期間の終わり（1日だけなら空） */
   dayNotes: Record<string, { text: string; by: string; at: string; to: string }>;

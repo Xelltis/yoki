@@ -80,6 +80,11 @@ export function TablePane() {
         <p className="hint">終了になってもカレンダーからは消えず、灰色で残ります。「卓をまとめて変える」で見るには「終了・中止も表示」を付けてください。</p>
       </div>
       <div className="card">
+        <h3>予定の時間帯</h3>
+        <label className={checkRow}><input type="checkbox" id="stDayParts" checked={!!d.settings.dayParts} onChange={(ev) => { void call('stSave', 'stMsg', 'saveConsoleSettings', { dayParts: ev.target.checked }); }} /> メンバーの予定を、昼と夜に分けて入れる</label>
+        <p className="hint">昼の卓と夜の卓があるグループ向けです。予定表の印が昼と夜に分かれ、全員空きも時間帯ごとに出ます。卓は開始時刻で、17時より前なら昼、17時からは夜に入ります（時刻の無い卓は両方）。日程調整の「予定表から入れる」は、卓の開始時刻の時間帯の印を使います。</p>
+      </div>
+      <div className="card">
         <h3>表示</h3>
         <div className="row">
           <div><label className={fieldLabel} htmlFor="stAvailDays">メンバーの予定の日数 <small className={fieldNote}>7〜366</small></label><input type="text" className="w-[8em] max-w-640" id="stAvailDays" inputMode="numeric" value={daysV} onChange={(ev) => setDays(ev.target.value)} /></div>

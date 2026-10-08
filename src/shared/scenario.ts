@@ -1,6 +1,7 @@
 // シナリオの通過と、遊べる日の計算。画面（シナリオのタブ・卓の窓）とサーバー（通過の印を外せるか）の両方で使う。
 // 通過は、本人や管理者が付けた印（ConsoleScenario.marks）と、「終了」の卓から出すもの（そのシナリオの卓のGMと参加者）を合わせたもの
 import type { ScenarioMark } from './api';
+import { type AvailParts, bookedAt, type BookedParts, markAt, type Part, PARTS } from './parts';
 
 /** 計算に使う卓の形。scenarioIdは無ければ空、dateは無ければ空。absentは行けなくなった参加者（遊んでいないので通過にしない） */
 export type ScenarioSession = { id: string; scenarioId: string; status: string; date: string; gm: string; members: string[]; absent?: { name: string }[] };
@@ -48,8 +49,8 @@ export function plannedOf(scenarioId: string, sessions: ScenarioSession[]): Reco
   return out;
 }
 
-/** 遊べる日の1日分。playersはPLにできる人、maybeは △ の人、gmsはGMにできる人。okはその日に卓を立てられるか */
-export type DayPlan = { date: string; players: string[]; maybe: string[]; gms: string[]; ok: boolean };
+/** 遊べる日の1日分。partは時間帯（昼と夜に分けないグループは ''）。playersはPLにできる人、maybeは △ の人、gmsはGMにできる人。okはその日に卓を立てられるか */
+export type DayPlan = { date: string; part: Part | ''; players: string[]; maybe: string[]; gms: string[]; ok: boolean };
 
 /**
  * 遊べる日。
@@ -64,26 +65,30 @@ export function playableDays(input: {
   planned: Record<string, string>;
   /** { 日: { 名前: '△' | '×' } } */
   avail: Record<string, Record<string, string>>;
-  /** { 日: { 名前: '参' | 'GM' } } */
-  booked: Record<string, Record<string, string>>;
+  /** 昼と夜に分けて入れた印 */
+  availParts: AvailParts;
+  /** 卓に入っている時間帯 */
+  booked: BookedParts;
   min: number | null;
+  /** 昼と夜に分けるグループなら、日ごとに昼と夜を別々に数える */
+  dayParts: boolean;
 }): DayPlan[] {
   const gmKnown = Object.values(input.passes).some((p) => p.kind === 'gm');
   const need = input.min ?? 1;
-  return input.days.map((date) => {
-    const marks = input.avail[date] ?? {};
-    const busy = input.booked[date] ?? {};
+  const parts: (Part | '')[] = input.dayParts ? PARTS : [''];
+  return input.days.flatMap((date) => parts.map((part) => {
     const players: string[] = [], maybe: string[] = [], gms: string[] = [];
     for (const name of input.members) {
-      if (marks[name] === '×' || busy[name]) continue;
+      const mark = markAt(input.avail, input.availParts, date, name, part);
+      if (mark === '×' || bookedAt(input.booked, date, name, part)) continue;
       const pass = input.passes[name];
       if (pass) {
         if (pass.kind === 'gm') gms.push(name);
         continue;
       }
       if (input.planned[name]) continue;
-      (marks[name] === '△' ? maybe : players).push(name);
+      (mark === '△' ? maybe : players).push(name);
     }
-    return { date, players, maybe, gms, ok: players.length >= need && (!gmKnown || gms.length > 0) };
-  });
+    return { date, part, players, maybe, gms, ok: players.length >= need && (!gmKnown || gms.length > 0) };
+  }));
 }

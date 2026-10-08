@@ -24,6 +24,7 @@ function initial(d: ConsoleData, req: FormReq): { f: Fields; seriesFrom: string;
     // シナリオのタブの「この日で卓を立てる」から開いたとき
     if (req.scenarioId) f = { ...f, scenarioId: req.scenarioId, name: d.scenarios.find((x) => x.id === req.scenarioId)?.name ?? '' };
     if (req.gm) f = { ...f, gm: req.gm };
+    if (req.start) f = { ...f, start: req.start };
     if (req.series) {
       f = { ...f, series: req.series };
       const r = inheritSeries(d, f, req.series);

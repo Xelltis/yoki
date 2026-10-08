@@ -2,6 +2,7 @@
 // 通過は、本人が付けた印と「終了」の卓から出すものを合わせる（src/shared/scenario.ts）。遊べる日から、その日の卓を立てられる
 import { useState } from 'react';
 import { type ConsoleData, type ConsoleScenario, type RpcResult, SCENARIO_MAX, type ScenarioMark } from '../../../../shared/api';
+import type { Part } from '../../../../shared/parts';
 import { type Pass, passesOf, plannedOf, playableDays } from '../../../../shared/scenario';
 import { askConfirm } from '../../../ui/confirm';
 import { field, fieldLabel, fieldNote } from '../../../ui/fields';
@@ -81,7 +82,7 @@ export function ScenarioTab() {
             })}
           </ul>
           <ScenarioDetail d={d} sc={sc!} mine={mine} onEdit={() => setEdit({ seq: Date.now(), id: sc!.id })} onMark={mark}
-            onStart={(date, gm) => openForm(ui, { status: '開催', date, scenarioId: sc!.id, gm })} />
+            onStart={(date, gm, start) => openForm(ui, { status: '開催', date, scenarioId: sc!.id, gm, start: start || undefined })} />
         </div>
       )}
       <ScenarioModal req={edit} onClose={() => setEdit(null)} onSaved={(id) => setPick(id)} />
@@ -89,14 +90,19 @@ export function ScenarioTab() {
   );
 }
 
+/** 遊べる日から卓を立てるときの、時間帯ごとの開始時刻の初めの値 */
+const PART_START: Record<Part, string> = { 昼: '13:00', 夜: '20:00' };
+
 /** 選んだシナリオの中身・メンバーの通過・遊べる日 */
 function ScenarioDetail({ d, sc, mine, onEdit, onMark, onStart }: {
-  d: ConsoleData; sc: ConsoleScenario; mine: string; onEdit: () => void; onMark: (name: string, kind: ScenarioMark | '') => void; onStart: (date: string, gm: string) => void;
+  d: ConsoleData; sc: ConsoleScenario; mine: string; onEdit: () => void; onMark: (name: string, kind: ScenarioMark | '') => void; onStart: (date: string, gm: string, start: string) => void;
 }) {
   const names = new Set(d.members.map((m) => m.name));
   const passes = passesOf(sc, d.sessions, names);
   const planned = plannedOf(sc.id, d.sessions);
-  const days = playableDays({ days: d.availDays, members: d.members.map((m) => m.name), passes, planned, avail: d.avail, booked: d.booked, min: sc.playersMin });
+  const days = playableDays({
+    days: d.availDays, members: d.members.map((m) => m.name), passes, planned, avail: d.avail, availParts: d.availParts || {}, booked: d.bookedParts || {}, min: sc.playersMin, dayParts: !!d.settings.dayParts,
+  });
   const ok = days.filter((x) => x.ok);
   const gmKnown = Object.values(passes).some((p) => p.kind === 'gm');
   return (
@@ -151,13 +157,13 @@ function ScenarioDetail({ d, sc, mine, onEdit, onMark, onStart }: {
         {!ok.length && <p className="hint mb-0" id="playDaysNone">{'予定表の' + d.availDays.length + '日のうちに、そろう日はありません。'}</p>}
         <ul className="m-0 grid list-none gap-8 p-0">
           {ok.slice(0, DAYS_SHOWN).map((x) => (
-            <li className="rounded-md border border-line px-12 py-8" key={x.date} data-day={x.date}>
+            <li className="rounded-md border border-line px-12 py-8" key={x.date + x.part} data-day={x.date} data-part={x.part || undefined}>
               <div className="flex flex-wrap items-center gap-8">
-                <b className="text-14 tabular-nums">{fmtJa(x.date)}</b>
+                <b className="text-14 tabular-nums">{fmtJa(x.date) + (x.part ? ' ' + x.part : '')}</b>
                 <span className="text-13">{'PL ' + x.players.length + '人'}</span>
                 {x.gms.length > 0 && <span className="text-13">{'GM: ' + x.gms.join('、')}</span>}
                 <button type="button" className="btn small primary ml-auto" data-start-day={x.date}
-                  onClick={() => onStart(x.date, x.gms.indexOf(mine) >= 0 ? mine : (x.gms[0] ?? ''))}><Icon name="add" size="sm" />この日で卓を立てる</button>
+                  onClick={() => onStart(x.date, x.gms.indexOf(mine) >= 0 ? mine : (x.gms[0] ?? ''), x.part ? PART_START[x.part] : '')}><Icon name="add" size="sm" />この日で卓を立てる</button>
               </div>
               <div className="hint mt-4">{'PLにできる人: ' + x.players.join('、') + (x.maybe.length ? '　たぶん（△）: ' + x.maybe.join('、') : '')}</div>
             </li>

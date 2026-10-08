@@ -1,6 +1,7 @@
 // 返事を待たずに見せる形（押した瞬間の仮の反映）。データdを受け取り、変えた新しいdを返す（dは書き換えない）。
 // 仮の卓のIDは '__tmp__'（何日かまとめて登録するときは '__tmp__0'・'__tmp__1'…）。返事のデータで本物に置き換わる
 import type { ConsoleData, ConsoleSession, ScenarioMark } from '../../../../shared/api';
+import { combineMarks, type Part } from '../../../../shared/parts';
 
 export const TMP = '__tmp__';
 export const isTmp = (id: string) => String(id).indexOf(TMP) === 0;
@@ -30,11 +31,21 @@ export function withSession(d: ConsoleData, id: string, change: (s: ConsoleSessi
   return { ...d, sessions: d.sessions.map((s) => (s.id === id ? change(s) : s)) };
 }
 
-/** その日の、その人の予定の印を変える（空なら消す） */
-export function withAvail(d: ConsoleData, day: string, name: string, mark: string): ConsoleData {
-  const marks = { ...d.avail[day] };
-  if (mark) marks[name] = mark; else delete marks[name];
-  return { ...d, avail: { ...d.avail, [day]: marks } };
+/**
+ * その日の、その人の予定の印を変える（空なら消す）。partが '昼'・'夜' なら、その時間帯の印を変える
+ * （サーバーと同じく、1日の印は昼と夜に分けてから変え、まとめた印も直す）。'' なら1日の印にして、時間帯の印を消す
+ */
+export function withAvail(d: ConsoleData, day: string, name: string, mark: string, part: Part | '' = ''): ConsoleData {
+  const marks = { ...d.avail[day] }, byName = { ...(d.availParts || {})[day] };
+  if (!part) {
+    delete byName[name];
+    if (mark) marks[name] = mark; else delete marks[name];
+  } else {
+    const whole = marks[name] || '', cur = byName[name] || [whole, whole];
+    const next: [string, string] = part === '昼' ? [mark, cur[1]] : [cur[0], mark];
+    if (next[0] || next[1]) { byName[name] = next; marks[name] = combineMarks(next[0], next[1]); } else { delete byName[name]; delete marks[name]; }
+  }
+  return { ...d, avail: { ...d.avail, [day]: marks }, availParts: { ...d.availParts, [day]: byName } };
 }
 
 /** その日の、その人の予定のメモを変える（空なら消す） */

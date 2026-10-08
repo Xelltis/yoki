@@ -3,6 +3,7 @@ import { badRequest, notFound } from '../lib/errors';
 import { fmtDateJa, fmtYmdSlash, parseYmd } from '../lib/jst';
 import { uniq } from '../lib/text';
 import { DATED, STATUS } from './constants';
+import { type BookedParts, bookedPartsOf } from '../../shared/parts';
 import type { Ctx, Session } from './types';
 
 /** GMと参加者（GAS版peopleOf_） */
@@ -45,6 +46,11 @@ export function bookedMap(sessions: Session[]): Record<string, Record<string, st
     for (const n of s.members) if (day[n] !== 'GM') day[n] = '参';
   }
   return out;
+}
+
+/** 「開催」の卓に入っている時間帯{ 'YYYY-MM-DD': { 名前: '昼' | '夜' | '' } }（時間帯は開始時刻で決める。'' は終日） */
+export function bookedPartsMap(sessions: Session[]): BookedParts {
+  return bookedPartsOf(sessions.filter((s) => DATED.includes(s.status) && s.date).map((s) => ({ date: s.date!, start: s.start, names: peopleOf(s) })));
 }
 
 /**

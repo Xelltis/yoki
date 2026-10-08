@@ -1,6 +1,7 @@
 // メンバーの予定のタブ。予定表（狭い画面では日ごとのリスト）・絞り込み・まとめて入れる・自分の印と予定のメモ
 import { useEffect, useRef, useState } from 'react';
 import type { ConsoleData, ConsoleSession, RpcResult } from '../../../../shared/api';
+import type { Part } from '../../../../shared/parts';
 import { load, store } from '../../../app/storage';
 import { askConfirm } from '../../../ui/confirm';
 import { Icon } from '../../../ui/Icon';
@@ -11,7 +12,7 @@ import { createStore, useStore } from '../../../ui/store';
 import { toast } from '../../../ui/toast';
 import { useConsole, useData } from '../context';
 import { WD, fmtJa } from '../model/dates';
-import { active, isAdjusting, isRecruit, me, peopleOf, sortSessions, sortedActive } from '../model/model';
+import { active, isAdjusting, isRecruit, markOn, me, peopleOf, sortSessions, sortedActive } from '../model/model';
 import { withAvail, withAvailNote } from '../model/optimistic';
 import { checkPill, notice } from '../styles';
 import { AvailList, AvailTable } from './AvailTable';
@@ -23,8 +24,8 @@ const filterStore = createStore<AvailFilter & { mineFor: string }>({ members: nu
 /** 卓の多い人を左に（この端末に控える。卓をまとめて変える表と同じ） */
 export const sortStore = createStore(load('sortByLoad') !== '0');
 const afKey = (k: string, mine: string) => 'av' + k + ':' + (mine || '-');
-/** まとめて入れるの入力（タブを移っても残す）。markの 'none' は印を変えない。noteModeは メモを '' 変えない・'set' 入れる・'clear' 消す */
-const bulkStore = createStore({ mark: '△', from: '', to: '', wds: ALL_WDS, keep: true, noteMode: '', note: '' });
+/** まとめて入れるの入力（タブを移っても残す）。markの 'none' は印を変えない。partは時間帯（昼と夜に分けるグループだけ）。noteModeは メモを '' 変えない・'set' 入れる・'clear' 消す */
+const bulkStore = createStore({ mark: '△', part: '', from: '', to: '', wds: ALL_WDS, keep: true, noteMode: '', note: '' });
 
 /** 絞り込み・まとめて入れるの枠（名前と欄を2列に並べる。狭い画面では1列） */
 const pgrid = 'grid grid-cols-[max-content_minmax(0,1fr)] items-center gap-x-16 gap-y-10 max-sm:grid-cols-[minmax(0,1fr)] max-sm:gap-4';
@@ -102,13 +103,13 @@ export function AvailTab() {
   }, []);
 
   const toggleFold = (id: 'availFilter' | 'availBulk') => setFold((x) => { const open = !x[id]; store('fold.' + id, open ? '1' : '0'); return { ...x, [id]: open }; });
-  /** 自分の印を変える。押した瞬間に画面へ出し、保存できなかったら戻す */
-  const setMark = (key: string, next: Mark) => {
+  /** 自分の印を変える（partは時間帯。昼と夜に分けないなら ''）。押した瞬間に画面へ出し、保存できなかったら戻す */
+  const setMark = (key: string, next: Mark, part: Part | '') => {
     if (suppress.current || !mine) return;
-    const cur = (d.avail[key] || {})[mine] || '';
-    if (next === markIn(d.avail[key] || {}, mine)) return;
-    sync.write<RpcResult>('setAvailability', { name: mine, ymd: key, mark: next }, { optimistic: (x) => withAvail(x, key, mine, next), rollback: (x) => withAvail(x, key, mine, cur) })
-      .then(() => toast(fmtJa(key) + ' ' + mine + ': ' + (next || '空欄')), (e: Error) => toast('保存できませんでした: ' + e.message));
+    const cur = markOn(d, key, mine, part);
+    if (next === markIn({ [mine]: cur }, mine)) return;
+    sync.write<RpcResult>('setAvailability', { name: mine, ymd: key, mark: next, part }, { optimistic: (x) => withAvail(x, key, mine, next, part), rollback: (x) => withAvail(x, key, mine, cur, part) })
+      .then(() => toast(fmtJa(key) + (part ? 'の' + part : '') + ' ' + mine + ': ' + (next || '空欄')), (e: Error) => toast('保存できませんでした: ' + e.message));
   };
   const openMemo = (key: string) => {
     if (suppress.current || !mine) return;
@@ -127,13 +128,14 @@ export function AvailTab() {
   const runBulk = () => {
     if (!mine) return;
     const skipMark = bulk.mark === 'none', note = bulk.noteMode === 'set' ? bulk.note.trim() : bulk.noteMode === 'clear' ? '' : undefined;
-    const form = { name: mine, from: bulkFrom, to: bulkTo, weekdays: bulk.wds.slice().sort(), mark: skipMark ? '' : bulk.mark, skipMark, note, keep: bulk.keep };
+    const part = d.settings.dayParts ? bulk.part : '';
+    const form = { name: mine, from: bulkFrom, to: bulkTo, weekdays: bulk.wds.slice().sort(), mark: skipMark ? '' : bulk.mark, part, skipMark, note, keep: bulk.keep };
     if (!form.from || !form.to) { setBulkMsg({ text: '期間を入れてください。', running: false }); return; }
     if (!form.weekdays.length) { setBulkMsg({ text: '曜日を選んでください。', running: false }); return; }
     if (skipMark && note === undefined) { setBulkMsg({ text: '入れる印かメモを選んでください。', running: false }); return; }
     if (bulk.noteMode === 'set' && !note) { setBulkMsg({ text: '入れるメモを書いてください。', running: false }); return; }
     const markText = bulk.mark === '△' ? '△ 調整すれば可' : bulk.mark === '×' ? '× 不可' : '空欄に戻す（参加できる）';
-    const what = [skipMark ? '' : '「' + markText + '」', note ? 'メモ「' + note + '」' : ''].filter(Boolean).join('と');
+    const what = [skipMark ? '' : (part ? part + 'に' : '') + '「' + markText + '」', note ? 'メモ「' + note + '」' : ''].filter(Boolean).join('と');
     const message = mine + 'の' + fmtJa(form.from) + '〜' + fmtJa(form.to) + '（' + form.weekdays.map((x) => WD[x]).join('') + '）' + (what ? 'に' + what + 'を入れます。' : 'のメモを消します。')
       + (what && note === '' ? 'メモは消します。' : '') + (form.keep ? '\n入力済みのマスは残します。' : '\n入力済みのマスも上書きします。');
     askConfirm({ title: '自分の列にまとめて入れますか？', message, ok: '入れる' }, () => {
@@ -164,7 +166,7 @@ export function AvailTab() {
   return (
     <section id="tab-avail">
       <PageHead
-        title={<>メンバーの予定 <Tip text="自分の列のマスをタップすると 空 → △ → × → 空 と変わります。空欄は「参加できる」扱いです。マスの右上の鉛筆（マウスを載せると出ます）で、その日のメモ（「21時から」など）を書けます。ほかの人の列は見るだけです。スマホでは日ごとのリストになり、◯ △ × のボタンで選べます。" label="予定表の使い方" /></>}
+        title={<>メンバーの予定 <Tip text={(d.settings.dayParts ? 'このグループは、予定を昼（左）と夜（右）に分けて入れます。' : '') + "自分の列のマスをタップすると 空 → △ → × → 空 と変わります。空欄は「参加できる」扱いです。マスの右上の鉛筆（マウスを載せると出ます）で、その日のメモ（「21時から」など）を書けます。ほかの人の列は見るだけです。スマホでは日ごとのリストになり、◯ △ × のボタンで選べます。"} label="予定表の使い方" /></>}
         lead="空欄は「参加できる」扱いです。都合の悪い日だけ、自分の印（△ か ×）を付けます。" />
       <UnknownWarn d={d} />
       <div id="availHot" className="mb-12 flex flex-wrap items-center gap-x-8 gap-y-6 rounded-lg border border-[color-mix(in_srgb,var(--soon-text)_35%,var(--line))] bg-soon px-10 py-8 text-13" hidden={!hotRec.length && !hotAdj.length}>
@@ -240,6 +242,16 @@ export function AvailTab() {
               <option value="△">△ 調整すれば可</option><option value="×">× 不可</option><option value="">空欄に戻す（参加できる）</option><option value="none">印は変えない</option>
             </select>
           </div>
+          {d.settings.dayParts && (
+            <>
+              <label className={plabel} htmlFor="abPart">時間帯</label>
+              <div className={pctl}>
+                <select id="abPart" value={bulk.part} onChange={(ev) => bulkStore.set((x) => ({ ...x, part: ev.target.value }))}>
+                  <option value="">昼と夜の両方（1日）</option><option value="昼">昼だけ</option><option value="夜">夜だけ</option>
+                </select>
+              </div>
+            </>
+          )}
           <label className={plabel} htmlFor="abNoteMode">メモ</label>
           <div className={pctl}>
             <select id="abNoteMode" value={bulk.noteMode} onChange={(ev) => bulkStore.set((x) => ({ ...x, noteMode: ev.target.value }))}>

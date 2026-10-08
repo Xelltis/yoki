@@ -430,6 +430,30 @@ await withDevServer(async (base) => {
       await page.check('#abKeep');
     });
 
+    await step('昼と夜に分けるグループでは、予定表の自分のマスが昼と夜に分かれ、時間帯ごとに印を入れられる', async () => {
+      await admin('table');
+      await page.click('#stDayParts');
+      await until((d) => d.settings.dayParts === true);
+      await main();
+      await tab('avail');
+      const [day, whole] = await page.evaluate(() => {
+        const d = window.yoki.D;
+        const k = d.availDays.find((x) => !(d.booked[x] || {})['ひより'] && d.availDays.indexOf(x) > 1);
+        return [k, (d.avail[k] || {})['ひより'] || ''];
+      });
+      // 1日の印は、昼を押すと昼と夜に分かれ、昼だけが次の印になる
+      const next = { '': '△', '△': '×', '×': '' };
+      await page.click(`#availTable button.mk[data-day="${day}"][data-part="昼"]`);
+      await until((d, a) => JSON.stringify((d.availParts[a[0]] || {})['ひより'] || ['', '']) === JSON.stringify([a[1], a[2]]), [day, next[whole], whole]);
+      await page.click(`#availTable button.mk[data-day="${day}"][data-part="夜"]`);
+      await until((d, a) => ((d.availParts[a[0]] || {})['ひより'] || ['', ''])[1] === a[1], [day, next[whole]]);
+      // 分けるのをやめると、まとめた印（△）の1マスに戻る
+      await admin('table');
+      await page.click('#stDayParts');
+      await until((d) => d.settings.dayParts === false);
+      await main();
+    });
+
     await step('管理画面: メンバーを足し、名前を変え、外せる', async () => {
       await admin('members');
       await page.click('#mclear');

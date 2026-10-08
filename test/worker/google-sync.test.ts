@@ -248,6 +248,25 @@ describe('予定から都合の印', () => {
     expect(await marks()).toEqual({ [T(1)]: '△:google', [T(5)]: '△' });
   });
 
+  test('昼と夜に分けるグループでは、昼（10:00〜17:00）と夜（本人の時間帯）の印を別々に入れる。卓は時間帯だけをふさぐ', async () => {
+    await env.DB.prepare('UPDATE groups SET day_parts = 1').run();
+    await ok(G.admin, G.id, 'saveSession', { name: '昼の卓', gm: 'ひより', members: ['ソラ'], date: T(3), start: '13:00', status: '開催' });
+    await link(SORA, { write: 0, read: 1 });
+    const id = (await memberId())!;
+    // 本人が夜の印を入れた日は、昼だけ入れる。本人が終日の印を入れた日には入れない。前に入れた終日のGoogleの印は消える
+    await env.DB.batch([
+      env.DB.prepare("INSERT INTO availability (member_id, date, part, mark) VALUES (?, ?, '夜', '△')").bind(id, T(4)),
+      env.DB.prepare("INSERT INTO availability (member_id, date, part, mark) VALUES (?, ?, '', '△')").bind(id, T(5)),
+      env.DB.prepare("INSERT INTO availability (member_id, date, part, mark, source) VALUES (?, ?, '', '×', 'google')").bind(id, T(6)),
+    ]);
+    await writeFake(env.DB, { seq: 0, events: {}, revoked: [], busy: [busyOn(T(1), '10', '17'), busyOn(T(2), '20', '21'), busyOn(T(3), '10', '24'), busyOn(T(4), '10', '24'), busyOn(T(5), '10', '24')] });
+    await syncUser(env.DB, deps, SORA, now, { busy: true });
+    const rows = (await env.DB.prepare(`SELECT date, part, mark, source FROM availability WHERE member_id = ? ORDER BY date, CASE part WHEN '' THEN 0 WHEN '昼' THEN 1 ELSE 2 END`).bind(id).all<Record<string, string>>()).results;
+    expect(rows.map((r) => [r.date, r.part, r.mark + (r.source ? ':' + r.source : '')])).toEqual([
+      [T(1), '昼', '×:google'], [T(2), '夜', '△:google'], [T(3), '夜', '×:google'], [T(4), '昼', '×:google'], [T(4), '夜', '△'], [T(5), '', '△'],
+    ]);
+  });
+
   test('時間帯は人ごと。dueなら1時間おき', async () => {
     await link(SORA, { write: 0, read: 1, from: '10:00', to: '24:00', busyAt: new Date(now.getTime() - BUSY_EVERY_MS / 2).toISOString() });
     await writeFake(env.DB, { seq: 0, events: {}, revoked: [], busy: [busyOn(T(1), '10', '24')] });

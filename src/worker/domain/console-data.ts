@@ -4,7 +4,7 @@ import type { ConsoleData, ConsolePrep, ConsoleScenario } from '../../shared/api
 import { botInviteUrl } from '../discord/channel';
 import { addDays, fmtDateTime, stampText } from '../lib/jst';
 import { STATUS_LIST } from './constants';
-import { bookedMap, windowInfo } from './model';
+import { bookedMap, bookedPartsMap, windowInfo } from './model';
 import type { Ctx, Session } from './types';
 
 export function consoleData(ctx: Ctx): ConsoleData {
@@ -55,10 +55,12 @@ export function consoleData(ctx: Ctx): ConsoleData {
       };
     }),
     avail: ctx.avail,
+    availParts: ctx.availParts,
     notes,
     availNotes,
     log: ctx.log.map((l) => ({ at: stampText(l.at), kind: l.kind, target: l.target, result: l.result })),
     booked: bookedMap(ctx.sessions),
+    bookedParts: bookedPartsMap(ctx.sessions),
     availDays,
     channelSet: !!g.channel_id,
     remindChannelSet: !!g.remind_channel_id,
@@ -78,6 +80,7 @@ export function consoleData(ctx: Ctx): ConsoleData {
       soonMinutes: g.soon_minutes,
       notifyOnSave: g.notify_on_save === 1,
       autoFinish: g.auto_finish === 1,
+      dayParts: g.day_parts === 1,
       calMonths: g.cal_months,
       availDays: g.avail_days,
       setter,

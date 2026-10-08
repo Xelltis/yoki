@@ -1,5 +1,6 @@
 // シナリオの通過と遊べる日の計算（src/shared/scenario.ts。画面とサーバーの両方で使う）
 import { describe, expect, test } from 'vitest';
+import { bookedAt, bookedPartsOf, combineMarks, markAt, partOf } from '../../src/shared/parts';
 import { passesOf, plannedOf, playableDays, type ScenarioSession, sessionPasses } from '../../src/shared/scenario';
 
 const S = (o: Partial<ScenarioSession>): ScenarioSession => ({ id: 'S001', scenarioId: '1', status: '終了', date: '', gm: '', members: [], ...o });
@@ -49,7 +50,7 @@ describe('遊ぶ予定の人', () => {
 });
 
 describe('遊べる日', () => {
-  const base = { members: ['ひより', 'ソラ', 'こまち', 'ツバキ'], planned: {}, avail: {}, booked: {}, min: 2 };
+  const base = { members: ['ひより', 'ソラ', 'こまち', 'ツバキ'], planned: {}, avail: {}, availParts: {}, booked: {}, min: 2, dayParts: false };
   test('× の人・ほかの卓がある人・通過した人・予定の人はPLに数えない。△ はたぶん。GMの印の人はGMに数える', () => {
     const days = playableDays({
       ...base,
@@ -57,21 +58,53 @@ describe('遊べる日', () => {
       passes: { ひより: { kind: 'gm', from: '' }, ツバキ: { kind: 'played', from: 'S001' } },
       planned: {},
       avail: { '2026-10-10': { こまち: '△' }, '2026-10-11': { ひより: '×' } },
-      booked: { '2026-10-11': { ソラ: '参' } },
+      booked: { '2026-10-11': { ソラ: '' } },
     });
     expect(days).toEqual([
-      { date: '2026-10-10', players: ['ソラ'], maybe: ['こまち'], gms: ['ひより'], ok: false },
-      { date: '2026-10-11', players: ['こまち'], maybe: [], gms: [], ok: false },
+      { date: '2026-10-10', part: '', players: ['ソラ'], maybe: ['こまち'], gms: ['ひより'], ok: false },
+      { date: '2026-10-11', part: '', players: ['こまち'], maybe: [], gms: [], ok: false },
     ]);
   });
 
   test('PLが下限以上で、GMにできる人がいれば遊べる。予定の人は数えない', () => {
     const [day] = playableDays({ ...base, days: ['2026-10-10'], passes: { ひより: { kind: 'gm', from: '' } }, planned: { ツバキ: 'S009' } });
-    expect(day).toEqual({ date: '2026-10-10', players: ['ソラ', 'こまち'], maybe: [], gms: ['ひより'], ok: true });
+    expect(day).toEqual({ date: '2026-10-10', part: '', players: ['ソラ', 'こまち'], maybe: [], gms: ['ひより'], ok: true });
+  });
+
+  test('昼と夜に分けるグループでは、日ごとに昼と夜を別々に数える。卓は時間帯だけをふさぎ、終日の印はどちらにも効く', () => {
+    const days = playableDays({
+      ...base, min: 1, dayParts: true, days: ['2026-10-10'], passes: {},
+      avail: { '2026-10-10': { ひより: '△', ソラ: '×' } },
+      availParts: { '2026-10-10': { ひより: ['×', ''] } },
+      booked: { '2026-10-10': { こまち: '昼' } },
+    });
+    expect(days.map((x) => [x.part, x.players, x.maybe])).toEqual([['昼', ['ツバキ'], []], ['夜', ['ひより', 'こまち', 'ツバキ'], []]]);
   });
 
   test('だれもGMの印を持っていなければ、GMは問わない。下限が無ければ1人から', () => {
     const [day] = playableDays({ ...base, min: null, days: ['2026-10-10'], passes: {}, avail: { '2026-10-10': { ひより: '×', ソラ: '×', こまち: '×' } } });
-    expect(day).toEqual({ date: '2026-10-10', players: ['ツバキ'], maybe: [], gms: [], ok: true });
+    expect(day).toEqual({ date: '2026-10-10', part: '', players: ['ツバキ'], maybe: [], gms: [], ok: true });
+  });
+});
+
+describe('時間帯（src/shared/parts.ts）', () => {
+  test('卓の時間帯は開始時刻で決まる。17:00からは夜、時刻が無ければ終日', () => {
+    expect([partOf(''), partOf('16:59'), partOf('17:00'), partOf('21:00')]).toEqual(['', '昼', '夜', '夜']);
+  });
+
+  test('昼と夜の印をまとめると、両方 × なら ×、どちらかに印があれば △', () => {
+    expect([combineMarks('×', '×'), combineMarks('×', ''), combineMarks('', '△'), combineMarks('', '')]).toEqual(['×', '△', '△', '']);
+  });
+
+  test('時間帯の印は、分けた日はその時間帯、分けていない日は1日の印', () => {
+    const avail = { d: { A: '△', B: '×' } }, parts = { d: { A: ['×', ''] as [string, string] } };
+    expect([markAt(avail, parts, 'd', 'A', '昼'), markAt(avail, parts, 'd', 'A', '夜'), markAt(avail, parts, 'd', 'A', ''), markAt(avail, parts, 'd', 'B', '夜'), markAt(avail, parts, 'x', 'B', '夜')])
+      .toEqual(['×', '', '△', '×', '']);
+  });
+
+  test('卓の時間帯を集める。昼と夜の両方に卓があれば終日', () => {
+    const b = bookedPartsOf([{ date: 'd', start: '14:00', names: ['A', 'B'] }, { date: 'd', start: '20:00', names: ['B'] }, { date: 'e', start: '', names: ['A'] }]);
+    expect(b).toEqual({ d: { A: '昼', B: '' }, e: { A: '' } });
+    expect([bookedAt(b, 'd', 'A', '昼'), bookedAt(b, 'd', 'A', '夜'), bookedAt(b, 'd', 'A', ''), bookedAt(b, 'e', 'A', '夜'), bookedAt(b, 'd', 'C', '')]).toEqual([true, false, true, true, false]);
   });
 });

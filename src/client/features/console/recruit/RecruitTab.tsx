@@ -1,6 +1,7 @@
 // 募集・調整のタブ。募集中の卓（参加希望・興味あり・興味ありの人に聞く）と、日程調整中の卓（候補日への回答・開催日を決める）
 import { useEffect, useRef, useState } from 'react';
 import type { ConsoleData, ConsoleSession, RpcResult } from '../../../../shared/api';
+import { partOf } from '../../../../shared/parts';
 import { reducedMotion, store } from '../../../app/storage';
 import { askConfirm } from '../../../ui/confirm';
 import { Icon } from '../../../ui/Icon';
@@ -139,7 +140,9 @@ export function RecruitTab() {
     if (!mine) return;
     const days = pollFillDays(d, s, mine);
     if (!days.length) { toast('予定表から入れられる候補日はありません'); return; }
-    sync.write<RpcResult>('setPollVoteFromAvail', { id: s.id, name: mine }, { optimistic: (x) => withVote(x, s.id, days, mine, (k) => voteFromAvail(x, mine, k)) }).then((res) => {
+    // 昼と夜に分けるグループでは、卓の開始時刻の時間帯の印で答える（サーバーと同じ）
+    const part = d.settings.dayParts ? partOf(s.start) : '';
+    sync.write<RpcResult>('setPollVoteFromAvail', { id: s.id, name: mine }, { optimistic: (x) => withVote(x, s.id, days, mine, (k) => voteFromAvail(x, mine, k, part)) }).then((res) => {
       toast(res.message);
       if (res.ready && res.notified === false && res.id) notifyReady(sync, res.id, res.message);
     }, (e: Error) => { toast(e.message); void sync.refresh('quiet'); });

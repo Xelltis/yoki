@@ -1,9 +1,10 @@
 // 卓の登録の窓と変更の窓で共通の決まり（入力の形・サーバーへ送る形・重なりの注意・状態ごとの手順・シリーズの引き継ぎ）
 import { CAPACITY_MAX, type ConsoleData, type ConsoleSession, SESSION_DATES_MAX } from '../../../../shared/api';
+import { partOf } from '../../../../shared/parts';
 import { passesOf } from '../../../../shared/scenario';
 import type { IconName } from '../../../ui/icons';
 import { addDaysYmd, fmtJa, parseYmd, ymdOf } from '../model/dates';
-import { isActive, me, peopleOf, sortSessions, splitNames, STATUS_DATED } from '../model/model';
+import { isActive, markOn, me, peopleOf, sortSessions, splitNames, STATUS_DATED } from '../model/model';
 import { hookFor, kindSet, seriesHook, snEntry } from '../model/notify';
 
 /** 窓の入力。idは変える卓（新しく登録するなら空） */
@@ -184,12 +185,16 @@ export function conflictText(d: ConsoleData, form: SessionForm): string {
   const people = [String(form.gm || '').trim()].concat(form.members || [], splitNames(form.extra)).filter(Boolean);
   const uniq: string[] = [], busyAt: string[] = [], ng: string[] = [], soft: string[] = [];
   people.forEach((n) => { if (uniq.indexOf(n) < 0) uniq.push(n); });
+  // 昼と夜に分けるグループでは、開始時刻の時間帯で見る（ほかの時間帯の卓や印は重ならない）
+  const part = d.settings.dayParts ? partOf(form.start) : '';
   uniq.forEach((n) => {
     d.sessions.forEach((s) => {
       if (!s.date || s.date !== form.date || s.id === form.id || !isActive(s)) return;
+      const sp = d.settings.dayParts ? partOf(s.start) : '';
+      if (part && sp && sp !== part) return;
       if (peopleOf(s).indexOf(n) >= 0) busyAt.push(n + '（' + s.name + '）');
     });
-    const v = ((d.avail || {})[form.date] || {})[n] || '';
+    const v = markOn(d, form.date, n, part);
     if (v === '×') ng.push(n); else if (v === '△') soft.push(n);
   });
   const parts: string[] = [];
