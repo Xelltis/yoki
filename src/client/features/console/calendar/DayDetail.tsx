@@ -5,7 +5,8 @@ import { askConfirm } from '../../../ui/confirm';
 import { Icon } from '../../../ui/Icon';
 import { useStore } from '../../../ui/store';
 import { toast } from '../../../ui/toast';
-import { openForm, openPoll } from '../actions';
+import { openForm, openPoll, openPrep } from '../actions';
+import { prepSummary } from '../prep/PrepModal';
 import { discordSend, failToast } from '../api/discord';
 import { useConsole } from '../context';
 import { googleAddUrl } from '../model/calendar';
@@ -104,6 +105,7 @@ export function DayDetail({ d, target }: { d: ConsoleData; target: string }) {
                 {!ppl.length && <span className={personChip(false, true)}>参加者 未定</span>}
               </div>
               {scenarioOf(d, s) && <div className={row2 + ' hint'} data-scenario-of={s.id}>{'シナリオ: ' + scenarioOf(d, s)!.name}</div>}
+              {prepSummary(d, s) && <div className={row2 + ' hint'} data-prep-of={s.id}>{prepSummary(d, s)}</div>}
               {s.place && <Place place={s.place} className={row2} />}
               {s.memo && <div className={row2 + ' hint'}>{s.memo}</div>}
               {s.notified ? <div className={row2 + ' hint'}>{'開催前の知らせは' + s.notified + 'に送りました'}</div>
@@ -114,6 +116,9 @@ export function DayDetail({ d, target }: { d: ConsoleData; target: string }) {
                   ? <button type="button" className="btn small primary" data-goto-recruit onClick={() => goRecruit(s.id)}><Icon name="how_to_vote" size="sm" />回答する</button>
                   : <button type="button" className="btn small primary" data-poll={s.id} onClick={() => openPoll(ui, s.id)}><Icon name="how_to_vote" size="sm" />日程を調整する</button>)}
                 <button type="button" className="btn small" data-edit={s.id} onClick={() => openForm(ui, { id: s.id })}><Icon name="edit" size="sm" />編集</button>
+                {(s.status === '開催' || s.status === '調整中') && (
+                  <button type="button" className="btn small" data-prep={s.id} title="HO・秘匿HO・キャラシ" onClick={() => openPrep(ui, s.id)}><Icon name="checklist" size="sm" />準備</button>
+                )}
                 <button type="button" className="btn small" data-cont={s.id} title="設定を引き継いで翌日の卓を登録" onClick={() => openForm(ui, { cont: s.id })}><Icon name="add" size="sm" />続きを登録</button>
                 {isDated(s) && s.date && (
                   <a className="btn small" data-gcal={s.id} href={googleAddUrl(s, d.title, d.appUrl)} target="_blank" rel="noopener" title="この卓をGoogleカレンダーに足す（新しいタブで開く）"><Icon name="event" size="sm" />Googleカレンダーに追加</a>

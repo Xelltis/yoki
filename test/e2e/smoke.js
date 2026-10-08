@@ -168,6 +168,32 @@ await withDevServer(async (base) => {
       await until((d, sid) => !d.scenarios.some((s) => s.id === sid), id);
     });
 
+    await step('卓の準備: 割り当てられた自分の秘匿HOだけが読める。HOの希望とキャラシを出せる。GMでない管理者は割り当てられない', async () => {
+      await tab('cal');
+      const s = (await D()).sessions.find((x) => x.name.startsWith('灰色の図書館'));
+      await page.evaluate((k) => window.yoki.selectDay(k), s.date);
+      assert.match(await page.textContent(`#dayBody [data-prep-of="${s.id}"]`), /HO 2\/3を割り当て/);
+      await page.click(`#dayBody button[data-prep="${s.id}"]`);
+      await page.waitForSelector('#prepModal:not([hidden])');
+      assert.match(await page.textContent('#mySecret'), /亡くなった祖父/);
+      const slots = (await D()).sessions.find((x) => x.id === s.id).prep.slots;
+      assert.equal(slots[0].secret, null, 'ほかの人（こまち）の秘匿HOは画面データに来ない');
+      assert.equal(slots[0].hasSecret, true);
+      assert.equal(await page.locator('#prepAssign').count(), 0, 'GMのいる卓では、管理者でも割り当てられない');
+      await page.selectOption('#hope1', String(slots[2].pos));
+      await until((d, id) => d.sessions.find((x) => x.id === id).prep.slots[2].hopes['ひより'] === 1, s.id);
+      await page.fill('#sheetUrl', 'https://example.com/sheet/hiyori');
+      await page.fill('#sheetPc', '早瀬 ひより');
+      await page.click('#sheetSave');
+      await until((d, id) => d.sessions.find((x) => x.id === id).prep.sheets['ひより']?.pc === '早瀬 ひより', s.id);
+      // 管理者は、枠を足せる（秘匿HOは書けない）
+      await page.click('#prepAddSlot');
+      await page.click('#prepSave');
+      await until((d, id) => d.sessions.find((x) => x.id === id).prep.slots.length === 4, s.id);
+      await page.click('#prepClose');
+      await page.waitForSelector('#prepModal', { state: 'hidden' });
+    });
+
     await step('募集中の卓に参加希望を付け、取り消せる', async () => {
       await tab('recruit');
       const s = (await D()).sessions.find((x) => x.name === '雪原の古城');

@@ -10,6 +10,7 @@ import IBlock from '~icons/material-symbols/block-outline-rounded';
 import ICalendarMonth from '~icons/material-symbols/calendar-month-outline-rounded';
 import ICampaign from '~icons/material-symbols/campaign-outline-rounded';
 import ICheck from '~icons/material-symbols/check-outline-rounded';
+import IChecklist from '~icons/material-symbols/checklist-rounded';
 import IChevronLeft from '~icons/material-symbols/chevron-left-outline-rounded';
 import IChevronRight from '~icons/material-symbols/chevron-right-outline-rounded';
 import IClose from '~icons/material-symbols/close-outline-rounded';
@@ -32,6 +33,7 @@ import IHowToVote from '~icons/material-symbols/how-to-vote-outline-rounded';
 import ILightMode from '~icons/material-symbols/light-mode-outline-rounded';
 import ILink from '~icons/material-symbols/link-outline-rounded';
 import ILinkOff from '~icons/material-symbols/link-off-outline-rounded';
+import ILock from '~icons/material-symbols/lock-outline-rounded';
 import ILogin from '~icons/material-symbols/login-outline-rounded';
 import ILogout from '~icons/material-symbols/logout-outline-rounded';
 import IMenuBook from '~icons/material-symbols/menu-book-outline-rounded';
@@ -68,6 +70,7 @@ export const ICONS = {
   calendar_month: ICalendarMonth,
   campaign: ICampaign,
   check: ICheck,
+  checklist: IChecklist,
   chevron_left: IChevronLeft,
   chevron_right: IChevronRight,
   close: IClose,
@@ -90,6 +93,7 @@ export const ICONS = {
   light_mode: ILightMode,
   link: ILink,
   link_off: ILinkOff,
+  lock: ILock,
   login: ILogin,
   logout: ILogout,
   menu_book: IMenuBook,

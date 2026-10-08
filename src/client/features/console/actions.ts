@@ -10,6 +10,11 @@ export function openForm(ui: Store<ConsoleUi>, req: FormReq = {}): void {
   ui.set((s) => ({ ...s, form: { seq: ++seq, req } }));
 }
 
+/** 卓の準備の窓を開く（HO・秘匿HO・キャラシ） */
+export function openPrep(ui: Store<ConsoleUi>, id: string): void {
+  ui.set((s) => ({ ...s, prep: { seq: ++seq, id } }));
+}
+
 /** 候補日を選ぶ窓を開く（日程調整を始める・候補日を選び直す） */
 export function openPoll(ui: Store<ConsoleUi>, id: string): void {
   ui.set((s) => ({ ...s, poll: { seq: ++seq, id } }));

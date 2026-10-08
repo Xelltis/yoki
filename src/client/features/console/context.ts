@@ -35,6 +35,8 @@ export type ConsoleUi = {
   form: { seq: number; req: FormReq } | null;
   /** 候補日を選ぶ窓（日程調整を始める・選び直す卓） */
   poll: { seq: number; id: string } | null;
+  /** 卓の準備の窓（HO・秘匿HO・キャラシ） */
+  prep: { seq: number; id: string } | null;
 };
 
 export type ConsoleCtx = { groupId: string; area: Area; sync: ConsoleSync; ui: Store<ConsoleUi> };

@@ -18,6 +18,7 @@ import { type ConsoleCtx, ConsoleContext, type ConsoleUi } from '../context';
 import { parseYmd } from '../model/dates';
 import { seriesNames } from '../model/model';
 import { FormModal } from '../form/FormModal';
+import { PrepModal } from '../prep/PrepModal';
 import { PollModal } from '../recruit/PollModal';
 import { Header } from './Header';
 import { Loading } from './Loading';
@@ -41,7 +42,7 @@ function ConsoleShell() {
     goLogin: () => { location.href = '/auth/login?return_to=' + encodeURIComponent(location.pathname); },
   }));
   const [ui] = useState(() => createStore<ConsoleUi>({
-    selDay: '', view: { y: 0, m: 0 }, guide: load(guideClosedKey(groupId)) === '1' ? 'closed' : '', guideFocus: 0, focus: '', target: load('target') || '全員', form: null, poll: null,
+    selDay: '', view: { y: 0, m: 0 }, guide: load(guideClosedKey(groupId)) === '1' ? 'closed' : '', guideFocus: 0, focus: '', target: load('target') || '全員', form: null, poll: null, prep: null,
   }));
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const tab = tabOf(pathname), area = tab === 'admin' ? 'admin' : 'main';
@@ -82,6 +83,7 @@ function ConsoleShell() {
           <datalist id="seriesList">{seriesNames(d).map((n) => <option key={n} value={n} />)}</datalist>
           <FormModal />
           <PollModal />
+          <PrepModal />
         </>
       )}
       <ConfirmDialog />

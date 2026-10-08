@@ -9,7 +9,8 @@ import { PageHead } from '../../../ui/PageHead';
 import { useStore } from '../../../ui/store';
 import { Tip } from '../../../ui/Tip';
 import { toast } from '../../../ui/toast';
-import { openForm, openPoll } from '../actions';
+import { openForm, openPoll, openPrep } from '../actions';
+import { prepSummary } from '../prep/PrepModal';
 import { discordSend, failToast } from '../api/discord';
 import { useConsole, useData } from '../context';
 import { fmtJa, holidayName, parseYmd, timeRange } from '../model/dates';
@@ -255,11 +256,13 @@ export function RecruitTab() {
             <div className={rc} data-id={s.id} data-card={s.id} key={s.id}>
               <div className={rcHead}>
                 <h3 className={rcTitle}>{s.name}</h3>
+                <button type="button" className="btn small" data-prep={s.id} title="HO・秘匿HO・キャラシ" onClick={() => openPrep(ui, s.id)}><Icon name="checklist" size="sm" />準備</button>
                 <button type="button" className="btn small" data-edit={s.id} onClick={() => openForm(ui, { id: s.id })}><Icon name="edit" size="sm" />編集</button>
               </div>
               <div className={rcWhen}>{s.windowLabel ? s.windowLabel + 'のどこか' : '候補の期間は未定'}</div>
               {s.series && <div className="hint">{'シリーズ: ' + s.series}</div>}
               {scenarioOf(d, s) && <div className="hint" data-scenario-of={s.id}>{'シナリオ: ' + scenarioOf(d, s)!.name}</div>}
+              {prepSummary(d, s) && <div className="hint" data-prep-of={s.id}>{prepSummary(d, s)}</div>}
               <People d={d} s={s} none="GM・参加者 未定" />
               {s.place && <Place place={s.place} className={rcRow} />}
               {s.memo && <div className={rcRow + ' hint'}>{s.memo}</div>}

@@ -6,6 +6,7 @@ import { SAMPLE_CHANNEL } from '../discord/send';
 import { setAvailability, setAvailabilityBulk, setAvailNote, setDayNote } from '../domain/availability';
 import { loadGroup } from '../domain/load';
 import { setPollVote, startPoll } from '../domain/polls';
+import { assignSlots, savePrep, saveSlotSecret, setSlotHope, submitSheet } from '../domain/prep';
 import { saveScenario, setScenarioMark } from '../domain/scenarios';
 import { saveSession, setInterest } from '../domain/sessions';
 import { addDays, fmtDateTime, jst } from '../lib/jst';
@@ -68,7 +69,18 @@ export async function seedSample(db: D1Database, groupId: string, appUrl: string
   await S({ name: '今夜の短編', gm: 'ユズ', members: ['ひより', 'ミナト'], date: T(0), start: '21:00', end: '23:00', status: '開催', place: 'Discordボイス', memo: '2時間で終わる短いシナリオ' });
   const port = await S({ name: '星降る港の依頼', gm: 'ミナト', members: ['ソラ', 'レン'], date: T(1), start: '20:30', end: '23:00', status: '開催', place: 'Discordボイス', memo: 'ミナトさんの初GM', scenarioId: scPort });
   await S({ name: '連れて帰る', gm: 'ソラ', members: ['ひより', 'ミナト', 'ユズ'], date: T(5), start: '14:00', end: '18:00', status: '開催', place: 'ユドナリウムアックス', memo: '初めての人も歓迎', scenarioId: scBring });
-  await S({ name: '灰色の図書館', gm: 'レン', members: ['こまち', 'ユズ', 'ひより'], date: T(12), start: '21:00', end: '23:30', status: '開催', place: 'Discordボイス', memo: '', scenarioId: scLibrary });
+  const library = await S({ name: '灰色の図書館', gm: 'レン', members: ['こまち', 'ユズ', 'ひより'], date: T(12), start: '21:00', end: '23:30', status: '開催', place: 'Discordボイス', memo: '', scenarioId: scLibrary });
+  // 卓の準備（HO・秘匿HO・希望・キャラシ）。HO2の秘匿HOは、割り当てたひよりとGMのレンだけが読める
+  await savePrep(await as('レン'), { id: library.id, sheetDue: T(9), slots: [
+    { pos: 1, label: 'HO1 司書', summary: '図書館で働いている。最近、閉館後に物音がする' },
+    { pos: 2, label: 'HO2 学生', summary: '卒業論文の資料を探しに来た大学生' },
+    { pos: 3, label: 'HO3 記者', summary: '図書館の噂を記事にしたい' },
+  ] });
+  await saveSlotSecret(await as('レン'), { id: library.id, pos: 1, secret: 'あなたは地下の閉架書庫の鍵を持っている。だれにも話していない' });
+  await saveSlotSecret(await as('レン'), { id: library.id, pos: 2, secret: 'あなたの探している本は、亡くなった祖父が書いたものだ' });
+  await setSlotHope(await as('ユズ'), { id: library.id, name: 'ユズ', hopes: [3, 1] });
+  await assignSlots(await as('レン'), { id: library.id, assign: { 1: 'こまち', 2: 'ひより' } });
+  await submitSheet(await as('こまち'), { id: library.id, name: 'こまち', url: 'https://example.com/sheet/komachi', pc: '水瀬 栞' });
   // 募集
   const castle = await S({ name: '雪原の古城', gm: 'こまち', status: '募集', windowFrom: nextFrom, windowTo: nextMid, memo: '3〜4人で。ボイスあり', scenarioId: scCastle });
   await setInterest(await as('ソラ'), { id: castle.id, name: 'ソラ', level: 'want' });
