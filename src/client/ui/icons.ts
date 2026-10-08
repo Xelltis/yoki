@@ -23,6 +23,7 @@ import IEdit from '~icons/material-symbols/edit-outline-rounded';
 import IEditCalendar from '~icons/material-symbols/edit-calendar-outline-rounded';
 import IEvent from '~icons/material-symbols/event-outline-rounded';
 import IEventAvailable from '~icons/material-symbols/event-available-outline-rounded';
+import IEventRepeat from '~icons/material-symbols/event-repeat-outline-rounded';
 import IExpandMore from '~icons/material-symbols/expand-more-rounded';
 import IFlag from '~icons/material-symbols/flag-outline-rounded';
 import IGavel from '~icons/material-symbols/gavel-outline-rounded';
@@ -83,6 +84,7 @@ export const ICONS = {
   edit_calendar: IEditCalendar,
   event: IEvent,
   event_available: IEventAvailable,
+  event_repeat: IEventRepeat,
   expand_more: IExpandMore,
   flag: IFlag,
   gavel: IGavel,

@@ -14,6 +14,7 @@ import IDateRange from '~icons/material-symbols/date-range-outline-rounded';
 import IEditCalendar from '~icons/material-symbols/edit-calendar-outline-rounded';
 import IEvent from '~icons/material-symbols/event-outline-rounded';
 import IEventAvailable from '~icons/material-symbols/event-available-outline-rounded';
+import IEventRepeat from '~icons/material-symbols/event-repeat-outline-rounded';
 import IFlag from '~icons/material-symbols/flag-outline-rounded';
 import IGroup from '~icons/material-symbols/group-outline-rounded';
 import IHelp from '~icons/material-symbols/help-outline-rounded';
@@ -50,6 +51,7 @@ export const ICONS = {
   edit_calendar: IEditCalendar,
   event: IEvent,
   event_available: IEventAvailable,
+  event_repeat: IEventRepeat,
   flag: IFlag,
   group: IGroup,
   help: IHelp,

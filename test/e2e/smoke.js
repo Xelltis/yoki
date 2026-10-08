@@ -106,6 +106,21 @@ await withDevServer(async (base) => {
       await until((d) => d.sessions.some((s) => s.name === 'e2eで登録した卓' && !String(s.id).startsWith('__tmp__')));
     });
 
+    await step('くり返しで日を足して、毎週の卓をまとめて登録できる', async () => {
+      const day = (await D()).availDays[20];
+      await page.click('#newSession');
+      await page.fill('#name', 'くり返しの定期卓');
+      await page.click('#status label:has(input[value="開催"])');
+      await page.fill('#date', day);
+      await page.click('#repeatOpen');
+      await page.selectOption('#repeatRule', 'week');
+      await page.fill('#repeatCount', '2');
+      await page.click('#repeatAdd');
+      assert.equal(await page.locator('#moreDates input.xdate').count(), 2, '2日が足される');
+      await page.click('#f button[type=submit]');
+      await until((d) => d.sessions.filter((s) => s.name.startsWith('くり返しの定期卓') && !String(s.id).startsWith('__tmp__')).length === 3);
+    });
+
     await step('卓を変更できる（内訳の「編集」から）', async () => {
       const s = (await D()).sessions.find((x) => x.name === '灰色の図書館');
       await page.evaluate((k) => window.yoki.selectDay(k), s.date);

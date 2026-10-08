@@ -2,7 +2,7 @@
 import { type ConsoleData, type ConsoleSession, SESSION_DATES_MAX } from '../../../../shared/api';
 import { passesOf } from '../../../../shared/scenario';
 import type { IconName } from '../../../ui/icons';
-import { addDaysYmd, fmtJa } from '../model/dates';
+import { addDaysYmd, fmtJa, parseYmd, ymdOf } from '../model/dates';
 import { isActive, me, peopleOf, sortSessions, splitNames, STATUS_DATED } from '../model/model';
 import { hookFor, kindSet, seriesHook, snEntry } from '../model/notify';
 
@@ -111,6 +111,36 @@ export function continueFrom(d: ConsoleData, src: ConsoleSession): { f: Fields; 
     seriesFrom: src.series ? '' : src.id,
     msg: '「' + src.name + '」のGM・参加者・時間・場所を引き継いでいます。' + (src.series ? '' : '前の回と合わせて「' + series + '」というシリーズにします。') + '名前と開催日を確かめて登録してください。',
   };
+}
+
+/** くり返しの決まり。week は毎週、week2 は2週ごと、month は毎月の同じ「第N曜日」 */
+export type Repeat = 'week' | 'week2' | 'month';
+export const REPEATS: { v: Repeat; label: string }[] = [{ v: 'week', label: '毎週' }, { v: 'week2', label: '2週ごと' }, { v: 'month', label: '毎月（同じ第N曜日）' }];
+
+/** その日が、その月の第何の曜日か（1から） */
+function nthOf(ymd: string): number { return Math.ceil(+ymd.slice(8, 10) / 7); }
+/** y年m月（mは1から）の、第nの曜日dow。その月に無ければ空 */
+function nthWeekday(y: number, m: number, dow: number, n: number): string {
+  const first = new Date(y, m - 1, 1).getDay(), day = 1 + ((dow - first + 7) % 7) + (n - 1) * 7;
+  return day <= new Date(y, m, 0).getDate() ? ymdOf(y, m - 1, day) : '';
+}
+/**
+ * 開催日からくり返して、続きの日をcount回分（開催日を含まない）作る。毎月で「第5の曜日」が無い月は飛ばす。
+ * どれも開催日より後の日
+ */
+export function repeatDates(from: string, rule: Repeat, count: number): string[] {
+  const out: string[] = [];
+  if (rule === 'month') {
+    const p = parseYmd(from), dow = p.getDay(), n = nthOf(from);
+    for (let i = 1; out.length < count && i <= count + 12; i++) {
+      const t = new Date(p.getFullYear(), p.getMonth() + i, 1), k = nthWeekday(t.getFullYear(), t.getMonth() + 1, dow, n);
+      if (k) out.push(k);
+    }
+    return out;
+  }
+  const step = rule === 'week' ? 7 : 14;
+  for (let i = 1; i <= count; i++) out.push(addDaysYmd(from, step * i));
+  return out;
 }
 
 /** 窓の中身（保存するときにサーバーへ送る形） */

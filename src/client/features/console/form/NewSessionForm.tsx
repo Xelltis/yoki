@@ -1,12 +1,13 @@
 // 卓の登録の窓の中身。どんな卓か（開催・募集・調整中）を札で選ぶと、その進め方が出る。
 // シリーズを選ぶと直前の回から引き継ぐ。開催の卓は、何日分かをまとめて登録できる
 import { useRef, useState } from 'react';
-import type { ConsoleData } from '../../../../shared/api';
+import { type ConsoleData, SESSION_DATES_MAX } from '../../../../shared/api';
 import { Icon } from '../../../ui/Icon';
 import { formActions, wideBar, wideBarTitle } from '../../../ui/modalParts';
 import { type FormReq, useData } from '../context';
+import { fmtJa } from '../model/dates';
 import { byId } from '../model/model';
-import { canNotify, checkForm, collect, conflictText, continueFrom, type Fields, fieldsOf, FLOW, inheritSeries, KINDS, type Msg, passWarnText, patchFields } from './model';
+import { canNotify, checkForm, collect, conflictText, continueFrom, type Fields, fieldsOf, FLOW, inheritSeries, KINDS, type Msg, passWarnText, patchFields, type Repeat, repeatDates, REPEATS } from './model';
 import { ConflictWarn, DateRow, FormMsg, NameRow, NotifyCheck, PeopleFields, PlaceMemo, ScenarioRow, SeriesRow, WindowRow } from './parts';
 import { useSessionSave } from './save';
 
@@ -53,6 +54,18 @@ export function NewSessionForm({ req, onClose, reopen }: { req: FormReq; onClose
   const st = f.status, dated = st === '開催', flow = FLOW[st]!;
   const conflict = conflictText(d, collect(d, f, init.seriesFrom)), passWarn = passWarnText(d, collect(d, f, init.seriesFrom));
   const nDates = new Set([f.date].concat(f.more.map((x) => x.v)).filter(Boolean)).size;
+  /** くり返しで足す（開催日から、決まりで続きの日を足す） */
+  const [rep, setRep] = useState<{ open: boolean; rule: Repeat; count: number }>({ open: false, rule: 'week', count: 3 });
+  const addRepeat = () => {
+    if (!f.date) { setMsg({ text: '先に開催日を入れてください。くり返しは開催日から数えます。', cls: 'err' }); return; }
+    const have = new Set([f.date].concat(f.more.map((x) => x.v)).filter(Boolean));
+    const add = repeatDates(f.date, rep.rule, rep.count).filter((k) => !have.has(k)).slice(0, Math.max(0, SESSION_DATES_MAX - have.size));
+    if (!add.length) { setMsg({ text: 'まとめて登録できるのは' + SESSION_DATES_MAX + '日分までです。', cls: 'err' }); return; }
+    // 空の欄は詰めて、足した日を後ろに並べる
+    set({ more: f.more.filter((x) => x.v).concat(add.map((v) => ({ key: ++keyRef.current, v }))) });
+    setMsg({ text: add.length + '日を足しました（' + add.map(fmtJa).join('、') + '）。名前と日付を確かめてください。', cls: 'ok' });
+    setRep((r) => ({ ...r, open: false }));
+  };
   const submit = () => {
     const form = collect(d, f, init.seriesFrom);
     const err = checkForm(form);
@@ -107,7 +120,23 @@ export function NewSessionForm({ req, onClose, reopen }: { req: FormReq; onClose
                   </div>
                 ))}
               </div>
-              <button type="button" className="btn small" id="addDate" onClick={() => set({ more: f.more.concat({ key: ++keyRef.current, v: '' }) })}><Icon name="add" size="sm" />日を足す（何日かまとめて登録）</button>
+              <div className="btns mt-6 justify-start gap-6">
+                <button type="button" className="btn small" id="addDate" onClick={() => set({ more: f.more.concat({ key: ++keyRef.current, v: '' }) })}><Icon name="add" size="sm" />日を足す（何日かまとめて登録）</button>
+                <button type="button" className="btn small" id="repeatOpen" aria-expanded={rep.open} onClick={() => setRep((r) => ({ ...r, open: !r.open }))}><Icon name="event_repeat" size="sm" />くり返しで足す</button>
+              </div>
+              {rep.open && (
+                <div className="mt-8 flex flex-wrap items-center gap-8 rounded-md border border-line bg-head px-12 py-10 text-13" id="repeatBox">
+                  <span>{f.date ? fmtJa(f.date) + 'から' : '開催日から'}</span>
+                  <select id="repeatRule" aria-label="くり返し方" className="w-auto" value={rep.rule} onChange={(ev) => setRep((r) => ({ ...r, rule: ev.target.value as Repeat }))}>
+                    {REPEATS.map((x) => <option value={x.v} key={x.v}>{x.label}</option>)}
+                  </select>
+                  <span>あと</span>
+                  <input type="number" id="repeatCount" aria-label="足す回数" className="w-64" min={1} max={SESSION_DATES_MAX - 1} value={rep.count}
+                    onChange={(ev) => setRep((r) => ({ ...r, count: Math.min(Math.max(Math.trunc(+ev.target.value) || 1, 1), SESSION_DATES_MAX - 1) }))} />
+                  <span>回</span>
+                  <button type="button" className="btn small primary" id="repeatAdd" onClick={addRepeat}>足す</button>
+                </div>
+              )}
               <span className="hint" id="moreDatesHint">{nDates > 1 ? nDates + '日分をまとめて登録します。名前は末尾の数字を進めます（「#1」→「#2」）。数字が無ければ「名前 #1」「名前 #2」' : ''}</span>
             </div>
           </>
