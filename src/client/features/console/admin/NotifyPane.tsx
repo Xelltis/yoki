@@ -167,6 +167,8 @@ export function NotifyPane() {
         <p className="hint">開催前の知らせは、0日前なら当日、1日前なら前日です。開始直前の知らせをONにすると見回りが5分ごとになり、指定した時刻を過ぎた最初の見回りで届きます。送り先は下の「チャンネル」で決めます。</p>
       </div>
 
+      <EventsCard />
+
       {!setupFirst && channels}
 
       <details className={foldCard} id="snFold">
@@ -175,6 +177,39 @@ export function NotifyPane() {
           <SeriesNotify />
         </div>
       </details>
+    </div>
+  );
+}
+
+/**
+ * 卓をDiscordのイベントにも出す。Botに「イベントを作成」の権限が要るので、権限を足して招き直すボタンを出す。
+ * 書き直すのは見回り（5分ごと）なので、変えてからイベントに出るまで数分かかる
+ */
+function EventsCard() {
+  const d = useData();
+  const ch = useChannels();
+  const { busy, msg, call } = useCall();
+  const st = d.settings;
+  const cannot = st.discordEvents && ch.list?.canEvents === false;
+  return (
+    <div className="card" id="eventsCard">
+      <h3><Icon name="event" size="sm" />Discordのイベント <small className="hint">卓をサーバーのイベントにも出す</small></h3>
+      <div className="flex items-start gap-12">
+        <p className="hint m-0 flex-1">
+          {'「開催」の卓（これから' + 60 + '日のうち、20件まで）を、Discordのサーバーのイベントに出します。卓を変えたり中止にしたりすると、数分でイベントも直ります。'
+            + 'イベントは、サーバーにいる人ならだれでも見られます（チャンネルを選べません）。'}
+        </p>
+        <Switch id="stEvents" on={st.discordEvents} label="卓をDiscordのイベントにも出す" busy={!!busy.stEvents}
+          onClick={() => void call('stEvents', 'evMsg', 'saveConsoleSettings', { discordEvents: !st.discordEvents })} />
+      </div>
+      {(st.eventsError || cannot) && (
+        <p className="hint text-err-text" id="eventsError" role="alert"><Icon name="warning" size="sm" />{st.eventsError || 'Botに「イベントを作成」の権限がありません。下のボタンから招き直してください。'}</p>
+      )}
+      <div className="btns">
+        <a className="btn" id="eventsInvite" href={d.bot.eventsInviteUrl || '#'} target="_blank" rel="noopener" hidden={!d.bot.eventsInviteUrl}><Icon name="add" size="sm" />イベントの権限を付けてBotを招き直す</a>
+        <span className="hint" id="evMsg">{msg.evMsg || ''}</span>
+      </div>
+      {d.bot.eventsInviteUrl && <p className="hint mb-0">Botに「イベントを作成」の権限が要ります。すでにBotを招いていても、イベントに出すなら、このボタンから招き直して権限を足してください。Botが作ったイベントだけを書き換え・消します。</p>}
     </div>
   );
 }

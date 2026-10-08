@@ -366,6 +366,12 @@ await withDevServer(async (base) => {
       const urge = (await D()).settings.urge;
       await page.locator('#stUrge').dispatchEvent('click');
       await until((d, v) => d.settings.urge === !v, urge);
+      // Discordのイベント: 手元にはBotが無いので、入れようとしても断られる（サーバーが400を返すのは見込みどおりなので、そのエラーは数えない）
+      const errorsBefore = errors.length;
+      await page.click('#stEvents');
+      await page.waitForFunction(() => /Botが設定されていません/.test(document.getElementById('evMsg')?.textContent ?? ''));
+      assert.equal((await D()).settings.discordEvents, false);
+      errors.splice(errorsBefore);
       // 送信記録は新しい10件までなので、件数ではなく、いちばん新しい記録が変わったかで見る
       const top = JSON.stringify((await D()).log[0] ?? null);
       await page.locator('#stTest').dispatchEvent('click');
