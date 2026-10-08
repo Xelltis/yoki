@@ -58,6 +58,7 @@ export default defineConfig({
       { text: '始め方', link: '/guide/start' },
       { text: '使い方', link: '/guide/availability', activeMatch: '^/guide/(?!start)' },
       { text: '設置する', link: '/setup/', activeMatch: '^/setup/' },
+      { text: '変わったこと', link: '/releases' },
       { text: 'GitHub', link: 'https://github.com/Xelltis/yoki' },
       ...(APP_URL ? [{ text: 'アプリを開く', link: APP_URL }] : []),
     ],
