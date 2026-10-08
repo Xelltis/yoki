@@ -73,6 +73,10 @@ e2eとスクリーンショットの道具が使う要素のID・`data-*`・`win
 
 グループの画面の管理者向けのものは、管理の区域（`/g/:id/admin/<区分>/`。`src/client/features/console/admin/`）に置く。ふだんの区域には、だれでも使うものだけを置く。
 
+秘匿HO（`session_slots.secret`）を読めるのは、その卓のGMと割り当てた本人だけにする（管理者・運営者も読めない）。画面データは本人ごとに作り端末にも控えるので、読み込みのSQL（`domain/load.ts`）で読み込む人ごとに絞り、`Ctx` にもほかの人の分を持たせない。送信の記録・Discordの文・購読URL・Googleの予定・運営者のAPIには出さない。秘匿HOのある卓のGMを替える道は、`checkGmChange` を通す。
+
+Discordのイベントを書くのは見回りだけにする。卓を変える呼び出しは、グループに `events_pending` を付けるだけにする。消すのも書き換えるのも、Yokiが作ったイベント（`discord_events` の控えにあるもの）だけにする。Discordへの呼び出しは、どれも `discordFetch`（`discord/calls.ts`）を通す（外へ出せる数をGoogleと分け合うため）。
+
 ログインした人のDiscordのトークン（OAuth）は保存しない。知らせに使うBotのトークンはWorkerのsecret（`DISCORD_BOT_TOKEN`）に置き、画面にもログにも出さない。秘密の値（`.dev.vars`）はコミットしない。
 
 Googleカレンダーと連携した人のrefresh tokenだけは持つ（本人がいないときにも卓を書き直し、予定を読むため）。`GOOGLE_TOKEN_KEY` で暗号にして `google_links` に置き、画面・ログ・運営者のAPIには出さない。連携を外すときと利用者を消すときは、書き込んだ予定を消してGoogleの許可を取り消してから消す（`forgetGoogle`）。Googleから受け取る欄は、要るものだけにする（予定の名前や中身は受け取らない）。

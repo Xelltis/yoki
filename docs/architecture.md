@@ -86,7 +86,7 @@ usersの行は消さない（印がそこにあるため）。Discordのユー�
 
 ## データベース（D1）
 
-表の定義は `migrations/`（`0001_init.sql` が最初の形、`0002_admin.sql` が締め出し・最後に使われた日と索引、`0003_bot.sql` が知らせのBot、`0004_calendar.sql` がカレンダーとの連携、`0005_member_check.sql` がBotで確かめた日時、`0006_google_login.sql` がGoogleでのログイン）。日付（開催日・予定・メモ）は日本時間の `YYYY-MM-DD`、日時（〜した時刻）はUTCのISO文字列。
+表の定義は `migrations/`（`0001_init.sql` が最初の形、`0002_admin.sql` が締め出し・最後に使われた日と索引、`0003_bot.sql` が知らせのBot、`0004_calendar.sql` がカレンダーとの連携、`0005_member_check.sql` がBotで確かめた日時、`0006_google_login.sql` がGoogleでのログイン、`0007_scenarios.sql` がシナリオと通過、`0008_prep.sql` が卓の準備、`0009_discord_events.sql` がDiscordのイベント）。日付（開催日・予定・メモ）は日本時間の `YYYY-MM-DD`、日時（〜した時刻）はUTCのISO文字列。
 
 `users`・`user_guilds`・`auth_sessions`: ログイン。`users.banned_at`・`banned_reason` は締め出し。
 
@@ -97,6 +97,12 @@ usersの行は消さない（印がそこにあるため）。Discordのユー�
 `sessions`・`session_people`: 卓と、関わる人（GM・参加者・参加希望・興味あり）。
 
 `availability`・`avail_notes`・`day_notes`・`poll_votes`・`series_notify`・`notify_log`。
+
+`scenarios`・`member_scenarios`: グループのシナリオと、本人や管理者が付けた通過の印（`played` 遊んだ・`gm` GMできる）。`sessions.scenario_id` は卓で遊ぶシナリオ（シナリオを消したら `NULL`）。
+
+`session_slots`・`slot_hopes`・`session_sheets`: 卓の準備。HOの枠（公開HO・秘匿HO・割り当て）、HOの希望（第1・第2）、出したキャラシ。`sessions.sheet_due`・`sheet_urged_at` はキャラシの締め切りと、催促を送った日時。
+
+`discord_events`: Discordのサーバーに作ったイベント（グループと卓ごとのイベントのID・作ったサーバー・中身の要約・始まりの時刻）。卓やグループが消えても、サーバーを付け替えても、イベントを消すまで覚えておくので、外部キーにしない。`groups.discord_events`・`events_pending`・`events_error` は、イベントに出すか・書き直しが要るか・最後の失敗。
 
 `meta`: cronの「この時刻はもう回した」印、最後の見回りの記録、新規登録の受付（`registration`）、利用規約とプライバシーポリシー（`legal_operator`・`legal_contact`・直した本文の `legal_terms`・`legal_privacy`）。開発サーバーでは偽のGoogleの中身（`dev_google`）も。
 
@@ -134,15 +140,15 @@ usersの行は消さない（印がそこにあるため）。Discordのユー�
 
 **書き込み**。読み込んだデータで確かめてから、1回の `db.batch`（全部成功か全部失敗）で書く。GAS版のロックは要らない（行番号がずれることが無いため）。同じ卓を2人が同時に直すと、あとから保存したほうが残る（GAS版と同じ）。
 
-**D1の上限**。1回の呼び出しで使える問い合わせの数に上限がある（無料のプランで50）。卓の数だけ文を作らず、JSONの配列を `json_each` で展開して1文にまとめる（`domain/people.ts`・`domain/sessions.ts` のまとめての変更など）。
+**D1の上限**。1回の呼び出しで使える問い合わせの数に上限がある（無料のプランで50）。卓の数だけ文を作らず、JSONの配列を `json_each` で展開して1文にまとめる（`domain/people.ts`・`domain/sessions.ts` のまとめての変更など）。1回の呼び出しは、入れるかの確かめ（3文ほど）・読み込み（14文）・書き込み・返事のための読み直し（14文）で、40文近くを使う。読み込みには文を足さず、新しいデータは今ある文の中の副問い合わせ（`json_group_array`）で読む（シナリオはグループを読む文、卓の準備は卓を読む文）。日程調整の書き込みは、そろったかを見るために読み直した中身を、返事にそのまま使う。呼び出しごとの文の数は、テスト（`test/worker/query-budget.test.ts`）が45文以下かを確かめる。
 
 ## Discordへの送信
 
 知らせは、YokiのBot（ログインと同じDiscordアプリのBot）が、チャンネルにメッセージを書いて送る。Webhookは使わない。
 
-**Bot**: トークンはWorkerのsecret（`DISCORD_BOT_TOKEN`）。Gatewayには繋がず、RESTだけを使う（送る: `POST /channels/{id}/messages`、読む: `GET /guilds/{id}/channels`・`GET /channels/{id}`）。小道具は `discord/channel.ts`。
+**Bot**: トークンはWorkerのsecret（`DISCORD_BOT_TOKEN`）。Gatewayには繋がず、RESTだけを使う（送る: `POST /channels/{id}/messages`、読む: `GET /guilds/{id}/channels`・`GET /channels/{id}`、イベント: `/guilds/{id}/scheduled-events`）。小道具は `discord/channel.ts`。
 
-**Botを招く**: グループの管理者が、管理画面の「知らせ」から自分のサーバーに招く。招くURLは、Client IDとグループのサーバーから作る（`botInviteUrl`。求める権限は、チャンネルを見る・メッセージを送る・埋め込みリンク）。Botは公開（Public Bot）。
+**Botを招く**: グループの管理者が、管理画面の「知らせ」から自分のサーバーに招く。招くURLは、Client IDとグループのサーバーから作る（`botInviteUrl`。求める権限は、チャンネルを見る・メッセージを送る・埋め込みリンク。イベントに出すグループだけ、イベントを作成も）。Botは公開（Public Bot）。
 
 **送り先はチャンネルのID**: `groups.channel_id`（基本）・`remind_channel_id`・`recruit_channel_id`（種類ごと。空なら基本）・`series_notify.channel_id`（シリーズ専用）。
 
@@ -164,13 +170,43 @@ usersの行は消さない（印がそこにあるため）。Discordのユー�
 
 回答そろい・日程決定は、回答や決定を受けたサーバーがその場で送る（画面を閉じられても届くように）。
 
+**呼び出しの数**（`discord/calls.ts`）。Discordへの呼び出しは、送信も読むだけのもの（`botGet`）もイベントも、どれも `discordFetch` を通して数える。Workersの1回の要求で外へ出せる数（無料のプランで50）を、見回りがDiscordとGoogleで分け合うため（`googleBudget`）。
+
+**Discordのイベント**（`discord/events.ts`）。グループの管理者が「知らせ」で入れると、「開催」の卓（これから60日のうち20件まで）を、サーバーの外部のイベント（`POST/PATCH/DELETE /guilds/{id}/scheduled-events`。`entity_type` 3・`privacy_level` 2）にする。中身は購読URLと同じ `calendarItem` から作る。外部のイベントは始まりの時刻に自動で始まり、終わりの時刻に自動で終わるので、始まりまで1分を切った卓には触らず、始まったイベントは控えだけを消す。
+
+- 書くのは見回りだけ。卓を変える呼び出し（`calendar: true`）は、グループに `events_pending` を付けるだけにする。重なった呼び出しが同じイベントを2つ作らないためで、Googleとの同期とも、外へ出せる数を取り合わない
+- 見回りは、毎回1グループを `UPDATE … RETURNING` で取り、10回までDiscordを呼ぶ。中身の要約（`hash`）が変わった卓だけを書き換え、404なら作り直す。403は「イベントを作成」の権限が無いとして `events_error` に残す。429・5xx・通信の切れと、枠を使い切ったときは、印を付け直して次の回に回す
+- Botには「イベントを作成」（`1<<44`。作ったイベントの書き換えと削除もできる）が要る。基本の招待の権限には足さず、イベントの欄にだけ、足した招待URL（`bot.eventsInviteUrl`）を出す。入れるときは、`botCanCreateEvents` で、Botのロールの権限を確かめる（BotのIDは `/users/@me` で読む）
+- 運営者がサーバーを付け替えると、前のサーバーのイベントを消して、新しいサーバーに作り直す（控えに作ったサーバーを持つ）。グループが消えたイベントは、毎時の片付け（`sweepOrphanEvents`）が消す
+- イベントはサーバーの全員に見える。プライバシーポリシーの既定の文に書いてある
+
 サンプルのグループのチャンネル（IDが全部0）には送らず、送ったことにする（開発用ログインとスクリーンショットのため）。
+
+## シナリオと卓の準備
+
+**シナリオと通過**（`domain/scenarios.ts`・`src/shared/scenario.ts`）。通過は、本人や管理者が付けた印（`member_scenarios`）と、そのシナリオの「終了」の卓から出すもの（GMは `gm`、参加者は `played`）を合わせたもので、`gm` が強い。卓から出す分は表に書かず、読み込んだ卓から計算する（問い合わせを増やさないため）。「終了」の卓を消すときだけ、消す前に参加者を印へ書き写す（`keepPassesStmt`。卓が消えても通過が残るように）。卓から付いた通過は、未通過に戻せない。
+
+計算（`passesOf`・`plannedOf`・`playableDays`）は `src/shared/` に置き、画面（シナリオのタブ・卓の窓の注意）とサーバー（印を外せるか）で使う。テストのカバレッジも、ここで測る。遊べる日は、未通過で、その日に × もほかの卓も無く、そのシナリオの「開催」「調整中」の卓に入っていない人をPLに数え、「GMできる」の人をGMに数える。
+
+**卓の準備**（`domain/prep.ts`）。HOの枠は番号（`pos`）で持ち、消しても詰めない（割り当てと秘匿HOが別の枠に移らないように）。書き換えは番号ごとのupsertで、消した番号の枠だけを消す（希望と秘匿HOを残す）。
+
+| 呼び出し | できる人 |
+|---|---|
+| `savePrep`（枠・公開HO・締め切り） | GMか管理者。秘匿HOのある枠を消せるのはGMだけ |
+| `saveSlotSecret`（秘匿HO） | GMだけ（管理者も書けない。書くには読む必要があるため） |
+| `assignSlots`（割り当て） | GM。メンバーのGMがいない卓だけ、管理者も |
+| `setSlotHope`（希望） | その卓の参加者本人 |
+| `submitSheet`（キャラシ） | その卓のGMか参加者の本人。管理者は取り下げだけ |
+
+**秘匿HOが見える人**。ConsoleDataは本人ごとに作り、端末にも控えるので、秘匿HOは読み込みのSQLで絞る。卓を読む文の副問い合わせで、読み込む人（`actor.memberId`）がその卓のGM（`session_people` のGMの行）か、割り当てた本人の枠だけ `secret` を読み、ほかは `NULL` にする。見回り・購読URL（`SYSTEM_ACTOR`、`memberId` 0）は、だれの分も読まない。ほかの人には、あることだけ（`hasSecret`）を出す。秘匿HOは、送信の記録・Discordの文・購読URL・Googleの予定・運営者のAPIのどこにも出さない。
+
+秘匿HOを読む道を、ほかに作らない。秘匿HOのある卓のGMを替えられるのは、今のGM（メンバー）か、メンバーのGMがいない卓の管理者だけ（`checkGmChange`。卓の保存とまとめての変更）。HOを割り当てた人が参加者でなくなったら、同じbatchで割り当てを外す（`unassignGoneStmt`）。HOの希望は、GM・管理者・本人の分だけを画面データに入れる。
 
 ## 知らせの見回り（cron）
 
 `domain/patrol.ts`。cronは5分おきに動く（時刻はUTCだが、中で日本時間に直して判断する）。
 
-**毎時の仕事**（開催前の知らせ・期間前の催促・過ぎた卓の自動終了）は、`meta` の印（`hourly` = `2026-10-10T20`）を進められたときだけ回す。5分おきでも1時間に1回になり、見回りが重なっても抜けても大丈夫。
+**毎時の仕事**（開催前の知らせ・期間前の催促・キャラシの催促・過ぎた卓の自動終了）は、`meta` の印（`hourly` = `2026-10-10T20`）を進められたときだけ回す。5分おきでも1時間に1回になり、見回りが重なっても抜けても大丈夫。
 
 **開始直前の知らせ**は毎回見る。
 
@@ -178,7 +214,11 @@ usersの行は消さない（印がそこにあるため）。Discordのユー�
 
 開催前の知らせは、送り先と「あと何日」ごとに1通にまとめ、10卓ごとに分ける（Discordのembedは1通に10個まで）。
 
-問い合わせは、送る卓のあるグループだけを読む。
+問い合わせは、送る卓のあるグループだけを読む。毎時の3つの知らせは、どれかがあるグループを1回だけ読んで回す（読み込みは1回14文）。
+
+**キャラシの催促**は、締め切りの前日（開催前の知らせと同じ時刻台。逃したら当日）に、まだ出していない参加者（メンバー）をメンションする。みんな出していれば送らずに印だけ付け、送り先が無ければ記録して印を付ける（毎時記録しないように）。
+
+**Discordのイベント**は毎回、書き直しが要るグループを1つずつ合わせる（上の「Discordへの送信」）。Googleの同期より先に回し、使った呼び出しの数をGoogleの枠から引く。
 
 毎日1回（日本時間の4時以降）、期限切れのログイン、古い送信記録（グループごとに500件まで）、90日より前の予定とメモ、1年より前の日付メモを片付ける。
 
