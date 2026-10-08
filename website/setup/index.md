@@ -12,10 +12,12 @@ Yokiは、だれでも自分のCloudflareに設置して公開できます。設
 
 | 要るもの | 使い道 | 費用 |
 |---|---|---|
-| GitHubのアカウント | Yokiのコードを置く。新しい版への更新もここで動く | 無料 |
-| Cloudflareのアカウント | アプリ（Workers）とデータ（D1）を置く | 無料のプランで動く |
+| GitHubのアカウント（[作り方](./github)） | Yokiのコードを置く。新しい版への更新もここで動く | 無料 |
+| Cloudflareのアカウント（[作り方](./cloudflare)） | アプリ（Workers）とデータ（D1）を置く | 無料のプランで動く |
 | Discordのアカウント | ログインと知らせに使うDiscordアプリを作る | 無料 |
 | Googleのアカウント（任意） | Googleでのログインと、Googleカレンダーとの連携 | 無料 |
+
+GitHubとCloudflareのアカウントが無ければ、先に作ってください。初めての人向けに、画像付きの手順を[GitHubのアカウントを作る](./github)と[Cloudflareのアカウントを作る](./cloudflare)にまとめてあります。
 
 Cloudflareは、無料のプランのまま使えます。グループが増えて、知らせの見回りで送る数が多くなったら、有料のプラン（Workers Paid）にしてください。
 
@@ -50,7 +52,7 @@ Yokiのログインと知らせ（Bot）に使うDiscordアプリを、[Discord 
 
 [![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/Xelltis/yoki/tree/release)
 
-Cloudflareにログインし、GitHubとつなぐと、設置の画面が開きます。リポジトリの名前とWorkerの名前は、そのまま（`yoki`）でかまいません。D1のデータベースは、新しく作るほうを選びます。
+Cloudflareにログインすると、設置の画面（アプリケーションをセットアップする）が開きます。初めてのときは、「Git アカウント」の「新しい GitHub 接続」で、CloudflareとGitHubをつないでください（[画像付きの手順](./cloudflare#_6-設置のときに、githubとつなぐ)）。リポジトリの名前とWorkerの名前は、そのまま（`yoki`）でかまいません。D1のデータベースは、新しく作るほうを選びます。
 
 入力欄には、手順1で控えた値を入れてください。
 

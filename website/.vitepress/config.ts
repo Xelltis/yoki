@@ -100,7 +100,15 @@ export default defineConfig({
       ],
       // Yokiを自分のCloudflareに設置する運営者向け
       '/setup/': [
-        { text: '設置する', items: [{ text: '設置の手順', link: '/setup/' }, { text: 'Discordアプリを作る', link: '/setup/discord' }] },
+        {
+          text: '設置する',
+          items: [
+            { text: '設置の手順', link: '/setup/' },
+            { text: 'GitHubのアカウントを作る', link: '/setup/github' },
+            { text: 'Cloudflareのアカウントを作る', link: '/setup/cloudflare' },
+            { text: 'Discordアプリを作る', link: '/setup/discord' },
+          ],
+        },
         {
           text: '設置したあとに',
           items: [
