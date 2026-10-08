@@ -14,12 +14,18 @@ export type Status = (typeof STATUS)[keyof typeof STATUS];
 /** 複数の開催日をまとめて登録するときの日数の上限（画面は保存の前に、サーバーは受け取るときに確かめる） */
 export const SESSION_DATES_MAX = 20;
 
+/** シナリオに書ける長さと、グループごとの数の上限（画面は入力欄に、サーバーは受け取るときに使う）。playersはPLの人数の上限 */
+export const SCENARIO_MAX = { count: 200, name: 100, system: 50, hours: 20, url: 500, memo: 500, players: 20 } as const;
+
+/** 通過の印。played は遊んだ（PL）、gm はGMをした・GMできる（中身を知っている）。どちらも、PLとしては遊べない */
+export type ScenarioMark = 'played' | 'gm';
+
 /** 画面から呼べる関数の名前。getConsoleDataは画面のデータを読む。ほかはサーバーのroutes/rpc.tsの一覧と同じ */
 export const RPC_FUNCS = [
   'getConsoleData', 'sendDiscordStep', 'setDayNote', 'setInterest', 'bulkUpdateSessions', 'setAvailability', 'setAvailabilityBulk', 'setAvailNote',
   'saveSession', 'deleteSession', 'saveMember', 'deleteMember', 'saveConsoleSettings', 'saveSeriesNotify', 'renameGroup', 'startPoll', 'setPollVote',
   'setPollVoteAll', 'cancelPoll', 'decidePoll', 'setAdmin', 'deleteGroup', 'getDiscordChannels', 'saveCalendarFeed', 'deleteCalendarFeed',
-  'saveGoogleSettings', 'syncGoogleNow', 'unlinkGoogle', 'unlinkGoogleLogin',
+  'saveGoogleSettings', 'syncGoogleNow', 'unlinkGoogle', 'unlinkGoogleLogin', 'saveScenario', 'deleteScenario', 'setScenarioMark',
 ] as const;
 export type RpcName = (typeof RPC_FUNCS)[number];
 
@@ -57,6 +63,30 @@ export type ConsoleSession = {
   candidates: string[];
   /** 日程調整の回答{ 'YYYY-MM-DD': { 名前: '◯' | '×' } } */
   votes: Record<string, Record<string, string>>;
+  /** 遊ぶシナリオ（ConsoleScenarioのid）。無ければ空 */
+  scenarioId: string;
+};
+
+/** 画面のデータのシナリオ */
+export type ConsoleScenario = {
+  id: string;
+  name: string;
+  /** 遊ぶシステム（クトゥルフ神話TRPGなど） */
+  system: string;
+  /** PLの人数（GMは数えない）。決めていなければnull */
+  playersMin: number | null;
+  playersMax: number | null;
+  /** 遊ぶ時間の目安（「4時間」など） */
+  hours: string;
+  url: string;
+  memo: string;
+  /** 登録した人の名前（メンバーでなくなっていれば空） */
+  createdBy: string;
+  /**
+   * 本人や管理者が付けた通過の印{ 名前: 'played' | 'gm' }。「終了」の卓から出す通過は入っていないので、
+   * 通過を見るときは src/shared/scenario.ts の passesOf で合わせる
+   */
+  marks: Record<string, ScenarioMark>;
 };
 
 export type ConsoleMember = {
@@ -132,6 +162,8 @@ export type ConsoleData = {
   availGoogle: Record<string, string[]>;
   /** Googleでのログイン（本人のぶん）。readyは運営者がGoogleの値を設定しているか、emailは結びつけたGoogleアカウント（無ければ空） */
   googleLogin: { ready: boolean; email: string };
+  /** グループのシナリオ（名前の順） */
+  scenarios: ConsoleScenario[];
 };
 
 /** 購読URLに載せる卓。mineは自分がGMか参加者として入っている卓、allはグループの卓すべて */

@@ -29,7 +29,7 @@ function session(o: Partial<Session> = {}): Session {
   return {
     rowId: 1, id: 'S001', seq: 1, name: '港', gm: '', members: [], want: [], interest: [], date: null, start: '', end: '', status: '開催',
     place: '', memo: '', series: '', seriesEnd: null, windowFrom: null, windowTo: null, candidates: [], editor: '', updatedAt: '',
-    notifiedAt: null, askedAt: null, urgedAt: null, soonAt: null, pollReadyAt: null, ...o,
+    notifiedAt: null, askedAt: null, urgedAt: null, soonAt: null, pollReadyAt: null, scenarioId: null, ...o,
   };
 }
 

@@ -36,6 +36,7 @@ export function useSessionSave() {
       want: prev && !toDated ? prev.want : [], interest: prev ? prev.interest : [], series: form.series, seriesEnd: form.seriesEnd, asked: '',
       window: '', windowFrom: form.windowFrom, windowTo: form.windowTo, windowLabel: winLabel(form.windowFrom, form.windowTo), windowKey: form.windowFrom || '',
       candidates: prev && form.status === '調整中' ? (prev.candidates || []) : [], votes: prev ? (prev.votes || {}) : {},
+      scenarioId: prev ? prev.scenarioId : '',
     };
     let tmps = [tmp];
     if (form.dates) {

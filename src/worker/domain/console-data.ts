@@ -1,6 +1,6 @@
 // 画面に渡す一式（GAS版consoleData_）。形はsrc/shared/api.tsのConsoleData（画面と共有する）。日時の書き方はGAS版のまま。
 // 外したもの: url（シート）・hasPassword・adminSet。足したもの: me・group・members[].linked / admin・settings.remind
-import type { ConsoleData } from '../../shared/api';
+import type { ConsoleData, ConsoleScenario } from '../../shared/api';
 import { botInviteUrl } from '../discord/channel';
 import { addDays, fmtDateTime, stampText } from '../lib/jst';
 import { STATUS_LIST } from './constants';
@@ -48,6 +48,7 @@ export function consoleData(ctx: Ctx): ConsoleData {
         asked: stampText(s.askedAt), series: s.series, seriesEnd: s.seriesEnd ?? '',
         window: w?.text ?? '', windowFrom: w?.from ?? '', windowTo: w?.to ?? '', windowLabel: w?.label ?? '', windowKey: w?.from ?? '',
         candidates: s.candidates, votes: ctx.votes.get(s.rowId) ?? {},
+        scenarioId: s.scenarioId === null ? '' : String(s.scenarioId),
       };
     }),
     avail: ctx.avail,
@@ -87,7 +88,23 @@ export function consoleData(ctx: Ctx): ConsoleData {
     calendar: calendarView(ctx),
     availGoogle: ctx.availGoogle,
     googleLogin: { ready: ctx.googleReady, email: ctx.googleLoginEmail },
+    scenarios: scenarioViews(ctx),
   };
+}
+
+/** シナリオと通過の印。メンバーは名前で出す（画面は名前で人を見分ける） */
+function scenarioViews(ctx: Ctx): ConsoleScenario[] {
+  const nameOf = new Map(ctx.members.map((m) => [m.id, m.name]));
+  return ctx.scenarios.map((s) => {
+    const marks: ConsoleScenario['marks'] = {};
+    // 印の行はメンバーが消えたら一緒に消えるので、名前はいつもある
+    for (const m of ctx.scenarioMarks) if (m.scenarioId === s.id) marks[nameOf.get(m.memberId)!] = m.kind;
+    return {
+      id: String(s.id), name: s.name, system: s.system, playersMin: s.playersMin, playersMax: s.playersMax, hours: s.hours, url: s.url, memo: s.memo,
+      // 登録した人がメンバーでなくなると、createdByはnullになる（外部キー）
+      createdBy: s.createdBy === null ? '' : nameOf.get(s.createdBy)!, marks,
+    };
+  });
 }
 
 /** カレンダーとの連携の様子。購読URLは、グループの画面と同じアドレスで作る */

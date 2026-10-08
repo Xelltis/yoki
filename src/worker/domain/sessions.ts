@@ -7,6 +7,7 @@ import { type Form, list, requireSelf, str } from './form';
 import { sessionCode } from './load';
 import { findSession, peopleOf, readWindow, windowInfo } from './model';
 import { insertPeopleForNext, insertPeopleForSeq, type People, peopleOfSession, replacePeople } from './people';
+import { findScenario, keepPassesStmt, readScenarioId } from './scenarios';
 import type { Ctx } from './types';
 
 /** 状態を読む。知らない値は「開催」（旧い版の「予定」も「開催」） */
@@ -25,7 +26,7 @@ async function allocateSeq(ctx: Ctx, n: number): Promise<number> {
 }
 
 const INSERT_SESSION = `INSERT INTO sessions (group_id, seq, name, status, date, start_time, end_time, place, memo, series, series_end,
-  window_from, window_to, candidates, editor, updated_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, '[]', ?14, ?15)`;
+  window_from, window_to, candidates, editor, updated_at, scenario_id) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, '[]', ?14, ?15, ?16)`;
 
 /** 卓を登録・更新する。form.datesに2日以上あれば、まとめて登録する（新規だけ） */
 export async function saveSession(ctx: Ctx, form: Form) {
@@ -43,6 +44,8 @@ export async function saveSession(ctx: Ctx, form: Form) {
   const series = str(form.series);
   let members = uniq(splitNames(list(form.members).join('、') + '、' + str(form.extra)));
   const existing = form.id ? findSession(ctx, form.id) : null;
+  // シナリオ。送られなければ今のまま（古い画面から保存しても外れないように）
+  const scenarioId = form.scenarioId === undefined ? (existing?.scenarioId ?? null) : readScenarioId(ctx, form.scenarioId);
   const dateChanged = !existing || existing.date !== date;
   // 参加希望・興味あり。参加者やGMになった人は外す。募集から「調整中」「開催」になったら、参加希望の人を参加者に移す
   const notIn = (n: string) => !members.includes(n) && n !== gm;
@@ -72,7 +75,7 @@ export async function saveSession(ctx: Ctx, form: Form) {
         .prepare(
           `UPDATE sessions SET name = ?2, status = ?3, date = ?4, start_time = ?5, end_time = ?6, place = ?7, memo = ?8, series = ?9, series_end = ?10,
              window_from = ?11, window_to = ?12, candidates = ?13, editor = ?14, updated_at = ?15,
-             notified_at = ?16, asked_at = ?17, urged_at = ?18, soon_at = ?19, poll_ready_at = ?20
+             notified_at = ?16, asked_at = ?17, urged_at = ?18, soon_at = ?19, poll_ready_at = ?20, scenario_id = ?21
            WHERE id = ?1`,
         )
         .bind(
@@ -84,6 +87,7 @@ export async function saveSession(ctx: Ctx, form: Form) {
           oldWin === (win?.text ?? '') ? existing.urgedAt : null,
           !dateChanged && existing.start === start ? existing.soonAt : null,
           status === STATUS.ADJUSTING ? existing.pollReadyAt : null,
+          scenarioId,
         ),
       ...replacePeople(ctx, [{ rowId: existing.rowId, people }]),
     );
@@ -93,7 +97,7 @@ export async function saveSession(ctx: Ctx, form: Form) {
     const seq = await allocateSeq(ctx, 1);
     id = sessionCode(seq);
     stmts.push(
-      db.prepare(INSERT_SESSION).bind(ctx.group.id, seq, name, status, date, start, end, str(form.place), str(form.memo), series, seriesEnd, win?.from ?? null, win?.to ?? null, ctx.actor.name, at),
+      db.prepare(INSERT_SESSION).bind(ctx.group.id, seq, name, status, date, start, end, str(form.place), str(form.memo), series, seriesEnd, win?.from ?? null, win?.to ?? null, ctx.actor.name, at, scenarioId),
       insertPeopleForSeq(ctx, seq, people),
     );
   }
@@ -128,6 +132,7 @@ async function saveSessionDates(ctx: Ctx, form: Form, name: string, raw: string[
   });
   const gm = str(form.gm);
   const series = str(form.series);
+  const scenarioId = readScenarioId(ctx, form.scenarioId);
   const members = uniq(splitNames(list(form.members).join('、') + '、' + str(form.extra)));
   const m = /^(.*?)(\d+)(\D*)$/.exec(name);
   const names = dates.map((_, i) => (i === 0 ? name : m ? m[1]! + (Number(m[2]) + i) + m[3]! : name + ' #' + (i + 1)));
@@ -139,13 +144,14 @@ async function saveSessionDates(ctx: Ctx, form: Form, name: string, raw: string[
   const [, , seq] = await ctx.db.batch([
     ctx.db
       .prepare(
-        `INSERT INTO sessions (group_id, seq, name, status, date, start_time, end_time, place, memo, series, series_end, window_from, window_to, candidates, editor, updated_at)
+        `INSERT INTO sessions (group_id, seq, name, status, date, start_time, end_time, place, memo, series, series_end, window_from, window_to, candidates, editor, updated_at,
+                               scenario_id)
          SELECT ?1, (SELECT next_session_seq FROM groups WHERE id = ?1) + json_extract(value, '$.i'), json_extract(value, '$.name'), ?2, json_extract(value, '$.date'),
-                ?3, ?4, ?5, ?6, ?7, ?8, NULL, NULL, '[]', ?9, ?10
+                ?3, ?4, ?5, ?6, ?7, ?8, NULL, NULL, '[]', ?9, ?10, ?12
            FROM json_each(?11)`,
       )
       .bind(ctx.group.id, status, normTime(form.start), normTime(form.end), str(form.place), str(form.memo), series, seriesEnd, ctx.actor.name, at,
-        JSON.stringify(dates.map((d, i) => ({ i, name: names[i], date: d })))),
+        JSON.stringify(dates.map((d, i) => ({ i, name: names[i], date: d }))), scenarioId),
     insertPeopleForNext(ctx, dates.length, people),
     ctx.db.prepare('UPDATE groups SET next_session_seq = next_session_seq + ?2 WHERE id = ?1 RETURNING next_session_seq - ?2 AS first').bind(ctx.group.id, dates.length),
   ]);
@@ -179,13 +185,16 @@ export async function setInterest(ctx: Ctx, form: Form) {
 
 export async function deleteSession(ctx: Ctx, form: Form) {
   const s = findSession(ctx, form.id);
-  await ctx.db.prepare('DELETE FROM sessions WHERE id = ?').bind(s.rowId).run();
+  const del = ctx.db.prepare('DELETE FROM sessions WHERE id = ?').bind(s.rowId);
+  // 「終了」の卓にシナリオが付いていれば、その卓から出していた通過を、消す前に印として残す
+  if (s.status === STATUS.DONE && s.scenarioId !== null) await ctx.db.batch([keepPassesStmt(ctx, [s.rowId]), del]);
+  else await del.run();
   return { ok: true, message: '削除しました: ' + s.name };
 }
 
 /**
  * 複数の卓をまとめて変える。form: { ids, action, value }
- * action: status / addMember / removeMember / setGm / shiftDays / setSeries / delete
+ * action: status / addMember / removeMember / setGm / shiftDays / setSeries / setScenario / delete
  * 卓の数によらず決まった数の文で書く（D1の問い合わせの数の上限のため）
  */
 export async function bulkUpdateSessions(ctx: Ctx, form: Form) {
@@ -218,6 +227,10 @@ export async function bulkUpdateSessions(ctx: Ctx, form: Form) {
   } else if (action === 'setSeries') {
     label = value ? 'シリーズを「' + value + '」に' : 'シリーズを外す';
     done = value ? 'のシリーズを「' + value + '」にしました' : 'のシリーズを外しました';
+  } else if (action === 'setScenario') {
+    const sc = value ? findScenario(ctx, value) : null;
+    label = sc ? 'シナリオを「' + sc.name + '」に' : 'シナリオを外す';
+    done = sc ? 'のシナリオを「' + sc.name + '」にしました' : 'のシナリオを外しました';
   } else if (action === 'delete') {
     label = '削除';
     done = 'を削除しました';
@@ -235,6 +248,8 @@ export async function bulkUpdateSessions(ctx: Ctx, form: Form) {
   const peopleChanges: { rowId: number; people: People }[] = [];
 
   if (action === 'delete') {
+    // 「終了」の卓から出していた通過は、消す前に印として残す
+    if (targets.some((s) => s.status === STATUS.DONE && s.scenarioId !== null)) stmts.push(keepPassesStmt(ctx, targets.map((s) => s.rowId)));
     stmts.push(db.prepare('DELETE FROM sessions WHERE ' + inTargets).bind(rowIds));
   } else if (action === 'status') {
     const v = value as Status;
@@ -268,6 +283,8 @@ export async function bulkUpdateSessions(ctx: Ctx, form: Form) {
     );
   } else if (action === 'setSeries') {
     stmts.push(db.prepare(`UPDATE sessions SET series = ?4, ${stamp} WHERE ${inTargets}`).bind(rowIds, ctx.actor.name, at, value));
+  } else if (action === 'setScenario') {
+    stmts.push(db.prepare(`UPDATE sessions SET scenario_id = ?4, ${stamp} WHERE ${inTargets}`).bind(rowIds, ctx.actor.name, at, readScenarioId(ctx, value)));
   } else {
     for (const s of targets) {
       const p = peopleOfSession(s);

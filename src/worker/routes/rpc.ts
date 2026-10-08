@@ -22,6 +22,7 @@ import { googleConfigured, googleDeps } from '../google/config';
 import { hasGoogleWriters, syncGroupWrites } from '../google/sync';
 import { saveGoogleSettings, syncGoogleNow, unlinkGoogle, unlinkGoogleLogin } from '../domain/google';
 import { deleteGroup } from '../domain/groups';
+import { deleteScenario, saveScenario, setScenarioMark } from '../domain/scenarios';
 import { AppError, adminError, authError, goneError, notFound } from '../lib/errors';
 import type { RpcName } from '../../shared/api';
 
@@ -65,6 +66,10 @@ export const RPC: Record<Exclude<RpcName, 'getConsoleData'>, Entry> = {
   syncGoogleNow: { run: syncGoogleNow, data: true, google: true },
   unlinkGoogle: { run: unlinkGoogle, data: true, google: true },
   unlinkGoogleLogin: { run: unlinkGoogleLogin, data: true },
+  saveScenario: { run: saveScenario, data: true },
+  // 消せるのは登録した人と管理者（中で確かめる）
+  deleteScenario: { run: deleteScenario, data: true, calendar: true },
+  setScenarioMark: { run: setScenarioMark, data: true },
   // 消したあとは画面のデータを読めないのでdataを付けない
   deleteGroup: { run: deleteGroup, admin: 'グループを消すこと' },
 };

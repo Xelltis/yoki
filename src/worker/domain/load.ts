@@ -2,14 +2,18 @@
 import type { Actor } from '../auth/guard';
 import { addDays, jst } from '../lib/jst';
 import type { Status } from './constants';
-import type { Bot, Ctx, FeedScope, GoogleLinkRow, GroupRow, LogRow, Member, Role, Session } from './types';
+import type { Bot, Ctx, FeedScope, GoogleLinkRow, GroupRow, LogRow, Member, Role, Scenario, ScenarioMarkRow, Session } from './types';
 
 type SessionRow = {
   id: number; seq: number; name: string; status: Status; date: string | null; start_time: string; end_time: string;
   place: string; memo: string; series: string; series_end: string | null; window_from: string | null; window_to: string | null;
   candidates: string; editor: string; updated_at: string; notified_at: string | null; asked_at: string | null;
-  urged_at: string | null; soon_at: string | null; poll_ready_at: string | null;
+  urged_at: string | null; soon_at: string | null; poll_ready_at: string | null; scenario_id: number | null;
 };
+
+/** グループの行と、一緒に読むシナリオ（JSON）。読み込みの文を増やさないため、グループを読む文の中で読む */
+type GroupWithExtras = GroupRow & { scenarios_json: string; marks_json: string };
+type ScenarioJson = { id: number; name: string; system: string; min: number | null; max: number | null; hours: string; url: string; memo: string; by: number | null; at: string };
 
 export const sessionCode = (seq: number) => 'S' + String(seq).padStart(3, '0');
 
@@ -34,7 +38,17 @@ export async function loadGroup(
           WHERE group_id = ?2 AND status = '開催' AND date < ?3 AND (SELECT auto_finish FROM groups WHERE id = ?2) = 1`,
       )
       .bind(at, groupId, today),
-    db.prepare('SELECT * FROM groups WHERE id = ?').bind(groupId),
+    db
+      .prepare(
+        `SELECT g.*,
+           (SELECT json_group_array(json_object('id', s.id, 'name', s.name, 'system', s.system, 'min', s.players_min, 'max', s.players_max,
+                     'hours', s.hours, 'url', s.url, 'memo', s.memo, 'by', s.created_by, 'at', s.updated_at))
+              FROM scenarios s WHERE s.group_id = g.id) AS scenarios_json,
+           (SELECT json_group_array(json_array(ms.scenario_id, ms.member_id, ms.kind))
+              FROM member_scenarios ms JOIN scenarios s ON s.id = ms.scenario_id WHERE s.group_id = g.id) AS marks_json
+         FROM groups g WHERE g.id = ?`,
+      )
+      .bind(groupId),
     db.prepare('SELECT id, name, discord_id, note, is_admin, user_id FROM members WHERE group_id = ? ORDER BY id').bind(groupId),
     db.prepare('SELECT * FROM sessions WHERE group_id = ? ORDER BY seq').bind(groupId),
     db
@@ -71,8 +85,13 @@ export async function loadGroup(
     db.prepare('SELECT email FROM google_logins WHERE user_id = ?').bind(actor.userId),
   ]);
   const rows = <T>(i: number) => res[i]!.results as T[];
-  const group = rows<GroupRow>(1)[0];
-  if (!group) throw new Error('グループが見つかりません: ' + groupId);
+  const groupRow = rows<GroupWithExtras>(1)[0];
+  if (!groupRow) throw new Error('グループが見つかりません: ' + groupId);
+  const { scenarios_json, marks_json, ...group } = groupRow;
+  const scenarios: Scenario[] = (JSON.parse(scenarios_json) as ScenarioJson[])
+    .map((s) => ({ id: s.id, name: s.name, system: s.system, playersMin: s.min, playersMax: s.max, hours: s.hours, url: s.url, memo: s.memo, createdBy: s.by, updatedAt: s.at }))
+    .sort((a, b) => a.name.localeCompare(b.name, 'ja'));
+  const scenarioMarks: ScenarioMarkRow[] = (JSON.parse(marks_json) as [number, number, ScenarioMarkRow['kind']][]).map(([scenarioId, memberId, kind]) => ({ scenarioId, memberId, kind }));
 
   const members: Member[] = rows<{ id: number; name: string; discord_id: string; note: string; is_admin: number; user_id: string | null }>(2).map((m) => ({
     id: m.id,
@@ -118,6 +137,7 @@ export async function loadGroup(
       urgedAt: r.urged_at,
       soonAt: r.soon_at,
       pollReadyAt: r.poll_ready_at,
+      scenarioId: r.scenario_id,
     };
   });
 
@@ -166,5 +186,7 @@ export async function loadGroup(
     googleReady,
     googleLoginEmail: rows<{ email: string }>(13)[0]?.email ?? '',
     availGoogle,
+    scenarios,
+    scenarioMarks,
   };
 }

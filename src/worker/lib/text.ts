@@ -13,6 +13,16 @@ export function splitNames(v: unknown): string[] {
     .filter(Boolean);
 }
 
+/** http か https のアドレスか（シナリオやキャラシのURL。javascript: などを画面のリンクにしないため） */
+export function isHttpUrl(s: string): boolean {
+  try {
+    const u = new URL(s);
+    return u.protocol === 'https:' || u.protocol === 'http:';
+  } catch {
+    return false;
+  }
+}
+
 export function uniq<T>(list: T[]): T[] {
   return [...new Set(list)];
 }

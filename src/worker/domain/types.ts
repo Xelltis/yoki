@@ -1,5 +1,6 @@
 // 読み込んだグループのデータ（GAS版のctxに当たる）
 import type { Actor } from '../auth/guard';
+import type { ScenarioMark } from '../../shared/api';
 import type { Status } from './constants';
 
 export type GroupRow = {
@@ -57,7 +58,26 @@ export type Session = {
   urgedAt: string | null;
   soonAt: string | null;
   pollReadyAt: string | null;
+  /** 遊ぶシナリオ（scenarios.id）。無ければnull */
+  scenarioId: number | null;
 };
+
+/** グループのシナリオ。createdByは登録したメンバー（members.id。メンバーでなくなればnull） */
+export type Scenario = {
+  id: number;
+  name: string;
+  system: string;
+  playersMin: number | null;
+  playersMax: number | null;
+  hours: string;
+  url: string;
+  memo: string;
+  createdBy: number | null;
+  updatedAt: string;
+};
+
+/** 本人や管理者が付けた通過の印 */
+export type ScenarioMarkRow = { scenarioId: number; memberId: number; kind: ScenarioMark };
 
 export type SeriesNotify = { channelId: string; alsoBase: boolean; days: number | null; hour: number | null };
 
@@ -95,6 +115,10 @@ export type Ctx = {
   googleLoginEmail: string;
   /** Googleカレンダーの予定から入れた印{ 'YYYY-MM-DD': [名前] }（今日からavail_days日分） */
   availGoogle: Record<string, string[]>;
+  /** グループのシナリオ（名前の順） */
+  scenarios: Scenario[];
+  /** 通過の印（本人や管理者が付けたもの。「終了」の卓から出す通過は含まない） */
+  scenarioMarks: ScenarioMarkRow[];
 };
 
 export type Bot = { token: string; clientId?: string };
