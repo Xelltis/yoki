@@ -1,8 +1,14 @@
 // 運営者の管理画面（/admin/）とサーバーの約束（/api/admin/*）。画面とサーバーの両方から読む。
 // ブラウザの型もWorkersの型も使わない（どちらからも読めるように）
 
-/** 見回り（cron）の最後の回の結果（metaのpatrol） */
-export type PatrolRecord = { at: string; ms: number; ok: boolean; error: string };
+/** 見回り（cron）の最後の回の結果（metaのpatrol）。failsは続けて失敗した回数（うまくいけば0。前の版の記録には無い） */
+export type PatrolRecord = { at: string; ms: number; ok: boolean; error: string; fails?: number };
+
+/** Botのトークンを最後に確かめた結果（metaのbot_check）。sinceは使えなくなった時刻（使えるあいだは空） */
+export type BotCheck = { ok: boolean; at: string; since: string };
+
+/** 運営者への最後の知らせ（DM）。sent・failedは届いた・届かなかった人の数、errorは届かなかった理由の1つ */
+export type NoticeLast = { at: string; kind: string; sent: number; failed: number; error: string };
 
 /** Discordへの送信の失敗（送信失敗・送らず）の記録 */
 /** 送信の失敗。送った卓の名前（送信記録のtarget）は、グループの中身なので運営者には出さない */
@@ -36,6 +42,17 @@ export type AdminOverview = {
   registrationOpen: boolean;
   /** 日程調整と募集の知らせにボタンを付けて、Discordで答えられるようにしているか */
   discordButtons: boolean;
+  /** 運営者への知らせ（BotからのDM） */
+  notices: {
+    on: boolean;
+    /** 送る相手（OPERATOR_IDSの人数） */
+    operators: number;
+    /** Botのトークン。missingはsecretが無い、unknownはまだ確かめていない、badは使えない（sinceから） */
+    bot: { state: 'ok' | 'bad' | 'missing' | 'unknown'; at: string; since: string };
+    /** 最後に知らせた新しいバージョン（まだなら空） */
+    version: string;
+    last: NoticeLast | null;
+  };
 };
 
 /** グループの一覧の1行（GET /api/admin/groups） */

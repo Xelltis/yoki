@@ -714,6 +714,16 @@ await withDevServer(async (base) => {
       await page.click('#opButtonsToggle');
       await page.waitForSelector('#toast >> text=Botのトークンが無い', { timeout: 15000 });
       errors.splice(errorsBefore);
+      // 運営者への知らせ: 止める・使うを切り替えられる。手元にはBotが無いので、試しに送ると断られる
+      assert.match(await page.textContent('#opBotState'), /ありません/);
+      await page.click('#opNoticeToggle');
+      await page.waitForSelector('#opNotice >> text=止めています', { timeout: 15000 });
+      await page.click('#opNoticeToggle');
+      await page.waitForSelector('#opNoticeToggle[data-on="0"]', { timeout: 15000 });
+      const errorsBeforeTest = errors.length;
+      await page.click('#opNoticeTest');
+      await page.waitForSelector('#toast >> text=DMを送れません', { timeout: 15000 });
+      errors.splice(errorsBeforeTest);
       await main();
       // 開いた直後は、ブラウザの控え（消す前のデータ）が出ることがある。最新を読んで、ソラがメンバーから外れるのを待つ
       await until((d) => !d.members.some((m) => m.name === 'ソラ'));

@@ -4,13 +4,14 @@ import { Hono } from 'hono';
 import type { AdminResult } from '../../shared/admin';
 import type { AppEnv } from '../app';
 import { appOrigin } from '../auth/origin';
-import { isOperator, requireOperator } from '../auth/operator';
+import { isOperator, parseOperatorIds, requireOperator } from '../auth/operator';
 import type { Viewer } from '../auth/session';
 import { changeGuild, deleteUser, groupDetail, listGroups, listUsers, logoutUser, overview, setBan, setGroupAdmin } from '../domain/admin';
 import { readForm, str } from '../domain/form';
 import { setButtons } from '../discord/interactions';
 import { deleteGroupById } from '../domain/groups';
 import { readLegal, saveLegal } from '../domain/legal';
+import { setNoticeOn, testNotice } from '../domain/operator-notice';
 import { setRegistrationOpen } from '../domain/registration';
 import { startUpdate, updateStatus } from '../domain/update';
 import { googleDeps } from '../google/config';
@@ -32,7 +33,7 @@ adminRoutes.use('/api/admin/*', async (c, next) => {
 
 adminRoutes.get('/api/admin/overview', async (c) => {
   await requireOperator(c);
-  return c.json(await overview(c.env.DB));
+  return c.json(await overview(c.env.DB, { operators: parseOperatorIds(c.env.OPERATOR_IDS).length, botToken: !!c.env.DISCORD_BOT_TOKEN }));
 });
 
 adminRoutes.post('/api/admin/registration', async (c) => {
@@ -48,6 +49,21 @@ adminRoutes.post('/api/admin/discord-buttons', async (c) => {
   const on = (await readForm(c.req)).on === true;
   const message = await setButtons(c.env, on, appOrigin(c.env, c.req.url));
   audit(op, 'setDiscordButtons', on ? 'on' : 'off');
+  return c.json(done(message));
+});
+
+adminRoutes.post('/api/admin/operator-notice', async (c) => {
+  const op = await requireOperator(c);
+  const on = (await readForm(c.req)).on === true;
+  const message = await setNoticeOn(c.env.DB, on);
+  audit(op, 'setOperatorNotice', on ? 'on' : 'off');
+  return c.json(done(message));
+});
+
+adminRoutes.post('/api/admin/operator-notice/test', async (c) => {
+  const op = await requireOperator(c);
+  const message = await testNotice(c.env, op.id, new Date());
+  audit(op, 'testOperatorNotice', op.id);
   return c.json(done(message));
 });
 

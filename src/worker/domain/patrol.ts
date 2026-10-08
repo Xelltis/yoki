@@ -1,6 +1,7 @@
 // 知らせの見回り（GAS版Notify.jsのdailyNotify・sendTomorrow_・sendUrge_・sendStartingSoon_）。cronが5分おきに呼ぶ。
 //   毎時の仕事（開催前の知らせ・期間前の催促・募集の締め切りの知らせ・キャラシの催促・過ぎた卓の自動終了）は、metaの印で1時間に1回だけ回す
 //   開始直前の知らせは毎回見る
+//   運営者への知らせ（operator-notice.ts）: 毎時Botのトークンを確かめ、毎日10時台に新しいバージョンを見る。続けて失敗したら知らせる
 // 送る前に卓の「送った」印を取り（UPDATE … WHERE … IS NULL）、取れた卓だけを送る。重なって動いても二重には送らない。
 // 全部の送り先で失敗したら印を戻し、次の回で送り直す
 import type { PatrolRecord } from '../../shared/admin';
@@ -15,9 +16,11 @@ import type { Bindings } from '../env';
 import { googleDeps } from '../google/config';
 import { googleBudget, patrolGoogle, WRITE_PAST_DAYS } from '../google/sync';
 import { addDays, daysBetween, jst, minutesOfTime } from '../lib/jst';
+import { updateDeps, type UpdateDeps } from '../update/config';
 import { DATED, SOON_LATE_MIN, STATUS } from './constants';
 import { HISTORY_KEEP } from './history';
 import { loadGroup } from './load';
+import { checkBot, GITHUB_CALLS, noticePatrolFailed, noticeVersion, VERSION_HOUR } from './operator-notice';
 import { aheadText, notifyHourOf, notifyYmdOf } from './notify';
 import type { Ctx, Session } from './types';
 
@@ -27,7 +30,11 @@ const KEEP_LOG_ROWS = 500;
 const KEEP_AVAIL_DAYS = 90;
 const KEEP_DAY_NOTE_DAYS = 365;
 
-type Deps = { sleep: Sleep };
+/**
+ * sleepは送り直しの待ち。operatorは運営者への知らせ（Botのトークンの確かめ・新しいバージョン）に使うGitHubで、
+ * cronの入口（runPatrol）が渡したときだけ回す（知らせのテストが、GitHubとBotの確かめを呼ばないように）
+ */
+type Deps = { sleep: Sleep; operator?: { github: UpdateDeps } };
 
 /** 見回りの様子（metaのpatrol）。運営者の管理画面が読む */
 export type { PatrolRecord };
@@ -36,7 +43,7 @@ export type { PatrolRecord };
  * 見回りを回し、その様子をmetaに残す（patrol: 最後の回の結果、patrol_ok_at: 最後にうまくいった時刻）。
  * 失敗は記録してから投げ直す（Cloudflareのcronの失敗としても残す）。runはテストで差し替える
  */
-export async function runPatrol(env: Bindings, scheduledTime: number, deps: Deps = { sleep: realSleep }, run = patrol): Promise<void> {
+export async function runPatrol(env: Bindings, scheduledTime: number, deps: Deps = { sleep: realSleep, operator: { github: updateDeps(env) } }, run = patrol): Promise<void> {
   const t0 = Date.now();
   let error = '';
   try {
@@ -46,13 +53,26 @@ export async function runPatrol(env: Bindings, scheduledTime: number, deps: Deps
     throw e;
   } finally {
     const at = new Date(scheduledTime).toISOString();
-    const rec: PatrolRecord = { at, ms: Date.now() - t0, ok: !error, error };
     const put = 'INSERT INTO meta (key, value) VALUES (?1, ?2) ON CONFLICT (key) DO UPDATE SET value = excluded.value';
     try {
+      // 続けて失敗した回数を数え、知らせる回数になったら運営者に知らせる
+      const fails = error ? failsOf(await env.DB.prepare("SELECT value FROM meta WHERE key = 'patrol'").first<string>('value')) + 1 : 0;
+      const rec: PatrolRecord = { at, ms: Date.now() - t0, ok: !error, error, fails };
       await env.DB.batch([env.DB.prepare(put).bind('patrol', JSON.stringify(rec)), ...(error ? [] : [env.DB.prepare(put).bind('patrol_ok_at', at)])]);
+      if (error) await noticePatrolFailed(env, fails, error, new Date(scheduledTime));
     } catch {
-      // 記録できなくても、見回りの結果は変えない
+      // 記録できなくても（知らせられなくても）、見回りの結果は変えない
     }
+  }
+}
+
+/** 前の回の記録から、それまで続けて失敗した回数を読む（前の版の記録にはfailsが無いので、失敗なら1回と数える） */
+function failsOf(raw: string | null): number {
+  try {
+    const rec = raw ? (JSON.parse(raw) as PatrolRecord) : null;
+    return !rec || rec.ok ? 0 : rec.fails ?? 1;
+  } catch {
+    return 0;
   }
 }
 
@@ -121,9 +141,19 @@ export async function patrol(env: Bindings, scheduledTime: number, deps: Deps): 
   await processDiscordEvents(db, load, events);
   if (hourly) await sweepOrphanEvents(db, bot.token, now, events);
 
-  // Googleカレンダーとの同期（連携している人を、長く回っていない人から少しずつ）。先にDiscordへ送った分を、外へ出せる数から引く
+  // 運営者への知らせ: 毎時Botのトークンを確かめ、毎日10時台に新しいバージョンを見る
+  let github = 0;
+  if (deps.operator) {
+    if (hourly) await checkBot(env, now);
+    if (p.hour >= VERSION_HOUR && (await claim(db, 'operator_daily', p.ymd))) {
+      await noticeVersion(env, deps.operator.github, now, appBase);
+      github = GITHUB_CALLS;
+    }
+  }
+
+  // Googleカレンダーとの同期（連携している人を、長く回っていない人から少しずつ）。先にDiscordとGitHubを呼んだ分を、外へ出せる数から引く
   const google = await googleDeps(env, appBase || 'http://localhost');
-  if (google) await patrolGoogle(db, google, now, googleBudget(discordCalls() - callsAtStart));
+  if (google) await patrolGoogle(db, google, now, googleBudget(discordCalls() - callsAtStart + github));
 
   if (p.hour >= 4 && (await claim(db, 'daily', p.ymd))) await cleanup(db, now);
 }

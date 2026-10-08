@@ -65,13 +65,16 @@ test('お知らせのページは、文字をHTMLとして読まないように�
   expect(html).toContain('&lt;戻る&gt;');
 });
 
-test('cronの入口から見回りが回り、様子が残る', async () => {
+test('cronの入口から見回りが回り、様子が残る。運営者への知らせ（Botのトークンの確かめ）も回る', async () => {
+  const fetch = vi.spyOn(globalThis, 'fetch').mockImplementation(async () => Response.json({}));
   const ctx = createExecutionContext();
   const scheduledTime = Date.parse('2026-10-10T20:00:00+09:00');
   await worker.scheduled({ scheduledTime, cron: '*/5 * * * *', noRetry: () => {} }, env, ctx);
   await waitOnExecutionContext(ctx);
   const rec = JSON.parse((await env.DB.prepare("SELECT value FROM meta WHERE key = 'patrol'").first<string>('value'))!);
   expect(rec).toMatchObject({ at: new Date(scheduledTime).toISOString(), ok: true });
+  expect(fetch.mock.calls.map((c) => String(c[0]))).toContain('https://discord.com/api/v10/users/@me');
+  fetch.mockRestore();
 });
 
 describe('送られたJSONが壊れているかnullのときは、空の入力として扱う', () => {

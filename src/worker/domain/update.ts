@@ -27,7 +27,8 @@ export function newer(a: string, b: string): boolean {
 
 const message = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
-async function check(db: D1Database, deps: UpdateDeps, now: Date, force: boolean): Promise<Check> {
+/** 最新のReleaseを読む（控えが1時間より新しければ控えを使う）。運営者への知らせ（operator-notice.ts）も使う */
+export async function checkRelease(db: D1Database, deps: UpdateDeps, now: Date, force: boolean): Promise<Check> {
   const raw = await db.prepare('SELECT value FROM meta WHERE key = ?').bind(KEY).first<string>('value');
   const saved = raw ? (JSON.parse(raw) as Check) : null;
   if (!force && saved && saved.upstream === deps.upstream && saved.from === APP_VERSION && now.getTime() - Date.parse(saved.checkedAt) < TTL_MS) return saved;
@@ -51,7 +52,7 @@ async function check(db: D1Database, deps: UpdateDeps, now: Date, force: boolean
 
 /** 版と更新の様子。forceならGitHubを読み直す */
 export async function updateStatus(db: D1Database, deps: UpdateDeps, now: Date, force = false): Promise<AdminUpdate> {
-  const c = await check(db, deps, now, force);
+  const c = await checkRelease(db, deps, now, force);
   const canDispatch = !!(deps.repo && deps.token);
   let runs: AdminUpdate['runs'] = [], error = c.error;
   if (canDispatch) {
@@ -71,7 +72,7 @@ export async function updateStatus(db: D1Database, deps: UpdateDeps, now: Date, 
 /** 最新のバージョンへの更新を始める（更新のワークフローを動かす）。始めた版を返す */
 export async function startUpdate(db: D1Database, deps: UpdateDeps, now = new Date()): Promise<string> {
   if (!deps.repo || !deps.token) throw new AppError(400, '管理画面から更新するには、WorkerのsecretにUPDATE_DISPATCH_TOKENが要ります（使い方のサイトの「新しいバージョンに上げる」）。GitHubのActionsの画面からも更新できます。');
-  const c = await check(db, deps, now, false);
+  const c = await checkRelease(db, deps, now, false);
   if (!c.latest || !newer(c.latest.version, APP_VERSION)) throw new AppError(409, '新しいバージョンはありません。「確かめ直す」で、もう一度GitHubを見てください。');
   try {
     await deps.api.dispatch(deps.repo, deps.token, UPDATE_WORKFLOW, { version: c.latest.version });

@@ -1,4 +1,4 @@
-// 運営者の管理画面の「様子」。新しい版の知らせ・数・新規登録の受付・Discordのボタン・知らせの見回り（cron）・Discordへの送信の失敗
+// 運営者の管理画面の「様子」。新しい版の知らせ・Botのトークンの知らせ・数・新規登録の受付・Discordのボタン・運営者への知らせ・知らせの見回り（cron）・Discordへの送信の失敗
 import { Link } from '@tanstack/react-router';
 import type { AdminOverview, AdminUpdate } from '../../../shared/admin';
 import { askConfirm } from '../../ui/confirm';
@@ -29,6 +29,7 @@ export function OverviewPane() {
         <div className={counts} id="opCounts"></div>
         <div className="card" id="opReg"></div>
         <div className="card" id="opButtons"></div>
+        <div className="card" id="opNotice"></div>
         <div className="card" id="opPatrol"></div>
         <Fails o={o} />
       </div>
@@ -37,7 +38,7 @@ export function OverviewPane() {
   const c = o.counts, p = o.patrol, last = p.last;
   const state = !last ? ['bad', '記録がありません（cronがまだ一度も動いていないか、止まっています）']
     : p.stale ? ['bad', '最後の見回りが' + ago(last.at) + 'です。cronが止まっているかもしれません']
-      : !last.ok ? ['warn', '最後の見回りが失敗しました: ' + last.error]
+      : !last.ok ? ['warn', '最後の見回りが失敗しました' + ((last.fails ?? 1) > 1 ? '（' + last.fails + '回続けて）' : '') + ': ' + last.error]
         : ['ok', '動いています（' + ago(last.at) + '、' + last.ms + 'ミリ秒）'];
   // 新規登録の受付。止めるときだけ確かめる
   const toggleReg = () => {
@@ -54,6 +55,12 @@ export function OverviewPane() {
           <Icon name="upgrade" size="sm" />{'新しいバージョンv' + up.latest.version + 'があります（いまはv' + up.current + '）。更新の区分で、変わったことを見て更新できます'}
           <Icon name="chevron_right" size="sm" className="ml-auto" />
         </Link>
+      )}
+      {/* Botのトークンが使えなければ、いちばん上で知らせる（BotからのDMも届かないため） */}
+      {o.notices.bot.state === 'bad' && (
+        <p className={stateCls('bad') + ' mt-0 mb-14'} id="opBotBad">
+          {'YokiのBotのトークンが使えません（' + fmt(o.notices.bot.since) + 'から）。Discordへの知らせが届いていません。DiscordのDeveloper PortalでBotのトークンを作り直し、WorkerのsecretのDISCORD_BOT_TOKENを入れ直してください。'}
+        </p>
       )}
       <div className={counts} id="opCounts">
         <Count n={c.groups} label="グループ" />
@@ -73,6 +80,7 @@ export function OverviewPane() {
         <p className="hint">入れると、日程調整と募集の知らせにボタンが付き、Discordのまま「予定表から答える」「どの日でもいい」「行ける日を選ぶ」「参加希望」「興味あり」を押せます。入れるときは、YokiのBotのトークンで、DiscordアプリのInteractions Endpoint URLにこのYokiのアドレスを入れます。公開のアドレスで開いた、この画面から入れてください。</p>
         <button type="button" className="btn small" id="opButtonsToggle" data-on={o.discordButtons ? '0' : '1'} onClick={() => { void act('/api/admin/discord-buttons', { on: !o.discordButtons }); }}>{o.discordButtons ? 'ボタンを付けない' : 'ボタンを付ける'}</button>
       </div>
+      <NoticeCard n={o.notices} />
       <div className="card" id="opPatrol">
         <h3><Icon name="monitor_heart" size="sm" />知らせの見回り（cron、5分おき）</h3>
         <p className={stateCls(state[0]!)}>{state[1]}</p>
@@ -84,6 +92,36 @@ export function OverviewPane() {
         </dl>
       </div>
       <Fails o={o} />
+    </div>
+  );
+}
+
+/** 運営者への知らせ（BotからのDM）。止める・使う、自分に試しに送る */
+function NoticeCard({ n }: { n: AdminOverview['notices'] }) {
+  const act = useAct();
+  const b = n.bot, last = n.last;
+  const bot = b.state === 'ok' ? '使えます（' + fmt(b.at) + 'に確かめました）'
+    : b.state === 'bad' ? '使えません（' + fmt(b.since) + 'から。' + fmt(b.at) + 'に確かめました）'
+      : b.state === 'missing' ? 'ありません（WorkerのsecretのDISCORD_BOT_TOKEN）'
+        : 'まだ確かめていません（見回りが毎時確かめます）';
+  const lastText = !last ? '—'
+    : fmt(last.at) + '・' + last.kind + '・' + (last.failed ? '届いた' + last.sent + '人、届かなかった' + last.failed + '人（' + last.error + '）' : last.sent + '人に届きました');
+  return (
+    <div className="card" id="opNotice">
+      <h3><Icon name="notifications" size="sm" />運営者への知らせ（DiscordのDM）</h3>
+      <p className={stateCls(n.on && n.operators ? 'ok' : 'warn')}>
+        {!n.on ? '止めています' : !n.operators ? '送る相手がいません（WorkerのsecretのOPERATOR_IDSに、運営者のDiscordのユーザーIDを書きます）' : '運営者' + n.operators + '人に送ります'}
+      </p>
+      <p className="hint">YokiのBotから、新しいバージョンが出たとき（毎日10時台に見ます）・知らせの見回りが3回続けて失敗したとき・Botのトークンが使えなかったあとで直ったときに、DMを送ります。DMが届くのは、Botと同じDiscordサーバーにいて、サーバーのメンバーからのDMを許している人だけです。</p>
+      <dl className={dl}>
+        <dt className={dt}>Botのトークン</dt><dd className={dd} id="opBotState">{bot}</dd>
+        <dt className={dt}>最後の知らせ</dt><dd className={dd} id="opNoticeLast">{lastText}</dd>
+        <dt className={dt}>最後に知らせたバージョン</dt><dd className={dd}>{n.version ? 'v' + n.version : '—'}</dd>
+      </dl>
+      <div className="btns">
+        <button type="button" className="btn small" id="opNoticeToggle" data-on={n.on ? '0' : '1'} onClick={() => { void act('/api/admin/operator-notice', { on: !n.on }); }}>{n.on ? '知らせを止める' : '知らせを送る'}</button>
+        <button type="button" className="btn small" id="opNoticeTest" onClick={() => { void act('/api/admin/operator-notice/test', {}); }}>自分に試しに送る</button>
+      </div>
     </div>
   );
 }

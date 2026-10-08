@@ -7,6 +7,7 @@ import { NAME_SEPARATORS, RESERVED_NAMES } from '../lib/text';
 import { STATUS } from './constants';
 import { type Form, str } from './form';
 import { forgetGoogle } from './google';
+import { NOTICE_KEYS, noticeOverview } from './operator-notice';
 
 /** 送信の失敗に数える記録（送り直しの途中のHTTP…・ERROR… は数えない） */
 const FAILED = "(l.result LIKE '送信失敗%' OR l.result LIKE '送らず%')";
@@ -17,7 +18,8 @@ const DAY_MS = 86400_000;
 
 const ago = (now: Date, ms: number) => new Date(now.getTime() - ms).toISOString();
 
-export async function overview(db: D1Database, now = new Date()): Promise<AdminOverview> {
+/** 様子。envは運営者の人数と、Botのトークンがあるか（secretはここへ渡さない） */
+export async function overview(db: D1Database, env: { operators: number; botToken: boolean }, now = new Date()): Promise<AdminOverview> {
   const [counts, meta, fails, recent] = await db.batch([
     db.prepare(
       `SELECT (SELECT count(*) FROM groups) AS groups, (SELECT count(*) FROM users) AS users,
@@ -25,7 +27,8 @@ export async function overview(db: D1Database, now = new Date()): Promise<AdminO
               (SELECT count(*) FROM auth_sessions WHERE expires_at > ?1) AS logins,
               (SELECT count(*) FROM sessions WHERE status IN ${ACTIVE}) AS active`,
     ).bind(now.toISOString()),
-    db.prepare("SELECT key, value FROM meta WHERE key IN ('patrol', 'patrol_ok_at', 'hourly', 'daily', 'registration', 'discord_buttons')"),
+    db.prepare("SELECT key, value FROM meta WHERE key IN ('patrol', 'patrol_ok_at', 'hourly', 'daily', 'registration', 'discord_buttons', ?1, ?2, ?3, ?4)")
+      .bind(NOTICE_KEYS.on, NOTICE_KEYS.last, NOTICE_KEYS.version, NOTICE_KEYS.bot),
     db.prepare(`SELECT (SELECT count(*) FROM notify_log l WHERE l.at > ?1 AND ${FAILED}) AS day, (SELECT count(*) FROM notify_log l WHERE l.at > ?2 AND ${FAILED}) AS week`)
       .bind(ago(now, DAY_MS), ago(now, 7 * DAY_MS)),
     db.prepare(
@@ -58,6 +61,7 @@ export async function overview(db: D1Database, now = new Date()): Promise<AdminO
     },
     registrationOpen: m.registration !== 'closed',
     discordButtons: m.discord_buttons === '1',
+    notices: noticeOverview(m, env),
   };
 }
 
