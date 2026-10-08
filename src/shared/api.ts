@@ -14,6 +14,9 @@ export type Status = (typeof STATUS)[keyof typeof STATUS];
 /** 複数の開催日をまとめて登録するときの日数の上限（画面は保存の前に、サーバーは受け取るときに確かめる） */
 export const SESSION_DATES_MAX = 20;
 
+/** 日付メモを期間で書くときの、いちばん長い日数（始まりの日を含む） */
+export const DAY_NOTE_SPAN_MAX = 92;
+
 /** シナリオに書ける長さと、グループごとの数の上限（画面は入力欄に、サーバーは受け取るときに使う）。playersはPLの人数の上限 */
 export const SCENARIO_MAX = { count: 200, name: 100, system: 50, hours: 20, url: 500, memo: 500, players: 20 } as const;
 
@@ -155,8 +158,8 @@ export type ConsoleData = {
   sessions: ConsoleSession[];
   /** メンバーの予定{ 'YYYY-MM-DD': { 名前: '△' | '×' } } */
   avail: Record<string, Record<string, string>>;
-  /** 日付のメモ */
-  notes: Record<string, { text: string; by: string; at: string }>;
+  /** 日付のメモ{ 始まりの日: { text, by, at, to } }。toは期間の終わり（1日だけのメモは空） */
+  notes: Record<string, { text: string; by: string; at: string; to: string }>;
   /** 予定のメモ{ 'YYYY-MM-DD': { 名前: { text, at } } } */
   availNotes: Record<string, Record<string, { text: string; at: string }>>;
   log: { at: string; kind: string; target: string; result: string }[];

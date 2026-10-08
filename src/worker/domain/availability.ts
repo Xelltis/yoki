@@ -1,7 +1,7 @@
 // メンバーの予定（都合の △ ×）と予定のメモ、日付メモ（GAS版Availability.js）
 import { badRequest } from '../lib/errors';
-import { addDays, dowOf, fmtDateJa, parseYmd } from '../lib/jst';
-import { AVAIL_NOTE_MAX, DAY_NOTE_MAX, MARKS } from './constants';
+import { addDays, daysBetween, dowOf, fmtDateJa, parseYmd } from '../lib/jst';
+import { AVAIL_NOTE_MAX, DAY_NOTE_MAX, DAY_NOTE_SPAN_MAX, MARKS } from './constants';
 import { type Form, requireSelf, str } from './form';
 import { bookedMap } from './model';
 import type { Ctx } from './types';
@@ -43,12 +43,18 @@ export async function setAvailability(ctx: Ctx, form: Form) {
 }
 
 /**
- * 自分の列に、期間と曜日を絞ってまとめて印を入れる。
- * form: { name, from, to, weekdays: [0-6], mark: '△'|'×'|'', keep: trueなら入力済みのマスは残す }
+ * 自分の列に、期間と曜日を絞ってまとめて印とメモを入れる。
+ * form: { name, from, to, weekdays: [0-6], mark: '△'|'×'|'', skipMark: trueなら印は変えない,
+ *         note: 入れるメモ（送らなければメモは変えない。空なら消す）, keep: trueなら入力済みのマス（印・メモ）は残す }
+ * メモは、卓のある日にも入れる（予定のメモと同じ）
  */
 export async function setAvailabilityBulk(ctx: Ctx, form: Form) {
   const name = requireSelf(ctx, form.name), memberId = ctx.actor.memberId;
-  const mark = readMark(form.mark);
+  const skipMark = form.skipMark === true;
+  const mark = skipMark ? '' : readMark(form.mark);
+  const note = form.note === undefined || form.note === null ? null : str(form.note);
+  if (skipMark && note === null) throw badRequest('入れる印かメモを選んでください。');
+  if (note && note.length > AVAIL_NOTE_MAX) throw badRequest('メモは' + AVAIL_NOTE_MAX + '文字までです。');
   const from = parseYmd(form.from), to = parseYmd(form.to);
   if (!from || !to) throw badRequest('期間を入れてください。');
   if (from > to) throw badRequest('期間の始まりが終わりより後になっています。');
@@ -56,37 +62,62 @@ export async function setAvailabilityBulk(ctx: Ctx, form: Form) {
   if (!wds.length) throw badRequest('曜日を選んでください。');
   const keep = !!form.keep;
   const booked = bookedMap(ctx.sessions);
-  const days: string[] = [];
+  const days: string[] = [], noteDays: string[] = [];
   let skippedBooked = 0, skippedKeep = 0;
   for (let d = ctx.today; inRange(ctx, d); d = addDays(d, 1)) {
     if (d < from || d > to || !wds.includes(dowOf(d))) continue;
-    if (booked[d]?.[name]) { skippedBooked++; continue; }
-    const cur = ctx.avail[d]?.[name] ?? '';
-    if (cur === mark) continue;
-    if (keep && cur) { skippedKeep++; continue; }
-    days.push(d);
+    let kept = false;
+    if (note !== null) {
+      const cur = ctx.availNotes[d]?.[name]?.text ?? '';
+      if (cur !== note) {
+        if (keep && cur) kept = true;
+        else noteDays.push(d);
+      }
+    }
+    if (!skipMark) {
+      const cur = ctx.avail[d]?.[name] ?? '';
+      if (booked[d]?.[name]) skippedBooked++;
+      else if (cur !== mark) {
+        if (keep && cur) kept = true;
+        else days.push(d);
+      }
+    }
+    if (kept) skippedKeep++;
   }
+  const db = ctx.db, stmts: D1PreparedStatement[] = [];
   if (days.length) {
     const json = JSON.stringify(days);
     if (mark) {
-      await ctx.db
-        .prepare(`INSERT INTO availability (member_id, date, mark) SELECT ?1, value, ?3 FROM json_each(?2) WHERE true
-                  ON CONFLICT (member_id, date) DO UPDATE SET mark = excluded.mark, source = ''`)
-        .bind(memberId, json, mark)
-        .run();
+      stmts.push(
+        db.prepare(`INSERT INTO availability (member_id, date, mark) SELECT ?1, value, ?3 FROM json_each(?2) WHERE true
+                    ON CONFLICT (member_id, date) DO UPDATE SET mark = excluded.mark, source = ''`).bind(memberId, json, mark),
+      );
     } else {
-      await ctx.db.batch([
-        ctx.db.prepare(dismissGoogle).bind(memberId, json),
-        ctx.db.prepare('DELETE FROM availability WHERE member_id = ? AND date IN (SELECT value FROM json_each(?))').bind(memberId, json),
-      ]);
+      stmts.push(
+        db.prepare(dismissGoogle).bind(memberId, json),
+        db.prepare('DELETE FROM availability WHERE member_id = ? AND date IN (SELECT value FROM json_each(?))').bind(memberId, json),
+      );
     }
   }
-  let message = name + 'の' + days.length + '日に「' + (mark || '空欄') + '」を入れました。';
-  const notes: string[] = [];
-  if (skippedBooked) notes.push('卓のある日を' + skippedBooked + '日');
-  if (skippedKeep) notes.push('入力済みの日を' + skippedKeep + '日');
-  if (notes.length) message += '（' + notes.join('、') + '飛ばしました）';
-  return { ok: true, count: days.length, skippedBooked, skippedKeep, message };
+  if (noteDays.length) {
+    const json = JSON.stringify(noteDays);
+    stmts.push(
+      note
+        ? db.prepare(`INSERT INTO avail_notes (member_id, date, text, updated_at) SELECT ?1, value, ?3, ?4 FROM json_each(?2) WHERE true
+                      ON CONFLICT (member_id, date) DO UPDATE SET text = excluded.text, updated_at = excluded.updated_at`).bind(memberId, json, note, ctx.now.toISOString())
+        : db.prepare('DELETE FROM avail_notes WHERE member_id = ? AND date IN (SELECT value FROM json_each(?))').bind(memberId, json),
+    );
+  }
+  if (stmts.length) await db.batch(stmts);
+  // 印だけ: 「ソラの3日に「×」を入れました。」、メモだけ: 「ソラの4日にメモを入れました。」、両方: 印の文に「メモを入れたのは4日です。」を足す
+  let message = skipMark
+    ? name + 'の' + noteDays.length + (note ? '日にメモを入れました。' : '日のメモを消しました。')
+    : name + 'の' + days.length + '日に「' + (mark || '空欄') + '」を入れました。' + (note === null ? '' : 'メモを' + (note ? '入れた' : '消した') + 'のは' + noteDays.length + '日です。');
+  const skipped: string[] = [];
+  if (skippedBooked) skipped.push('卓のある日を' + skippedBooked + '日');
+  if (skippedKeep) skipped.push('入力済みの日を' + skippedKeep + '日');
+  if (skipped.length) message += '（' + skipped.join('、') + '飛ばしました）';
+  return { ok: true, count: days.length, notes: noteDays.length, skippedBooked, skippedKeep, message };
 }
 
 /** 予定の1マスにメモを書く。△×とは別で、卓に入っている日にも書ける。空にすると消える */
@@ -107,20 +138,32 @@ export async function setAvailNote(ctx: Ctx, form: Form) {
   return { ok: true, ymd, name, message: fmtDateJa(ymd) + ' ' + name + 'のメモを' + (text ? '保存' : '消') + 'しました。' };
 }
 
-/** 日付メモを書く。空にすると消す。form: { ymd, text } */
+/**
+ * 日付メモを書く。空にすると消す。form: { ymd, text, to }
+ * toを入れると、ymdからtoまでの期間のメモになる（合宿・テスト期間など）。空かymdと同じなら1日だけ
+ */
 export async function setDayNote(ctx: Ctx, form: Form) {
   const ymd = parseYmd(form.ymd);
   if (!ymd) throw badRequest('日付が読めません: ' + str(form.ymd));
   const text = str(form.text);
   if (text.length > DAY_NOTE_MAX) throw badRequest('メモは' + DAY_NOTE_MAX + '文字までです。');
+  let to: string | null = null;
+  if (text && str(form.to)) {
+    to = parseYmd(form.to);
+    if (!to) throw badRequest('期間の終わりの日付が読めません: ' + str(form.to));
+    if (to < ymd) throw badRequest('期間の終わりが始まりより前になっています。');
+    if (daysBetween(ymd, to) >= DAY_NOTE_SPAN_MAX) throw badRequest('期間のメモは' + DAY_NOTE_SPAN_MAX + '日までです。');
+    if (to === ymd) to = null;
+  }
   if (text) {
     await ctx.db
-      .prepare(`INSERT INTO day_notes (group_id, date, text, by_name, updated_at) VALUES (?1, ?2, ?3, ?4, ?5)
-                ON CONFLICT (group_id, date) DO UPDATE SET text = excluded.text, by_name = excluded.by_name, updated_at = excluded.updated_at`)
-      .bind(ctx.group.id, ymd, text, ctx.actor.name, ctx.now.toISOString())
+      .prepare(`INSERT INTO day_notes (group_id, date, text, by_name, updated_at, end_date) VALUES (?1, ?2, ?3, ?4, ?5, ?6)
+                ON CONFLICT (group_id, date) DO UPDATE SET text = excluded.text, by_name = excluded.by_name, updated_at = excluded.updated_at, end_date = excluded.end_date`)
+      .bind(ctx.group.id, ymd, text, ctx.actor.name, ctx.now.toISOString(), to)
       .run();
   } else {
     await ctx.db.prepare('DELETE FROM day_notes WHERE group_id = ? AND date = ?').bind(ctx.group.id, ymd).run();
   }
-  return { ok: true, ymd, message: fmtDateJa(ymd) + 'のメモを' + (text ? '保存しました。' : '消しました。') };
+  const when = fmtDateJa(ymd) + (to ? '〜' + fmtDateJa(to) : '');
+  return { ok: true, ymd, to: to ?? '', message: when + 'のメモを' + (text ? '保存しました。' : '消しました。') };
 }

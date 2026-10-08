@@ -1,6 +1,7 @@
 // 予定（§14・17・22・31・36）と日程調整（§37・48）
 import { env } from 'cloudflare:test';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+import { cleanup } from '../../src/worker/domain/patrol';
 import { addDays, dowOf, fmtDateJa } from '../../src/worker/lib/jst';
 import { fail, ok, setupGroup, today } from './helpers';
 
@@ -75,6 +76,75 @@ describe('予定', () => {
     expect(r.data.notes[T(5)]).toMatchObject({ text: '合宿', by: 'こまち' });
     r = await ok(G.komachi, G.id, 'setDayNote', { ymd: T(5), text: '' });
     expect(r.data.notes[T(5)]).toBeUndefined();
+  });
+
+  test('日付メモは期間で書ける。終わりが始まりと同じなら1日だけ。消すと期間ごと消える', async () => {
+    let r = await ok(G.komachi, G.id, 'setDayNote', { ymd: T(5), to: T(7), text: '合宿' });
+    expect(r.message).toBe(fmtDateJa(T(5)) + '〜' + fmtDateJa(T(7)) + 'のメモを保存しました。');
+    expect(r.data.notes[T(5)]).toMatchObject({ text: '合宿', by: 'こまち', to: T(7) });
+    r = await ok(G.komachi, G.id, 'setDayNote', { ymd: T(5), to: T(5), text: '合宿' });
+    expect(r.data.notes[T(5)].to).toBe('');
+    r = await ok(G.komachi, G.id, 'setDayNote', { ymd: T(5), to: T(6), text: '合宿' });
+    expect(r.data.notes[T(5)].to).toBe(T(6));
+    // 空にすると、期間を送っても消える
+    r = await ok(G.komachi, G.id, 'setDayNote', { ymd: T(5), to: T(6), text: '' });
+    expect(r).toMatchObject({ to: '', message: fmtDateJa(T(5)) + 'のメモを消しました。' });
+    expect(r.data.notes[T(5)]).toBeUndefined();
+  });
+
+  test('毎日の片付けは、期間の終わりが1年より前の日付メモだけを消す', async () => {
+    await env.DB.batch([
+      env.DB.prepare("INSERT INTO day_notes (group_id, date, text, updated_at, end_date) VALUES (?1, ?2, '古い', 'x', NULL), (?1, ?3, '続いている', 'x', ?4)")
+        .bind(G.id, T(-400), T(-380), T(-300)),
+    ]);
+    await cleanup(env.DB, new Date());
+    const rows = (await env.DB.prepare('SELECT text FROM day_notes WHERE group_id = ?').bind(G.id).all<{ text: string }>()).results;
+    expect(rows.map((x) => x.text)).toEqual(['続いている']);
+  });
+
+  test('日付メモの期間: 読めない・逆・長すぎる期間は断る', async () => {
+    expect((await fail(G.sora, G.id, 'setDayNote', { ymd: T(5), to: 'x', text: 'a' })).error).toBe('期間の終わりの日付が読めません: x');
+    expect((await fail(G.sora, G.id, 'setDayNote', { ymd: T(5), to: T(4), text: 'a' })).error).toBe('期間の終わりが始まりより前になっています。');
+    expect((await fail(G.sora, G.id, 'setDayNote', { ymd: T(5), to: T(5 + 92), text: 'a' })).error).toBe('期間のメモは92日までです。');
+    const r = await ok(G.sora, G.id, 'setDayNote', { ymd: T(5), to: T(5 + 91), text: 'a' });
+    expect(r.data.notes[T(5)].to).toBe(T(96));
+  });
+
+  test('まとめて: 印と一緒にメモも入れられる。卓のある日にもメモは入る。入力済みのメモは残せる', async () => {
+    await ok(G.admin, G.id, 'saveSession', { name: '卓', gm: 'ソラ', date: T(2), status: '開催' });
+    await ok(G.sora, G.id, 'setAvailNote', { name: 'ソラ', ymd: T(3), text: '前から書いたメモ' });
+    let r = await ok(G.sora, G.id, 'setAvailabilityBulk', { name: 'ソラ', from: T(1), to: T(3), mark: '×', note: '旅行', keep: true });
+    expect(r).toMatchObject({ count: 2, notes: 2, skippedBooked: 1, skippedKeep: 1 });
+    expect(r.message).toBe('ソラの2日に「×」を入れました。メモを入れたのは2日です。（卓のある日を1日、入力済みの日を1日飛ばしました）');
+    expect([T(1), T(2), T(3)].map((d) => r.data.availNotes[d]?.ソラ?.text)).toEqual(['旅行', '旅行', '前から書いたメモ']);
+    // 残さないなら上書きする
+    r = await ok(G.sora, G.id, 'setAvailabilityBulk', { name: 'ソラ', from: T(3), to: T(3), mark: '×', note: '旅行' });
+    expect(r.data.availNotes[T(3)].ソラ.text).toBe('旅行');
+  });
+
+  test('まとめて: 印を変えずに、メモだけ入れる・消す', async () => {
+    await ok(G.sora, G.id, 'setAvailability', { name: 'ソラ', ymd: T(1), mark: '△' });
+    let r = await ok(G.sora, G.id, 'setAvailabilityBulk', { name: 'ソラ', from: T(0), to: T(1), skipMark: true, mark: '×', note: '出張' });
+    expect(r).toMatchObject({ count: 0, notes: 2, message: 'ソラの2日にメモを入れました。' });
+    expect(r.data.avail[T(1)]).toEqual({ ソラ: '△' });
+    expect(r.data.avail[T(0)]).toBeUndefined();
+    // 同じメモの日は数えない
+    r = await ok(G.sora, G.id, 'setAvailabilityBulk', { name: 'ソラ', from: T(0), to: T(2), skipMark: true, note: '出張' });
+    expect(r.message).toBe('ソラの1日にメモを入れました。');
+    r = await ok(G.sora, G.id, 'setAvailabilityBulk', { name: 'ソラ', from: T(0), to: T(2), skipMark: true, note: '' });
+    expect(r.message).toBe('ソラの3日のメモを消しました。');
+    expect(r.data.availNotes[T(0)]).toBeUndefined();
+    // 印と一緒に消す
+    await ok(G.sora, G.id, 'setAvailNote', { name: 'ソラ', ymd: T(4), text: 'x' });
+    r = await ok(G.sora, G.id, 'setAvailabilityBulk', { name: 'ソラ', from: T(4), to: T(4), mark: '×', note: null });
+    expect(r.message).toBe('ソラの1日に「×」を入れました。');
+    r = await ok(G.sora, G.id, 'setAvailabilityBulk', { name: 'ソラ', from: T(4), to: T(4), mark: '', note: '' });
+    expect(r.message).toBe('ソラの1日に「空欄」を入れました。メモを消したのは1日です。');
+  });
+
+  test('まとめて: 印もメモも選ばない・長すぎるメモは断る', async () => {
+    expect((await fail(G.sora, G.id, 'setAvailabilityBulk', { name: 'ソラ', from: T(0), to: T(1), skipMark: true })).error).toBe('入れる印かメモを選んでください。');
+    expect((await fail(G.sora, G.id, 'setAvailabilityBulk', { name: 'ソラ', from: T(0), to: T(1), skipMark: true, note: 'あ'.repeat(201) })).error).toBe('メモは200文字までです。');
   });
 });
 

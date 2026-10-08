@@ -23,8 +23,8 @@ const filterStore = createStore<AvailFilter & { mineFor: string }>({ members: nu
 /** 卓の多い人を左に（この端末に控える。卓をまとめて変える表と同じ） */
 export const sortStore = createStore(load('sortByLoad') !== '0');
 const afKey = (k: string, mine: string) => 'av' + k + ':' + (mine || '-');
-/** まとめて入れるの入力（タブを移っても残す） */
-const bulkStore = createStore({ mark: '△', from: '', to: '', wds: ALL_WDS, keep: true });
+/** まとめて入れるの入力（タブを移っても残す）。markの 'none' は印を変えない。noteModeは メモを '' 変えない・'set' 入れる・'clear' 消す */
+const bulkStore = createStore({ mark: '△', from: '', to: '', wds: ALL_WDS, keep: true, noteMode: '', note: '' });
 
 /** 絞り込み・まとめて入れるの枠（名前と欄を2列に並べる。狭い画面では1列） */
 const pgrid = 'grid grid-cols-[max-content_minmax(0,1fr)] items-center gap-x-16 gap-y-10 max-sm:grid-cols-[minmax(0,1fr)] max-sm:gap-4';
@@ -126,11 +126,17 @@ export function AvailTab() {
   };
   const runBulk = () => {
     if (!mine) return;
-    const form = { name: mine, from: bulkFrom, to: bulkTo, weekdays: bulk.wds.slice().sort(), mark: bulk.mark, keep: bulk.keep };
+    const skipMark = bulk.mark === 'none', note = bulk.noteMode === 'set' ? bulk.note.trim() : bulk.noteMode === 'clear' ? '' : undefined;
+    const form = { name: mine, from: bulkFrom, to: bulkTo, weekdays: bulk.wds.slice().sort(), mark: skipMark ? '' : bulk.mark, skipMark, note, keep: bulk.keep };
     if (!form.from || !form.to) { setBulkMsg({ text: '期間を入れてください。', running: false }); return; }
     if (!form.weekdays.length) { setBulkMsg({ text: '曜日を選んでください。', running: false }); return; }
+    if (skipMark && note === undefined) { setBulkMsg({ text: '入れる印かメモを選んでください。', running: false }); return; }
+    if (bulk.noteMode === 'set' && !note) { setBulkMsg({ text: '入れるメモを書いてください。', running: false }); return; }
     const markText = bulk.mark === '△' ? '△ 調整すれば可' : bulk.mark === '×' ? '× 不可' : '空欄に戻す（参加できる）';
-    askConfirm({ title: '自分の列にまとめて入れますか？', message: mine + 'の' + fmtJa(form.from) + '〜' + fmtJa(form.to) + '（' + form.weekdays.map((x) => WD[x]).join('') + '）に「' + markText + '」を入れます。' + (form.keep ? '\n入力済みのマスは残します。' : '\n入力済みのマスも上書きします。'), ok: '入れる' }, () => {
+    const what = [skipMark ? '' : '「' + markText + '」', note ? 'メモ「' + note + '」' : ''].filter(Boolean).join('と');
+    const message = mine + 'の' + fmtJa(form.from) + '〜' + fmtJa(form.to) + '（' + form.weekdays.map((x) => WD[x]).join('') + '）' + (what ? 'に' + what + 'を入れます。' : 'のメモを消します。')
+      + (what && note === '' ? 'メモは消します。' : '') + (form.keep ? '\n入力済みのマスは残します。' : '\n入力済みのマスも上書きします。');
+    askConfirm({ title: '自分の列にまとめて入れますか？', message, ok: '入れる' }, () => {
       setBulkMsg({ text: '保存しています…', running: true });
       sync.write<RpcResult>('setAvailabilityBulk', form).then((res) => { setBulkMsg({ text: res.message, running: false }); toast(res.message); },
         (e: Error) => { setBulkMsg({ text: e.message, running: false }); toast(e.message); });
@@ -180,7 +186,7 @@ export function AvailTab() {
         <button type="button" className={'btn small' + (fold.availBulk ? ' on bg-head' : '')} id="foldBulk" data-target="availBulk" aria-expanded={fold.availBulk ? 'true' : 'false'} onClick={() => toggleFold('availBulk')}>
           <Icon name={fold.availBulk ? 'expand_more' : 'chevron_right'} size="sm" className="-ml-4" />まとめて入れる
         </button>
-        <Tip className="ml-2" text="自分の列に、期間と曜日を決めて △ か × をまとめて入れます。卓のある日は飛ばします。" label="まとめて入れるとは" />
+        <Tip className="ml-2" text="自分の列に、期間と曜日を決めて △ か × とメモをまとめて入れます。旅行のような何日か続く予定に使えます。印は、卓のある日を飛ばします。" label="まとめて入れるとは" />
         {/* 列の並び順は表だけのもの。狭い画面の日ごとのリストでは出さない */}
         <label className="chk ml-auto max-tab:hidden!">
           <input type="checkbox" id="sortByLoad" checked={sortByLoad} onChange={(ev) => { store('sortByLoad', ev.target.checked ? '1' : '0'); sortStore.set(ev.target.checked); }} /> 卓の多い人を左に
@@ -231,8 +237,18 @@ export function AvailTab() {
           <label className={plabel} htmlFor="abMark">印</label>
           <div className={pctl}>
             <select id="abMark" value={bulk.mark} onChange={(ev) => bulkStore.set((x) => ({ ...x, mark: ev.target.value }))}>
-              <option value="△">△ 調整すれば可</option><option value="×">× 不可</option><option value="">空欄に戻す（参加できる）</option>
+              <option value="△">△ 調整すれば可</option><option value="×">× 不可</option><option value="">空欄に戻す（参加できる）</option><option value="none">印は変えない</option>
             </select>
+          </div>
+          <label className={plabel} htmlFor="abNoteMode">メモ</label>
+          <div className={pctl}>
+            <select id="abNoteMode" value={bulk.noteMode} onChange={(ev) => bulkStore.set((x) => ({ ...x, noteMode: ev.target.value }))}>
+              <option value="">変えない</option><option value="set">入れる</option><option value="clear">消す</option>
+            </select>
+            {bulk.noteMode === 'set' && (
+              <input type="text" className="w-auto min-w-0 flex-1" id="abNote" maxLength={200} placeholder="例: 旅行・出張" aria-label="まとめて入れるメモ" value={bulk.note}
+                onChange={(ev) => bulkStore.set((x) => ({ ...x, note: ev.target.value }))} />
+            )}
           </div>
           <span className={plabel}>期間</span>
           <div className={pctl}>

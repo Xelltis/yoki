@@ -1,6 +1,6 @@
 // 選んだ日の内訳（その日の卓・メンバーの予定・日付のメモ）。卓ごとにDiscordへの通知・編集・続きの登録
 import { useReducer, useState } from 'react';
-import type { ConsoleData } from '../../../../shared/api';
+import { type ConsoleData, DAY_NOTE_SPAN_MAX } from '../../../../shared/api';
 import { askConfirm } from '../../../ui/confirm';
 import { Icon } from '../../../ui/Icon';
 import { useStore } from '../../../ui/store';
@@ -10,8 +10,8 @@ import { prepSummary } from '../prep/PrepModal';
 import { discordSend, failToast } from '../api/discord';
 import { useConsole } from '../context';
 import { googleAddUrl } from '../model/calendar';
-import { daysBetween, fmtJa, timeRange } from '../model/dates';
-import { hasPoll, isActive, isAdjusting, isDated, me, peopleOf, pollOk, pollVoters, scenarioOf, seriesNames, sortSessions, targetPeople, windowByDay } from '../model/model';
+import { addDaysYmd, daysBetween, fmtJa, parseYmd, timeRange } from '../model/dates';
+import { hasPoll, isActive, isAdjusting, isDated, me, notesOn, peopleOf, pollOk, pollVoters, scenarioOf, seriesNames, sortSessions, targetPeople, windowByDay } from '../model/model';
 import { hookFor, kindOf, notifyState } from '../model/notify';
 import { useGoRecruit } from '../shell/nav';
 import { Place } from '../Place';
@@ -22,9 +22,9 @@ const detailCard = 'card mb-0 scroll-mt-[calc(var(--appbar-h)+12px)] scroll-mb-[
 /** その日のみんなの予定の札 */
 const MARK_BG: Record<string, string> = { 'm-ok': 'bg-ok', 'm-soft': 'bg-soft', 'm-ng': 'bg-warn', 'm-bk': 'bg-session' };
 
-/** Discordに通知したときの進み具合（卓ごと）と、日付メモの書きかけ（日ごと）。タブを移っても、この画面を開いているあいだは残す */
+/** Discordに通知したときの進み具合（卓ごと）と、日付メモの書きかけ（日ごと。文と期間の終わり）。タブを移っても、この画面を開いているあいだは残す */
 const notifyRes: Record<string, string> = {};
-const dayNoteDraft: Record<string, string> = {};
+const dayNoteDraft: Record<string, { text: string; to: string }> = {};
 
 export function DayDetail({ d, target }: { d: ConsoleData; target: string }) {
   const { ui, sync } = useConsole();
@@ -47,7 +47,12 @@ export function DayDetail({ d, target }: { d: ConsoleData; target: string }) {
   const people = targetPeople(d, target);
   const sn = seriesNames(d);
   const dayNote = (d.notes || {})[selDay];
-  const noteText = dayNoteDraft[selDay] !== undefined ? dayNoteDraft[selDay] : dayNote ? dayNote.text : '';
+  // 前の日から続く期間のメモ（この日の欄では直さず、始まりの日を開いて直す）
+  const carried = notesOn(d, selDay).filter((x) => x.from !== selDay);
+  const saved = { text: dayNote ? dayNote.text : '', to: dayNote ? dayNote.to : '' };
+  const draft = dayNoteDraft[selDay] || saved;
+  const setDraft = (patch: Partial<typeof saved>) => { dayNoteDraft[selDay] = { ...draft, ...patch }; redraw(); };
+  const openDay = (k: string) => { const p = parseYmd(k); ui.set((x) => ({ ...x, selDay: k, view: { y: p.getFullYear(), m: p.getMonth() } })); };
 
   const notify = (id: string) => {
     const s = d.sessions.filter((x) => x.id === id)[0]; if (!s) return;
@@ -61,18 +66,19 @@ export function DayDetail({ d, target }: { d: ConsoleData; target: string }) {
     });
   };
   const saveNote = () => {
-    const day = selDay, text = noteText;
+    const day = selDay, text = draft.text, to = draft.to > day ? draft.to : '';
+    if (to && daysBetween(day, to) >= DAY_NOTE_SPAN_MAX) { setNote({ saving: false, msg: '期間のメモは' + DAY_NOTE_SPAN_MAX + '日までです。' }); return; }
     delete dayNoteDraft[day];
     setNote({ saving: true, msg: '保存しています…' });
     // 押した瞬間に仮に出す
-    sync.write<{ message: string; data?: ConsoleData }>('setDayNote', { ymd: day, text, me: me(d) }, {
+    sync.write<{ message: string; data?: ConsoleData }>('setDayNote', { ymd: day, text, to, me: me(d) }, {
       optimistic: (cur) => {
         const notes = { ...cur.notes };
-        if (text.trim()) notes[day] = { text: text.trim(), by: me(cur), at: 'いま' }; else delete notes[day];
+        if (text.trim()) notes[day] = { text: text.trim(), by: me(cur), at: 'いま', to }; else delete notes[day];
         return { ...cur, notes };
       },
     }).then((res) => { setNote({ saving: false, msg: '' }); toast(res.message); },
-      (e: Error) => { dayNoteDraft[day] = text; setNote({ saving: false, msg: e.message }); toast(e.message); void sync.refresh('quiet'); });
+      (e: Error) => { dayNoteDraft[day] = { text, to: draft.to }; setNote({ saving: false, msg: e.message }); toast(e.message); void sync.refresh('quiet'); });
   };
 
   return (
@@ -165,12 +171,28 @@ export function DayDetail({ d, target }: { d: ConsoleData; target: string }) {
           )}
         </div>
         <div className="mt-14 border-t border-line pt-12">
+          {/* 前の日から続く期間のメモ。押すと、始まりの日を開いて直せる */}
+          {carried.map((x) => (
+            <div className="mb-10 flex flex-wrap items-center gap-x-8 gap-y-4 rounded-md bg-soon px-10 py-6 text-13" data-carried={x.from} key={x.from}>
+              <Icon name="date_range" size="sm" className="text-soon-text" />
+              <b className="font-semibold">{fmtJa(x.from) + '〜' + fmtJa(x.to)}</b>
+              <span className="min-w-0 flex-1 whitespace-pre-wrap wrap-anywhere">{x.text}</span>
+              <button type="button" className="btn small" data-open-note={x.from} onClick={() => openDay(x.from)}>{fmtJa(x.from) + 'を開いて直す'}</button>
+            </div>
+          ))}
           <div className="hint">{'この日のメモ' + (dayNote && dayNote.by ? '　' + dayNote.by + 'が' + dayNote.at : '')}</div>
-          <textarea className="h-64 w-full resize-y" id="dayNote" aria-label="この日のメモ" placeholder="卓と関係のない予定も書けます（合宿、イベント、忙しい週など）" value={noteText}
-            onChange={(ev) => { dayNoteDraft[selDay] = ev.target.value; redraw(); }} />
+          <textarea className="h-64 w-full resize-y" id="dayNote" aria-label="この日のメモ" placeholder="卓と関係のない予定も書けます（合宿、イベント、忙しい週など）" value={draft.text}
+            onChange={(ev) => setDraft({ text: ev.target.value })} />
+          {/* 何日か続く予定は、終わりの日を入れて期間のメモにする */}
+          <div className="mt-8 flex flex-wrap items-center gap-8 text-13">
+            <label htmlFor="dayNoteTo" className="m-0 font-normal" title="合宿やテスト期間のように、何日か続く予定のとき">期間にするなら</label>
+            <input type="date" className="w-auto" id="dayNoteTo" min={addDaysYmd(selDay, 1)} max={addDaysYmd(selDay, DAY_NOTE_SPAN_MAX - 1)} value={draft.to > selDay ? draft.to : ''}
+              onChange={(ev) => setDraft({ to: ev.target.value })} />
+            <span>まで</span>
+          </div>
           <div className="btns mt-8">
             {/* 書き換えるまでは押せない */}
-            <button type="button" className="btn small primary" id="dayNoteSave" disabled={note.saving || noteText === (dayNote ? dayNote.text : '')} onClick={saveNote}>メモを保存</button>
+            <button type="button" className="btn small primary" id="dayNoteSave" disabled={note.saving || (draft.text === saved.text && (draft.to > selDay ? draft.to : '') === saved.to)} onClick={saveNote}>メモを保存</button>
             <span className="hint" id="dayNoteMsg">{note.msg}</span>
           </div>
         </div>

@@ -255,6 +255,20 @@ await withDevServer(async (base) => {
       await until((d, k) => d.notes[k]?.text === 'e2eのメモ', day);
     });
 
+    await step('日付のメモを期間で書ける。続く日には、始まりの日のメモが出て、そこから開いて直せる', async () => {
+      const [from, mid, to] = (await D()).availDays.slice(30, 33);
+      await page.evaluate((k) => window.yoki.selectDay(k), from);
+      await page.fill('#dayNote', 'e2eの合宿');
+      await page.fill('#dayNoteTo', to);
+      await page.click('#dayNoteSave');
+      await until((d, a) => d.notes[a[0]]?.text === 'e2eの合宿' && d.notes[a[0]]?.to === a[1], [from, to]);
+      await page.evaluate((k) => window.yoki.selectDay(k), mid);
+      assert.equal(await page.locator(`.cal .day[data-day="${mid}"] [data-note-from="${from}"]`).count(), 1, '続く日にもメモが出る');
+      await page.click(`#dayBody button[data-open-note="${from}"]`);
+      assert.equal(await page.inputValue('#dayNote'), 'e2eの合宿', '始まりの日が開く');
+      assert.equal(await page.inputValue('#dayNoteTo'), to);
+    });
+
     await step('カレンダー連携: 購読URLを作って読め、作り直すと前のURLは読めない。止められる', async () => {
       await tab('settings');
       await page.selectOption('#feedScope', 'all');
@@ -341,6 +355,22 @@ await withDevServer(async (base) => {
       await page.click('#abRun');
       await confirm();
       await until((d) => Object.values(d.avail).filter((m) => m['ひより'] === '×').length >= 10);
+    });
+
+    await step('まとめて入れるで、印を変えずにメモだけ入れられる', async () => {
+      const [from, to] = [(await D()).availDays[40], (await D()).availDays[42]];
+      await page.fill('#abFrom', from);
+      await page.fill('#abTo', to);
+      await page.selectOption('#abMark', 'none');
+      await page.selectOption('#abNoteMode', 'set');
+      await page.fill('#abNote', 'e2eの旅行');
+      await page.uncheck('#abKeep');
+      await page.click('#abRun');
+      await confirm();
+      await until((d, a) => [a[0], a[1]].every((k) => d.availNotes[k]?.['ひより']?.text === 'e2eの旅行'), [from, to]);
+      await page.selectOption('#abNoteMode', '');
+      await page.selectOption('#abMark', '×');
+      await page.check('#abKeep');
     });
 
     await step('管理画面: メンバーを足し、名前を変え、外せる', async () => {

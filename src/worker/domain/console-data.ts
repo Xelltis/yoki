@@ -11,8 +11,8 @@ export function consoleData(ctx: Ctx): ConsoleData {
   const g = ctx.group;
   const availDays: string[] = [];
   for (let i = 0; i < g.avail_days; i++) availDays.push(addDays(ctx.today, i));
-  const notes: Record<string, { text: string; by: string; at: string }> = {};
-  for (const [k, n] of Object.entries(ctx.dayNotes)) notes[k] = { text: n.text, by: n.by, at: stampText(n.at) };
+  const notes: ConsoleData['notes'] = {};
+  for (const [k, n] of Object.entries(ctx.dayNotes)) notes[k] = { text: n.text, by: n.by, at: stampText(n.at), to: n.to };
   const availNotes: Record<string, Record<string, { text: string; at: string }>> = {};
   for (const [k, byName] of Object.entries(ctx.availNotes)) {
     availNotes[k] = {};

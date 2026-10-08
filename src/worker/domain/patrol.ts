@@ -260,7 +260,7 @@ export async function cleanup(db: D1Database, now: Date): Promise<void> {
     db.prepare(`DELETE FROM notify_log WHERE id IN (SELECT id FROM (SELECT id, ROW_NUMBER() OVER (PARTITION BY group_id ORDER BY id DESC) AS rn FROM notify_log) WHERE rn > ?)`).bind(KEEP_LOG_ROWS),
     db.prepare('DELETE FROM availability WHERE date < ?').bind(addDays(today, -KEEP_AVAIL_DAYS)),
     db.prepare('DELETE FROM avail_notes WHERE date < ?').bind(addDays(today, -KEEP_AVAIL_DAYS)),
-    db.prepare('DELETE FROM day_notes WHERE date < ?').bind(addDays(today, -KEEP_DAY_NOTE_DAYS)),
+    db.prepare('DELETE FROM day_notes WHERE COALESCE(end_date, date) < ?').bind(addDays(today, -KEEP_DAY_NOTE_DAYS)),
     db.prepare('DELETE FROM google_dismissed WHERE date < ?').bind(addDays(today, -KEEP_AVAIL_DAYS)),
     // 連携が無くなった人（運営者が利用者を消したなど）と、触らなくなった過ぎた卓の、書いた予定の控え。Googleの予定は残る
     db.prepare('DELETE FROM google_events WHERE user_id NOT IN (SELECT user_id FROM google_links) OR date < ?').bind(addDays(today, -WRITE_PAST_DAYS)),

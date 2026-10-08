@@ -86,7 +86,7 @@ usersの行は消さない（印がそこにあるため）。Discordのユー�
 
 ## データベース（D1）
 
-表の定義は `migrations/`（`0001_init.sql` が最初の形、`0002_admin.sql` が締め出し・最後に使われた日と索引、`0003_bot.sql` が知らせのBot、`0004_calendar.sql` がカレンダーとの連携、`0005_member_check.sql` がBotで確かめた日時、`0006_google_login.sql` がGoogleでのログイン、`0007_scenarios.sql` がシナリオと通過、`0008_prep.sql` が卓の準備、`0009_discord_events.sql` がDiscordのイベント）。日付（開催日・予定・メモ）は日本時間の `YYYY-MM-DD`、日時（〜した時刻）はUTCのISO文字列。
+表の定義は `migrations/`（`0001_init.sql` が最初の形、`0002_admin.sql` が締め出し・最後に使われた日と索引、`0003_bot.sql` が知らせのBot、`0004_calendar.sql` がカレンダーとの連携、`0005_member_check.sql` がBotで確かめた日時、`0006_google_login.sql` がGoogleでのログイン、`0007_scenarios.sql` がシナリオと通過、`0008_prep.sql` が卓の準備、`0009_discord_events.sql` がDiscordのイベント、`0010_note_ranges.sql` が期間の日付メモ）。日付（開催日・予定・メモ）は日本時間の `YYYY-MM-DD`、日時（〜した時刻）はUTCのISO文字列。
 
 `users`・`user_guilds`・`auth_sessions`: ログイン。`users.banned_at`・`banned_reason` は締め出し。
 
@@ -96,7 +96,7 @@ usersの行は消さない（印がそこにあるため）。Discordのユー�
 
 `sessions`・`session_people`: 卓と、関わる人（GM・参加者・参加希望・興味あり）。
 
-`availability`・`avail_notes`・`day_notes`・`poll_votes`・`series_notify`・`notify_log`。
+`availability`・`avail_notes`・`day_notes`・`poll_votes`・`series_notify`・`notify_log`。`day_notes.end_date` は期間のメモの終わり（1日だけなら `NULL`）で、メモは始まりの日（`date`）に1つだけ持つ。
 
 `scenarios`・`member_scenarios`: グループのシナリオと、本人や管理者が付けた通過の印（`played` 遊んだ・`gm` GMできる）。`sessions.scenario_id` は卓で遊ぶシナリオ（シナリオを消したら `NULL`）。
 
@@ -220,7 +220,7 @@ usersの行は消さない（印がそこにあるため）。Discordのユー�
 
 **Discordのイベント**は毎回、書き直しが要るグループを1つずつ合わせる（上の「Discordへの送信」）。Googleの同期より先に回し、使った呼び出しの数をGoogleの枠から引く。
 
-毎日1回（日本時間の4時以降）、期限切れのログイン、古い送信記録（グループごとに500件まで）、90日より前の予定とメモ、1年より前の日付メモを片付ける。
+毎日1回（日本時間の4時以降）、期限切れのログイン、古い送信記録（グループごとに500件まで）、90日より前の予定とメモ、1年より前に終わった日付メモを片付ける。
 
 Googleカレンダーと連携している人を、長く回っていない人から5人ずつ同期する（卓の書き込みと、1時間おきの予定の読み込み。下の「カレンダーとの連携」）。毎日の片付けでは、90日より前の「消した日」の記録と、連携が無くなった人・過ぎた卓の、書いた予定の控えも消す。
 

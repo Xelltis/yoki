@@ -2,8 +2,8 @@
 import { useRef } from 'react';
 import type { ConsoleData, ConsoleSession } from '../../../../shared/api';
 import { Icon } from '../../../ui/Icon';
-import { WD, holidayName, ymdOf } from '../model/dates';
-import { STATUS_ICON, active, availMap, hasPoll, isActive, isAdjusting, pollOk, pollVoters, sortSessions, windowByDay } from '../model/model';
+import { WD, fmtJa, holidayName, ymdOf } from '../model/dates';
+import { STATUS_ICON, active, availMap, hasPoll, isActive, isAdjusting, notesOn, pollOk, pollVoters, sortSessions, windowByDay } from '../model/model';
 
 type Props = {
   d: ConsoleData;
@@ -63,9 +63,10 @@ export function MonthGrid({ d, view, target, selDay, onPick, onShift }: Props) {
     // 都合を見る卓の候補の期間は枠、選んでいる日は太い枠
     if (tsel && isAdjusting(tsel) && wins.indexOf(tsel) >= 0) cls += ' shadow-[inset_0_0_0_2px_var(--accent-line)]';
     if (key === selDay) cls += ' z-(--z-cell) outline-2 outline-offset-[-2px] outline-accent';
-    const note = (d.notes || {})[key];
+    // その日にかかる日付のメモ（前の日から続く期間のメモも）
+    const notes = notesOn(d, key);
     const aria = (m + 1) + '月' + day + '日（' + WD[c] + '）' + (hol ? ' ' + hol : '') + (key === d.today ? '、今日' : '') + (list.length ? '、卓' + list.length + '件' : '') +
-      (wins.length ? '、調整中' + wins.length + '件' : '') + (av[key] === 'ok' ? '、全員空き' : av[key] === 'soft' ? '、△あり' : '') + (note ? '、メモあり' : '');
+      (wins.length ? '、調整中' + wins.length + '件' : '') + (av[key] === 'ok' ? '、全員空き' : av[key] === 'soft' ? '、△あり' : '') + (notes.length ? '、メモあり' : '');
     const icos = list.filter((s) => isAdjusting(s) && wins.indexOf(s) < 0).concat(wins);
     // 調整中はアイコンだけ（下で並べる）。ほかは札にする
     const chips = list.filter((s) => !isAdjusting(s));
@@ -104,7 +105,11 @@ export function MonthGrid({ d, view, target, selDay, onPick, onShift }: Props) {
             })}
           </span>
         )}
-        {note && <span className={chipBase + CHIP.note![0]} title={note.text}><Icon name="sticky_note_2" size="xs" className={chipIcon + CHIP.note![1]} />{' ' + note.text.split('\n')[0]}</span>}
+        {notes.map((n) => (
+          <span className={chipBase + CHIP.note![0]} key={n.from} title={(n.to ? fmtJa(n.from) + '〜' + fmtJa(n.to) + '　' : '') + n.text} data-note-from={n.from}>
+            <Icon name="sticky_note_2" size="xs" className={chipIcon + CHIP.note![1]} />{' ' + n.text.split('\n')[0]}
+          </span>
+        ))}
       </button>,
     );
   }

@@ -103,6 +103,9 @@ export async function seedSample(db: D1Database, groupId: string, appUrl: string
   await setAvailability(await as('ユズ'), { name: 'ユズ', ymd: T(10), mark: '△' });
   await setAvailNote(await as('ソラ'), { name: 'ソラ', ymd: T(8), text: '21時からなら参加できます' });
   await setDayNote(await as('ソラ'), { ymd: T(5), text: 'ユドナリウムの部屋は前日に作ります' });
+  // 何日か続く予定（期間の日付メモと、まとめて入れた予定のメモ）
+  await setDayNote(await as('こまち'), { ymd: T(13), to: T(15), text: 'ユズは合宿で不在' });
+  await setAvailabilityBulk(await as('ユズ'), { name: 'ユズ', from: T(13), to: T(15), mark: '×', note: '合宿', keep: true });
   // Discordに送った跡（送ったことにするだけ）。案内は今日が開催前の知らせの日なので、開催前の知らせ済みにもなる
   await db.batch([
     db.prepare("INSERT INTO notify_log (group_id, at, kind, target, result) VALUES (?1, ?2, '案内', '星降る港の依頼', 'OK (200)'), (?1, ?2, '参加確認', '雪原の古城（募集のチャンネル）', 'OK (200)')").bind(groupId, at),

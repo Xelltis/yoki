@@ -86,7 +86,7 @@ export async function loadGroup(
           WHERE m.group_id = ? AND n.date >= ?`,
       )
       .bind(groupId, today),
-    db.prepare('SELECT date, text, by_name, updated_at FROM day_notes WHERE group_id = ?').bind(groupId),
+    db.prepare('SELECT date, end_date, text, by_name, updated_at FROM day_notes WHERE group_id = ?').bind(groupId),
     db
       .prepare(
         `SELECT v.session_id, v.date, v.vote, COALESCE(m.name, v.guest_name) AS name
@@ -177,7 +177,9 @@ export async function loadGroup(
   const availNotes: Ctx['availNotes'] = {};
   for (const n of rows<{ date: string; text: string; updated_at: string; name: string }>(6)) (availNotes[n.date] ??= {})[n.name] = { text: n.text, at: n.updated_at };
   const dayNotes: Ctx['dayNotes'] = {};
-  for (const n of rows<{ date: string; text: string; by_name: string; updated_at: string }>(7)) dayNotes[n.date] = { text: n.text, by: n.by_name, at: n.updated_at };
+  for (const n of rows<{ date: string; end_date: string | null; text: string; by_name: string; updated_at: string }>(7)) {
+    dayNotes[n.date] = { text: n.text, by: n.by_name, at: n.updated_at, to: n.end_date ?? '' };
+  }
   const votes: Ctx['votes'] = new Map();
   for (const v of rows<{ session_id: number; date: string; vote: string; name: string }>(8)) {
     const byDay = votes.get(v.session_id) ?? {};

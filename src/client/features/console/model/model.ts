@@ -145,6 +145,19 @@ export function seriesNames(d: ConsoleData): string[] {
   return out;
 }
 
+/* ---- 日付のメモ ---- */
+/** 日付のメモ1つ。fromは始まりの日、toは期間の終わり（1日だけなら空） */
+export type DayNote = ConsoleData['notes'][string] & { from: string };
+/** その日にかかる日付のメモ（その日に始まるメモと、前の日から続く期間のメモ）。始まりの日の順 */
+export function notesOn(d: ConsoleData, day: string): DayNote[] {
+  const notes = d.notes || {}, out: DayNote[] = [];
+  Object.keys(notes).sort().forEach((from) => {
+    const n = notes[from]!;
+    if (from === day || (from < day && !!n.to && n.to >= day)) out.push({ ...n, from });
+  });
+  return out;
+}
+
 /* ---- あなた ---- */
 /** 「あなた」（ログインした本人）。予定・参加希望・日程調整の回答は、本人のぶんだけ入れる */
 export function me(d: ConsoleData): string { return d.me ? d.me.name : ''; }
