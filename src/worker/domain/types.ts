@@ -33,6 +33,9 @@ export type GroupRow = {
   day_parts: number;
   /** 卓の知らせを、卓ごとのスレッドにまとめる（1） */
   threads: number;
+  /** 管理者にするDiscordのロールのIDと名前（決めていなければ空） */
+  admin_role: string;
+  admin_role_name: string;
 };
 
 /**

@@ -12,19 +12,30 @@ type ApiMember = { roles: string[] };
 type ApiGuild = { owner_id: string; roles: { id: string; permissions: string }[] };
 
 /**
- * その人がサーバーにいるか。いれば、サーバーを管理できるか（オーナーか、管理者・サーバー管理の権限）も返す（読めなければnull）。
+ * その人がサーバーにいるか。いれば、サーバーを管理できるか（オーナーか、管理者・サーバー管理の権限。読めなければnull）と、ロール（IDの一覧）も返す。
  * Botがサーバーにいない・Discordが答えない、のようにBotでは分からないときはnull（呼ぶ側が、ほかの方法で確かめる）
  */
-export async function guildMembership(token: string, guildId: string, userId: string): Promise<{ member: false } | { member: true; canManage: boolean | null } | null> {
+export async function guildMembership(token: string, guildId: string, userId: string): Promise<{ member: false } | { member: true; canManage: boolean | null; roles: string[] } | null> {
   try {
     const m = await botGet(token, '/guilds/' + guildId + '/members/' + userId);
     if (m.status === 404 && (m.body as { code?: number } | null)?.code === UNKNOWN_MEMBER) return { member: false };
     if (m.status !== 200) return null;
+    const own = (m.body as ApiMember).roles;
     const g = await botGet(token, '/guilds/' + guildId);
-    if (g.status !== 200) return { member: true, canManage: null };
-    const guild = g.body as ApiGuild, roles = new Set([guildId, ...(m.body as ApiMember).roles]);
+    if (g.status !== 200) return { member: true, canManage: null, roles: own };
+    const guild = g.body as ApiGuild, roles = new Set([guildId, ...own]);
     const perms = guild.roles.filter((r) => roles.has(r.id)).reduce((p, r) => p | BigInt(r.permissions), 0n);
-    return { member: true, canManage: guild.owner_id === userId || (perms & MANAGE) !== 0n };
+    return { member: true, canManage: guild.owner_id === userId || (perms & MANAGE) !== 0n, roles: own };
+  } catch {
+    return null;
+  }
+}
+
+/** その人の、サーバーでのロール（IDの一覧）。いない・Botで分からないときはnull */
+export async function memberRoles(token: string, guildId: string, userId: string): Promise<string[] | null> {
+  try {
+    const m = await botGet(token, '/guilds/' + guildId + '/members/' + userId);
+    return m.status === 200 ? (m.body as ApiMember).roles : null;
   } catch {
     return null;
   }

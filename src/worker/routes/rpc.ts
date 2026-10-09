@@ -16,7 +16,7 @@ import { loadGroup } from '../domain/load';
 import { deleteMember, saveMember, setAdmin, setShareBusy } from '../domain/members';
 import { cancelPoll, decidePoll, type Io, setPollVote, setPollVoteAll, setPollVoteFromAvail, startPoll } from '../domain/polls';
 import { bulkUpdateSessions, deleteSession, saveSession, setInterest } from '../domain/sessions';
-import { getDiscordChannels, renameGroup, saveConsoleSettings, saveSeriesNotify } from '../domain/settings';
+import { getDiscordChannels, getDiscordRoles, renameGroup, saveConsoleSettings, saveSeriesNotify } from '../domain/settings';
 import type { Ctx } from '../domain/types';
 import { googleConfigured, googleDeps } from '../google/config';
 import { hasGoogleWriters, syncGroupWrites } from '../google/sync';
@@ -70,6 +70,7 @@ export const RPC: Record<Exclude<RpcName, 'getConsoleData'>, Entry> = {
   renameGroup: { run: renameGroup, admin: 'グループの名前を変えること', data: true, calendar: true },
   sendDiscordStep: { run: sendDiscordStep },
   getDiscordChannels: { run: getDiscordChannels, admin: '知らせのチャンネルの一覧を読むこと' },
+  getDiscordRoles: { run: getDiscordRoles, admin: 'Discordのロールの一覧を読むこと' },
   saveCalendarFeed: { run: saveCalendarFeed, data: true },
   deleteCalendarFeed: { run: deleteCalendarFeed, data: true },
   saveGoogleSettings: { run: saveGoogleSettings, data: true, google: true },

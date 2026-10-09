@@ -1,5 +1,5 @@
 // グループの設定（管理画面の「知らせ」と「このグループ」。GAS版Settings.js）。知らせの設定・グループの名前・シリーズごとの知らせ
-import { getChannel, isChannelId, listChannels } from '../discord/channel';
+import { getChannel, isChannelId, listChannels, listRoles } from '../discord/channel';
 import { EVENT_ERROR } from '../discord/events';
 import { botCanCreateEvents } from '../discord/member';
 import { badRequest } from '../lib/errors';
@@ -99,6 +99,23 @@ export async function saveConsoleSettings(ctx: Ctx, form: Form) {
   const availDays = intIn(form.availDays, 7, 366, 'メンバーの予定の日数は7〜366です。');
   if (availDays !== undefined) { set.avail_days = availDays; changes.push('予定の日数を' + availDays + 'に'); }
 
+  if (form.adminRole !== undefined) {
+    const id = str(form.adminRole);
+    if (!id) {
+      set.admin_role = ''; set.admin_role_name = '';
+      changes.push('管理者のロールを外す');
+    } else {
+      // 名前はBotで読む（画面から送られた名前は使わない）
+      if (!ctx.bot.token) throw badRequest('YokiのBotのトークンが無いので、ロールを読めません。');
+      const roles = await listRoles(ctx.bot.token, g.guild_id);
+      if (roles === null) throw badRequest('Botがサーバーにいないので、ロールを読めません。「知らせ」の区分からBotを招いてください。');
+      const role = roles.find((r) => r.id === id);
+      if (!role) throw badRequest('そのロールはサーバーにありません。ロールを読み直して選んでください。');
+      set.admin_role = id; set.admin_role_name = role.name;
+      changes.push('管理者のロールを「' + role.name + '」に');
+    }
+  }
+
   if (form.discordEvents !== undefined) {
     if (form.discordEvents) {
       if (!ctx.bot.token) throw badRequest(EVENT_ERROR.noBot);
@@ -177,6 +194,13 @@ export async function saveSeriesNotify(ctx: Ctx, form: Form) {
  * 送り先に選べるチャンネルの一覧（管理画面の「知らせ」が読む）。BotがこのグループのサーバーにいなければinGuild: false、
  * Botが設定されていなければ（運営者の設定）botReady: false
  */
+/** サーバーのロールの一覧（管理者を決めるロールを選ぶため。管理者だけ）。Botがいなければ、そう返す */
+export async function getDiscordRoles(ctx: Ctx) {
+  if (!ctx.bot.token) return { ok: true, botReady: false, inGuild: false, roles: [] };
+  const roles = await listRoles(ctx.bot.token, ctx.group.guild_id);
+  return { ok: true, botReady: true, inGuild: roles !== null, roles: roles ?? [] };
+}
+
 export async function getDiscordChannels(ctx: Ctx) {
   if (!ctx.bot.token) return { ok: true, botReady: false, inGuild: false, channels: [], canEvents: null };
   const channels = await listChannels(ctx.bot.token, ctx.group.guild_id);

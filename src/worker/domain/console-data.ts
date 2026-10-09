@@ -97,6 +97,7 @@ export function consoleData(ctx: Ctx): ConsoleData {
       discordEvents: g.discord_events === 1,
       threads: g.threads === 1,
       eventsError: g.events_error,
+      adminRole: { id: g.admin_role, name: g.admin_role_name },
     },
     seriesNotify: Object.keys(ctx.seriesNotify)
       .sort()

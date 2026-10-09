@@ -31,6 +31,20 @@ export async function botGet(token: string, path: string): Promise<{ status: num
   return { status: res.status, body: await res.json().catch(() => null) };
 }
 
+/**
+ * サーバーのロールの一覧（上の順。@everyoneと、Botなどが自動で持つロールは除く）。管理者を決めるロールを選ぶのに使う。
+ * Botがサーバーにいない・見られないときはnull。そのほかの失敗は投げる
+ */
+export async function listRoles(token: string, guildId: string): Promise<{ id: string; name: string }[] | null> {
+  const r = await botGet(token, '/guilds/' + guildId + '/roles');
+  if (r.status === 403 || r.status === 404) return null;
+  if (r.status !== 200 || !Array.isArray(r.body)) throw new Error('Discordのロールの一覧を読めませんでした（HTTP ' + r.status + '）');
+  return (r.body as { id: string; name: string; position: number; managed?: boolean }[])
+    .filter((x) => x.id !== guildId && !x.managed)
+    .sort((a, b) => b.position - a.position)
+    .map((x) => ({ id: x.id, name: x.name }));
+}
+
 export type Channel = { id: string; name: string; category: string };
 type ApiChannel = { id: string; name: string; type: number; position: number; parent_id: string | null; guild_id?: string };
 /** 送り先にできるチャンネルの種類: テキスト（0）とアナウンス（5） */

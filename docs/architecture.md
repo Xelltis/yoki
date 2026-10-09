@@ -63,6 +63,8 @@ Worker 1つで、次の3つを受け持つ。
 
 古い・控えにサーバーが無いときは、知らせのBotがそのサーバーにいれば、Botに聞く（`discord/member.ts`。サーバーのメンバーを1人読むだけなので、Gatewayの特別な権限は要らない）。いれば入れ、確かめた日時を `user_guilds.checked_at` に残す（管理できるかは、オーナーか、ロールの権限に管理者・サーバー管理があるかで決める）。いなければ403にして控えからも外す。Googleでログインした人を、Discordのログインの画面へ送らずに済ませるため。
 
+**ロールで決める管理者**。グループの管理者が、管理者にするDiscordのロールを決められる（`groups.admin_role`。選ぶときは、Botでサーバーのロールの一覧を読み、名前もBotで読み直して控える）。決めたグループでは、入るときに、その人のロールにそれがあれば管理者にする（`auth/guard.ts`）。ロールはログインのときのサーバーの一覧に入っていないので、Botで読み（`GET /guilds/{id}/members/{user}`）、`user_guilds.roles`・`roles_at` に1日控える。Botでサーバーにいるかを確かめ直すときは、ロールも一緒に控える。Botで分からなければ、ロールでは管理者にしない。サーバーを管理できる人と、ロールを決めていないグループでは読まない。
+
 Botがいない・Discordが答えないときは、今までどおり。控えが24時間より古ければ `/auth/login` に送ってDiscordに聞き直す（`prompt=none` なので、画面はほとんど出ない）。控えにサーバーが無いとき、控えが5分より古ければ一度だけ聞き直し（そのあとサーバーに入った人のため）、新しければ403。
 
 ログインした人のDiscordのトークンは持たないので、裏で問い合わせるのはBotがいるサーバーだけ。Botがいないサーバーでは、抜けた人を締め出すまでに最長24時間の時間差がある（知らせに使うBotのトークンは別で、Workerのsecretに置く）。
@@ -87,7 +89,7 @@ usersの行は消さない（印がそこにあるため）。Discordのユー�
 
 ## データベース（D1）
 
-表の定義は `migrations/`（`0001_init.sql` が最初の形、`0002_admin.sql` が締め出し・最後に使われた日と索引、`0003_bot.sql` が知らせのBot、`0004_calendar.sql` がカレンダーとの連携、`0005_member_check.sql` がBotで確かめた日時、`0006_google_login.sql` がGoogleでのログイン、`0007_scenarios.sql` がシナリオと通過、`0008_prep.sql` が卓の準備、`0009_discord_events.sql` がDiscordのイベント、`0010_note_ranges.sql` が期間の日付メモ、`0011_poll_maybe.sql` が日程調整の △、`0012_recruit_limits.sql` が募集の定員と締め切り、`0013_absences.sql` が行けなくなった印、`0014_day_parts.sql` が予定の時間帯、`0015_share_busy.sql` がほかのグループの卓、`0016_threads.sql` が卓ごとのスレッド、`0017_session_history.sql` が卓の変更の履歴、`0018_records.sql` が卓の記録とPC、`0019_poll_due.sql` が日程調整の回答の締め切り、`0020_dm_notices.sql` が自分あてのDMの知らせ、`0021_weekly.sql` がいつもの予定、`0022_watch.sql` が見学）。日付（開催日・予定・メモ）は日本時間の `YYYY-MM-DD`、日時（〜した時刻）はUTCのISO文字列。
+表の定義は `migrations/`（`0001_init.sql` が最初の形、`0002_admin.sql` が締め出し・最後に使われた日と索引、`0003_bot.sql` が知らせのBot、`0004_calendar.sql` がカレンダーとの連携、`0005_member_check.sql` がBotで確かめた日時、`0006_google_login.sql` がGoogleでのログイン、`0007_scenarios.sql` がシナリオと通過、`0008_prep.sql` が卓の準備、`0009_discord_events.sql` がDiscordのイベント、`0010_note_ranges.sql` が期間の日付メモ、`0011_poll_maybe.sql` が日程調整の △、`0012_recruit_limits.sql` が募集の定員と締め切り、`0013_absences.sql` が行けなくなった印、`0014_day_parts.sql` が予定の時間帯、`0015_share_busy.sql` がほかのグループの卓、`0016_threads.sql` が卓ごとのスレッド、`0017_session_history.sql` が卓の変更の履歴、`0018_records.sql` が卓の記録とPC、`0019_poll_due.sql` が日程調整の回答の締め切り、`0020_dm_notices.sql` が自分あてのDMの知らせ、`0021_weekly.sql` がいつもの予定、`0022_watch.sql` が見学、`0023_admin_role.sql` が管理者のロール）。日付（開催日・予定・メモ）は日本時間の `YYYY-MM-DD`、日時（〜した時刻）はUTCのISO文字列。
 
 `users`・`user_guilds`・`auth_sessions`: ログイン。`users.banned_at`・`banned_reason` は締め出し。
 

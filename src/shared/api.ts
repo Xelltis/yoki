@@ -48,7 +48,7 @@ export const RPC_FUNCS = [
   'saveSession', 'deleteSession', 'saveMember', 'deleteMember', 'saveConsoleSettings', 'saveSeriesNotify', 'renameGroup', 'startPoll', 'setPollVote',
   'setPollVoteAll', 'setPollVoteFromAvail', 'cancelPoll', 'decidePoll', 'setAdmin', 'deleteGroup', 'getDiscordChannels', 'saveCalendarFeed', 'deleteCalendarFeed',
   'saveGoogleSettings', 'syncGoogleNow', 'unlinkGoogle', 'unlinkGoogleLogin', 'saveScenario', 'deleteScenario', 'setScenarioMark',
-  'savePrep', 'saveSlotSecret', 'assignSlots', 'setSlotHope', 'submitSheet', 'setAbsence', 'setShareBusy', 'getSessionHistory', 'saveRecord', 'setPcRecord', 'exportGroup', 'promoteWaiter', 'setDmNotices', 'testDm', 'setWeekly',
+  'savePrep', 'saveSlotSecret', 'assignSlots', 'setSlotHope', 'submitSheet', 'setAbsence', 'setShareBusy', 'getSessionHistory', 'saveRecord', 'setPcRecord', 'exportGroup', 'promoteWaiter', 'setDmNotices', 'testDm', 'setWeekly', 'getDiscordRoles',
 ] as const;
 export type RpcName = (typeof RPC_FUNCS)[number];
 
@@ -252,6 +252,8 @@ export type ConsoleData = {
     eventsError: string;
     /** 卓の知らせを、卓ごとのスレッドにまとめる */
     threads: boolean;
+    /** 管理者にするDiscordのロール（IDと、選んだときの名前）。決めていなければ両方空 */
+    adminRole: { id: string; name: string };
   };
   seriesNotify: SeriesNotifyView[];
   /** カレンダーとの連携（本人のぶん） */

@@ -632,6 +632,13 @@ await withDevServer(async (base) => {
       await until((d) => d.title === 'e2eのグループ');
     });
 
+    await step('管理画面: 管理者をDiscordのロールで決める欄がある。手元にはBotが無いので、ロールは読めないと出る', async () => {
+      await admin('admin');
+      assert.match(await page.textContent('#admRoleNow'), /ロールでは決めていません/);
+      await page.click('#admRoleLoad');
+      await page.waitForSelector('#admRoleMsg >> text=Botのトークンが無い', { timeout: 15000 });
+    });
+
     await step('管理画面: 卓をまとめて変えられる', async () => {
       await admin('ops');
       const s = (await D()).sessions.find((x) => x.name === '灰色の図書館（改）');

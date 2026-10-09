@@ -37,8 +37,9 @@ export function AdminsPane() {
             </span>
           ))}
         </div>
-        <p className="hint">グループのDiscordサーバーで、オーナーか「サーバー管理」の権限がある人は、名簿に無くても管理者です。</p>
+        <p className="hint">{'グループのDiscordサーバーで、オーナーか「サーバー管理」の権限がある人は、名簿に無くても管理者です。' + (d.settings.adminRole.id ? 'ロール「' + d.settings.adminRole.name + '」の人も管理者です。' : '')}</p>
       </div>
+      <RoleCard />
       <div className="card" id="admAddCard" hidden={!d.isAdmin}>
         <h3>管理者を足す</h3>
         <div className="row">
@@ -93,6 +94,43 @@ export function TablePane() {
           <div><label className={fieldLabel} htmlFor="stAvailDays">メンバーの予定の日数 <small className={fieldNote}>7〜366</small></label><input type="text" className="w-[8em] max-w-640" id="stAvailDays" inputMode="numeric" value={daysV} onChange={(ev) => setDays(ev.target.value)} /></div>
         </div>
         <div className="btns"><button type="button" className="btn primary" id="stSave" disabled={!!busy.stSave || daysV.trim() === String(d.settings.availDays || 60)} onClick={() => { void call('stSave', 'stMsg', 'saveConsoleSettings', { availDays: daysV.trim() }).then((r) => { if (r) setDays(null); }); }}>保存</button><span className="hint" id="stMsg">{msg.stMsg || ''}</span></div>
+      </div>
+    </div>
+  );
+}
+
+/** Discordのロールで管理者を決める。ロールの一覧はBotで読み、選んだロールの名前もサーバーがBotで読み直して控える */
+function RoleCard() {
+  const d = useData();
+  const { sync } = useConsole();
+  const { busy, msg, call } = useCall();
+  const [roles, setRoles] = useState<{ id: string; name: string }[] | null>(null);
+  const [state, setState] = useState('');
+  const [pick, setPick] = useState('');
+  const cur = d.settings.adminRole, chosen = pick || (roles && roles[0] ? roles[0].id : '');
+  const load = () => {
+    setState('読んでいます…');
+    sync.call<{ botReady: boolean; inGuild: boolean; roles: { id: string; name: string }[] }>('getDiscordRoles').then((r) => {
+      if (!r.botReady) setState('YokiのBotのトークンが無いので、ロールを読めません（運営者に伝えてください）。');
+      else if (!r.inGuild) setState('Botがサーバーにいないので、ロールを読めません。「知らせ」の区分からBotを招いてください。');
+      else { setRoles(r.roles); setState(r.roles.length ? '' : 'サーバーに、選べるロールがありません。'); }
+    }, (e: Error) => setState(e.message));
+  };
+  return (
+    <div className="card" id="admRoleCard" hidden={!d.isAdmin}>
+      <h3>Discordのロールで決める</h3>
+      <p className="hint">選んだロールのある人は、名簿に無くても管理者になります。大きなサーバーで、運営のロールの人をそのまま管理者にするときに使ってください。ロールはYokiのBotで読むので、Discordでロールを付け外ししてから管理者に反映されるまで、長いと1日かかります。</p>
+      <p className="mt-0 text-13" id="admRoleNow">{cur.id ? '今のロール: ' + cur.name : 'ロールでは決めていません。'}</p>
+      {roles && roles.length > 0 && (
+        <div className="row">
+          <div><label className={fieldLabel} htmlFor="admRole">ロール</label><select className={field} id="admRole" value={chosen} onChange={(ev) => setPick(ev.target.value)}>{roles.map((r) => <option value={r.id} key={r.id}>{r.name}</option>)}</select></div>
+        </div>
+      )}
+      <div className="btns">
+        {!roles && <button type="button" className="btn" id="admRoleLoad" onClick={load}>ロールを読む</button>}
+        {roles && roles.length > 0 && <button type="button" className="btn primary" id="admRoleSave" disabled={!!busy.admRole} onClick={() => { void call('admRole', 'admRoleMsg', 'saveConsoleSettings', { adminRole: chosen }); }}>このロールにする</button>}
+        {cur.id && <button type="button" className="btn" id="admRoleClear" disabled={!!busy.admRole} onClick={() => { void call('admRole', 'admRoleMsg', 'saveConsoleSettings', { adminRole: '' }); }}>ロールで決めない</button>}
+        <span className="hint" id="admRoleMsg">{state || msg.admRoleMsg || ''}</span>
       </div>
     </div>
   );
