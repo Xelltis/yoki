@@ -300,8 +300,13 @@ await withDevServer(async (base) => {
       const days = page.locator('#pollDays input.pdc');
       await days.nth(0).check();
       await days.nth(2).check();
+      // 回答の締め切りを決めると、カードに出る
+      await page.fill('#pollDue', d.availDays[19]);
       await page.click('#pollSend');
-      await until((x) => (x.sessions.find((s) => s.name === 'e2eの日程調整')?.candidates || []).length === 2);
+      await until((x, due) => { const s = x.sessions.find((y) => y.name === 'e2eの日程調整'); return !!s && s.candidates.length === 2 && s.pollDue === due; }, d.availDays[19]);
+      const made = (await D()).sessions.find((s) => s.name === 'e2eの日程調整');
+      await tab('recruit');
+      assert.match(await page.textContent(`[data-poll-due-of="${made.id}"]`), /回答の締め切り .+まで/);
     });
 
     await step('日程調整に回答できる。カレンダーの「回答待ち」から、その卓のカードへ移る。答え終えると「募集・調整」の印が減る', async () => {

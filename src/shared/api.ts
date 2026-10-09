@@ -74,6 +74,8 @@ export type ConsoleSession = {
   candidates: string[];
   /** 日程調整の回答{ 'YYYY-MM-DD': { 名前: '◯' | '△' | '×' } }。△ は調整すれば行ける */
   votes: Record<string, Record<string, string>>;
+  /** 日程調整の回答の締め切り（YYYY-MM-DD）。決めていなければ空。過ぎても答えられる */
+  pollDue: string;
   /** 遊ぶシナリオ（ConsoleScenarioのid）。無ければ空 */
   scenarioId: string;
   /** 卓の準備（HO・キャラシ） */
@@ -294,7 +296,7 @@ export type GroupExport = {
   sessions: {
     id: string; name: string; status: string; date: string; start: string; end: string; place: string; memo: string; series: string; seriesEnd: string;
     windowFrom: string; windowTo: string; gm: string; members: string[]; want: string[]; interest: string[]; scenario: string;
-    candidates: string[]; votes: Record<string, Record<string, string>>; capacity: number; recruitDue: string; absent: { name: string; note: string }[];
+    candidates: string[]; votes: Record<string, Record<string, string>>; pollDue: string; capacity: number; recruitDue: string; absent: { name: string; note: string }[];
     prep: { sheetDue: string; slots: { label: string; summary: string; assigned: string }[]; sheets: Record<string, { url: string; pc: string; outcome: string }> };
     record: ConsoleRecord;
     history: { at: string; by: string; action: string; detail: string }[];
@@ -358,7 +360,7 @@ export type MeResponse = {
 /**
  * 自分の予定の一覧の1件（GET /api/me/agenda）。入っているグループをまたいで出す。
  *   session … これからの「開催」の卓（GMか参加者。行けなくなった卓は除く）。dateは開催日
- *   vote    … まだ答えていない候補日がある日程調整
+ *   vote    … まだ答えていない候補日がある日程調整。dateは回答の締め切り（決めていなければ空）
  *   decide  … 全員の回答がそろった、GMとして開催日を選ぶ日程調整
  *   sheet   … まだ出していないキャラシ（参加者）。dateは締め切り
  */

@@ -115,7 +115,9 @@ export async function saveSession(ctx: Ctx, form: Form) {
           `UPDATE sessions SET name = ?2, status = ?3, date = ?4, start_time = ?5, end_time = ?6, place = ?7, memo = ?8, series = ?9, series_end = ?10,
              window_from = ?11, window_to = ?12, candidates = ?13, editor = ?14, updated_at = ?15,
              notified_at = ?16, asked_at = ?17, urged_at = ?18, soon_at = ?19, poll_ready_at = ?20, scenario_id = ?21,
-             capacity = ?22, recruit_due = ?23, due_urged_at = ?24
+             capacity = ?22, recruit_due = ?23, due_urged_at = ?24,
+             poll_due = CASE WHEN ?3 = '調整中' THEN poll_due END, poll_urged_at = CASE WHEN ?3 = '調整中' THEN poll_urged_at END,
+             poll_closed_at = CASE WHEN ?3 = '調整中' THEN poll_closed_at END
            WHERE id = ?1`,
         )
         .bind(
@@ -321,6 +323,8 @@ export async function bulkUpdateSessions(ctx: Ctx, form: Form) {
              asked_at = CASE WHEN ?4 = '募集' THEN asked_at END,
              candidates = CASE WHEN ?4 = '調整中' THEN candidates ELSE '[]' END,
              poll_ready_at = CASE WHEN ?4 = '調整中' THEN poll_ready_at END,
+             poll_due = CASE WHEN ?4 = '調整中' THEN poll_due END, poll_urged_at = CASE WHEN ?4 = '調整中' THEN poll_urged_at END,
+             poll_closed_at = CASE WHEN ?4 = '調整中' THEN poll_closed_at END,
              window_from = CASE WHEN ?5 THEN window_from END, window_to = CASE WHEN ?5 THEN window_to END, urged_at = CASE WHEN ?5 THEN urged_at END,
              capacity = CASE WHEN ?4 = '募集' THEN capacity END, recruit_due = CASE WHEN ?4 = '募集' THEN recruit_due END,
              due_urged_at = CASE WHEN ?4 = '募集' THEN due_urged_at END

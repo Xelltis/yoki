@@ -42,7 +42,7 @@ export function PollModal() {
   const d = useData();
   const { ui, sync } = useConsole();
   const { poll: req } = useStore(ui);
-  const [st, setSt] = useState({ id: '', sel: [] as string[], extra: [] as string[], okOnly: false, start: '', end: '', notify: false, add: '', msg: '', sending: false });
+  const [st, setSt] = useState({ id: '', sel: [] as string[], extra: [] as string[], okOnly: false, start: '', end: '', due: '', notify: false, add: '', msg: '', sending: false });
   const [handled, setHandled] = useState(0);
   const [open, setOpen] = useState(false);
   // 開く頼みが来たら、その卓の候補日（これからの日）を選んだ状態から始める
@@ -51,7 +51,7 @@ export function PollModal() {
     const s = byId(d, req.id);
     if (s && !s.members.length) toast('「' + s.name + '」にはまだ参加者がいません。「編集」で入れてから調整します');
     else if (s) {
-      setSt({ id: s.id, sel: (s.candidates || []).filter((k) => k >= d.today), extra: [], okOnly: false, start: s.start || '', end: s.end || '', notify: hookFor(d, s.series), add: '', msg: '', sending: false });
+      setSt({ id: s.id, sel: (s.candidates || []).filter((k) => k >= d.today), extra: [], okOnly: false, start: s.start || '', end: s.end || '', due: hasPoll(s) ? s.pollDue : '', notify: hookFor(d, s.series), add: '', msg: '', sending: false });
       setOpen(true);
     }
   }
@@ -62,13 +62,15 @@ export function PollModal() {
   const part = d.settings.dayParts ? partOf(st.start) : '';
   const days = s ? pollRange(d, s, st.sel, st.extra).map((k) => ({ k, a: dayAvail(d, s, k, part), on: st.sel.indexOf(k) >= 0 })).filter((x) => !st.okOnly || x.a.free || x.on) : [];
   const toggle = (k: string, on: boolean) => setSt((x) => ({ ...x, sel: on ? x.sel.concat(k) : x.sel.filter((y) => y !== k) }));
+  // 回答の締め切りは、いちばん早い候補日の前日まで
+  const first = st.sel.slice().sort()[0], dueMax = first ? addDaysYmd(first, -1) : undefined;
   const submit = () => {
     if (!s) return;
     const dates = st.sel.slice().sort();
     if (!dates.length) { setSt((x) => ({ ...x, msg: '候補日を1日以上選んでください。' })); return; }
     const wantNotify = st.notify && hookFor(d, s.series);
     setSt((x) => ({ ...x, sending: true, msg: '' }));
-    sync.write<RpcResult>('startPoll', { id: s.id, dates, start: st.start, end: st.end, me: me(d) }).then((res) => {
+    sync.write<RpcResult>('startPoll', { id: s.id, dates, start: st.start, end: st.end, due: st.due, me: me(d) }).then((res) => {
       setSt((x) => ({ ...x, sending: false }));
       close();
       toast(res.message);
@@ -87,7 +89,9 @@ export function PollModal() {
         <div className="row">
           <div className="narrow"><label htmlFor="pollStart">開始</label><input type="time" id="pollStart" step="300" value={st.start} onChange={(ev) => setSt((x) => ({ ...x, start: ev.target.value }))} /></div>
           <div className="narrow"><label htmlFor="pollEnd">終了</label><input type="time" id="pollEnd" step="300" value={st.end} onChange={(ev) => setSt((x) => ({ ...x, end: ev.target.value }))} /></div>
+          <div className="narrow"><label htmlFor="pollDue">回答の締め切り</label><input type="date" id="pollDue" min={d.today} max={dueMax} value={st.due} onChange={(ev) => setSt((x) => ({ ...x, due: ev.target.value }))} /></div>
         </div>
+        <p className="hint mt-4">締め切りを決めると、前日にまだ答えていない人へ、締め切りが過ぎたらGMへ、Discordで知らせます（空なら決めません）。</p>
         <div className="mt-14 mb-8 flex flex-wrap items-center justify-between gap-8">
           <span className="font-semibold">候補日 <small className="hint" id="pollCount">{(st.sel.length ? st.sel.length + '日を選んでいます' : '') + (d.settings.dayParts ? (st.sel.length ? '。' : '') + (part ? part + 'の予定で見ています' : '開始時刻を入れると、昼か夜の予定で見ます') : '')}</small></span>
           <label className="chk"><input type="checkbox" id="pollOkOnly" checked={st.okOnly} onChange={(ev) => setSt((x) => ({ ...x, okOnly: ev.target.checked }))} /> 全員空きの日だけ</label>

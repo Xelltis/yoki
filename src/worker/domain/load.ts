@@ -10,6 +10,7 @@ type SessionRow = {
   place: string; memo: string; series: string; series_end: string | null; window_from: string | null; window_to: string | null;
   candidates: string; editor: string; updated_at: string; notified_at: string | null; asked_at: string | null;
   urged_at: string | null; soon_at: string | null; poll_ready_at: string | null; scenario_id: number | null;
+  poll_due: string | null; poll_urged_at: string | null; poll_closed_at: string | null;
   sheet_due: string | null; sheet_urged_at: string | null; slots_json: string; sheets_json: string;
   capacity: number | null; recruit_due: string | null; due_urged_at: string | null; absent_json: string; thread_id: string | null; thread_parent: string | null;
   log_url: string; recap: string;
@@ -173,6 +174,9 @@ export async function loadGroup(
       urgedAt: r.urged_at,
       soonAt: r.soon_at,
       pollReadyAt: r.poll_ready_at,
+      pollDue: r.poll_due,
+      pollUrgedAt: r.poll_urged_at,
+      pollClosedAt: r.poll_closed_at,
       scenarioId: r.scenario_id,
       sheetDue: r.sheet_due,
       sheetUrgedAt: r.sheet_urged_at,

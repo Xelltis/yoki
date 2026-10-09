@@ -36,6 +36,7 @@ export function useSessionSave() {
       want: prev && !toDated ? prev.want : [], interest: prev ? prev.interest : [], series: form.series, seriesEnd: form.seriesEnd, asked: '',
       window: '', windowFrom: form.windowFrom, windowTo: form.windowTo, windowLabel: winLabel(form.windowFrom, form.windowTo), windowKey: form.windowFrom || '',
       candidates: prev && form.status === '調整中' ? (prev.candidates || []) : [], votes: prev ? (prev.votes || {}) : {},
+      pollDue: prev && form.status === '調整中' ? prev.pollDue : '',
       scenarioId: form.scenarioId,
       // 準備（HO・キャラシ）は卓の窓では変えないので、今のまま
       prep: prev ? prev.prep : { sheetDue: '', slots: [], sheets: {} },

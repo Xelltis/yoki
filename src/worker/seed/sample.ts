@@ -96,7 +96,7 @@ export async function seedSample(db: D1Database, groupId: string, appUrl: string
   await setInterest(await as('こまち'), { id: camp.id, name: 'こまち', level: 'interest' });
   // 日程調整
   const maze = await S({ name: '迷宮の底へ', gm: 'レン', members: ['ひより', 'ソラ', 'こまち'], status: '調整中', windowFrom: T(18), windowTo: T(32), memo: '候補の期間のどこかで1回' }, 'レン');
-  await startPoll(await as('レン'), { id: maze.id, dates: [T(19), T(21), T(24), T(26)], start: '20:00', end: '23:00' });
+  await startPoll(await as('レン'), { id: maze.id, dates: [T(19), T(21), T(24), T(26)], start: '20:00', end: '23:00', due: T(14) });
   for (const [name, n, vote] of [['ひより', 19, '◯'], ['ひより', 21, '×'], ['ひより', 24, '◯'], ['ソラ', 19, '×'], ['ソラ', 21, '△'], ['ソラ', 24, '◯'], ['ソラ', 26, '◯']] as const) {
     await setPollVote(await as(name), { id: maze.id, ymd: T(n), name, vote }, io);
   }

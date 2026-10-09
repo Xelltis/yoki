@@ -1,5 +1,5 @@
 // 知らせの見回り（GAS版Notify.jsのdailyNotify・sendTomorrow_・sendUrge_・sendStartingSoon_）。cronが5分おきに呼ぶ。
-//   毎時の仕事（開催前の知らせ・期間前の催促・募集の締め切りの知らせ・キャラシの催促・過ぎた卓の自動終了）は、metaの印で1時間に1回だけ回す
+//   毎時の仕事（開催前の知らせ・期間前の催促・募集の締め切りの知らせ・日程調整の締め切り・キャラシの催促・過ぎた卓の自動終了）は、metaの印で1時間に1回だけ回す
 //   開始直前の知らせは毎回見る
 //   運営者への知らせ（operator-notice.ts）: 毎時Botのトークンを確かめ、毎日10時台に新しいバージョンを見る。続けて失敗したら知らせる
 // 送る前に卓の「送った」印を取り（UPDATE … WHERE … IS NULL）、取れた卓だけを送る。重なって動いても二重には送らない。
@@ -8,7 +8,7 @@ import type { PatrolRecord } from '../../shared/admin';
 import { SYSTEM_ACTOR } from '../auth/guard';
 import { savedOrigin } from '../auth/origin';
 import { EVENT_BUDGET, processDiscordEvents, sweepOrphanEvents } from '../discord/events';
-import { mentionsOf, recruitDuePayload, recruitLink, sessionEmbed, sheetUrgePayload } from '../discord/payloads';
+import { mentionsOf, pollClosedPayload, pollDuePayload, recruitDuePayload, recruitLink, sessionEmbed, sheetUrgePayload } from '../discord/payloads';
 import { appendLog, discordCalls, postDiscord, realSleep, type Sleep } from '../discord/send';
 import { postSessionNotice } from '../discord/threads';
 import { sessionTargets, type Target, targetNote } from '../discord/targets';
@@ -20,6 +20,7 @@ import { updateDeps, type UpdateDeps } from '../update/config';
 import { DATED, SOON_LATE_MIN, STATUS } from './constants';
 import { HISTORY_KEEP } from './history';
 import { loadGroup } from './load';
+import { pollPending } from './model';
 import { checkBot, GITHUB_CALLS, noticePatrolFailed, noticeVersion, VERSION_HOUR } from './operator-notice';
 import { aheadText, notifyHourOf, notifyYmdOf } from './notify';
 import type { Ctx, Session } from './types';
@@ -29,6 +30,8 @@ const EMBEDS_PER_MESSAGE = 10;
 const KEEP_LOG_ROWS = 500;
 const KEEP_AVAIL_DAYS = 90;
 const KEEP_DAY_NOTE_DAYS = 365;
+/** 日程調整の締め切りが過ぎた知らせを送るのは、締め切りから何日までか（つまみを入れ直したときに、古い日程調整の知らせが届かないように） */
+const POLL_CLOSE_DAYS = 7;
 
 /**
  * sleepは送り直しの待ち。operatorは運営者への知らせ（Botのトークンの確かめ・新しいバージョン）に使うGitHubで、
@@ -114,6 +117,13 @@ export async function patrol(env: Bindings, scheduledTime: number, deps: Deps): 
           WHERE g.urge = 1 AND s.status = '募集' AND s.due_urged_at IS NULL AND s.recruit_due = ?1`,
         p.ymd,
       )),
+      // 日程調整の締め切り: 締め切りが今日か明日でまだ催促していない、か、締め切りが過ぎて（7日まで）まだGMに知らせていない調整中の卓
+      ...(await groupsOf(
+        `SELECT DISTINCT s.group_id FROM sessions s JOIN groups g ON g.id = s.group_id
+          WHERE g.urge = 1 AND s.status = '調整中' AND s.candidates <> '[]' AND s.poll_due IS NOT NULL
+            AND ((s.poll_urged_at IS NULL AND s.poll_due BETWEEN ?1 AND ?2) OR (s.poll_closed_at IS NULL AND s.poll_due < ?1 AND s.poll_due >= ?3))`,
+        p.ymd, addDays(p.ymd, 1), addDays(p.ymd, -POLL_CLOSE_DAYS),
+      )),
       // キャラシの催促: 締め切りが今日か明日で、まだ催促していない卓
       ...(await groupsOf(
         `SELECT DISTINCT group_id FROM sessions WHERE sheet_due BETWEEN ?1 AND ?2 AND sheet_urged_at IS NULL AND status IN ('募集', '調整中', '開催')`,
@@ -125,6 +135,7 @@ export async function patrol(env: Bindings, scheduledTime: number, deps: Deps): 
       await sendReminders(ctx, p.hour, deps);
       await sendUrges(ctx, p.hour, deps);
       await sendRecruitDue(ctx, p.hour, deps);
+      await sendPollDue(ctx, p.hour, deps);
       await sendSheetUrges(ctx, p.hour, deps);
     }
   }
@@ -168,7 +179,7 @@ async function claim(db: D1Database, key: string, value: string): Promise<boolea
 }
 
 /** 卓の送った印を取る。取れた卓（まだ誰も送っていない卓）のidを返す */
-type MarkColumn = 'notified_at' | 'urged_at' | 'soon_at' | 'sheet_urged_at' | 'due_urged_at';
+type MarkColumn = 'notified_at' | 'urged_at' | 'soon_at' | 'sheet_urged_at' | 'due_urged_at' | 'poll_urged_at' | 'poll_closed_at';
 
 async function claimMark(ctx: Ctx, column: MarkColumn, sessions: Session[]): Promise<Set<number>> {
   if (!sessions.length) return new Set();
@@ -263,6 +274,31 @@ export async function sendRecruitDue(ctx: Ctx, hour: number, deps: Deps): Promis
     const targets = sessionTargets(ctx, s);
     if (!targets.length) { await appendLog(logTo(ctx), kind, s.name, '送らず: 送り先のチャンネルが未設定'); continue; }
     if (!(await postSessionNotice(ctx, s, recruitDuePayload(ctx, s), kind, targets, deps.sleep))) await releaseMark(ctx, 'due_urged_at', [s.rowId]);
+  }
+}
+
+/**
+ * 日程調整の締め切り。期間前の催促と同じつまみ（urge）で止め、送る時刻は開催前の知らせと同じ。
+ *   締め切りの前日（逃したら当日）: まだ答えていない人を呼ぶ。みんな答えていれば、送らずに印だけ付ける
+ *   締め切りが過ぎたら（7日まで）: GMに、候補日ごとの数と、まだ答えていない人を知らせる。回答がそろった知らせを送っていれば、印だけ付ける
+ * 送り先が無ければ、記録して印を付ける（毎時記録しないように）
+ */
+export async function sendPollDue(ctx: Ctx, hour: number, deps: Deps): Promise<void> {
+  if (!ctx.group.urge) return;
+  const tomorrow = addDays(ctx.today, 1), oldest = addDays(ctx.today, -POLL_CLOSE_DAYS);
+  for (const s of ctx.sessions) {
+    if (s.status !== STATUS.ADJUSTING || !s.candidates.length || !s.pollDue || notifyHourOf(ctx, s) > hour) continue;
+    const urge = !s.pollUrgedAt && s.pollDue >= ctx.today && s.pollDue <= tomorrow;
+    const close = !s.pollClosedAt && s.pollDue < ctx.today && s.pollDue >= oldest;
+    if (!urge && !close) continue;
+    const column = urge ? 'poll_urged_at' : 'poll_closed_at', kind = urge ? '日程調整の催促' : '日程調整の締め切り';
+    if (!(await claimMark(ctx, column, [s])).size) continue;
+    const pending = pollPending(ctx, s);
+    if (urge ? !pending.length : !!s.pollReadyAt) continue;
+    const targets = sessionTargets(ctx, s);
+    if (!targets.length) { await appendLog(logTo(ctx), kind, s.name, '送らず: 送り先のチャンネルが未設定'); continue; }
+    const payload = urge ? pollDuePayload(ctx, s, pending) : pollClosedPayload(ctx, s, pending);
+    if (!(await postSessionNotice(ctx, s, payload, kind, targets, deps.sleep))) await releaseMark(ctx, column, [s.rowId]);
   }
 }
 

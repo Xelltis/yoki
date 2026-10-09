@@ -308,7 +308,14 @@ export function RecruitTab() {
                       </span>
                     )}
                   </div>
-                  <p className="hint mt-2 mb-4">全員が答えたら、GMが開催日を選びます</p>
+                  <p className="hint mt-2 mb-4">
+                    {s.pollDue && (
+                      <span data-poll-due-of={s.id} className={'font-semibold ' + (d.today > s.pollDue ? 'text-soon-text' : '')}>
+                        {'回答の締め切り ' + fmtJa(s.pollDue) + (d.today > s.pollDue ? '（過ぎました）' : s.pollDue === d.today ? '（今日まで）' : 'まで') + '。'}
+                      </span>
+                    )}
+                    全員が答えたら、GMが開催日を選びます
+                  </p>
                   {s.candidates.map((k) => {
                     const v = (s.votes || {})[k] || {}, past = k < d.today, dow = parseYmd(k).getDay(), hol = holidayName(k);
                     const ok = voters.filter((n) => v[n] === '◯'), maybe = voters.filter((n) => v[n] === '△'), ng = voters.filter((n) => v[n] === '×'), no = voters.filter((n) => !v[n]);

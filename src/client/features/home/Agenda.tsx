@@ -19,7 +19,7 @@ async function fetchAgenda(): Promise<AgendaResponse> {
 
 /** 種類ごとのアイコンと、1行目の文 */
 const KIND: Record<AgendaItem['kind'], [IconName, (it: AgendaItem) => string]> = {
-  vote: ['how_to_vote', () => '日程調整に答えてください'],
+  vote: ['how_to_vote', (it) => '日程調整に答えてください' + (it.date ? '（締め切り ' + fmtJa(it.date) + '）' : '')],
   decide: ['event_available', () => '回答がそろいました。開催日を選んでください'],
   sheet: ['checklist', (it) => 'キャラシの締め切り ' + fmtJa(it.date)],
   session: ['event', (it) => fmtJa(it.date) + ' ' + timeRange(it)],

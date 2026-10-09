@@ -47,7 +47,7 @@ export function consoleData(ctx: Ctx): ConsoleData {
         want: s.want, interest: s.interest,
         asked: stampText(s.askedAt), series: s.series, seriesEnd: s.seriesEnd ?? '',
         window: w?.text ?? '', windowFrom: w?.from ?? '', windowTo: w?.to ?? '', windowLabel: w?.label ?? '', windowKey: w?.from ?? '',
-        candidates: s.candidates, votes: ctx.votes.get(s.rowId) ?? {},
+        candidates: s.candidates, votes: ctx.votes.get(s.rowId) ?? {}, pollDue: s.pollDue ?? '',
         scenarioId: s.scenarioId === null ? '' : String(s.scenarioId),
         prep: prepView(ctx, s),
         capacity: s.capacity ?? 0, recruitDue: s.recruitDue ?? '',

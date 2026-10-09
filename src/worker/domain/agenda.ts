@@ -10,7 +10,7 @@ export const AGENDA_SESSIONS = 20;
 
 type Row = {
   group_id: string; title: string; seq: number; name: string; status: string; date: string | null; start_time: string; end_time: string;
-  candidates: string; poll_ready: number; sheet_due: string | null; role: 'gm' | 'member'; voted_json: string; sheet_done: number; absent: number;
+  candidates: string; poll_ready: number; poll_due: string | null; sheet_due: string | null; role: 'gm' | 'member'; voted_json: string; sheet_done: number; absent: number;
 };
 
 /**
@@ -21,7 +21,7 @@ export async function agendaOf(db: D1Database, userId: string, groupIds: string[
   const today = jst(now).ymd;
   const rows = (await db
     .prepare(
-      `SELECT g.id AS group_id, g.title, s.seq, s.name, s.status, s.date, s.start_time, s.end_time, s.candidates, s.poll_ready_at IS NOT NULL AS poll_ready, s.sheet_due, p.role,
+      `SELECT g.id AS group_id, g.title, s.seq, s.name, s.status, s.date, s.start_time, s.end_time, s.candidates, s.poll_ready_at IS NOT NULL AS poll_ready, s.poll_due, s.sheet_due, p.role,
          (SELECT json_group_array(v.date) FROM poll_votes v WHERE v.session_id = s.id AND v.member_id = m.id) AS voted_json,
          EXISTS (SELECT 1 FROM session_sheets sh WHERE sh.session_id = s.id AND sh.member_id = m.id) AS sheet_done,
          EXISTS (SELECT 1 FROM session_absences a WHERE a.session_id = s.id AND a.member_id = m.id) AS absent
@@ -41,7 +41,8 @@ export async function agendaOf(db: D1Database, userId: string, groupIds: string[
       if (!r.absent && r.date! < last) sessions.push(item('session', r.date!));
     } else {
       const voted = JSON.parse(r.voted_json) as string[];
-      if ((JSON.parse(r.candidates) as string[]).some((k) => k >= today && !voted.includes(k))) turns.push(item('vote', ''));
+      // 答える番には、回答の締め切りを添える（無ければ空）
+      if ((JSON.parse(r.candidates) as string[]).some((k) => k >= today && !voted.includes(k))) turns.push(item('vote', r.poll_due ?? ''));
       else if (r.poll_ready && r.role === 'gm') turns.push(item('decide', ''));
     }
     if (r.role === 'member' && r.sheet_due && r.sheet_due >= today && !r.sheet_done && !r.absent) turns.push(item('sheet', r.sheet_due));

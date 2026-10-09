@@ -1,7 +1,7 @@
 // Discordに送る文面。データを読まずに、作った卓をそのまま渡して文を確かめる
 import { describe, expect, test } from 'vitest';
 import {
-  absencePayload, announcePayload, askPayload, bulkPayload, changePayload, decidedPayload, mentionsOf, pollPayload, pollReadyPayload, recruitDuePayload, recruitLink, sessionEmbed, testPayload, whenText,
+  absencePayload, announcePayload, askPayload, bulkPayload, changePayload, decidedPayload, mentionsOf, pollPayload, pollClosedPayload, pollDuePayload, pollReadyPayload, recruitDuePayload, recruitLink, sessionEmbed, testPayload, whenText,
 } from '../../src/worker/discord/payloads';
 import type { Ctx, GroupRow, Member, Session } from '../../src/worker/domain/types';
 
@@ -29,7 +29,7 @@ function session(o: Partial<Session> = {}): Session {
   return {
     rowId: 1, id: 'S001', seq: 1, name: '港', gm: '', members: [], want: [], interest: [], date: null, start: '', end: '', status: '開催',
     place: '', memo: '', series: '', seriesEnd: null, windowFrom: null, windowTo: null, candidates: [], editor: '', updatedAt: '',
-    notifiedAt: null, askedAt: null, urgedAt: null, soonAt: null, pollReadyAt: null, scenarioId: null, sheetDue: null, sheetUrgedAt: null, slots: [], sheets: [], capacity: null, recruitDue: null, dueUrgedAt: null, absent: [], threadId: null, threadParent: null, logUrl: '', recap: '', ...o,
+    notifiedAt: null, askedAt: null, urgedAt: null, soonAt: null, pollReadyAt: null, pollDue: null, pollUrgedAt: null, pollClosedAt: null, scenarioId: null, sheetDue: null, sheetUrgedAt: null, slots: [], sheets: [], capacity: null, recruitDue: null, dueUrgedAt: null, absent: [], threadId: null, threadParent: null, logUrl: '', recap: '', ...o,
   };
 }
 
@@ -129,6 +129,22 @@ describe('参加確認', () => {
     const s = session({ status: '募集', interest: ['ソラ'] });
     expect(askPayload(ctxOf({ appUrl: '' }), s, '', 'ボイスあり').content).toBe(
       '❓ 「港」（時期未定）に参加できそうですか？ <@400000000000000011>\n💬 ボイスあり\n参加希望であれば、Yokiの「募集・調整」タブで「参加希望」を押してください。',
+    );
+  });
+});
+
+describe('日程調整の締め切り', () => {
+  test('催促: DiscordのIDが無い人は名前で呼ぶ。URLが無ければ添えない', () => {
+    const s = session({ status: '調整中', gm: 'ひより', members: ['こまち'], candidates: ['2026-10-09', '2026-10-12'], pollDue: '2026-10-11' });
+    expect(pollDuePayload(ctxOf({ appUrl: '' }), s, ['こまち']).content).toBe(
+      '⏰ 「港」の日程調整の締め切りは明日（10/11（日））です。まだ答えていない人: こまちさん\n候補日: 10/12（月）\nYokiの「募集・調整」タブで、候補日ごとに ◯・△・× を押してください。',
+    );
+  });
+
+  test('締め切りが過ぎた: GMにDiscordのIDが無ければ名前で呼ぶ。URLが無ければ添えない', () => {
+    const s = session({ status: '調整中', gm: 'こまち', candidates: ['2026-10-12'], pollDue: '2026-10-09' });
+    expect(pollClosedPayload(ctxOf({ appUrl: '' }), s, []).content).toBe(
+      '⌛ 「港」の日程調整の締め切り（10/9（金））が過ぎました。こまちさん\n・10/12（月）　◯ 0/0（全員 ◯）\nYokiの「募集・調整」タブで、開催日を選ぶか、候補日を選び直してください。',
     );
   });
 });

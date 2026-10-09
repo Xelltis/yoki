@@ -93,27 +93,64 @@ export function pollPayload(ctx: PayloadCtx, s: Session, me: string): Payload {
   const call = [mentionsOf(ctx, [s])].concat(noId).filter(Boolean).join(' ');
   const lines = [
     '🗓️ 「' + s.name + '」の日程を決めます。' + call,
-    '候補日: ' + s.candidates.map(fmtDateJa).join('、') + (s.start || s.end ? '　' + timeRange(s) : ''),
+    '候補日: ' + s.candidates.map(fmtDateJa).join('、') + (s.start || s.end ? '　' + timeRange(s) : '') + (s.pollDue ? '\n回答の締め切り: ' + fmtDateJa(s.pollDue) : ''),
     (ctx.buttons ? '下のボタンでも答えられます。' : '') +
       'Yokiの「募集・調整」タブで、候補日ごとに ◯・△（調整すれば行ける）・× を押してください。全員の回答がそろったら、GMが開催日を選びます。' + (me ? '　by ' + me : '') + (ctx.appUrl ? '\n' + ctx.appUrl : ''),
   ];
   return { content: lines.join('\n'), embeds: [sessionEmbed(ctx, s)], components: pollComponents(ctx, s) };
 }
 
-/** 日程調整の回答がそろった。GMだけを呼び、候補日ごとの ◯ と △ の数を並べる */
-export function pollReadyPayload(ctx: PayloadCtx, s: Session): Payload {
+/** GMを呼ぶ文（DiscordのIDが無ければ名前） */
+function gmCall(ctx: PayloadCtx, s: Session): string {
   const gmId = discordIdOf(ctx, s.gm);
-  const call = gmId ? '<@' + gmId + '>' : s.gm ? s.gm + 'さん' : '';
+  return gmId ? '<@' + gmId + '>' : s.gm ? s.gm + 'さん' : '';
+}
+
+/** これからの候補日ごとの ◯ と △ の数（1日1行） */
+function pollTally(ctx: PayloadCtx, s: Session): string {
   const votes = ctx.votes.get(s.rowId) ?? {};
   const voters = pollVoters(ctx, s);
-  const days = s.candidates
+  return s.candidates
     .filter((k) => k >= ctx.today)
     .map((k) => {
       const ok = voters.filter((n) => votes[k]?.[n] === '◯'), maybe = voters.filter((n) => votes[k]?.[n] === '△');
       return '・' + fmtDateJa(k) + '　◯ ' + ok.length + '/' + voters.length + (maybe.length ? '　△ ' + maybe.length : '') + (ok.length === voters.length ? '（全員 ◯）' : '');
-    });
+    })
+    .join('\n');
+}
+
+/** 日程調整の回答がそろった。GMだけを呼び、候補日ごとの ◯ と △ の数を並べる */
+export function pollReadyPayload(ctx: PayloadCtx, s: Session): Payload {
   return {
-    content: ['📝 「' + s.name + '」の日程調整の回答がそろいました。' + call, days.join('\n'), 'Yokiの「募集・調整」タブで、開催日を選んでください。' + (ctx.appUrl ? '\n' + ctx.appUrl : '')].join('\n'),
+    content: ['📝 「' + s.name + '」の日程調整の回答がそろいました。' + gmCall(ctx, s), pollTally(ctx, s), 'Yokiの「募集・調整」タブで、開催日を選んでください。' + (ctx.appUrl ? '\n' + ctx.appUrl : '')].join('\n'),
+  };
+}
+
+/** 日程調整の締め切りが近い（明日か今日）。まだ答えていない人だけを呼ぶ。ボタンを使うグループでは、そのまま答えられる */
+export function pollDuePayload(ctx: PayloadCtx, s: Session, pending: string[]): Payload {
+  const call = pending.map((n) => { const id = discordIdOf(ctx, n); return id ? '<@' + id + '>' : n + 'さん'; }).join(' ');
+  const when = s.pollDue === ctx.today ? '今日' : '明日';
+  return {
+    content: [
+      '⏰ 「' + s.name + '」の日程調整の締め切りは' + when + '（' + fmtDateJa(s.pollDue!) + '）です。まだ答えていない人: ' + call,
+      '候補日: ' + s.candidates.filter((k) => k >= ctx.today).map(fmtDateJa).join('、'),
+      (ctx.buttons ? '下のボタンでも答えられます。' : '') + 'Yokiの「募集・調整」タブで、候補日ごとに ◯・△・× を押してください。' + (ctx.appUrl ? '\n🔗 ' + ctx.appUrl : ''),
+    ].join('\n'),
+    components: pollComponents(ctx, s),
+  };
+}
+
+/** 日程調整の締め切りが過ぎた。GMを呼び、候補日ごとの数と、まだ答えていない人を並べる */
+export function pollClosedPayload(ctx: PayloadCtx, s: Session, pending: string[]): Payload {
+  const tally = pollTally(ctx, s);
+  return {
+    content: [
+      '⌛ 「' + s.name + '」の日程調整の締め切り（' + fmtDateJa(s.pollDue!) + '）が過ぎました。' + gmCall(ctx, s),
+      ...(tally ? [tally] : ['これからの候補日がありません。']),
+      ...(pending.length ? ['まだ答えていない人: ' + pending.join('、')] : []),
+      'Yokiの「募集・調整」タブで、開催日を選ぶか、候補日を選び直してください。' + (ctx.appUrl ? '\n🔗 ' + ctx.appUrl : ''),
+    ].join('\n'),
+    embeds: [sessionEmbed(ctx, s)],
   };
 }
 

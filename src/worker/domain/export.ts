@@ -32,7 +32,7 @@ export async function exportGroup(ctx: Ctx, _form: Form) {
       windowFrom: s.windowFrom ?? '', windowTo: s.windowTo ?? '', gm: s.gm, members: s.members, want: s.want, interest: s.interest,
       // シナリオを消すと卓から外れる（外部キー）ので、付いていればいつもある
       scenario: s.scenarioId === null ? '' : scName.get(s.scenarioId)!,
-      candidates: s.candidates, votes: ctx.votes.get(s.rowId) ?? {}, capacity: s.capacity ?? 0, recruitDue: s.recruitDue ?? '',
+      candidates: s.candidates, votes: ctx.votes.get(s.rowId) ?? {}, pollDue: s.pollDue ?? '', capacity: s.capacity ?? 0, recruitDue: s.recruitDue ?? '',
       absent: s.absent.map((a) => ({ name: a.name, note: a.note })),
       // 秘匿HOは入れない（管理者も読めないもの）
       prep: {

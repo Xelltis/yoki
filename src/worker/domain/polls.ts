@@ -94,8 +94,27 @@ async function afterVote(ctx: Ctx, sid: string, wasComplete: boolean, io: Io): P
 }
 
 /**
- * 日程調整を始める／候補日を選び直す。form: { id, dates, start, end }
- * 始め直しなら前の回答は消す。選び直しなら外した日の回答だけ消す。出した人がGMか参加者なら、新しく足した候補日に ◯ を付けておく
+ * 回答の締め切りを読む。form.dueが無ければ、選び直しなら今の締め切りのまま（始め直しなら無し）、空なら無し。
+ * 締め切りは、今日から、いちばん早い候補日の前日まで。過ぎた締め切りは、変えずに選び直すときだけそのまま残す
+ */
+function readPollDue(ctx: Ctx, s: Session, form: Form, dates: string[], fresh: boolean): string | null {
+  if (form.due === undefined) return fresh ? null : s.pollDue;
+  const raw = str(form.due);
+  if (!raw) return null;
+  const due = parseYmd(raw);
+  if (!due) throw badRequest('回答の締め切りが読めません: ' + raw);
+  if (due < ctx.today) {
+    if (due === s.pollDue && !fresh) return due;
+    throw badRequest('過ぎた日は、回答の締め切りにできません。');
+  }
+  if (due >= dates[0]!) throw badRequest('回答の締め切りは、いちばん早い候補日（' + fmtDateJa(dates[0]!) + '）より前の日にしてください。');
+  return due;
+}
+
+/**
+ * 日程調整を始める／候補日を選び直す。form: { id, dates, start, end, due }
+ * 始め直しなら前の回答は消す。選び直しなら外した日の回答だけ消す。出した人がGMか参加者なら、新しく足した候補日に ◯ を付けておく。
+ * 締め切りを変えたら、締め切りの催促と知らせを送り直せるようにする
  */
 export async function startPoll(ctx: Ctx, form: Form) {
   const s = findAdjusting(ctx, form.id);
@@ -112,14 +131,20 @@ export async function startPoll(ctx: Ctx, form: Form) {
   const past = dates.filter((k) => k < ctx.today);
   if (past.length) throw badRequest('過ぎた日は候補にできません: ' + past.map(fmtDateJa).join('、'));
   const fresh = !s.candidates.length;
+  const due = readPollDue(ctx, s, form, dates, fresh);
+  const dueChanged = due !== s.pollDue;
   const db = ctx.db;
   const stmts: D1PreparedStatement[] = [
     db
       .prepare(
         `UPDATE sessions SET candidates = ?2, start_time = COALESCE(?3, start_time), end_time = COALESCE(?4, end_time),
-           editor = ?5, updated_at = ?6, poll_ready_at = NULL WHERE id = ?1`,
+           editor = ?5, updated_at = ?6, poll_ready_at = NULL, poll_due = ?7,
+           poll_urged_at = CASE WHEN ?8 THEN NULL ELSE poll_urged_at END, poll_closed_at = CASE WHEN ?8 THEN NULL ELSE poll_closed_at END WHERE id = ?1`,
       )
-      .bind(s.rowId, JSON.stringify(dates), form.start === undefined ? null : normTime(form.start), form.end === undefined ? null : normTime(form.end), ctx.actor.name, ctx.now.toISOString()),
+      .bind(
+        s.rowId, JSON.stringify(dates), form.start === undefined ? null : normTime(form.start), form.end === undefined ? null : normTime(form.end), ctx.actor.name, ctx.now.toISOString(),
+        due, dueChanged ? 1 : 0,
+      ),
     fresh
       ? db.prepare('DELETE FROM poll_votes WHERE session_id = ?').bind(s.rowId)
       : db.prepare('DELETE FROM poll_votes WHERE session_id = ? AND date NOT IN (SELECT value FROM json_each(?))').bind(s.rowId, JSON.stringify(dates)),
@@ -127,9 +152,10 @@ export async function startPoll(ctx: Ctx, form: Form) {
   const me = ctx.actor.name;
   const added = dates.filter((k) => fresh || !s.candidates.includes(k));
   if (peopleOf(s).includes(me) && added.length) stmts.push(voteStmts(ctx, s, added, '◯'));
-  stmts.push(historyStmt(ctx, s.rowId, '日程調整', (fresh ? '候補日を出した: ' : '候補日を選び直した: ') + dates.map(fmtDateJa).join('、')));
+  const dueText = due ? '（締め切り ' + fmtDateJa(due) + '）' : dueChanged ? '（締め切りなし）' : '';
+  stmts.push(historyStmt(ctx, s.rowId, '日程調整', (fresh ? '候補日を出した: ' : '候補日を選び直した: ') + dates.map(fmtDateJa).join('、') + dueText));
   await db.batch(stmts);
-  return { ok: true, id: s.id, dates, fresh, message: '「' + s.name + '」の日程調整を' + (fresh ? '始めました' : '更新しました') + '（候補' + dates.length + '日）。' };
+  return { ok: true, id: s.id, dates, fresh, message: '「' + s.name + '」の日程調整を' + (fresh ? '始めました' : '更新しました') + '（候補' + dates.length + '日' + (due ? '、締め切り ' + fmtDateJa(due) : '') + '）。' };
 }
 
 /** 候補日に回答する。form: { id, ymd, name, vote: '◯' | '△' | '×' | '' }。この回答で全員がそろったら、GMに知らせる */
@@ -223,7 +249,7 @@ export async function decidePoll(ctx: Ctx, form: Form, io: Io) {
     db
       .prepare(
         `UPDATE sessions SET date = ?2, status = '開催', window_from = NULL, window_to = NULL, candidates = '[]',
-           notified_at = NULL, poll_ready_at = NULL, editor = ?3, updated_at = ?4 WHERE id = ?1`,
+           notified_at = NULL, poll_ready_at = NULL, poll_due = NULL, poll_urged_at = NULL, poll_closed_at = NULL, editor = ?3, updated_at = ?4 WHERE id = ?1`,
       )
       .bind(s.rowId, k, ctx.actor.name, ctx.now.toISOString()),
     db.prepare('DELETE FROM poll_votes WHERE session_id = ?').bind(s.rowId),
@@ -244,7 +270,9 @@ export async function decidePoll(ctx: Ctx, form: Form, io: Io) {
 export async function cancelPoll(ctx: Ctx, form: Form) {
   const s = findAdjusting(ctx, form.id);
   await ctx.db.batch([
-    ctx.db.prepare("UPDATE sessions SET candidates = '[]', poll_ready_at = NULL, editor = ?2, updated_at = ?3 WHERE id = ?1").bind(s.rowId, ctx.actor.name, ctx.now.toISOString()),
+    ctx.db
+      .prepare("UPDATE sessions SET candidates = '[]', poll_ready_at = NULL, poll_due = NULL, poll_urged_at = NULL, poll_closed_at = NULL, editor = ?2, updated_at = ?3 WHERE id = ?1")
+      .bind(s.rowId, ctx.actor.name, ctx.now.toISOString()),
     ctx.db.prepare('DELETE FROM poll_votes WHERE session_id = ?').bind(s.rowId),
     historyStmt(ctx, s.rowId, '日程調整', 'やめた'),
   ]);

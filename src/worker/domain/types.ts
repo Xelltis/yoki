@@ -71,6 +71,10 @@ export type Session = {
   urgedAt: string | null;
   soonAt: string | null;
   pollReadyAt: string | null;
+  /** 日程調整の回答の締め切り（YYYY-MM-DD）と、締め切りの前日の催促・締め切りが過ぎた知らせを送った日時。決めていなければnull */
+  pollDue: string | null;
+  pollUrgedAt: string | null;
+  pollClosedAt: string | null;
   /** 遊ぶシナリオ（scenarios.id）。無ければnull */
   scenarioId: number | null;
   /** キャラシの締め切り（YYYY-MM-DD）と、締め切り前の催促を送った日時 */
