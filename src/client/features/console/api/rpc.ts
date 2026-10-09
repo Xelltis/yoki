@@ -25,23 +25,27 @@ export type Rpc = <R>(groupId: string, name: RpcName, form?: object, signal?: Ab
  */
 export const rpc: Rpc = async <R,>(groupId: string, name: RpcName, form: object = {}, signal?: AbortSignal): Promise<R> => {
   const timeout = AbortSignal.timeout(API_WAIT);
-  let res: Response, body: Record<string, unknown>;
+  let res: Response, body: Record<string, unknown> | null;
   try {
     res = await fetch('/api/g/' + encodeURIComponent(groupId) + '/' + name, {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form), credentials: 'same-origin',
       signal: signal ? AbortSignal.any([signal, timeout]) : timeout,
     });
-    body = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+    // 本文を読む途中で取り消されたら、下のcatchで取り消しとして投げる（読めなかった本文を、空の返事にしない。
+    // 開いた直後の読み込みを書き込みが取り消したとき、空の返事を画面のデータにして落ちていた）
+    body = (await res.json().catch((e: unknown) => { if (signal?.aborted || timeout.aborted) throw e; return null; })) as Record<string, unknown> | null;
   } catch (e) {
     if (signal?.aborted) throw e;
     if (timeout.aborted) throw new RpcError('timeout', 'サーバーから返事がありません。通信を確かめて、もう一度お試しください。');
     throw new RpcError('network', '通信できませんでした。通信を確かめて、もう一度お試しください。');
   }
   if (res.ok) {
+    // うまくいったのに本文が読めない（途中の機器が別のページを返したなど）。空の返事を、読み込んだデータや書き込みの結果にしない
+    if (!body) throw new RpcError('network', 'サーバーの返事を読めませんでした。通信を確かめて、もう一度お試しください。');
     try { sessionStorage.removeItem('taku.relogin'); } catch { /* 使えない端末 */ }
     return body as R;
   }
-  const msg = String(body.error || 'うまくいきませんでした。');
+  const msg = String(body?.error || 'うまくいきませんでした。');
   if (msg.startsWith('AUTH:')) throw new RpcError('auth', msg.replace(/^AUTH:\s*/, ''));
   if (msg.startsWith('GONE:')) throw new RpcError('gone', msg.replace(/^GONE:\s*/, ''));
   throw new RpcError('fail', msg.replace(/^ADMIN:\s*/, ''));
