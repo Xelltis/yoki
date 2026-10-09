@@ -27,7 +27,7 @@ Worker 1つで、次の3つを受け持つ。
 | `GET` / `POST /api/admin/*` | 運営の管理画面が使う（下の「運営の管理画面」） |
 | `GET /cal/<token>.ics` | 購読URL（iCalendar）。ログインせずに読む（下の「カレンダーとの連携」） |
 | `/auth/google/start` `/auth/google/login` `/auth/google/callback` | Googleカレンダーとの連携と、Googleでのログイン（OAuth） |
-| `POST /api/discord/interactions` | Discordのボタンの受け口（下の「Discordへの送信」） |
+| `POST /api/discord/interactions` | Discordのボタンとスラッシュコマンドの受け口（下の「Discordへの送信」） |
 | `POST /dev/login` `POST /dev/reset` | 開発用ログイン（開発サーバーだけ）。`/dev/reset` は、開発用の人のGoogle連携と偽のGoogleの中身も消す |
 | `/dev/google/authorize` `/dev/google/state` `POST /dev/google/busy` | 開発用の偽のGoogle（開発サーバーでGoogleの値が空のときだけ） |
 
@@ -197,6 +197,8 @@ usersの行は消さない（印がそこにあるため）。Discordのユー�
 
 **自分あてのDMの知らせ**（`domain/dm-notices.ts`・`discord/dm.ts`）。本人が設定で選んだ種類（`users.dm_kinds`。種類は `src/shared/api.ts` の `DM_KINDS`。どのグループにも効く）の知らせを、自分がGMか参加者の卓について、BotのDMでも送る。知らせを決めたところが、受け取ると決めた人の分を `dm_queue` に1文で積み（`dmStmt`。頭にグループの名前、終わりにグループのURL）、見回りが毎回、古い順に10通まで送る（`sendQueuedDms`。Discordを呼べる数を、知らせとGoogleの同期で分け合うため）。BotとのDMのチャンネルは `users.dm_channel` に控えて使い回す（無くなっていれば開き直す）。届かない断り（403など）と、送り直しの上限（3回）を超えたものは捨てて、理由を `users.dm_error` に残し、設定の画面に出す。トークンが使えなければ、その回は止める。12時間より古い控えは送らずに捨てる。積むのは、チャンネルへの知らせを送り直さないと決まったとき（届いた、か、印を付けて送り先が無いとき）だけ（同じDMを二度積まないため）。開催前の知らせは、届いた卓の分だけ積む。
 
+**スラッシュコマンド**（`discord/commands.ts`）。運営者が運営の管理画面で入れると（`meta` の `discord_commands`）、ボタンと同じく受け口を入れてから（`ensureEndpoint`）、Botのトークンで `/yoki` を登録する（`PUT /applications/{id}/commands`。止めると空にする）。受け口はボタンと同じで、コマンド（type 2）にも「考え中」を返し、返事のあとで書き直す。読むだけで書き込みはしない。使えるのは、打ったサーバーのグループのメンバー（ログインしたことがあるか、DiscordのIDを入れたメンバー）だけ。`agenda`（予定）は入口の「あなたの予定」と同じ `agendaOf` を、そのサーバーのグループで読む。`free`（空き）は、その日のメンバーの印と卓（`markAt`・`bookedPartsMap`。昼と夜に分けるグループは時間帯ごと）を、2グループまで読む（1グループの読み込みで14問い合わせを使うため）。
+
 **Discordのボタン**（`discord/buttons.ts`・`discord/interactions.ts`・`routes/discord.ts`）。運営者が運営の管理画面で入れると（`meta` の `discord_buttons`）、日程調整の知らせに「予定表から答える」「どの日でもいい」と行ける日を選ぶ欄、募集の知らせに「参加希望」「興味あり」「取り消す」を付ける（message components。IDは `yoki:グループ:卓の番号:操作`）。入れるときは、Botのトークンで `GET /applications/@me` からPublic Keyを読んで `meta` に控え、`PATCH /applications/@me` でInteractions Endpoint URL（`/api/discord/interactions`）を入れる（Discordがそのとき確かめの要求を送るので、Public Keyを先に控える）。新しいsecretは要らない。
 
 受け口は、署名（Ed25519。`X-Signature-Ed25519`・`X-Signature-Timestamp`）を確かめてから受ける。Discordからの要求にOriginは付かないので、CSRFの確かめはそのまま通る。返事は3秒以内に返す決まりなので、すぐに「考え中」（本人にだけ見える）を返し、書き込みは返事のあと（`waitUntil`）で行って、`PATCH /webhooks/{アプリ}/{トークン}/messages/@original` で書き直す。押した人は、DiscordのユーザーIDで、ログインしたことのあるメンバー（`user_id`）を先に、無ければDiscordのIDを入れたメンバーに結びつける。ボタンはサーバーの中でしか押せないので、そのサーバーにいることはDiscordが確かめている。グループのサーバーと押したサーバーが違えば断る。締め出した人は断る。書き込みは画面と同じ関数（`setPollVoteFromAvail`・`setPollVoteAll`・`setPollVoteDays`・`setInterest`）で、本人の分だけを書く。
@@ -302,6 +304,7 @@ Googleを呼ぶのは1回の要求で35回まで。Workersが1回の要求で外
 | `POST /api/admin/users/:id/delete` | 利用者を消す（本人から頼まれたとき）。usersの行（ログインとサーバーの控えは表の決まりで一緒に消える）と、どのグループでもその人のメンバーの行（`user_id` か `discord_id` が同じもの）を消し、グループの `created_by` を空にする。メンバーの行の消し方はグループの管理者がメンバーを消すときと同じ（予定とメモは消え、卓と回答はゲストの名前になる）。運営者と、締め出している人（消すと印も消える）は断る。Googleカレンダーと連携していれば、書き込んだ予定を消し、Googleの許可を取り消してから消す |
 | `POST /api/admin/registration` | 新規登録を受け付ける・止める（`{open}`） |
 | `POST /api/admin/discord-buttons` | 知らせにDiscordのボタンを付ける・やめる（`{on}`。付けるときは、Interactions Endpoint URLをDiscordアプリに入れる） |
+| `POST /api/admin/discord-commands` | スラッシュコマンド（`/yoki`）を使う・やめる（`{on}`。使うときは、Interactions Endpoint URLを入れてからコマンドを登録し、やめるときは消す） |
 | `POST /api/admin/operator-notice` `POST /api/admin/operator-notice/test` | 運営者への知らせを使う・止める（`{on}`）、押した運営者にだけ試しにDMを送る（止めていても送る） |
 | `GET /api/admin/legal` `POST /api/admin/legal` | 利用規約とプライバシーポリシーの、運営者の名前・問い合わせ先・本文を読む・保存する（`{operator?, contact?, terms?, privacy?}`。省いたものは変えない） |
 | `GET /api/admin/update` `POST /api/admin/update` | 動いているバージョンと、元のリポジトリの最新のバージョンを比べる（`?refresh=1` でGitHubを読み直す）・最新のバージョンへの更新を始める（下の「バージョンと更新」） |

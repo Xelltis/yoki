@@ -1,4 +1,4 @@
-// 運営者の管理画面の「様子」。新しい版の知らせ・Botのトークンの知らせ・数・新規登録の受付・Discordのボタン・運営者への知らせ・知らせの見回り（cron）・Discordへの送信の失敗
+// 運営者の管理画面の「様子」。新しい版の知らせ・Botのトークンの知らせ・数・新規登録の受付・Discordのボタン・スラッシュコマンド・運営者への知らせ・知らせの見回り（cron）・Discordへの送信の失敗
 import { Link } from '@tanstack/react-router';
 import type { AdminOverview, AdminUpdate } from '../../../shared/admin';
 import { askConfirm } from '../../ui/confirm';
@@ -29,6 +29,7 @@ export function OverviewPane() {
         <div className={counts} id="opCounts"></div>
         <div className="card" id="opReg"></div>
         <div className="card" id="opButtons"></div>
+        <div className="card" id="opCommands"></div>
         <div className="card" id="opNotice"></div>
         <div className="card" id="opPatrol"></div>
         <Fails o={o} />
@@ -79,6 +80,12 @@ export function OverviewPane() {
         <p className={stateCls(o.discordButtons ? 'ok' : 'warn')}>{o.discordButtons ? '日程調整と募集の知らせにボタンを付けています' : '付けていません'}</p>
         <p className="hint">入れると、日程調整と募集の知らせにボタンが付き、Discordのまま「予定表から答える」「どの日でもいい」「行ける日を選ぶ」「参加希望」「興味あり」を押せます。入れるときは、YokiのBotのトークンで、DiscordアプリのInteractions Endpoint URLにこのYokiのアドレスを入れます。公開のアドレスで開いた、この画面から入れてください。</p>
         <button type="button" className="btn small" id="opButtonsToggle" data-on={o.discordButtons ? '0' : '1'} onClick={() => { void act('/api/admin/discord-buttons', { on: !o.discordButtons }); }}>{o.discordButtons ? 'ボタンを付けない' : 'ボタンを付ける'}</button>
+      </div>
+      <div className="card" id="opCommands">
+        <h3><Icon name="touch_app" size="sm" />スラッシュコマンド</h3>
+        <p className={stateCls(o.discordCommands ? 'ok' : 'warn')}>{o.discordCommands ? '/yoki を使えます' : '使えません'}</p>
+        <p className="hint">入れると、グループのDiscordサーバーで「/yoki 予定」（あなたの番と、これからの卓）と「/yoki 空き」（その日のメンバーの予定）を使えます。返事は本人にだけ見えます。入れるときは、Discordのボタンと同じく、DiscordアプリのInteractions Endpoint URLにこのYokiのアドレスを入れてから、コマンドを登録します。公開のアドレスで開いた、この画面から入れてください。</p>
+        <button type="button" className="btn small" id="opCommandsToggle" data-on={o.discordCommands ? '0' : '1'} onClick={() => { void act('/api/admin/discord-commands', { on: !o.discordCommands }); }}>{o.discordCommands ? 'コマンドを止める' : 'コマンドを使う'}</button>
       </div>
       <NoticeCard n={o.notices} />
       <div className="card" id="opPatrol">

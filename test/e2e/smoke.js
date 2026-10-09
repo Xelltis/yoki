@@ -761,6 +761,12 @@ await withDevServer(async (base) => {
       await page.click('#opButtonsToggle');
       await page.waitForSelector('#toast >> text=Botのトークンが無い', { timeout: 15000 });
       errors.splice(errorsBefore);
+      // スラッシュコマンドも同じ。手元にはBotが無いので、入れようとしても断られる
+      assert.match(await page.textContent('#opCommands'), /使えません/);
+      const errorsBeforeCommands = errors.length;
+      await page.click('#opCommandsToggle');
+      await page.waitForSelector('#toast >> text=スラッシュコマンドを使えません', { timeout: 15000 });
+      errors.splice(errorsBeforeCommands);
       // 運営者への知らせ: 止める・使うを切り替えられる。手元にはBotが無いので、試しに送ると断られる
       assert.match(await page.textContent('#opBotState'), /ありません/);
       await page.click('#opNoticeToggle');

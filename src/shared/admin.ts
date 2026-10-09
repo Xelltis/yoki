@@ -42,6 +42,8 @@ export type AdminOverview = {
   registrationOpen: boolean;
   /** 日程調整と募集の知らせにボタンを付けて、Discordで答えられるようにしているか */
   discordButtons: boolean;
+  /** スラッシュコマンド（/yoki）を登録して、受けているか */
+  discordCommands: boolean;
   /** 運営者への知らせ（BotからのDM） */
   notices: {
     on: boolean;

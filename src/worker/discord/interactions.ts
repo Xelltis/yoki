@@ -28,39 +28,49 @@ export async function verifySignature(publicKeyHex: string, signatureHex: string
   return crypto.subtle.verify('Ed25519', pub, sig, new TextEncoder().encode(timestamp + body));
 }
 
-const putMeta = (db: D1Database, key: string, value: string) =>
+export const putMeta = (db: D1Database, key: string, value: string) =>
   db.prepare('INSERT INTO meta (key, value) VALUES (?1, ?2) ON CONFLICT (key) DO UPDATE SET value = excluded.value').bind(key, value).run();
 
-/** ボタンを使うか（運営者が入れたか）と、Public Key */
-export async function buttonsState(db: D1Database): Promise<{ on: boolean; verifyKey: string }> {
-  const rows = (await db.prepare('SELECT key, value FROM meta WHERE key IN (?1, ?2)').bind(BUTTONS_KEY, VERIFY_KEY).all<{ key: string; value: string }>()).results;
+/** metaの鍵。'1' ならスラッシュコマンドを受ける（運営者が運営の管理画面で入れる。commands.ts） */
+export const COMMANDS_KEY = 'discord_commands';
+
+/** ボタンとスラッシュコマンドを使うか（運営者が入れたか）と、Public Key */
+export async function buttonsState(db: D1Database): Promise<{ on: boolean; commands: boolean; verifyKey: string }> {
+  const rows = (await db.prepare('SELECT key, value FROM meta WHERE key IN (?1, ?2, ?3)').bind(BUTTONS_KEY, VERIFY_KEY, COMMANDS_KEY).all<{ key: string; value: string }>()).results;
   const m = Object.fromEntries(rows.map((r) => [r.key, r.value]));
-  return { on: m[BUTTONS_KEY] === '1', verifyKey: m[VERIFY_KEY] ?? '' };
+  return { on: m[BUTTONS_KEY] === '1', commands: m[COMMANDS_KEY] === '1', verifyKey: m[VERIFY_KEY] ?? '' };
 }
 
 /**
- * 知らせのボタンを使う・やめる（運営者）。使うときは、DiscordアプリのPublic Keyを読んで控え、受け口のURLをDiscordアプリに入れる。
- * URLを入れるとき、Discordは受け口に確かめの要求（PING）を送るので、Public Keyを先に控える
+ * 受け口を入れる（ボタンとスラッシュコマンドで同じ）。DiscordアプリのPublic Keyを読んで控え、受け口のURLをDiscordアプリに入れる。
+ * URLを入れるとき、Discordは受け口に確かめの要求（PING）を送るので、Public Keyを先に控える。DiscordアプリのIDと、Botで呼ぶヘッダーを返す。
+ * whatは、断るときの文に入れる「何を使えないか」
  */
-export async function setButtons(env: Bindings, on: boolean, origin: string): Promise<string> {
-  const db = env.DB;
-  if (!on) {
-    await putMeta(db, BUTTONS_KEY, '0');
-    return '知らせにボタンを付けるのをやめました。';
-  }
+export async function ensureEndpoint(env: Bindings, origin: string, what: string): Promise<{ appId: string; headers: Record<string, string> }> {
   const token = env.DISCORD_BOT_TOKEN;
-  if (!token) throw badRequest('YokiのBotのトークンが無いので、ボタンを使えません。');
+  if (!token) throw badRequest('YokiのBotのトークンが無いので、' + what + 'を使えません。');
   const headers = { Authorization: 'Bot ' + token, 'Content-Type': 'application/json' };
   const app = await discordFetch(DISCORD_API + '/applications/@me', { headers });
-  const verifyKey = String(((await app.json().catch(() => null)) as { verify_key?: string } | null)?.verify_key ?? '');
+  const body = (await app.json().catch(() => null)) as { id?: string; verify_key?: string } | null;
+  const verifyKey = String(body?.verify_key ?? '');
   if (!app.ok || !hexBytes(verifyKey)) throw badRequest('DiscordアプリのPublic Keyを読めませんでした（HTTP ' + app.status + '）。Botのトークンを確かめてください。');
-  await putMeta(db, VERIFY_KEY, verifyKey);
+  await putMeta(env.DB, VERIFY_KEY, verifyKey);
   const url = origin + INTERACTIONS_PATH;
   const res = await discordFetch(DISCORD_API + '/applications/@me', { method: 'PATCH', headers, body: JSON.stringify({ interactions_endpoint_url: url }) });
   if (!res.ok) {
     throw badRequest('Discordが受け口のURL（' + url + '）を受け付けませんでした（HTTP ' + res.status + '）。公開のアドレスで開いた運営の管理画面から入れてください。');
   }
-  await putMeta(db, BUTTONS_KEY, '1');
+  return { appId: String(body?.id ?? ''), headers };
+}
+
+/** 知らせのボタンを使う・やめる（運営者）。使うときは、受け口を入れる（ensureEndpoint） */
+export async function setButtons(env: Bindings, on: boolean, origin: string): Promise<string> {
+  if (!on) {
+    await putMeta(env.DB, BUTTONS_KEY, '0');
+    return '知らせにボタンを付けるのをやめました。';
+  }
+  await ensureEndpoint(env, origin, 'ボタン');
+  await putMeta(env.DB, BUTTONS_KEY, '1');
   return '知らせにボタンを付けます。日程調整と募集の知らせから、Discordで答えられます。';
 }
 

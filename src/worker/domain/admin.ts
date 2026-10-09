@@ -27,7 +27,7 @@ export async function overview(db: D1Database, env: { operators: number; botToke
               (SELECT count(*) FROM auth_sessions WHERE expires_at > ?1) AS logins,
               (SELECT count(*) FROM sessions WHERE status IN ${ACTIVE}) AS active`,
     ).bind(now.toISOString()),
-    db.prepare("SELECT key, value FROM meta WHERE key IN ('patrol', 'patrol_ok_at', 'hourly', 'daily', 'registration', 'discord_buttons', ?1, ?2, ?3, ?4)")
+    db.prepare("SELECT key, value FROM meta WHERE key IN ('patrol', 'patrol_ok_at', 'hourly', 'daily', 'registration', 'discord_buttons', 'discord_commands', ?1, ?2, ?3, ?4)")
       .bind(NOTICE_KEYS.on, NOTICE_KEYS.last, NOTICE_KEYS.version, NOTICE_KEYS.bot),
     db.prepare(`SELECT (SELECT count(*) FROM notify_log l WHERE l.at > ?1 AND ${FAILED}) AS day, (SELECT count(*) FROM notify_log l WHERE l.at > ?2 AND ${FAILED}) AS week`)
       .bind(ago(now, DAY_MS), ago(now, 7 * DAY_MS)),
@@ -61,6 +61,7 @@ export async function overview(db: D1Database, env: { operators: number; botToke
     },
     registrationOpen: m.registration !== 'closed',
     discordButtons: m.discord_buttons === '1',
+    discordCommands: m.discord_commands === '1',
     notices: noticeOverview(m, env),
   };
 }

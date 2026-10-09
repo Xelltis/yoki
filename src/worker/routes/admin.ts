@@ -8,6 +8,7 @@ import { isOperator, parseOperatorIds, requireOperator } from '../auth/operator'
 import type { Viewer } from '../auth/session';
 import { changeGuild, deleteUser, groupDetail, listGroups, listUsers, logoutUser, overview, setBan, setGroupAdmin } from '../domain/admin';
 import { readForm, str } from '../domain/form';
+import { setCommands } from '../discord/commands';
 import { setButtons } from '../discord/interactions';
 import { deleteGroupById } from '../domain/groups';
 import { readLegal, saveLegal } from '../domain/legal';
@@ -64,6 +65,14 @@ adminRoutes.post('/api/admin/operator-notice/test', async (c) => {
   const op = await requireOperator(c);
   const message = await testNotice(c.env, op.id, new Date());
   audit(op, 'testOperatorNotice', op.id);
+  return c.json(done(message));
+});
+
+adminRoutes.post('/api/admin/discord-commands', async (c) => {
+  const op = await requireOperator(c);
+  const on = (await readForm(c.req)).on === true;
+  const message = await setCommands(c.env, on, appOrigin(c.env, c.req.url));
+  audit(op, 'setDiscordCommands', on ? 'on' : 'off');
   return c.json(done(message));
 });
 
