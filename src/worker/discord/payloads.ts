@@ -4,6 +4,7 @@ import { peopleOf, pollVoters, windowInfo } from '../domain/model';
 import type { Ctx, Session } from '../domain/types';
 import { fmtDateJa, timeRange } from '../lib/jst';
 import { splitWant } from '../../shared/waitlist';
+import { candLabel } from '../../shared/candidates';
 import { type Component, pollComponents, recruitComponents } from './buttons';
 import { gmsOf } from '../../shared/gm';
 
@@ -13,15 +14,17 @@ export type Payload = { content: string; embeds?: Embed[]; components?: Componen
 /** 文面を作るのに使う一式。buttonsは、知らせにボタンを付けるか（運営者が入れたYokiだけ） */
 type PayloadCtx = Pick<Ctx, 'group' | 'memberByName' | 'appUrl' | 'votes' | 'today'> & { buttons?: boolean };
 
-const label = (s: Session) => windowInfo(s.windowFrom, s.windowTo)?.label ?? '';
+const windowLabel = (s: Session) => windowInfo(s.windowFrom, s.windowTo)?.label ?? '';
+/** 候補の書き方（10/12（月）、時間帯があれば10/12（月）の夜） */
+const label = (k: string) => candLabel(k, fmtDateJa);
 
 /** 「10/3（土）20:00〜23:00」。募集中なら「10/3（土）〜10/17（土） に開催予定（募集中）」（GAS版whenText_） */
 export function whenText(s: Session): string {
   if (s.date) return fmtDateJa(s.date) + ' ' + timeRange(s);
-  if (s.status === STATUS.RECRUIT) return (label(s) ? label(s) + 'に開催予定' : '時期未定') + '（募集中）';
+  if (s.status === STATUS.RECRUIT) return (windowLabel(s) ? windowLabel(s) + 'に開催予定' : '時期未定') + '（募集中）';
   if (s.status === STATUS.ADJUSTING) {
-    if (s.candidates.length) return '候補日: ' + s.candidates.map(fmtDateJa).join('、') + '（日程調整中）';
-    return (label(s) ? label(s) + 'のどこか' : '期間未定') + '（調整中）';
+    if (s.candidates.length) return '候補日: ' + s.candidates.map(label).join('、') + '（日程調整中）';
+    return (windowLabel(s) ? windowLabel(s) + 'のどこか' : '期間未定') + '（調整中）';
   }
   return '日程未定';
 }
@@ -86,7 +89,7 @@ export function announcePayload(ctx: PayloadCtx, s: Session, me: string): Payloa
 export function askPayload(ctx: PayloadCtx, s: Session, me: string, message: string): Payload {
   const withId: string[] = [], noId: string[] = [];
   for (const n of s.interest) { const id = discordIdOf(ctx, n); if (id) withId.push('<@' + id + '>'); else noId.push(n + 'さん'); }
-  const lines = ['❓ 「' + s.name + '」（' + (label(s) ? label(s) + 'に開催予定' : '時期未定') + '）に参加できそうですか？ ' + withId.concat(noId).join(' ')];
+  const lines = ['❓ 「' + s.name + '」（' + (windowLabel(s) ? windowLabel(s) + 'に開催予定' : '時期未定') + '）に参加できそうですか？ ' + withId.concat(noId).join(' ')];
   const msg = message.trim();
   if (msg) lines.push('💬 ' + msg + (me ? '（' + me + '）' : ''));
   lines.push('参加希望であれば、Yokiの「募集・調整」タブで「参加希望」を押してください。' + (me && !msg ? '　by ' + me : '') + (ctx.appUrl ? '\n' + ctx.appUrl : ''));
@@ -99,7 +102,7 @@ export function pollPayload(ctx: PayloadCtx, s: Session, me: string): Payload {
   const call = [mentionsOf(ctx, [s])].concat(noId).filter(Boolean).join(' ');
   const lines = [
     '🗓️ 「' + s.name + '」の日程を決めます。' + call,
-    '候補日: ' + s.candidates.map(fmtDateJa).join('、') + (s.start || s.end ? '　' + timeRange(s) : '') + (s.pollDue ? '\n回答の締め切り: ' + fmtDateJa(s.pollDue) : ''),
+    '候補日: ' + s.candidates.map(label).join('、') + (s.start || s.end ? '　' + timeRange(s) : '') + (s.pollDue ? '\n回答の締め切り: ' + fmtDateJa(s.pollDue) : ''),
     (ctx.buttons ? '下のボタンでも答えられます。' : '') +
       'Yokiの「募集・調整」タブで、候補日ごとに ◯・△（調整すれば行ける）・× を押してください。全員の回答がそろったら、GMが開催日を選びます。' + (me ? '　by ' + me : '') + (ctx.appUrl ? '\n' + ctx.appUrl : ''),
   ];
@@ -122,7 +125,7 @@ function pollTally(ctx: PayloadCtx, s: Session): string {
     .filter((k) => k >= ctx.today)
     .map((k) => {
       const ok = voters.filter((n) => votes[k]?.[n] === '◯'), maybe = voters.filter((n) => votes[k]?.[n] === '△');
-      return '・' + fmtDateJa(k) + '　◯ ' + ok.length + '/' + voters.length + (maybe.length ? '　△ ' + maybe.length : '') + (ok.length === voters.length ? '（全員 ◯）' : '');
+      return '・' + label(k) + '　◯ ' + ok.length + '/' + voters.length + (maybe.length ? '　△ ' + maybe.length : '') + (ok.length === voters.length ? '（全員 ◯）' : '');
     })
     .join('\n');
 }
@@ -141,7 +144,7 @@ export function pollDuePayload(ctx: PayloadCtx, s: Session, pending: string[]): 
   return {
     content: [
       '⏰ 「' + s.name + '」の日程調整の締め切りは' + when + '（' + fmtDateJa(s.pollDue!) + '）です。まだ答えていない人: ' + call,
-      '候補日: ' + s.candidates.filter((k) => k >= ctx.today).map(fmtDateJa).join('、'),
+      '候補日: ' + s.candidates.filter((k) => k >= ctx.today).map(label).join('、'),
       (ctx.buttons ? '下のボタンでも答えられます。' : '') + 'Yokiの「募集・調整」タブで、候補日ごとに ◯・△・× を押してください。' + (ctx.appUrl ? '\n🔗 ' + ctx.appUrl : ''),
     ].join('\n'),
     components: pollComponents(ctx, s),

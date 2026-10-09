@@ -8,6 +8,7 @@ import { adminError, badRequest } from '../lib/errors';
 import { consoleData } from './console-data';
 import { reloadLog } from './load';
 import { addDays, fmtDateJa, normTime, parseYmd, timeRange } from '../lib/jst';
+import { candDay, candLabel, candPart, parseCandidate, sortCandidates } from '../../shared/candidates';
 import { queueDm } from './dm-notices';
 import { POLL_MARKS, POLL_MAX_DATES, STATUS } from './constants';
 import { type Form, list, requireSelf, str } from './form';
@@ -17,6 +18,9 @@ import { bookedPartsMap, findAdjusting, findSession, peopleOf, pollComplete } fr
 import type { GoogleDeps } from '../google/config';
 import type { Ctx, Session } from './types';
 import { gmsOf, isGm } from '../../shared/gm';
+
+/** 候補の書き方（10/12（月）、時間帯があれば10/12（月）の夜） */
+const label = (k: string) => candLabel(k, fmtDateJa);
 
 /** 書いたあとで読み直す道具と、Discordの送り直しを待つ道具（routes/rpc.tsが渡す） */
 export type Io = {
@@ -111,7 +115,7 @@ function readPollDue(ctx: Ctx, s: Session, form: Form, dates: string[], fresh: b
     if (due === s.pollDue && !fresh) return due;
     throw badRequest('過ぎた日は、回答の締め切りにできません。');
   }
-  if (due >= dates[0]!) throw badRequest('回答の締め切りは、いちばん早い候補日（' + fmtDateJa(dates[0]!) + '）より前の日にしてください。');
+  if (due >= candDay(dates[0]!)) throw badRequest('回答の締め切りは、いちばん早い候補日（' + fmtDateJa(candDay(dates[0]!)) + '）より前の日にしてください。');
   return due;
 }
 
@@ -123,17 +127,18 @@ function readPollDue(ctx: Ctx, s: Session, form: Form, dates: string[], fresh: b
 export async function startPoll(ctx: Ctx, form: Form) {
   const s = findAdjusting(ctx, form.id);
   if (!s.members.length) throw badRequest('「' + s.name + '」には参加者がいません。参加者を入れてから日程を調整してください。');
-  const dates: string[] = [];
+  const picked: string[] = [];
   for (const d of list(form.dates)) {
-    const x = parseYmd(d);
+    const x = parseCandidate(d, parseYmd);
     if (!x) throw badRequest('日付が読めません: ' + d);
-    if (!dates.includes(x)) dates.push(x);
+    if (candPart(x) && !ctx.group.day_parts) throw badRequest('昼と夜に分けていないグループでは、候補に時間帯を付けられません。');
+    if (!picked.includes(x)) picked.push(x);
   }
-  dates.sort();
+  const dates = sortCandidates(picked);
   if (!dates.length) throw badRequest('候補日を1日以上選んでください。');
   if (dates.length > POLL_MAX_DATES) throw badRequest('候補日は' + POLL_MAX_DATES + '日までです。');
-  const past = dates.filter((k) => k < ctx.today);
-  if (past.length) throw badRequest('過ぎた日は候補にできません: ' + past.map(fmtDateJa).join('、'));
+  const past = dates.filter((k) => candDay(k) < ctx.today);
+  if (past.length) throw badRequest('過ぎた日は候補にできません: ' + past.map(label).join('、'));
   const fresh = !s.candidates.length;
   const due = readPollDue(ctx, s, form, dates, fresh);
   const dueChanged = due !== s.pollDue;
@@ -157,7 +162,7 @@ export async function startPoll(ctx: Ctx, form: Form) {
   const added = dates.filter((k) => fresh || !s.candidates.includes(k));
   if (peopleOf(s).includes(me) && added.length) stmts.push(voteStmts(ctx, s, added, '◯'));
   const dueText = due ? '（締め切り ' + fmtDateJa(due) + '）' : dueChanged ? '（締め切りなし）' : '';
-  stmts.push(historyStmt(ctx, s.rowId, '日程調整', (fresh ? '候補日を出した: ' : '候補日を選び直した: ') + dates.map(fmtDateJa).join('、') + dueText));
+  stmts.push(historyStmt(ctx, s.rowId, '日程調整', (fresh ? '候補日を出した: ' : '候補日を選び直した: ') + dates.map(label).join('、') + dueText));
   await db.batch(stmts);
   return { ok: true, id: s.id, dates, fresh, message: '「' + s.name + '」の日程調整を' + (fresh ? '始めました' : '更新しました') + '（候補' + dates.length + '日' + (due ? '、締め切り ' + fmtDateJa(due) : '') + '）。' };
 }
@@ -168,15 +173,15 @@ export async function setPollVote(ctx: Ctx, form: Form, io: Io) {
   const vote = str(form.vote);
   if (vote && !POLL_MARKS.includes(vote)) throw badRequest('回答は ◯・△・× のどれかです。');
   const s = findAdjusting(ctx, form.id);
-  const k = parseYmd(form.ymd);
+  const k = parseCandidate(form.ymd, parseYmd);
   if (!k) throw badRequest('日付が読めません: ' + str(form.ymd));
-  if (!s.candidates.includes(k)) throw badRequest(fmtDateJa(k) + 'は「' + s.name + '」の候補日ではありません。');
-  if (k < ctx.today) throw badRequest('過ぎた候補日には回答できません。');
+  if (!s.candidates.includes(k)) throw badRequest(label(k) + 'は「' + s.name + '」の候補日ではありません。');
+  if (candDay(k) < ctx.today) throw badRequest('過ぎた候補日には回答できません。');
   if (!peopleOf(s).includes(name)) throw badRequest(name + 'は「' + s.name + '」のGMでも参加者でもないので、回答できません。');
   const wasComplete = pollComplete(ctx, s);
   await voteStmts(ctx, s, [k], vote).run();
   const after = await afterVote(ctx, s.id, wasComplete, io);
-  const message = fmtDateJa(k) + ' ' + name + ': ' + (vote || '回答を取り消しました') + after.message;
+  const message = label(k) + ' ' + name + ': ' + (vote || '回答を取り消しました') + after.message;
   // 返事の画面データは、そろったかを見るために読み直した中身を使う（もう一度読まない。D1の問い合わせの数を抑えるため）
   return { ok: true, id: s.id, ymd: k, vote, ready: after.ready, notified: after.notified, message, data: consoleData(after.fresh) };
 }
@@ -215,7 +220,7 @@ export async function setPollVoteDays(ctx: Ctx, form: Form, io: Io) {
   await voteRowsStmt(ctx, s, rows).run();
   const after = await afterVote(ctx, s.id, wasComplete, io);
   const yes = rows.filter((r) => r.vote !== '×');
-  const what = !yes.length ? 'どの日も ×' : yes.length === rows.length ? 'どの日も ◯' : yes.map((r) => fmtDateJa(r.date)).join('・') + 'は ◯、ほかの日は ×';
+  const what = !yes.length ? 'どの日も ×' : yes.length === rows.length ? 'どの日も ◯' : yes.map((r) => label(r.date)).join('・') + 'は ◯、ほかの日は ×';
   const message = name + ': 「' + s.name + '」に、' + what + ' で答えました' + after.message;
   return { ok: true, id: s.id, ready: after.ready, notified: after.notified, message, data: consoleData(after.fresh) };
 }
@@ -230,7 +235,9 @@ export async function setPollVoteFromAvail(ctx: Ctx, form: Form, io: Io) {
   if (!peopleOf(s).includes(name)) throw badRequest(name + 'は「' + s.name + '」のGMでも参加者でもないので、回答できません。');
   const votes = ctx.votes.get(s.rowId) ?? {};
   const last = addDays(ctx.today, ctx.group.avail_days), booked = bookedPartsMap(ctx.sessions, ctx.members), part = ctx.group.day_parts ? partOf(s.start) : '';
-  const rows = s.candidates.filter((k) => k >= ctx.today && k < last && !votes[k]?.[name]).map((date) => ({ date, vote: voteFromAvail(ctx, booked, name, date, part) }));
+  // 時間帯の付いた候補は、その時間帯の印で見る
+  const rows = s.candidates.filter((k) => k >= ctx.today && candDay(k) < last && !votes[k]?.[name])
+    .map((date) => ({ date, vote: voteFromAvail(ctx, booked, name, candDay(date), candPart(date) || part) }));
   if (!rows.length) return { ok: true, id: s.id, count: 0, message: name + ': 予定表から入れられる候補日はありません（まだ答えていない、予定表の範囲の日がありません）。' };
   const wasComplete = pollComplete(ctx, s);
   await voteRowsStmt(ctx, s, rows).run();
@@ -244,30 +251,34 @@ export async function setPollVoteFromAvail(ctx: Ctx, form: Form, io: Io) {
 export async function decidePoll(ctx: Ctx, form: Form, io: Io) {
   const s = findAdjusting(ctx, form.id);
   if (!isGm(s, ctx.actor.name) && !ctx.actor.isAdmin) throw adminError('GMのほかが開催日を決めること');
-  const k = parseYmd(form.ymd);
+  const k = parseCandidate(form.ymd, parseYmd);
   if (!k) throw badRequest('日付が読めません: ' + str(form.ymd));
-  if (!s.candidates.includes(k)) throw badRequest(fmtDateJa(k) + 'は「' + s.name + '」の候補日ではありません。');
-  if (k < ctx.today) throw badRequest('過ぎた候補日には決められません。');
+  if (!s.candidates.includes(k)) throw badRequest(label(k) + 'は「' + s.name + '」の候補日ではありません。');
+  if (candDay(k) < ctx.today) throw badRequest('過ぎた候補日には決められません。');
+  // 時間帯の付いた候補に決めて、開始時刻がその時間帯でなければ、時間を空にする（GMが「編集」で入れる）
+  const clearTime = !!candPart(k) && partOf(s.start) !== candPart(k);
   const db = ctx.db;
   await db.batch([
     db
       .prepare(
         `UPDATE sessions SET date = ?2, status = '開催', window_from = NULL, window_to = NULL, candidates = '[]',
+           start_time = CASE WHEN ?5 THEN '' ELSE start_time END, end_time = CASE WHEN ?5 THEN '' ELSE end_time END,
            notified_at = NULL, poll_ready_at = NULL, poll_due = NULL, poll_urged_at = NULL, poll_closed_at = NULL, editor = ?3, updated_at = ?4 WHERE id = ?1`,
       )
-      .bind(s.rowId, k, ctx.actor.name, ctx.now.toISOString()),
+      .bind(s.rowId, candDay(k), ctx.actor.name, ctx.now.toISOString(), clearTime ? 1 : 0),
     db.prepare('DELETE FROM poll_votes WHERE session_id = ?').bind(s.rowId),
-    historyStmt(ctx, s.rowId, '日程決定', fmtDateJa(k)),
+    historyStmt(ctx, s.rowId, '日程決定', label(k)),
   ]);
-  await appendLog({ db, groupId: ctx.group.id }, '日程決定', s.name, 'GMが選んだ日: ' + fmtDateJa(k));
+  await appendLog({ db, groupId: ctx.group.id }, '日程決定', s.name, 'GMが選んだ日: ' + label(k));
   const fresh = await io.reload();
   const decided = findSession(fresh, s.id);
   const notified = decided.status === STATUS.HELD ? await sendPollNotice(fresh, decided, 'decided', io.sleep) : null;
   // GMと参加者に、DMでも知らせる（決めた人には送らない）
-  await queueDm(fresh, 'poll', peopleOf(decided).filter((n) => n !== ctx.actor.name), '✅ 「' + s.name + '」の日程が決まりました: ' + fmtDateJa(k) + ' ' + timeRange(decided));
+  await queueDm(fresh, 'poll', peopleOf(decided).filter((n) => n !== ctx.actor.name), '✅ 「' + s.name + '」の日程が決まりました: ' + fmtDateJa(candDay(k)) + ' ' + timeRange(decided));
   if (notified !== null) await reloadLog(fresh);
   return {
-    ok: true, id: s.id, decided: k, notified, message: '日程を決めました: ' + s.name + '（' + fmtDateJa(k) + '）' + noticeNote(notified, '決まった知らせ'),
+    ok: true, id: s.id, decided: k, notified,
+    message: '日程を決めました: ' + s.name + '（' + label(k) + '）' + (clearTime ? '　時間は「編集」で入れてください。' : '') + noticeNote(notified, '決まった知らせ'),
     data: consoleData(fresh),
   };
 }

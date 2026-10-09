@@ -2,8 +2,9 @@
 import type { ConsoleData, ConsoleScenario, ConsoleSession } from '../../../../shared/api';
 import { bookedAt, markAt, type Part, PARTS } from '../../../../shared/parts';
 import type { IconName } from '../../../ui/icons';
-import { addDaysYmd } from './dates';
+import { addDaysYmd, fmtJa } from './dates';
 import { gmsOf, isGm } from '../../../../shared/gm';
+import { candDay, candLabel, candPart } from '../../../../shared/candidates';
 
 /* 状態。募集 → 調整中 → 開催 → 終了、中止は別 */
 export const STATUS_ACTIVE: string[] = ['募集', '調整中', '開催'];
@@ -62,6 +63,12 @@ export function pollCount(d: ConsoleData, s: ConsoleSession, k: string): string 
   const maybe = pollMaybe(d, s, k).length;
   return '◯ ' + pollOk(d, s, k).length + '/' + pollVoters(d, s).length + (maybe ? '　△ ' + maybe : '');
 }
+/** その日の候補の数の見出し（カレンダーの日の内訳）。時間帯の付いた候補が並べば「昼 ◯ 2/3・夜 ◯ 1/3」 */
+export function pollCountOn(d: ConsoleData, s: ConsoleSession, day: string): string {
+  return s.candidates.filter((k) => candDay(k) === day).map((k) => (candPart(k) ? candPart(k) + ' ' : '') + pollCount(d, s, k)).join('・');
+}
+/** 候補の書き方（10/12（月）、時間帯があれば10/12（月）の夜） */
+export const candText = (k: string): string => candLabel(k, fmtJa);
 /**
  * 予定表の印から決める回答（サーバーと同じ決まり）。卓のある日と × は ×、△ は △、空欄は ◯。
  * 昼と夜に分けるグループでは、卓の開始時刻の時間帯で見る（partはその時間帯。分けないなら ''）
@@ -74,7 +81,7 @@ export function voteFromAvail(d: ConsoleData, name: string, day: string, part: P
 /** 予定表から答えられる候補日（これからの、予定表の範囲の日で、まだ答えていない日） */
 export function pollFillDays(d: ConsoleData, s: ConsoleSession, name: string): string[] {
   const v = s.votes || {};
-  return (s.candidates || []).filter((k) => k >= d.today && d.availDays.indexOf(k) >= 0 && !(v[k] && v[k][name]));
+  return (s.candidates || []).filter((k) => k >= d.today && d.availDays.indexOf(candDay(k)) >= 0 && !(v[k] && v[k][name]));
 }
 /** これからの候補日に、まだ答えていない日がある人 */
 export function pollPending(d: ConsoleData, s: ConsoleSession): string[] {
@@ -95,7 +102,8 @@ export function windowByDay(d: ConsoleData): Record<string, ConsoleSession[]> {
   const out: Record<string, ConsoleSession[]> = {};
   d.sessions.forEach((s) => {
     if (!isAdjusting(s)) return;
-    if (hasPoll(s)) { s.candidates.forEach((k) => { (out[k] = out[k] || []).push(s); }); return; }
+    // 時間帯の付いた候補（10/12の昼と夜）は、その日に1つだけ
+    if (hasPoll(s)) { s.candidates.forEach((k) => { const day = candDay(k), list = (out[day] = out[day] || []); if (list.indexOf(s) < 0) list.push(s); }); return; }
     if (!s.windowFrom || !s.windowTo) return;
     for (let day = s.windowFrom, i = 0; day <= s.windowTo && i < 120; day = addDaysYmd(day, 1), i++) (out[day] = out[day] || []).push(s);
   });

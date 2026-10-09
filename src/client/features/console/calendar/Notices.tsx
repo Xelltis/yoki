@@ -9,6 +9,7 @@ import { notifyState } from '../model/notify';
 import { notice, noticeSub } from '../styles';
 import { splitWant } from '../../../../shared/waitlist';
 import { gmsOf } from '../../../../shared/gm';
+import { candPart } from '../../../../shared/candidates';
 
 /** 押したときに移る先。dayはその日を選ぶ、recruitは「募集・調整」のタブ（卓のIDがあればその卓のカードへ）、targetは都合を見る卓 */
 type Item = { cls: string; body: ReactNode; day?: string; recruit?: { id?: string }; target?: string };
@@ -53,7 +54,7 @@ export function Notices({ d, onDay, onRecruit, onTarget }: {
       add('adjust hot' + (turn ? ' mine' : ''), (
         <>
           <Icon name="how_to_vote" />{pend.length ? '日程調整の回答待ち: ' : '日程調整の回答がそろいました: '}<b>{s.name}</b>
-          <span className={noticeSub}>{'候補' + s.candidates.length + '日　' + (pend.length ? '未回答: ' + pend.join('、') : '全員が回答済み。GMが開催日を選びます')}</span>
+          <span className={noticeSub}>{'候補' + s.candidates.length + (s.candidates.some((k) => !!candPart(k)) ? 'つ　' : '日　') + (pend.length ? '未回答: ' + pend.join('、') : '全員が回答済み。GMが開催日を選びます')}</span>
           {turn && <span className="block text-12 font-semibold text-soon-text">{waitMe ? 'あなたの回答を待っています' : '開催日を選んでください'}</span>}
         </>
       ), '', { id: s.id });

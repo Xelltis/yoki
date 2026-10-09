@@ -15,7 +15,7 @@ import { prepSummary } from '../prep/PrepModal';
 import { discordSend, failToast } from '../api/discord';
 import { useConsole, useData } from '../context';
 import { fmtJa, holidayName, parseYmd, timeRange } from '../model/dates';
-import { byId, hasPoll, isAdjusting, isRecruit, me, peopleOf, periodOfSession, roleLabel, pollCount, pollFillDays, pollPending, pollVoters, scenarioOf, sortSessions, voteFromAvail } from '../model/model';
+import { byId, candText, hasPoll, isAdjusting, isRecruit, me, peopleOf, periodOfSession, roleLabel, pollCount, pollFillDays, pollPending, pollVoters, scenarioOf, sortSessions, voteFromAvail } from '../model/model';
 import { hookFor } from '../model/notify';
 import { withSession } from '../model/optimistic';
 import { splitWant } from '../../../../shared/waitlist';
@@ -25,6 +25,7 @@ import { useGoTab } from '../shell/nav';
 import { people, personChip, res } from '../styles';
 import { notifyDecided, notifyReady } from './pollNotify';
 import { isGm } from '../../../../shared/gm';
+import { candDay, candPart } from '../../../../shared/candidates';
 
 /** 区切りの見出し（募集中・日程調整中） */
 const bar = 'mt-24 mb-10 flex flex-wrap items-center gap-8';
@@ -146,7 +147,8 @@ export function RecruitTab() {
     if (!days.length) { toast('予定表から入れられる候補日はありません'); return; }
     // 昼と夜に分けるグループでは、卓の開始時刻の時間帯の印で答える（サーバーと同じ）
     const part = d.settings.dayParts ? partOf(s.start) : '';
-    sync.write<RpcResult>('setPollVoteFromAvail', { id: s.id, name: mine }, { optimistic: (x) => withVote(x, s.id, days, mine, (k) => voteFromAvail(x, mine, k, part)) }).then((res) => {
+    // 時間帯の付いた候補は、その時間帯の印で答える
+    sync.write<RpcResult>('setPollVoteFromAvail', { id: s.id, name: mine }, { optimistic: (x) => withVote(x, s.id, days, mine, (k) => voteFromAvail(x, mine, candDay(k), candPart(k) || part)) }).then((res) => {
       toast(res.message);
       if (res.ready && res.notified === false && res.id) notifyReady(sync, res.id, res.message);
     }, (e: Error) => { toast(e.message); void sync.refresh('quiet'); });
@@ -154,7 +156,7 @@ export function RecruitTab() {
   const decide = (s: ConsoleSession, k: string) => {
     const v = (s.votes || {})[k] || {}, maybe = peopleOf(s).filter((n) => v[n] === '△'), notOk = peopleOf(s).filter((n) => v[n] !== '◯' && v[n] !== '△');
     const who = (maybe.length ? '　△ の人: ' + maybe.join('、') : '') + (notOk.length ? '　× か未回答の人: ' + notOk.join('、') : '');
-    askConfirm({ title: fmtJa(k) + 'に決めますか？', message: '「' + s.name + '」の開催日を' + fmtJa(k) + 'にして、状態を「開催」にします。候補日とみんなの回答は消えます。' + who, ok: 'この日に決める' }, () => {
+    askConfirm({ title: candText(k) + 'に決めますか？', message: '「' + s.name + '」の開催日を' + candText(k) + 'にして、状態を「開催」にします。候補日とみんなの回答は消えます。' + who, ok: 'この日に決める' }, () => {
       const key = 'decide:' + s.id + ':' + k;
       setFlag(setOff, key, true);
       sync.write<RpcResult>('decidePoll', { id: s.id, ymd: k, me: mine }).then((res) => {
@@ -177,8 +179,8 @@ export function RecruitTab() {
     ui.set((x) => {
       const next = { ...x, target: s.name };
       if (!first) return next;
-      const p = parseYmd(first);
-      return { ...next, selDay: first, view: { y: p.getFullYear(), m: p.getMonth() } };
+      const p = parseYmd(candDay(first));
+      return { ...next, selDay: candDay(first), view: { y: p.getFullYear(), m: p.getMonth() } };
     });
     goTab('cal');
   };
@@ -326,18 +328,18 @@ export function RecruitTab() {
                     全員が答えたら、GMが開催日を選びます
                   </p>
                   {s.candidates.map((k) => {
-                    const v = (s.votes || {})[k] || {}, past = k < d.today, dow = parseYmd(k).getDay(), hol = holidayName(k);
+                    const v = (s.votes || {})[k] || {}, past = k < d.today, dow = parseYmd(candDay(k)).getDay(), hol = holidayName(candDay(k));
                     const ok = voters.filter((n) => v[n] === '◯'), maybe = voters.filter((n) => v[n] === '△'), ng = voters.filter((n) => v[n] === '×'), no = voters.filter((n) => !v[n]);
                     const my = v[mine] || '';
                     return (
                       // 1段目に日付・自分の ◯ ×・「この日に決める」（入りきらなければ、決めるボタンだけ次の行の右へ）、2段目にみんなの回答（幅いっぱい）
                       <div className={'border-b border-line py-8 last-of-type:border-b-0' + (past ? ' opacity-55' : '')} data-day={k} key={k}>
                         <div className="flex flex-wrap items-center gap-x-8 gap-y-6">
-                          <div className="flex min-w-[7.5em] flex-1 items-baseline gap-8 whitespace-nowrap"><b className={dow === 0 || hol ? 'text-sun' : dow === 6 ? 'text-sat' : ''}>{fmtJa(k)}</b><span className="text-12 text-muted">{pollCount(d, s, k)}</span></div>
+                          <div className="flex min-w-[7.5em] flex-1 items-baseline gap-8 whitespace-nowrap"><b className={dow === 0 || hol ? 'text-sun' : dow === 6 ? 'text-sat' : ''}>{candText(k)}</b><span className="text-12 text-muted">{pollCount(d, s, k)}</span></div>
                           {isVoter && !past && (
                             <div className="flex gap-4">
                               {['◯', '△', '×'].map((m) => (
-                                <button type="button" className={vote + (my === m ? VOTE_ON[m] : '')} data-vote={m} data-id={s.id} data-day={k} aria-pressed={my === m} aria-label={fmtJa(k) + 'は ' + VOTE_WORD[m]} title={m === '△' ? '調整すれば行ける' : undefined} key={m} onClick={() => castVote(s, k, m)}>{m}</button>
+                                <button type="button" className={vote + (my === m ? VOTE_ON[m] : '')} data-vote={m} data-id={s.id} data-day={k} aria-pressed={my === m} aria-label={candText(k) + 'は ' + VOTE_WORD[m]} title={m === '△' ? '調整すれば行ける' : undefined} key={m} onClick={() => castVote(s, k, m)}>{m}</button>
                               ))}
                             </div>
                           )}

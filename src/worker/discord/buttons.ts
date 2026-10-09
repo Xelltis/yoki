@@ -2,6 +2,7 @@
 import { STATUS } from '../domain/constants';
 import type { Ctx, Session } from '../domain/types';
 import { fmtDateJa } from '../lib/jst';
+import { candLabel } from '../../shared/candidates';
 
 /** metaの鍵。'1' なら知らせにボタンを付ける（運営者が運営の管理画面で入れる） */
 export const BUTTONS_KEY = 'discord_buttons';
@@ -41,7 +42,7 @@ export function pollComponents(ctx: ButtonCtx, s: Session): Component[] | undefi
       type: 1,
       components: [{
         type: 3, custom_id: id('days'), placeholder: '行ける日を選ぶ（選ばなかった日は ×）', min_values: 0, max_values: future.length,
-        options: future.map((k) => ({ label: fmtDateJa(k), value: k })),
+        options: future.map((k) => ({ label: candLabel(k, fmtDateJa), value: k })),
       }],
     },
   ];

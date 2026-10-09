@@ -535,6 +535,27 @@ await withDevServer(async (base) => {
       await until((d, a) => JSON.stringify((d.availParts[a[0]] || {})['ひより'] || ['', '']) === JSON.stringify([a[1], a[2]]), [day, next[whole], whole]);
       await page.click(`#availTable button.mk[data-day="${day}"][data-part="夜"]`);
       await until((d, a) => ((d.availParts[a[0]] || {})['ひより'] || ['', ''])[1] === a[1], [day, next[whole]]);
+      // 日程調整も、昼と夜に分けて候補を出せる（候補は「日付 昼」の形）
+      await tab('cal');
+      await page.click('#newSession');
+      await page.fill('#name', 'e2eの昼夜調整');
+      await page.click('#status label:has(input[value="調整中"])');
+      await page.check('#membersBox input.m[value="ソラ"]');
+      await page.click('#f button[type=submit]');
+      await page.waitForSelector('#pollModal:not([hidden])', { timeout: 15000 });
+      await page.click('#pollByPart');
+      const pd = page.locator('#pollDays input.pdc');
+      await pd.nth(0).check();
+      await pd.nth(1).check();
+      await page.click('#pollSend');
+      await until((x) => { const t = x.sessions.find((y) => y.name === 'e2eの昼夜調整'); return !!t && t.candidates.length === 2 && t.candidates.every((k) => / (昼|夜)$/.test(k)); });
+      const made = (await D()).sessions.find((y) => y.name === 'e2eの昼夜調整');
+      await tab('recruit');
+      assert.match(await page.textContent(`#tab-recruit [data-card="${made.id}"]`), /の昼.+の夜/s);
+      await page.click(`#tab-recruit button[data-edit="${made.id}"]`);
+      await page.click('#del');
+      await confirm();
+      await until((x, id) => !x.sessions.some((y) => y.id === id), made.id);
       // 分けるのをやめると、まとめた印（△）の1マスに戻る
       await admin('table');
       await page.click('#stDayParts');
