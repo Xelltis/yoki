@@ -74,7 +74,7 @@ export async function seedSample(db: D1Database, groupId: string, appUrl: string
   await S({ name: '今夜の短編', gm: 'ユズ', members: ['ひより', 'ミナト'], date: T(0), start: '21:00', end: '23:00', status: '開催', place: 'Discordボイス', memo: '2時間で終わる短いシナリオ' });
   const port = await S({ name: '星降る港の依頼', gm: 'ミナト', members: ['ソラ', 'レン'], date: T(1), start: '20:30', end: '23:00', status: '開催', place: 'Discordボイス', memo: 'ミナトさんの初GM', scenarioId: scPort });
   await S({ name: '連れて帰る', gm: 'ソラ', members: ['ひより', 'ミナト', 'ユズ'], date: T(5), start: '14:00', end: '18:00', status: '開催', place: 'ユドナリウムアックス', memo: '初めての人も歓迎', scenarioId: scBring });
-  const library = await S({ name: '灰色の図書館', gm: 'レン', members: ['こまち', 'ユズ', 'ひより'], date: T(12), start: '21:00', end: '23:30', status: '開催', place: 'Discordボイス', memo: '', scenarioId: scLibrary });
+  const library = await S({ name: '灰色の図書館', gm: 'レン', coGms: ['ミナト'], members: ['こまち', 'ユズ', 'ひより'], date: T(12), start: '21:00', end: '23:30', status: '開催', place: 'Discordボイス', memo: '', scenarioId: scLibrary });
   // 卓の準備（HO・秘匿HO・希望・キャラシ）。HO2の秘匿HOは、割り当てたひよりとGMのレンだけが読める
   await savePrep(await as('レン'), { id: library.id, sheetDue: T(9), slots: [
     { pos: 1, label: 'HO1 司書', summary: '図書館で働いている。最近、閉館後に物音がする' },

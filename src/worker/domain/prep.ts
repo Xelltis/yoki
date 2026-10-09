@@ -7,22 +7,26 @@ import { isHttpUrl } from '../lib/text';
 import { STATUS } from './constants';
 import { type Form, list, requireSelf, str } from './form';
 import { findSession, peopleOf } from './model';
+import { gmsOf, isGm } from '../../shared/gm';
 import type { Ctx, Session } from './types';
 
-/** 卓のGMがメンバーか（メンバーでないGMは、秘匿HOを読み書きできない） */
-export const hasMemberGm = (ctx: Ctx, s: Session): boolean => !!s.gm && ctx.memberByName.has(s.gm);
-/** 読み込んだ人が、その卓のGM（メンバー）か */
-export const isGmOf = (ctx: Ctx, s: Session): boolean => ctx.actor.memberId > 0 && s.gm === ctx.actor.name && hasMemberGm(ctx, s);
+/** 卓のGM（共同GMも）にメンバーがいるか（メンバーでないGMは、秘匿HOを読み書きできない） */
+export const hasMemberGm = (ctx: Ctx, s: Session): boolean => gmsOf(s).some((n) => ctx.memberByName.has(n));
+/** 読み込んだ人が、その卓のGMか共同GM（メンバー）か */
+export const isGmOf = (ctx: Ctx, s: Session): boolean => ctx.actor.memberId > 0 && isGm(s, ctx.actor.name) && ctx.memberByName.has(ctx.actor.name);
 /** 秘匿HOのある卓か */
 export const hasSecrets = (s: Session): boolean => s.slots.some((x) => x.hasSecret);
 
 /**
- * 秘匿HOのある卓で、GMを替えてよいか。今のGM（メンバー）か、メンバーのGMがいない卓の管理者だけ。
- * 管理者でも、ほかのGMの卓で自分をGMにして秘匿HOを読めないように
+ * 秘匿HOのある卓で、GMと共同GMの顔ぶれを変えてよいか（足しても外しても。並べ替えだけなら変えてよい）。
+ * 今のGMか共同GM（メンバー）か、メンバーのGMがいない卓の管理者だけ。
+ * 管理者でも、ほかのGMの卓で自分をGMや共同GMにして（いちど外してから入れても）秘匿HOを読めないように
  */
-export function checkGmChange(ctx: Ctx, s: Session, gm: string): void {
-  if (gm === s.gm || !hasSecrets(s) || isGmOf(ctx, s) || (ctx.actor.isAdmin && !hasMemberGm(ctx, s))) return;
-  throw badRequest('「' + s.name + '」には秘匿HOがあるので、GMを替えられるのは今のGM（' + s.gm + '）だけです。');
+export function checkGmChange(ctx: Ctx, s: Session, gm: string, coGms: string[]): void {
+  const before = gmsOf(s), after = gmsOf({ gm, coGms });
+  const same = before.length === after.length && after.every((n) => before.includes(n));
+  if (same || !hasSecrets(s) || isGmOf(ctx, s) || (ctx.actor.isAdmin && !hasMemberGm(ctx, s))) return;
+  throw badRequest('「' + s.name + '」には秘匿HOがあるので、GMと共同GMを替えられるのは今のGMか共同GM（' + before.join('、') + '）だけです。');
 }
 
 /** 準備の書き込みに使う卓（終わった卓・中止の卓は準備しない） */

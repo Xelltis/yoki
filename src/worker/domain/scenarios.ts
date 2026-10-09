@@ -9,7 +9,7 @@ import type { Ctx, Scenario } from './types';
 
 /** 通過の計算に使う形の卓 */
 export const scenarioSessions = (ctx: Ctx): ScenarioSession[] =>
-  ctx.sessions.map((s) => ({ id: s.id, scenarioId: s.scenarioId === null ? '' : String(s.scenarioId), status: s.status, date: s.date ?? '', gm: s.gm, members: s.members, absent: s.absent }));
+  ctx.sessions.map((s) => ({ id: s.id, scenarioId: s.scenarioId === null ? '' : String(s.scenarioId), status: s.status, date: s.date ?? '', gm: s.gm, coGms: s.coGms, members: s.members, absent: s.absent }));
 
 export function findScenario(ctx: Ctx, id: unknown): Scenario {
   const s = ctx.scenarios.find((x) => String(x.id) === str(id));

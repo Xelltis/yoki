@@ -5,6 +5,7 @@ import type { Ctx, Session } from '../domain/types';
 import { fmtDateJa, timeRange } from '../lib/jst';
 import { splitWant } from '../../shared/waitlist';
 import { type Component, pollComponents, recruitComponents } from './buttons';
+import { gmsOf } from '../../shared/gm';
 
 export type Embed = { title: string; description: string; color: number; footer: { text: string } };
 export type Payload = { content: string; embeds?: Embed[]; components?: Component[] };
@@ -26,7 +27,7 @@ export function whenText(s: Session): string {
 }
 
 export function sessionEmbed(ctx: PayloadCtx, s: Session): Embed {
-  const lines = ['GM: ' + (s.gm || '未定'), '日時: ' + whenText(s), '参加者: ' + (s.members.length ? s.members.join('、') : '未定')];
+  const lines = ['GM: ' + (gmsOf(s).join('、') || '未定'), '日時: ' + whenText(s), '参加者: ' + (s.members.length ? s.members.join('、') : '未定')];
   if (s.status === STATUS.RECRUIT && (s.want.length || s.capacity)) {
     const w = splitWant(s);
     lines.push('参加希望: ' + (w.want.join('、') || 'まだいません') + (s.capacity ? '（' + w.want.length + '/' + s.capacity + '人）' : ''));
@@ -108,9 +109,9 @@ export function pollPayload(ctx: PayloadCtx, s: Session, me: string): Payload {
 /** 人を呼ぶ文（DiscordのIDが無ければ名前） */
 const callOf = (ctx: PayloadCtx, name: string) => { const id = discordIdOf(ctx, name); return id ? '<@' + id + '>' : name + 'さん'; };
 
-/** GMを呼ぶ文（GMがいなければ空） */
+/** GMと共同GMを呼ぶ文（GMがいなければ空） */
 function gmCall(ctx: PayloadCtx, s: Session): string {
-  return s.gm ? callOf(ctx, s.gm) : '';
+  return gmsOf(s).map((n) => callOf(ctx, n)).join(' ');
 }
 
 /** これからの候補日ごとの ◯ と △ の数（1日1行） */
@@ -163,8 +164,7 @@ export function pollClosedPayload(ctx: PayloadCtx, s: Session, pending: string[]
 
 /** 参加者が行けなくなった。GMを呼び、本人の一言を添える。開催日のある卓だけに使う（absence.tsが確かめてから呼ぶ） */
 export function absencePayload(ctx: PayloadCtx, s: Session, name: string, note: string): Payload {
-  const gmId = discordIdOf(ctx, s.gm);
-  const call = gmId ? ' <@' + gmId + '>' : s.gm ? ' ' + s.gm + 'さん' : '';
+  const call = s.gm ? ' ' + gmCall(ctx, s) : '';
   return {
     content: '🙇 「' + s.name + '」（' + fmtDateJa(s.date!) + ' ' + timeRange(s) + '）に、' + name + 'が行けなくなりました。' + call +
       (note ? '\n💬 ' + note.replace(/\s+/g, ' ').replace(/@/g, '@\u200b') : '') +
@@ -176,8 +176,7 @@ export function absencePayload(ctx: PayloadCtx, s: Session, name: string, note: 
 
 /** 募集の締め切りの日。GMを呼び、集まった人数を書く */
 export function recruitDuePayload(ctx: PayloadCtx, s: Session): Payload {
-  const gmId = discordIdOf(ctx, s.gm);
-  const call = gmId ? ' <@' + gmId + '>' : s.gm ? ' ' + s.gm + 'さん' : '';
+  const call = s.gm ? ' ' + gmCall(ctx, s) : '';
   const w = splitWant(s);
   const got = '参加希望: ' + (w.want.length ? w.want.join('、') : 'まだいません') + (s.capacity ? '（' + w.want.length + '/' + s.capacity + '人）' : '（' + w.want.length + '人）') +
     (w.wait.length ? '　キャンセル待ち: ' + w.wait.join('、') : '');

@@ -13,13 +13,14 @@ import { discordSend, failToast } from '../api/discord';
 import { useConsole } from '../context';
 import { googleAddUrl } from '../model/calendar';
 import { addDaysYmd, daysBetween, fmtJa, parseYmd, timeRange } from '../model/dates';
-import { bookedOn, dayParts, hasPoll, isActive, isAdjusting, isDated, markOn, me, notesOn, peopleOf, pollCount, scenarioOf, seriesNames, sortSessions, targetPeople, windowByDay } from '../model/model';
+import { bookedOn, dayParts, hasPoll, isActive, isAdjusting, isDated, markOn, me, notesOn, peopleOf, pollCount, scenarioOf, seriesNames, sortSessions, targetPeople, windowByDay, roleLabel } from '../model/model';
 import { hookFor, kindOf, notifyState } from '../model/notify';
 import { withSession } from '../model/optimistic';
 import { useGoRecruit } from '../shell/nav';
 import { Place } from '../Place';
 import { WaitList } from '../recruit/WaitList';
 import { notice, people as peopleRow, personChip, res, row2 } from '../styles';
+import { isGm } from '../../../../shared/gm';
 
 /** 内訳のカード（狭い画面では、日を選ぶまで隠す）。上の帯と下のタブに隠れないように送る */
 const detailCard = 'card mb-0 scroll-mt-[calc(var(--appbar-h)+12px)] scroll-mb-[calc(var(--nav-h)+12px)]';
@@ -115,7 +116,7 @@ export function DayDetail({ d, target }: { d: ConsoleData; target: string }) {
           const ppl = peopleOf(s);
           // これから開く卓。参加者（GMでない）は「行けなくなった」を伝えられ、GMと管理者は行けなくなった人がいれば日を組み直せる
           const upcoming = isDated(s) && !!s.date && s.date >= d.today;
-          const imAbsent = s.absent.some((a) => a.name === mine), canAbsent = upcoming && !!mine && s.gm !== mine && s.members.indexOf(mine) >= 0;
+          const imAbsent = s.absent.some((a) => a.name === mine), canAbsent = upcoming && !!mine && !isGm(s, mine) && s.members.indexOf(mine) >= 0;
           return (
             <div className={'mt-10 rounded-md border border-line bg-card p-12 tabular-nums' + (done ? ' opacity-80' : '')} data-id={s.id} key={s.id + ':' + i}>
               <div className="flex flex-wrap items-baseline gap-x-10 gap-y-4">
@@ -125,8 +126,8 @@ export function DayDetail({ d, target }: { d: ConsoleData; target: string }) {
               </div>
               <div className={peopleRow}>
                 {ppl.map((p) => {
-                  const isGm = p === s.gm, known = d.members.some((m) => m.name === p), away = s.absent.some((a) => a.name === p);
-                  return <span className={personChip(isGm, !known) + (away ? ' line-through opacity-70' : '')} title={away ? '行けなくなりました' : known ? '' : 'メンバーに未登録'} key={p}>{(isGm ? 'GM ' : '') + p}</span>;
+                  const role = roleLabel(s, p), known = d.members.some((m) => m.name === p), away = s.absent.some((a) => a.name === p);
+                  return <span className={personChip(!!role, !known) + (away ? ' line-through opacity-70' : '')} title={away ? '行けなくなりました' : known ? '' : 'メンバーに未登録'} key={p}>{role + p}</span>;
                 })}
                 {!ppl.length && <span className={personChip(false, true)}>参加者 未定</span>}
               </div>
@@ -135,7 +136,7 @@ export function DayDetail({ d, target }: { d: ConsoleData; target: string }) {
               {s.absent.length > 0 && (
                 <div className={notice('adjust', false) + ' mt-8'} data-absent-of={s.id}>
                   <Icon name="warning" />{'行けなくなった: ' + s.absent.map((a) => a.name + (a.note ? '（' + a.note + '）' : '')).join('、')}
-                  {upcoming && (s.gm === mine || d.isAdmin) && <span className="block text-12">「日を組み直す」で候補日を出し直すか、「編集」で参加者を見直してください。</span>}
+                  {upcoming && (isGm(s, mine) || d.isAdmin) && <span className="block text-12">「日を組み直す」で候補日を出し直すか、「編集」で参加者を見直してください。</span>}
                 </div>
               )}
               <WaitList s={s} />
@@ -148,14 +149,14 @@ export function DayDetail({ d, target }: { d: ConsoleData; target: string }) {
                 {isAdjusting(s) && (hasPoll(s)
                   ? <button type="button" className="btn small primary" data-goto-recruit onClick={() => goRecruit(s.id)}><Icon name="how_to_vote" size="sm" />回答する</button>
                   : <button type="button" className="btn small primary" data-poll={s.id} onClick={() => openPoll(ui, s.id)}><Icon name="how_to_vote" size="sm" />日程を調整する</button>)}
-                {upcoming && s.absent.length > 0 && (s.gm === mine || d.isAdmin) && (
+                {upcoming && s.absent.length > 0 && (isGm(s, mine) || d.isAdmin) && (
                   <button type="button" className="btn small primary" data-reschedule={s.id} title="状態を「調整中」に戻して、候補日を選び直します（参加者はそのまま）" onClick={() => openForm(ui, { id: s.id, status: '調整中' })}><Icon name="edit_calendar" size="sm" />日を組み直す</button>
                 )}
                 <button type="button" className="btn small" data-edit={s.id} onClick={() => openForm(ui, { id: s.id })}><Icon name="edit" size="sm" />編集</button>
                 {(s.status === '開催' || s.status === '調整中') && (
                   <button type="button" className="btn small" data-prep={s.id} title="HO・秘匿HO・キャラシ" onClick={() => openPrep(ui, s.id)}><Icon name="checklist" size="sm" />準備</button>
                 )}
-                {isFinished(d, s) && (s.gm === mine || d.isAdmin || s.members.indexOf(mine) >= 0) && (
+                {isFinished(d, s) && (isGm(s, mine) || d.isAdmin || s.members.indexOf(mine) >= 0) && (
                   <button type="button" className="btn small" data-record={s.id} title="ログ・振り返り・PCの結果" onClick={() => openRecord(ui, s.id)}><Icon name="history_edu" size="sm" />記録</button>
                 )}
                 <button type="button" className="btn small" data-cont={s.id} title="設定を引き継いで翌日の卓を登録" onClick={() => openForm(ui, { cont: s.id })}><Icon name="add" size="sm" />続きを登録</button>

@@ -53,7 +53,7 @@ describe('載せる卓と中身', () => {
     windowFrom: null, windowTo: null, candidates: [], editor: '', updatedAt: '2026-10-01T00:00:00.000Z', notifiedAt: null, askedAt: null,
     urgedAt: null, soonAt: null, pollReadyAt: null, absent: [],
   } as const;
-  const s = (o: Record<string, unknown>) => ({ ...base, name: 'A', gm: 'ひより', members: ['ソラ'], date: '2026-10-10', status: '開催', ...o }) as any;
+  const s = (o: Record<string, unknown>) => ({ ...base, name: 'A', gm: 'ひより', coGms: [], members: ['ソラ'], date: '2026-10-10', status: '開催', ...o }) as any;
 
   test('開催と終了だけ。過ぎた卓は180日前まで。名前を渡せば、その人がGMか参加者の卓だけ', () => {
     const sessions = [

@@ -6,11 +6,14 @@ import type { IconName } from '../../../ui/icons';
 import { addDaysYmd, fmtJa, parseYmd, ymdOf } from '../model/dates';
 import { bookedOn, isActive, markOn, me, peopleOf, sortSessions, splitNames, STATUS_DATED } from '../model/model';
 import { hookFor, kindSet, seriesHook, snEntry } from '../model/notify';
+import { CO_GM_MAX } from '../../../../shared/gm';
 
 /** 窓の入力。idは変える卓（新しく登録するなら空） */
 export type Fields = {
   id: string; series: string; seriesEnd: string; name: string; status: string; date: string; start: string; end: string;
   winFrom: string; winTo: string; gm: string; members: string[]; extra: string; place: string; memo: string; notify: boolean;
+  /** 共同GM（「、」区切り） */
+  coGms: string;
   /** 遊ぶシナリオ（ConsoleScenarioのid）。無ければ空 */
   scenarioId: string;
   /** まとめて登録する日（開催日のほかに足した日） */
@@ -80,7 +83,7 @@ export function fieldsOf(d: ConsoleData, s: ConsoleSession | null): Fields {
   const f: Fields = {
     id: s ? s.id : '', series: s ? (s.series || '') : '', seriesEnd: s ? (s.seriesEnd || '') : '', name: s ? s.name : '', status: s ? s.status : '開催',
     date: s ? s.date : '', start: s ? s.start : '', end: s ? s.end : '', winFrom: s ? (s.windowFrom || '') : '', winTo: s ? (s.windowTo || '') : '',
-    gm: s ? s.gm : '', ...splitMembers(d, s ? s.members : []), place: s ? s.place : '', memo: s ? s.memo : '', notify: false, more: [],
+    gm: s ? s.gm : '', coGms: s ? s.coGms.join('、') : '', ...splitMembers(d, s ? s.members : []), place: s ? s.place : '', memo: s ? s.memo : '', notify: false, more: [],
     scenarioId: s ? s.scenarioId : '', capacity: s && s.capacity ? String(s.capacity) : '', recruitDue: s ? s.recruitDue : '',
   };
   f.notify = canNotify(d, f) && !!d.notifyDefault;
@@ -102,7 +105,7 @@ export function inheritSeries(d: ConsoleData, base: Fields, name: string): { f: 
   if (!t || base.id) return null;
   const cur = base.name.trim();
   return {
-    f: { ...base, gm: t.gm, ...splitMembers(d, t.members), place: t.place, memo: t.memo, start: t.start, end: t.end, scenarioId: t.scenarioId,
+    f: { ...base, gm: t.gm, coGms: t.coGms.join('、'), ...splitMembers(d, t.members), place: t.place, memo: t.memo, start: t.start, end: t.end, scenarioId: t.scenarioId,
       name: !cur || /#\d+$/.test(cur) || cur === t.name ? name + ' #' + (d.sessions.filter((x) => x.series === name).length + 1) : base.name },
     msg: '「' + name + '」の直前の回（' + t.name + '）からGM・参加者・時間・場所・メモを引き継ぎました。名前と開催日を確かめてください。',
   };
@@ -157,7 +160,7 @@ export function collect(d: ConsoleData, f: Fields, seriesFrom: string) {
   all.sort();
   const ds = !noDate && !f.id ? all : [];
   return {
-    id: f.id, name: f.name, gm: f.gm, me: me(d), members: rec ? [] : d.members.map((m) => m.name).filter((n) => f.members.indexOf(n) >= 0), extra: rec ? '' : f.extra, series: f.series.trim(),
+    id: f.id, name: f.name, gm: f.gm, coGms: splitNames(f.coGms), me: me(d), members: rec ? [] : d.members.map((m) => m.name).filter((n) => f.members.indexOf(n) >= 0), extra: rec ? '' : f.extra, series: f.series.trim(),
     seriesEnd: f.series.trim() ? f.seriesEnd : '', seriesFrom,
     dates: ds.length > 1 ? ds : undefined,
     date: noDate ? '' : f.date, start: noDate ? '' : f.start, end: noDate ? '' : f.end, status: st,
@@ -171,6 +174,8 @@ export type SessionForm = ReturnType<typeof collect>;
 /** 保存の前の確かめ。だめなら理由、よければ空。期間の前後が逆なら入れ替える */
 export function checkForm(form: SessionForm): string {
   if (!form.name.trim()) return '卓の名前を入れてください。';
+  if (form.coGms.length && !form.gm.trim()) return '共同GMを入れるときは、GMも入れてください。';
+  if (form.coGms.length > CO_GM_MAX) return '共同GMは' + CO_GM_MAX + '人までです。';
   if (!form.date && STATUS_DATED.indexOf(form.status) >= 0) return '開催日を入れてください。まだ決まっていなければ状態を「募集」か「調整中」にします。';
   if (form.dates && form.dates.length > SESSION_DATES_MAX) return 'まとめて登録できるのは' + SESSION_DATES_MAX + '日分までです。';
   if (!!form.windowFrom !== !!form.windowTo) return '期間は、始まりと終わりの両方の日を入れてください。';
@@ -182,7 +187,7 @@ export function checkForm(form: SessionForm): string {
 /** 同じ日の重なりを探して注意を出す。× や △ を付けている人も拾う。登録は止めない（あとで直すこともあるため） */
 export function conflictText(d: ConsoleData, form: SessionForm): string {
   if (!form.date) return '';
-  const people = [String(form.gm || '').trim()].concat(form.members || [], splitNames(form.extra)).filter(Boolean);
+  const people = [String(form.gm || '').trim()].concat(form.coGms, form.members || [], splitNames(form.extra)).filter(Boolean);
   const uniq: string[] = [], busyAt: string[] = [], ng: string[] = [], soft: string[] = [];
   people.forEach((n) => { if (uniq.indexOf(n) < 0) uniq.push(n); });
   // 昼と夜に分けるグループでは、開始時刻の時間帯で見る（ほかの時間帯の卓や印は重ならない）
@@ -215,6 +220,6 @@ export function passWarnText(d: ConsoleData, form: SessionForm): string {
   if (!sc) return '';
   const passes = passesOf(sc, d.sessions.filter((s) => s.id !== form.id), new Set(d.members.map((m) => m.name)));
   const gm = String(form.gm || '').trim();
-  const hit = (form.members || []).concat(splitNames(form.extra)).filter((n, i, a) => a.indexOf(n) === i && n !== gm && passes[n]);
+  const hit = (form.members || []).concat(splitNames(form.extra)).filter((n, i, a) => a.indexOf(n) === i && n !== gm && form.coGms.indexOf(n) < 0 && passes[n]);
   return hit.length ? '「' + sc.name + '」を通過している人が参加者にいます: ' + hit.map((n) => n + (passes[n]!.kind === 'gm' ? '（GMできる）' : '')).join('、') : '';
 }

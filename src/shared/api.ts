@@ -58,6 +58,8 @@ export type ConsoleSession = {
   id: string;
   name: string;
   gm: string;
+  /** 共同GM（サブGM・KP補佐）。GMと同じことができる（src/shared/gm.ts） */
+  coGms: string[];
   members: string[];
   /** 開催日（YYYY-MM-DD）。募集・調整中は空 */
   date: string;
@@ -310,7 +312,7 @@ export type GroupExport = {
   members: { name: string; discordId: string; note: string; admin: boolean }[];
   sessions: {
     id: string; name: string; status: string; date: string; start: string; end: string; place: string; memo: string; series: string; seriesEnd: string;
-    windowFrom: string; windowTo: string; gm: string; members: string[]; want: string[]; interest: string[]; scenario: string;
+    windowFrom: string; windowTo: string; gm: string; coGms: string[]; members: string[]; want: string[]; interest: string[]; scenario: string;
     candidates: string[]; votes: Record<string, Record<string, string>>; pollDue: string; capacity: number; recruitDue: string; absent: { name: string; note: string }[];
     prep: { sheetDue: string; slots: { label: string; summary: string; assigned: string }[]; sheets: Record<string, { url: string; pc: string; outcome: string }> };
     record: ConsoleRecord;

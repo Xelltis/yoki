@@ -12,6 +12,7 @@ import { type Io, noticeNote } from './polls';
 import type { Ctx, Session } from './types';
 import type { Sleep } from '../discord/send';
 import { queueDm } from './dm-notices';
+import { isGm } from '../../shared/gm';
 
 /**
  * 繰り上がった人をDiscordで呼ぶ（DMを受け取ると決めた人には、DMも積む）。sは変えたあとの卓（読み直さずに、変えた中身を当てたもの）。
@@ -31,7 +32,7 @@ export async function noticeWaitPromoted(ctx: Ctx, s: Session, names: string[], 
  */
 export async function promoteWaiter(ctx: Ctx, form: Form, io: Io) {
   const s = findSession(ctx, form.id);
-  if (s.gm !== ctx.actor.name && !ctx.actor.isAdmin) throw adminError('GMのほかがキャンセル待ちの人を繰り上げること');
+  if (!isGm(s, ctx.actor.name) && !ctx.actor.isAdmin) throw adminError('GMのほかがキャンセル待ちの人を繰り上げること');
   if (s.status !== STATUS.HELD && s.status !== STATUS.ADJUSTING) throw badRequest('「' + s.name + '」は、開催・調整中の卓ではありません（' + s.status + '）。');
   const name = str(form.name);
   if (!s.want.includes(name)) throw badRequest(name + 'は「' + s.name + '」のキャンセル待ちにいません。');

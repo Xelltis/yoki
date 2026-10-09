@@ -158,6 +158,7 @@ export async function loadGroup(
       seq: r.seq,
       name: r.name,
       gm: pp.gm[0] ?? '',
+      coGms: pp.gm.slice(1),
       members: pp.member,
       want: pp.want,
       interest: pp.interest,

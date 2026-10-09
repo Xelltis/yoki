@@ -11,13 +11,14 @@ import { reloadLog } from './load';
 import { findSession } from './model';
 import { type Io, noticeNote } from './polls';
 import type { Ctx } from './types';
+import { isGm } from '../../shared/gm';
 
 /** 行けなくなった印を付ける・外す。form: { id, name（本人）, absent: falseなら外す, note: GMへの一言 } */
 export async function setAbsence(ctx: Ctx, form: Form, io: Io) {
   const name = requireSelf(ctx, form.name);
   const s = findSession(ctx, form.id);
   if (s.status !== STATUS.HELD || !s.date || s.date < ctx.today) throw badRequest('「' + s.name + '」は、これから開く卓ではありません。');
-  if (s.gm === name) throw badRequest('GMは、卓の「日を組み直す」か「編集」で、開催日を変えるか中止にしてください。');
+  if (isGm(s, name)) throw badRequest('GMと共同GMは、卓の「日を組み直す」か「編集」で、開催日を変えるか中止にしてください。');
   if (!s.members.includes(name)) throw badRequest(name + 'は「' + s.name + '」の参加者ではありません。');
   const db = ctx.db, memberId = ctx.actor.memberId;
   if (form.absent === false) {

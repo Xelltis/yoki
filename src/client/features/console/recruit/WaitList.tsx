@@ -1,4 +1,4 @@
-// 開催・調整中の卓のキャンセル待ち（並び方はsrc/shared/waitlist.ts）。GMと管理者は「繰り上げる」で参加者にでき、並んでいる本人は「やめる」ができる
+// 開催・調整中の卓のキャンセル待ち（並び方はsrc/shared/waitlist.ts）。GM（共同GMも）と管理者は「繰り上げる」で参加者にでき、並んでいる本人は「やめる」ができる
 import type { ConsoleSession, RpcResult } from '../../../../shared/api';
 import { splitWant } from '../../../../shared/waitlist';
 import { Icon } from '../../../ui/Icon';
@@ -6,6 +6,7 @@ import { toast } from '../../../ui/toast';
 import { useConsole, useData } from '../context';
 import { me } from '../model/model';
 import { withSession } from '../model/optimistic';
+import { isGm } from '../../../../shared/gm';
 
 export function WaitList({ s }: { s: ConsoleSession }) {
   const d = useData();
@@ -13,7 +14,7 @@ export function WaitList({ s }: { s: ConsoleSession }) {
   const mine = me(d);
   const wait = splitWant(s).wait;
   if (!wait.length || (s.status !== '開催' && s.status !== '調整中')) return null;
-  const canPromote = !!mine && (s.gm === mine || d.isAdmin);
+  const canPromote = !!mine && (isGm(s, mine) || d.isAdmin);
   /** 押した瞬間に付け替える。失敗したら読み直す */
   const run = (fn: 'promoteWaiter' | 'setInterest', form: object, change: (x: ConsoleSession) => ConsoleSession) => {
     sync.write<RpcResult>(fn, form, { optimistic: (cur) => withSession(cur, s.id, change) })

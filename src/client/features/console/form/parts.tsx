@@ -5,6 +5,7 @@ import { Icon } from '../../../ui/Icon';
 import { useData } from '../context';
 import { checkPill, checkPills } from '../styles';
 import { canNotify, type Fields, type Msg, notifyHint } from './model';
+import { CO_GM_MAX } from '../../../../shared/gm';
 
 type Props = { f: Fields; set: (patch: Partial<Fields>) => void };
 
@@ -112,6 +113,10 @@ export function PeopleFields({ f, set }: Props) {
     <>
       <div className="row">
         <div><label htmlFor="gm">GM</label><input type="text" id="gm" list="memberList" value={f.gm} onChange={(ev) => set({ gm: ev.target.value })} /></div>
+        <div>
+          <label htmlFor="coGms">共同GM <small className="hint">サブGM・KP補佐。「、」で区切って{CO_GM_MAX}人まで</small></label>
+          <input type="text" id="coGms" value={f.coGms} placeholder="なし" onChange={(ev) => set({ coGms: ev.target.value })} />
+        </div>
       </div>
       <fieldset id="membersRow" hidden={f.status === '募集'}>
         <legend>参加者</legend>

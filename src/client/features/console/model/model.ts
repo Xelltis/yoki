@@ -3,6 +3,7 @@ import type { ConsoleData, ConsoleScenario, ConsoleSession } from '../../../../s
 import { bookedAt, markAt, type Part, PARTS } from '../../../../shared/parts';
 import type { IconName } from '../../../ui/icons';
 import { addDaysYmd } from './dates';
+import { gmsOf, isGm } from '../../../../shared/gm';
 
 /* 状態。募集 → 調整中 → 開催 → 終了、中止は別 */
 export const STATUS_ACTIVE: string[] = ['募集', '調整中', '開催'];
@@ -16,13 +17,14 @@ export function isActive(s: ConsoleSession): boolean { return STATUS_ACTIVE.inde
 /** 卓の状態ごとのアイコン。カレンダーの札と凡例で使う */
 export const STATUS_ICON: Record<string, IconName> = { '開催': 'event', '募集': 'campaign', '調整中': 'edit_calendar', '終了': 'task_alt', '中止': 'block' };
 
-/** GMと参加者（重ならないように） */
+/** GM（共同GMも）と参加者（重ならないように） */
 export function peopleOf(s: ConsoleSession): string[] {
-  const out: string[] = [];
-  if (s.gm) out.push(s.gm);
+  const out = gmsOf(s);
   s.members.forEach((n) => { if (out.indexOf(n) < 0) out.push(n); });
   return out;
 }
+/** 人の札の頭に付ける役（GM・共同GM。参加者なら空） */
+export function roleLabel(s: ConsoleSession, name: string): string { return name === s.gm ? 'GM ' : isGm(s, name) ? '共同GM ' : ''; }
 /** 都合を見る相手。GMと参加者に、募集中なら参加希望の人も加える */
 export function candidatesOf(s: ConsoleSession): string[] {
   const out = peopleOf(s);
@@ -84,7 +86,7 @@ export function isMyTurn(d: ConsoleData, s: ConsoleSession): boolean {
   const who = me(d);
   if (!who || !hasPoll(s)) return false;
   const pend = pollPending(d, s);
-  return pend.indexOf(who) >= 0 || (!pend.length && s.gm === who);
+  return pend.indexOf(who) >= 0 || (!pend.length && isGm(s, who));
 }
 /** あなたの番の日程調整（「募集・調整」のタブの印の数） */
 export function myTurns(d: ConsoleData): ConsoleSession[] { return active(d).filter((s) => isMyTurn(d, s)); }
@@ -110,7 +112,7 @@ export function memberOrder(d: ConsoleData, names: string[], sortByLoad: boolean
   const act = active(d), score: Record<string, { total: number; gm: number; i: number }> = {};
   names.forEach((n, i) => {
     let gm = 0, pl = 0;
-    act.forEach((s) => { if (s.gm === n) gm++; else if (s.members.indexOf(n) >= 0) pl++; });
+    act.forEach((s) => { if (isGm(s, n)) gm++; else if (s.members.indexOf(n) >= 0) pl++; });
     score[n] = { total: gm + pl, gm, i };
   });
   return names.slice().sort((a, b) => {

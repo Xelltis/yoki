@@ -29,7 +29,7 @@ export async function exportGroup(ctx: Ctx, _form: Form) {
     members: ctx.members.map((m) => ({ name: m.name, discordId: m.discordId, note: m.note, admin: m.isAdmin })),
     sessions: ctx.sessions.map((s) => ({
       id: s.id, name: s.name, status: s.status, date: s.date ?? '', start: s.start, end: s.end, place: s.place, memo: s.memo, series: s.series, seriesEnd: s.seriesEnd ?? '',
-      windowFrom: s.windowFrom ?? '', windowTo: s.windowTo ?? '', gm: s.gm, members: s.members, want: s.want, interest: s.interest,
+      windowFrom: s.windowFrom ?? '', windowTo: s.windowTo ?? '', gm: s.gm, coGms: s.coGms, members: s.members, want: s.want, interest: s.interest,
       // シナリオを消すと卓から外れる（外部キー）ので、付いていればいつもある
       scenario: s.scenarioId === null ? '' : scName.get(s.scenarioId)!,
       candidates: s.candidates, votes: ctx.votes.get(s.rowId) ?? {}, pollDue: s.pollDue ?? '', capacity: s.capacity ?? 0, recruitDue: s.recruitDue ?? '',

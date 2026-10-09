@@ -143,8 +143,11 @@ await withDevServer(async (base) => {
     await step('卓を変更できる（内訳の「編集」から）', async () => {
       const s = (await D()).sessions.find((x) => x.name === '灰色の図書館');
       await page.evaluate((k) => window.yoki.selectDay(k), s.date);
+      // サンプルの「灰色の図書館」には共同GM（ミナト）がいる
+      assert.match(await page.textContent(`#dayBody [data-id="${s.id}"]`), /共同GM ミナト/);
       await page.click(`#dayBody button[data-edit="${s.id}"]`);
       assert.match(await page.textContent('#formTitle'), /「灰色の図書館」を変更/);
+      assert.equal(await page.inputValue('#coGms'), 'ミナト');
       await page.fill('#name', '灰色の図書館（改）');
       await page.click('#f button[type=submit]');
       await until((d, id) => d.sessions.some((x) => x.id === id && x.name === '灰色の図書館（改）'), s.id);
@@ -153,6 +156,20 @@ await withDevServer(async (base) => {
       await page.click('#historyFold summary');
       await page.waitForSelector('#historyList >> text=名前 灰色の図書館→灰色の図書館（改）', { timeout: 15000 });
       await page.click('#formClose');
+    });
+
+    await step('共同GMを入れて、外せる（秘匿HOの無い卓）', async () => {
+      const s = (await D()).sessions.find((x) => x.name === '連れて帰る');
+      await page.evaluate((k) => window.yoki.selectDay(k), s.date);
+      await page.click(`#dayBody button[data-edit="${s.id}"]`);
+      await page.fill('#coGms', 'ユズ');
+      await page.click('#f button[type=submit]');
+      await until((d, id) => d.sessions.find((x) => x.id === id).coGms.join() === 'ユズ', s.id);
+      await page.waitForSelector(`#dayBody [data-id="${s.id}"] >> text=共同GM ユズ`, { timeout: 15000 });
+      await page.click(`#dayBody button[data-edit="${s.id}"]`);
+      await page.fill('#coGms', '');
+      await page.click('#f button[type=submit]');
+      await until((d, id) => d.sessions.find((x) => x.id === id).coGms.length === 0, s.id);
     });
 
     await step('変更の窓から、続きの登録に移れる', async () => {

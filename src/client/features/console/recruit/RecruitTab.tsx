@@ -15,7 +15,7 @@ import { prepSummary } from '../prep/PrepModal';
 import { discordSend, failToast } from '../api/discord';
 import { useConsole, useData } from '../context';
 import { fmtJa, holidayName, parseYmd, timeRange } from '../model/dates';
-import { byId, hasPoll, isAdjusting, isRecruit, me, peopleOf, periodOfSession, pollCount, pollFillDays, pollPending, pollVoters, scenarioOf, sortSessions, voteFromAvail } from '../model/model';
+import { byId, hasPoll, isAdjusting, isRecruit, me, peopleOf, periodOfSession, roleLabel, pollCount, pollFillDays, pollPending, pollVoters, scenarioOf, sortSessions, voteFromAvail } from '../model/model';
 import { hookFor } from '../model/notify';
 import { withSession } from '../model/optimistic';
 import { splitWant } from '../../../../shared/waitlist';
@@ -24,6 +24,7 @@ import { Place } from '../Place';
 import { useGoTab } from '../shell/nav';
 import { people, personChip, res } from '../styles';
 import { notifyDecided, notifyReady } from './pollNotify';
+import { isGm } from '../../../../shared/gm';
 
 /** 区切りの見出し（募集中・日程調整中） */
 const bar = 'mt-24 mb-10 flex flex-wrap items-center gap-8';
@@ -58,8 +59,8 @@ function People({ d, s, none }: { d: ConsoleData; s: ConsoleSession; none: strin
   return (
     <div className={people}>
       {ppl.map((p) => {
-        const isGm = p === s.gm, known = d.members.some((m) => m.name === p);
-        return <span className={personChip(isGm, !known)} key={p}>{(isGm ? 'GM ' : '') + p}</span>;
+        const role = roleLabel(s, p), known = d.members.some((m) => m.name === p);
+        return <span className={personChip(!!role, !known)} key={p}>{role + p}</span>;
       })}
       {!ppl.length && <span className={personChip(false, true)}>{none}</span>}
     </div>
@@ -235,9 +236,9 @@ export function RecruitTab() {
               </div>
               {s.place && <Place place={s.place} className={rcRow} />}
               {s.memo && <div className={rcRow + ' hint'}>{s.memo}</div>}
-              {s.gm === mine && <p className={next}><Icon name="arrow_forward" size="sm" className={nextIcon} /><span>{'集まったら「編集」で状態を「開催」（日が決まっている）か「調整中」（みんなで日を選ぶ）にします。参加希望の人はそのまま参加者に入ります。' + (w.wait.length ? 'キャンセル待ちの人は、並んだまま残ります。' : '')}</span></p>}
+              {isGm(s, mine) && <p className={next}><Icon name="arrow_forward" size="sm" className={nextIcon} /><span>{'集まったら「編集」で状態を「開催」（日が決まっている）か「調整中」（みんなで日を選ぶ）にします。参加希望の人はそのまま参加者に入ります。' + (w.wait.length ? 'キャンセル待ちの人は、並んだまま残ります。' : '')}</span></p>}
               <div className="btns mt-12 gap-6">
-                {member ? <span className="hint">{'あなたはこの卓の' + (s.gm === mine ? ' GM ' : '参加者') + 'です'}</span> : (
+                {member ? <span className="hint">{'あなたはこの卓の' + (s.gm === mine ? ' GM ' : isGm(s, mine) ? '共同GM' : '参加者') + 'です'}</span> : (
                   <>
                     <button type="button" className={'btn small' + (level === 'want' ? ' on' : '')} aria-pressed={level === 'want'} data-level="want" data-id={s.id}
                       disabled={level !== 'want' && closed} title={level !== 'want' && closed ? '募集は締め切りました' : level !== 'want' && full ? '定員に達しています。並ぶと、空きが出たときに順に繰り上がります' : undefined} onClick={() => setLevel(s, 'want')}>
@@ -252,7 +253,7 @@ export function RecruitTab() {
                 <span className={res} data-rres={s.id}>{saving[s.id] ? '保存しています…' : ''}</span>
               </div>
               {/* GM向け: 開催にする・興味ありの人にDiscordで聞く。返事は各自が募集タブの「参加希望」で。GMと管理者（GMが未定ならだれでも）にだけ出す */}
-              <div className="btns mt-12 gap-6 border-t border-line pt-12" hidden={!(s.gm === mine || !s.gm || d.isAdmin)}>
+              <div className="btns mt-12 gap-6 border-t border-line pt-12" hidden={!(isGm(s, mine) || !s.gm || d.isAdmin)}>
                 <button type="button" className="btn small primary" data-hold={s.id} title="状態を「開催」にした登録の窓を開きます" onClick={() => openForm(ui, { id: s.id, status: '開催', focus: 'date' })}><Icon name="event" size="sm" />開催にする</button>
                 <button type="button" className="btn small" data-ask={s.id} disabled={!(canAsk && s.interest.length) || !!off['ask:' + s.id]} title={askTitle}
                   onClick={() => { setAsk({ id: s.id, text: '' }); setTimeout(() => askRef.current?.focus(), 0); }}>興味ありの人に聞く</button>
@@ -277,7 +278,7 @@ export function RecruitTab() {
         {adjList.map((s) => {
           const poll = hasPoll(s), voters = pollVoters(d, s), isVoter = !!mine && voters.indexOf(mine) >= 0;
           // 開催日を選べるのはGMと管理者
-          const canDecide = (!!mine && mine === s.gm) || d.isAdmin !== false;
+          const canDecide = isGm(s, mine) || d.isAdmin !== false;
           const futureDays = s.candidates.filter((k) => k >= d.today);
           const allOk = isVoter && futureDays.length > 0 && futureDays.every((k) => ((s.votes || {})[k] || {})[mine] === '◯');
           const fillDays = isVoter ? pollFillDays(d, s, mine) : [];

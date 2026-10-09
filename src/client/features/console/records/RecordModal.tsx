@@ -9,6 +9,7 @@ import { toast } from '../../../ui/toast';
 import { useConsole, useData } from '../context';
 import { fmtJa } from '../model/dates';
 import { byId, me } from '../model/model';
+import { isGm } from '../../../../shared/gm';
 
 /** 結果の候補（自由に書いてもよい） */
 const OUTCOMES = ['生還', 'ロスト', '継続', '死亡', '発狂'];
@@ -25,7 +26,7 @@ export function RecordModal() {
     setSt({ seq: req.seq, logUrl: s ? s.record.logUrl : '', recap: s ? s.record.recap : '', pc: sh ? sh.pc : '', outcome: sh ? sh.outcome : '', busy: false, msg: '' });
   }
   const close = () => ui.set((x) => ({ ...x, record: null }));
-  const canRecord = !!s && (s.gm === mine || d.isAdmin), isPl = !!s && s.members.indexOf(mine) >= 0;
+  const canRecord = !!s && (isGm(s, mine) || d.isAdmin), isPl = !!s && s.members.indexOf(mine) >= 0;
   const run = (fn: 'saveRecord' | 'setPcRecord', form: object) => {
     setSt((x) => ({ ...x, busy: true, msg: '保存しています…' }));
     sync.write<RpcResult>(fn, form).then((r) => { setSt((x) => ({ ...x, busy: false, msg: r.message })); toast(r.message); }, (e: Error) => setSt((x) => ({ ...x, busy: false, msg: e.message })));

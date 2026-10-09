@@ -117,7 +117,7 @@ describe('GMの変更', () => {
   test('秘匿HOのある卓のGMを替えられるのは、今のGMだけ（管理者も替えられない）。替えれば、新しいGMに見える', async () => {
     await withSecret();
     const form = { id: 'S001', name: '港', gm: 'ひより', members: ['ソラ'], date: T(7), status: '開催' };
-    expect((await fail(G.sora, G.id, 'saveSession', form)).error).toBe('「港」には秘匿HOがあるので、GMを替えられるのは今のGM（こまち）だけです。');
+    expect((await fail(G.sora, G.id, 'saveSession', form)).error).toBe('「港」には秘匿HOがあるので、GMと共同GMを替えられるのは今のGMか共同GM（こまち）だけです。');
     expect((await fail(G.admin, G.id, 'saveSession', form)).status).toBe(400);
     expect((await fail(G.admin, G.id, 'bulkUpdateSessions', { ids: ['S001'], action: 'setGm', value: 'ひより' })).status).toBe(400);
     // GMのままなら、ほかの人も卓を変えられる

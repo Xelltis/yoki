@@ -12,6 +12,7 @@ import { checkGmChange, unassignGoneStmt } from './prep';
 import { findScenario, keepPassesStmt, readScenarioId } from './scenarios';
 import type { Ctx, Session } from './types';
 import { promotedBy, splitWant } from '../../shared/waitlist';
+import { CO_GM_MAX, gmsOf, isGm } from '../../shared/gm';
 import { type Io, noticeNote } from './polls';
 import { noticeWaitPromoted } from './waitlist';
 
@@ -68,6 +69,18 @@ function readRecruitLimits(form: Form, status: Status, existing: Session | null)
   return { capacity, due };
 }
 
+/**
+ * 共同GMを読む（名前の一覧か、「、」区切り）。送られなければ今のまま（古い画面から保存しても外れないように）。
+ * GMと同じ人は外す。GMがいなければ共同GMは置けない。CO_GM_MAX人まで
+ */
+function readCoGms(form: Form, gm: string, existing: Session | null): string[] {
+  const raw = form.coGms === undefined ? (existing?.coGms ?? []) : splitNames(Array.isArray(form.coGms) ? list(form.coGms).join('、') : form.coGms);
+  const coGms = uniq(raw).filter((n) => n !== gm);
+  if (coGms.length && !gm) throw badRequest('共同GMを入れるときは、GMも入れてください。');
+  if (coGms.length > CO_GM_MAX) throw badRequest('共同GMは' + CO_GM_MAX + '人までです。');
+  return coGms;
+}
+
 /** 卓を登録・更新する。form.datesに2日以上あれば、まとめて登録する（新規だけ） */
 export async function saveSession(ctx: Ctx, form: Form, io: Io) {
   const name = str(form.name);
@@ -82,15 +95,17 @@ export async function saveSession(ctx: Ctx, form: Form, io: Io) {
   const win = status === STATUS.RECRUIT || status === STATUS.ADJUSTING ? readWindow(form.windowFrom, form.windowTo) : null;
   const gm = str(form.gm);
   const series = str(form.series);
-  let members = uniq(splitNames(list(form.members).join('、') + '、' + str(form.extra)));
   const existing = form.id ? findSession(ctx, form.id) : null;
-  if (existing) checkGmChange(ctx, existing, gm);
+  const coGms = readCoGms(form, gm, existing);
+  // 共同GMは参加者に入れない（GMと同じ扱い）
+  let members = uniq(splitNames(list(form.members).join('、') + '、' + str(form.extra))).filter((n) => !coGms.includes(n));
+  if (existing) checkGmChange(ctx, existing, gm, coGms);
   // シナリオ。送られなければ今のまま（古い画面から保存しても外れないように）
   const scenarioId = form.scenarioId === undefined ? (existing?.scenarioId ?? null) : readScenarioId(ctx, form.scenarioId);
   const limits = readRecruitLimits(form, status, existing);
   const dateChanged = !existing || existing.date !== date;
   // 参加希望・興味あり。参加者やGMになった人は外す。募集から「調整中」「開催」になったら、参加希望の人を参加者に移す
-  const notIn = (n: string) => !members.includes(n) && n !== gm;
+  const notIn = (n: string) => !members.includes(n) && n !== gm && !coGms.includes(n);
   let want = existing ? existing.want.filter(notIn) : [];
   let interest = existing ? existing.interest.filter(notIn) : [];
   let promoted: string[] = [], dropped: string[] = [], waiting: string[] = [];
@@ -110,7 +125,7 @@ export async function saveSession(ctx: Ctx, form: Form, io: Io) {
   const start = normTime(form.start), end = normTime(form.end);
   const at = ctx.now.toISOString();
   const seriesEnd = series ? parseYmd(form.seriesEnd) : null;
-  const people: People = { gm: gm ? [gm] : [], member: members, want, interest };
+  const people: People = { gm: gmsOf({ gm, coGms }), member: members, want, interest };
   const db = ctx.db;
   const stmts: D1PreparedStatement[] = [];
   let id: string;
@@ -150,7 +165,7 @@ export async function saveSession(ctx: Ctx, form: Form, io: Io) {
     // 開催日が変わったり、開催でなくなったり、参加者から外れたりしたら、行けなくなった印を消す
     if (existing.absent.length) stmts.push(absenceCleanupStmt(ctx, [existing.rowId], dateChanged));
     const detail = changeText(ctx, existing, {
-      name, status, date, start, end, place: str(form.place), memo: str(form.memo), series, gm, members,
+      name, status, date, start, end, place: str(form.place), memo: str(form.memo), series, gm, coGms, members,
       windowFrom: win?.from ?? null, windowTo: win?.to ?? null, scenarioId, capacity: limits.capacity, recruitDue: limits.due,
     });
     if (detail) stmts.push(historyStmt(ctx, existing.rowId, '変更', detail));
@@ -203,12 +218,13 @@ async function saveSessionDates(ctx: Ctx, form: Form, name: string, raw: string[
   const gm = str(form.gm);
   const series = str(form.series);
   const scenarioId = readScenarioId(ctx, form.scenarioId);
-  const members = uniq(splitNames(list(form.members).join('、') + '、' + str(form.extra)));
+  const coGms = readCoGms(form, gm, null);
+  const members = uniq(splitNames(list(form.members).join('、') + '、' + str(form.extra))).filter((n) => !coGms.includes(n));
   const m = /^(.*?)(\d+)(\D*)$/.exec(name);
   const names = dates.map((_, i) => (i === 0 ? name : m ? m[1]! + (Number(m[2]) + i) + m[3]! : name + ' #' + (i + 1)));
   const at = ctx.now.toISOString();
   const seriesEnd = series ? parseYmd(form.seriesEnd) : null;
-  const people: People = { gm: gm ? [gm] : [], member: members, want: [], interest: [] };
+  const people: People = { gm: gmsOf({ gm, coGms }), member: members, want: [], interest: [] };
   // 卓・関わる人・履歴・番号を、日数によらず4文で書く（D1の1回の呼び出しで使える問い合わせの数を超えないように）。
   // 番号は、グループの次の番号から順に振り、最後に進める。1つのbatchなので、途中で失敗すれば番号も進まない
   const [, , , seq] = await ctx.db.batch([
@@ -243,7 +259,7 @@ export async function setInterest(ctx: Ctx, form: Form, io: Io) {
   const s = findSession(ctx, form.id);
   const leaving = level === 'none' && s.want.includes(name);
   if (s.status !== STATUS.RECRUIT && !leaving) throw badRequest('「' + s.name + '」は募集中ではありません（' + s.status + '）。');
-  if (level !== 'none' && peopleOf(s).includes(name)) throw badRequest(name + 'はすでにこの卓の' + (s.gm === name ? 'GM' : '参加者') + 'です。');
+  if (level !== 'none' && peopleOf(s).includes(name)) throw badRequest(name + 'はすでにこの卓の' + (s.gm === name ? 'GM' : isGm(s, name) ? '共同GM' : '参加者') + 'です。');
   // 締め切りを過ぎたら、新しく付けられない（取り消すことはできる）
   if (level !== 'none' && s.recruitDue && ctx.today > s.recruitDue) throw badRequest('「' + s.name + '」の募集は締め切りました（' + fmtDateJa(s.recruitDue) + 'まで）。');
   // 参加希望を出し直しても、並んだ順は変えない
@@ -305,7 +321,8 @@ export async function bulkUpdateSessions(ctx: Ctx, form: Form) {
     done = 'の状態を「' + value + '」にしました';
   } else if (action === 'addMember' || action === 'removeMember' || action === 'setGm') {
     if (!value) throw badRequest('名前を選んでください。');
-    if (action === 'setGm') targets.forEach((s) => checkGmChange(ctx, s, value));
+    // GMを替えても、共同GMはそのまま（新しいGMが共同GMにいれば、そこから外す）
+    if (action === 'setGm') targets.forEach((s) => checkGmChange(ctx, s, value, s.coGms.filter((n) => n !== value)));
     label = action === 'addMember' ? '参加者に' + value + 'を追加' : action === 'removeMember' ? '参加者から' + value + 'を外す' : 'GMを' + value + 'に';
     done = action === 'addMember' ? 'の参加者に' + value + 'を足しました' : action === 'removeMember' ? 'の参加者から' + value + 'を外しました' : 'のGMを' + value + 'にしました';
   } else if (action === 'shiftDays') {
@@ -365,7 +382,7 @@ export async function bulkUpdateSessions(ctx: Ctx, form: Form) {
         if (s.status !== STATUS.RECRUIT || !s.want.length) continue;
         // 参加希望（定員の中）の人を参加者に移す。キャンセル待ちは、そのまま並んで残る
         const w = splitWant(s);
-        const add = w.want.filter((n) => !s.members.includes(n) && n !== s.gm);
+        const add = w.want.filter((n) => !s.members.includes(n) && !isGm(s, n));
         peopleChanges.push({ rowId: s.rowId, people: { ...peopleOfSession(s), member: uniq(s.members.concat(add)), want: w.wait } });
         add.forEach((n) => promoted.push(n + '（' + s.name + '）'));
       }
@@ -384,7 +401,7 @@ export async function bulkUpdateSessions(ctx: Ctx, form: Form) {
       const p = peopleOfSession(s);
       if (action === 'addMember') p.member = uniq(s.members.concat([value]));
       if (action === 'removeMember') p.member = s.members.filter((n) => n !== value);
-      if (action === 'setGm') p.gm = [value];
+      if (action === 'setGm') p.gm = gmsOf({ gm: value, coGms: s.coGms });
       peopleChanges.push({ rowId: s.rowId, people: p });
     }
     stmts.push(db.prepare(`UPDATE sessions SET ${stamp} WHERE ${inTargets}`).bind(rowIds, ctx.actor.name, at));

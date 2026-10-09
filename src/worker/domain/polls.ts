@@ -16,6 +16,7 @@ import { historyStmt } from './history';
 import { bookedPartsMap, findAdjusting, findSession, peopleOf, pollComplete } from './model';
 import type { GoogleDeps } from '../google/config';
 import type { Ctx, Session } from './types';
+import { gmsOf, isGm } from '../../shared/gm';
 
 /** 書いたあとで読み直す道具と、Discordの送り直しを待つ道具（routes/rpc.tsが渡す） */
 export type Io = {
@@ -90,7 +91,7 @@ async function afterVote(ctx: Ctx, sid: string, wasComplete: boolean, io: Io): P
   const notified = await sendPollNotice(fresh, s, 'pollReady', io.sleep);
   if (notified === false) await fresh.db.prepare('UPDATE sessions SET poll_ready_at = NULL WHERE id = ?').bind(s.rowId).run();
   // 知らせを送り直さないとき（届いた・送り先が無い）だけ、GMにDMでも知らせる（最後に答えたのがGMなら送らない）
-  else await queueDm(fresh, 'poll', [s.gm].filter((n) => n !== ctx.actor.name), '📝 「' + s.name + '」の日程調整の回答がそろいました。開催日を選んでください。');
+  else await queueDm(fresh, 'poll', gmsOf(s).filter((n) => n !== ctx.actor.name), '📝 「' + s.name + '」の日程調整の回答がそろいました。開催日を選んでください。');
   // 送ったら、送信記録だけを読み直す（返事の画面データに、送った結果を出すため）
   if (notified !== null) await reloadLog(fresh);
   return { ready: true, notified, message: '　全員の回答がそろいました。' + noticeNote(notified, 'GMへの知らせ'), fresh };
@@ -242,7 +243,7 @@ export async function setPollVoteFromAvail(ctx: Ctx, form: Form, io: Io) {
 /** GMが候補日から開催日を選ぶ（GMのほかは管理者だけ）。決めたら「日程が決まりました」をサーバーから送る。form: { id, ymd } */
 export async function decidePoll(ctx: Ctx, form: Form, io: Io) {
   const s = findAdjusting(ctx, form.id);
-  if (s.gm !== ctx.actor.name && !ctx.actor.isAdmin) throw adminError('GMのほかが開催日を決めること');
+  if (!isGm(s, ctx.actor.name) && !ctx.actor.isAdmin) throw adminError('GMのほかが開催日を決めること');
   const k = parseYmd(form.ymd);
   if (!k) throw badRequest('日付が読めません: ' + str(form.ymd));
   if (!s.candidates.includes(k)) throw badRequest(fmtDateJa(k) + 'は「' + s.name + '」の候補日ではありません。');
@@ -263,7 +264,7 @@ export async function decidePoll(ctx: Ctx, form: Form, io: Io) {
   const decided = findSession(fresh, s.id);
   const notified = decided.status === STATUS.HELD ? await sendPollNotice(fresh, decided, 'decided', io.sleep) : null;
   // GMと参加者に、DMでも知らせる（決めた人には送らない）
-  await queueDm(fresh, 'poll', [decided.gm, ...decided.members].filter((n) => n !== ctx.actor.name), '✅ 「' + s.name + '」の日程が決まりました: ' + fmtDateJa(k) + ' ' + timeRange(decided));
+  await queueDm(fresh, 'poll', peopleOf(decided).filter((n) => n !== ctx.actor.name), '✅ 「' + s.name + '」の日程が決まりました: ' + fmtDateJa(k) + ' ' + timeRange(decided));
   if (notified !== null) await reloadLog(fresh);
   return {
     ok: true, id: s.id, decided: k, notified, message: '日程を決めました: ' + s.name + '（' + fmtDateJa(k) + '）' + noticeNote(notified, '決まった知らせ'),

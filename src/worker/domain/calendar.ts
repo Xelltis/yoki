@@ -5,6 +5,7 @@ import { addDays } from '../lib/jst';
 import { STATUS, type Status } from './constants';
 import { type Form, str } from './form';
 import type { Ctx, FeedScope, Session } from './types';
+import { gmsOf, isGm } from '../../shared/gm';
 
 /** カレンダーに載せる卓の状態（開催日が決まった卓）。中止・募集・調整中は載せない */
 export const CALENDAR_STATUSES: Status[] = [STATUS.HELD, STATUS.DONE];
@@ -19,7 +20,7 @@ export type CalendarItem = { span: Span; summary: string; location: string; desc
 /** 卓をカレンダーの1件にする。説明にはGM・参加者・メモと、グループの画面のURLを入れる */
 export function calendarItem(ctx: Pick<Ctx, 'appUrl' | 'group'>, s: Session & { date: string }): CalendarItem {
   const lines: string[] = [];
-  if (s.gm) lines.push('GM: ' + s.gm);
+  if (s.gm) lines.push('GM: ' + gmsOf(s).join('、'));
   if (s.members.length) lines.push('参加: ' + s.members.join('、'));
   if (s.memo) lines.push('', s.memo);
   lines.push('', ctx.group.title + '（Yoki）: ' + ctx.appUrl);
@@ -38,7 +39,7 @@ export function calendarSessions(ctx: Pick<Ctx, 'sessions' | 'today'>, who: stri
   const since = addDays(ctx.today, -sinceDays);
   return ctx.sessions.filter(
     (s): s is Session & { date: string } =>
-      CALENDAR_STATUSES.includes(s.status) && !!s.date && s.date >= since && (!who || s.gm === who || (s.members.includes(who) && !s.absent.some((a) => a.name === who))),
+      CALENDAR_STATUSES.includes(s.status) && !!s.date && s.date >= since && (!who || isGm(s, who) || (s.members.includes(who) && !s.absent.some((a) => a.name === who))),
   );
 }
 

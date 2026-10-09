@@ -67,7 +67,7 @@ async function turnOn() {
 describe('イベントの中身', () => {
   test('時刻のある卓は、その時刻の外部のイベント。場所は卓の場所。説明にGM・参加者・グループの画面', async () => {
     const ctx = { appUrl: 'https://yoki.test/g/ev/', group: { title: 'テストの卓' } } as any;
-    const s = { rowId: 1, name: 'A', gm: 'ひより', members: ['ソラ'], date: '2026-10-10', start: '20:00', end: '23:00', place: 'ユドナリウム', memo: '', updatedAt: '' } as any;
+    const s = { rowId: 1, name: 'A', gm: 'ひより', coGms: [], members: ['ソラ'], date: '2026-10-10', start: '20:00', end: '23:00', place: 'ユドナリウム', memo: '', updatedAt: '' } as any;
     expect(eventBody(ctx, s)).toEqual({
       name: 'A', privacy_level: 2, entity_type: 3, channel_id: null,
       scheduled_start_time: '2026-10-10T11:00:00.000Z', scheduled_end_time: '2026-10-10T14:00:00.000Z',
@@ -77,7 +77,7 @@ describe('イベントの中身', () => {
   });
 
   test('終日の卓はその日の0時から翌日の0時。場所が無ければ画面のアドレス、それも無ければグループの名前。長い名前と説明は切る', async () => {
-    const s = { rowId: 1, name: 'あ'.repeat(120), gm: '', members: [], date: '2026-10-10', start: '', end: '', place: '', memo: 'い'.repeat(1200), updatedAt: '' } as any;
+    const s = { rowId: 1, name: 'あ'.repeat(120), gm: '', coGms: [], members: [], date: '2026-10-10', start: '', end: '', place: '', memo: 'い'.repeat(1200), updatedAt: '' } as any;
     const b = eventBody({ appUrl: 'https://yoki.test/g/ev/', group: { title: 'テストの卓' } } as any, s);
     expect([b.scheduled_start_time, b.scheduled_end_time]).toEqual(['2026-10-09T15:00:00.000Z', '2026-10-10T15:00:00.000Z']);
     expect(b.entity_metadata.location).toBe('https://yoki.test/g/ev/');

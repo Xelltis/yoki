@@ -54,6 +54,8 @@ export type Session = {
   seq: number;
   name: string;
   gm: string;
+  /** 共同GM（サブGM・KP補佐）。GMと同じことができる（src/shared/gm.ts） */
+  coGms: string[];
   members: string[];
   want: string[];
   interest: string[];

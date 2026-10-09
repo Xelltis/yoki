@@ -8,6 +8,7 @@ import { active, hasPoll, isAdjusting, isDated, isMyTurn, isRecruit, pollPending
 import { notifyState } from '../model/notify';
 import { notice, noticeSub } from '../styles';
 import { splitWant } from '../../../../shared/waitlist';
+import { gmsOf } from '../../../../shared/gm';
 
 /** 押したときに移る先。dayはその日を選ぶ、recruitは「募集・調整」のタブ（卓のIDがあればその卓のカードへ）、targetは都合を見る卓 */
 type Item = { cls: string; body: ReactNode; day?: string; recruit?: { id?: string }; target?: string };
@@ -25,7 +26,7 @@ export function Notices({ d, onDay, onRecruit, onTarget }: {
   const add = (cls: string, body: ReactNode, day?: string, recruit?: { id?: string }, target?: string) => { items.push({ cls, body, day, recruit, target }); };
   const planned = sortedActive(d).filter((s) => isDated(s) && s.date);
   const line = (s: ConsoleSession, head: ReactNode) => (
-    <>{head}<b>{s.name}</b><span className={noticeSub}>{timeRange(s) + '　GM: ' + (s.gm || '未定') + '　参加: ' + (s.members.join('、') || '未定')}</span></>
+    <>{head}<b>{s.name}</b><span className={noticeSub}>{timeRange(s) + '　GM: ' + (gmsOf(s).join('、') || '未定') + '　参加: ' + (s.members.join('、') || '未定')}</span></>
   );
   // 見落としやすい募集中・調整中を先に出す（色はhot）
   const rec = sortSessions(active(d).filter(isRecruit));
@@ -61,7 +62,7 @@ export function Notices({ d, onDay, onRecruit, onTarget }: {
     add('adjust hot', (
       <>
         <Icon name="edit_calendar" />日程調整中: <b>{s.name}</b>
-        <span className={noticeSub}>{(s.windowLabel ? s.windowLabel + 'のどこか' : '期間未定') + '　GM: ' + (s.gm || '未定') + '　参加: ' + (s.members.join('、') || '未定')}</span>
+        <span className={noticeSub}>{(s.windowLabel ? s.windowLabel + 'のどこか' : '期間未定') + '　GM: ' + (gmsOf(s).join('、') || '未定') + '　参加: ' + (s.members.join('、') || '未定')}</span>
         <span className={noticeSub}>押すと、この卓の人の都合をカレンダーに出し、候補の期間に枠を付けます</span>
       </>
     ), s.windowFrom || '', undefined, s.name);
@@ -71,7 +72,7 @@ export function Notices({ d, onDay, onRecruit, onTarget }: {
     add('adjust hot', (
       <>
         <Icon name="event_busy" />行けなくなった人がいます: <b>{s.name}</b>
-        <span className={noticeSub}>{fmtJa(s.date) + '　' + s.absent.map((a) => a.name).join('、') + (s.gm ? '　GM: ' + s.gm : '')}</span>
+        <span className={noticeSub}>{fmtJa(s.date) + '　' + s.absent.map((a) => a.name).join('、') + (s.gm ? '　GM: ' + gmsOf(s).join('、') : '')}</span>
       </>
     ), s.date);
   });

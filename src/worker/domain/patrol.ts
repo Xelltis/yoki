@@ -25,6 +25,7 @@ import { checkBot, GITHUB_CALLS, noticePatrolFailed, noticeVersion, VERSION_HOUR
 import { dmStmt, queueDm, sendQueuedDms } from './dm-notices';
 import { aheadText, notifyHourOf, notifyYmdOf } from './notify';
 import type { Ctx, Session } from './types';
+import { gmsOf } from '../../shared/gm';
 
 /** 1通に載せる卓の数（Discordのembedは1通に10個まで） */
 const EMBEDS_PER_MESSAGE = 10;
@@ -252,7 +253,7 @@ export async function sendReminders(ctx: Ctx, hour: number, deps: Deps): Promise
 }
 
 /** 卓に来る人（GMと参加者。行けなくなった人は除く） */
-const attendees = (s: Session) => [s.gm, ...s.members].filter((n) => n && !s.absent.some((a) => a.name === n));
+const attendees = (s: Session) => [...gmsOf(s), ...s.members].filter((n) => !s.absent.some((a) => a.name === n));
 
 /** 期間前の催促。募集中・調整中のまま、期間の始まりが明日に迫った卓をGMに知らせる。送る時刻は開催前の知らせと同じ */
 export async function sendUrges(ctx: Ctx, hour: number, deps: Deps): Promise<void> {
@@ -264,11 +265,12 @@ export async function sendUrges(ctx: Ctx, hour: number, deps: Deps): Promise<voi
     const targets = sessionTargets(ctx, s);
     if (!targets.length) { await appendLog(logTo(ctx), kind, s.name, '送らず: 送り先のチャンネルが未設定'); continue; }
     if (!(await claimMark(ctx, 'urged_at', [s])).size) continue;
-    const gmId = ctx.memberByName.get(s.gm)?.discordId;
+    // GMと共同GMを呼ぶ（DiscordのIDのある人だけ）
+    const gmIds = gmsOf(s).map((n) => ctx.memberByName.get(n)?.discordId).filter(Boolean).map((id) => ' <@' + id + '>').join('');
     const head = s.status === STATUS.RECRUIT
       ? '⏳ 明日から「' + s.name + '」の募集の期間です。まだ参加者を集めている途中です。'
       : '⏳ 明日から「' + s.name + '」の候補の期間です。まだ開催日が決まっていません。';
-    const payload = { content: head + (gmId ? ' <@' + gmId + '>' : '') + recruitLink(ctx, s), embeds: [sessionEmbed(ctx, s)] };
+    const payload = { content: head + gmIds + recruitLink(ctx, s), embeds: [sessionEmbed(ctx, s)] };
     if (!(await postSessionNotice(ctx, s, payload, kind, targets, deps.sleep))) await releaseMark(ctx, 'urged_at', [s.rowId]);
   }
 }
@@ -310,7 +312,7 @@ export async function sendPollDue(ctx: Ctx, hour: number, deps: Deps): Promise<v
     // DMは、印を付けた（もう送り直さない）ときに積む。送り先のチャンネルが無くても積む
     const dm = () => urge
       ? queueDm(ctx, 'poll', pending, '⏰ 「' + s.name + '」の日程調整の締め切りは' + (s.pollDue === ctx.today ? '今日' : '明日') + '（' + fmtDateJa(s.pollDue!) + '）です。まだ答えていない候補日があります。')
-      : queueDm(ctx, 'poll', [s.gm], '⌛ 「' + s.name + '」の日程調整の締め切り（' + fmtDateJa(s.pollDue!) + '）が過ぎました。開催日を選ぶか、候補日を選び直してください。');
+      : queueDm(ctx, 'poll', gmsOf(s), '⌛ 「' + s.name + '」の日程調整の締め切り（' + fmtDateJa(s.pollDue!) + '）が過ぎました。開催日を選ぶか、候補日を選び直してください。');
     const targets = sessionTargets(ctx, s);
     if (!targets.length) { await appendLog(logTo(ctx), kind, s.name, '送らず: 送り先のチャンネルが未設定'); await dm(); continue; }
     const payload = urge ? pollDuePayload(ctx, s, pending) : pollClosedPayload(ctx, s, pending);

@@ -7,6 +7,7 @@ import { Icon } from '../../../ui/Icon';
 import { toast } from '../../../ui/toast';
 import { useConsole, useData } from '../context';
 import { active, isActive, peopleOf } from '../model/model';
+import { isGm } from '../../../../shared/gm';
 
 type Fields = { name: string; discordId: string; note: string };
 const fieldsOf = (m: ConsoleMember | null): Fields => ({ name: m ? m.name : '', discordId: m ? m.discordId : '', note: m ? m.note : '' });
@@ -87,7 +88,7 @@ export function MembersPane() {
           <tbody>
             <tr><th>名前</th><th>DiscordユーザーID</th><th>備考</th><th className="c">参加</th><th className="c">GM</th></tr>
             {d.members.map((x) => {
-              const part = act.filter((s) => s.members.indexOf(x.name) >= 0 && s.gm !== x.name).length, gm = act.filter((s) => s.gm === x.name).length;
+              const part = act.filter((s) => s.members.indexOf(x.name) >= 0 && !isGm(s, x.name)).length, gm = act.filter((s) => isGm(s, x.name)).length;
               return (
                 // いまフォームで直している人の行は、色を付ける
                 <tr className={'click' + (x.name === sel ? ' checked' : '')} aria-selected={x.name === sel} data-name={x.name} key={x.name}>

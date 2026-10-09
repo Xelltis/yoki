@@ -3,6 +3,7 @@
 import { type ConsoleData, type ConsolePrep, type ConsoleScenario, DM_KINDS, type DmKind } from '../../shared/api';
 import { botInviteUrl, CREATE_EVENTS, THREAD_PERMISSIONS } from '../discord/channel';
 import { addDays, fmtDateTime, stampText } from '../lib/jst';
+import { isGm } from '../../shared/gm';
 import { STATUS_LIST } from './constants';
 import { bookedMap, bookedPartsMap, windowInfo } from './model';
 import type { Ctx, Session } from './types';
@@ -45,7 +46,7 @@ export function consoleData(ctx: Ctx): ConsoleData {
     sessions: ctx.sessions.map((s) => {
       const w = windowInfo(s.windowFrom, s.windowTo);
       return {
-        id: s.id, name: s.name, gm: s.gm, members: s.members, date: s.date ?? '',
+        id: s.id, name: s.name, gm: s.gm, coGms: s.coGms, members: s.members, date: s.date ?? '',
         start: s.start, end: s.end, status: s.status, place: s.place, memo: s.memo,
         notified: stampText(s.notifiedAt), editor: s.editor,
         want: s.want, interest: s.interest,
@@ -115,7 +116,7 @@ export function consoleData(ctx: Ctx): ConsoleData {
  */
 function prepView(ctx: Ctx, s: Session): ConsolePrep {
   const nameOf = new Map(ctx.members.map((m) => [m.id, m.name]));
-  const seesAllHopes = ctx.actor.isAdmin || (!!s.gm && s.gm === ctx.actor.name);
+  const seesAllHopes = ctx.actor.isAdmin || isGm(s, ctx.actor.name);
   const sheets: ConsolePrep['sheets'] = {};
   // キャラシと希望の行はメンバーが消えたら一緒に消え、割り当てはnullになるので、名前はいつもある
   for (const sh of s.sheets) sheets[nameOf.get(sh.memberId)!] = { url: sh.url, pc: sh.pc, at: stampText(sh.at), outcome: sh.outcome };

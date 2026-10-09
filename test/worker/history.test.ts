@@ -81,16 +81,16 @@ describe('卓の変更の履歴', () => {
 
   test('変わったところの文', () => {
     const base = {
-      name: '港', status: '開催', date: '2026-10-10', start: '20:00', end: '23:00', place: 'A', memo: 'm', series: '', gm: 'ひより', members: ['ソラ'],
+      name: '港', status: '開催', date: '2026-10-10', start: '20:00', end: '23:00', place: 'A', memo: 'm', series: '', gm: 'ひより', coGms: [] as string[], members: ['ソラ'],
       windowFrom: null, windowTo: null, scenarioId: null, capacity: null, recruitDue: null,
     };
     const old = base as unknown as Session;
     const ctx = { scenarios: [{ id: 1, name: '狂気山脈' }] } as any;
     expect(changeText(ctx, old, base)).toBe('');
     expect(changeText(ctx, old, {
-      ...base, name: '港2', status: '募集', date: null, start: '', end: '', place: '', memo: '', series: 'S', gm: '', members: [],
+      ...base, name: '港2', status: '募集', date: null, start: '', end: '', place: '', memo: '', series: 'S', gm: '', coGms: ['こまち'], members: [],
       windowFrom: '2026-10-12', windowTo: '2026-10-11', scenarioId: 1, capacity: 3, recruitDue: '2026-10-09',
-    })).toBe('名前 港→港2、状態 開催→募集、開催日 10/10（土）→未定、時間 20:00〜23:00→未定、期間 なし→10/11（日）〜10/12（月）、GM ひより→なし、参加者 −ソラ、'
+    })).toBe('名前 港→港2、状態 開催→募集、開催日 10/10（土）→未定、時間 20:00〜23:00→未定、期間 なし→10/11（日）〜10/12（月）、GM ひより→なし、共同GM なし→こまち、参加者 −ソラ、'
       + '場所 A→なし、メモを変更、シリーズ なし→S、シナリオ なし→狂気山脈、定員 なし→3人、締め切り なし→10/9（金）');
     expect(changeText(ctx, { ...base, scenarioId: 9, capacity: 2, recruitDue: '2026-10-09', start: '', end: '23:00' } as unknown as Session, { ...base, start: '21:00' }))
       .toBe('時間 ？〜23:00→21:00〜23:00、定員 2人→なし、締め切り 10/9（金）→なし');

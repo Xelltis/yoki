@@ -8,6 +8,7 @@ import { fmtJa } from '../model/dates';
 import { me, scenarioOf } from '../model/model';
 import { people, personChip } from '../styles';
 import { finishedSessions, ledger } from './ledger';
+import { gmsOf, isGm } from '../../../../shared/gm';
 
 /** はじめに出す、終わった卓の数（多いときは「もっと見る」で開く） */
 const SHOWN = 20;
@@ -27,7 +28,7 @@ export function RecordsTab() {
         {!done.length && <p className="hint">まだ終わった卓はありません。</p>}
         <ul className="m-0 grid list-none gap-10 p-0">
           {list.map((s) => {
-            const sc = scenarioOf(d, s), canRecord = s.gm === mine || d.isAdmin, isPl = s.members.indexOf(mine) >= 0;
+            const sc = scenarioOf(d, s), canRecord = isGm(s, mine) || d.isAdmin, isPl = s.members.indexOf(mine) >= 0;
             return (
               <li className="rounded-md border border-line bg-card px-14 py-12" key={s.id} data-done={s.id}>
                 <div className="flex flex-wrap items-baseline gap-x-10 gap-y-4">
@@ -38,7 +39,7 @@ export function RecordsTab() {
                   )}
                 </div>
                 <div className={people}>
-                  {s.gm && <span className={personChip(true, false)}>{'GM ' + s.gm}</span>}
+                  {gmsOf(s).map((n) => <span className={personChip(true, false)} key={n}>{(n === s.gm ? 'GM ' : '共同GM ') + n}</span>)}
                   {s.members.map((n) => {
                     const sh = s.prep.sheets[n], away = s.absent.some((a) => a.name === n);
                     return <span className={personChip(false, false) + (away ? ' line-through opacity-70' : '')} key={n}>{n + (sh && sh.pc ? '（' + sh.pc + (sh.outcome ? '・' + sh.outcome : '') + '）' : '')}</span>;

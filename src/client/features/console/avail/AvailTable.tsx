@@ -7,6 +7,7 @@ import type { Part } from '../../../../shared/parts';
 import { active, bookedOn, hasPoll, isRecruit } from '../model/model';
 import { mdot } from '../styles';
 import { freeText, MARK_NEXT, MARK_WORD, type Mark, markAtRow, markIn, type Row } from './rows';
+import { isGm } from '../../../../shared/gm';
 
 /** 予定表のマスの共通（右に線。下の線は行ごとに決める）。色の無いマスは、線の下に色を塗らない（clip） */
 const cell = 'border-0 border-r border-line ';
@@ -61,7 +62,7 @@ export function AvailTable({ d, names, mine, rows, onMark, onPen }: Props) {
           <th className={cell + 'sticky top-0 z-(--z-cell-corner) border-b bg-head px-8 py-6 text-fg ' + COL.c2}>曜</th>
           <th className={cell + 'sticky top-0 z-(--z-cell-corner) border-b bg-head px-8 py-6 text-fg ' + COL.c3}>その日の卓</th>
           {names.map((n) => {
-            const gmN = act.filter((s) => s.gm === n).length, plN = act.filter((s) => s.gm !== n && s.members.indexOf(n) >= 0).length, mineCol = n === mine;
+            const gmN = act.filter((s) => isGm(s, n)).length, plN = act.filter((s) => !isGm(s, n) && s.members.indexOf(n) >= 0).length, mineCol = n === mine;
             return (
               <th className={cell + 'sticky top-0 z-(--z-cell-head) min-w-84 max-w-136 border-b px-8 py-6 whitespace-normal wrap-anywhere ' + (mineCol ? 'bg-accent-strong text-accent-ink' : clip + 'text-fg')} key={n}>
                 {n}<small className={'block text-10 leading-[1.2] font-normal ' + (mineCol ? 'text-inherit opacity-85' : 'text-muted')} title="いま動いている卓でGMをしている数と参加している数">{'GM ' + gmN + '・PL ' + plN}</small>

@@ -21,7 +21,7 @@ const cell = (v: string) => '"' + (/^[=+\-@\t\r]/.test(v) ? "'" + v : v).replace
 
 /** 卓の一覧のCSV（表計算のアプリで開けるように、頭にBOMを付ける） */
 export function sessionsCsv(x: GroupExport): string {
-  const head = ['卓のID', '名前', '状態', '開催日', '開始', '終了', 'GM', '参加者', '場所', 'シリーズ', 'シナリオ', 'メモ', 'ログ'];
-  const rows = x.sessions.map((s) => [s.id, s.name, s.status, s.date, s.start, s.end, s.gm, s.members.join('、'), s.place, s.series, s.scenario, s.memo, s.record.logUrl]);
+  const head = ['卓のID', '名前', '状態', '開催日', '開始', '終了', 'GM', '共同GM', '参加者', '場所', 'シリーズ', 'シナリオ', 'メモ', 'ログ'];
+  const rows = x.sessions.map((s) => [s.id, s.name, s.status, s.date, s.start, s.end, s.gm, s.coGms.join('、'), s.members.join('、'), s.place, s.series, s.scenario, s.memo, s.record.logUrl]);
   return '\uFEFF' + [head, ...rows].map((r) => r.map(cell).join(',')).join('\r\n') + '\r\n';
 }

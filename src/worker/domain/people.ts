@@ -1,4 +1,5 @@
 // 名前とメンバーの変換。中ではメンバーをIDで持ち、メンバーに無い人（ゲスト）は名前だけで持つ。画面とのやり取りは名前
+import { gmsOf } from '../../shared/gm';
 import type { Ctx, Role, Session } from './types';
 
 export type PersonRef = { member_id: number | null; guest_name: string | null };
@@ -10,7 +11,7 @@ export function personRef(ctx: Ctx, name: string): PersonRef {
 }
 
 export function peopleOfSession(s: Session): People {
-  return { gm: s.gm ? [s.gm] : [], member: s.members, want: s.want, interest: s.interest };
+  return { gm: gmsOf(s), member: s.members, want: s.want, interest: s.interest };
 }
 
 type Row = PersonRef & { session_id: number | null; role: Role; pos: number };

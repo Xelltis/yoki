@@ -45,7 +45,7 @@ const timeText = (a: string, b: string) => (a || b ? (a || '？') + '〜' + b : 
 /** 卓を変えたときの、変わったところの文。「開催日 10/12（月）→10/13（火）、参加者 +こまち −ソラ」。変わっていなければ空 */
 export function changeText(ctx: Pick<Ctx, 'scenarios'>, old: Session, next: {
   name: string; status: string; date: string | null; start: string; end: string; place: string; memo: string; series: string;
-  gm: string; members: string[]; windowFrom: string | null; windowTo: string | null; scenarioId: number | null; capacity: number | null; recruitDue: string | null;
+  gm: string; coGms: string[]; members: string[]; windowFrom: string | null; windowTo: string | null; scenarioId: number | null; capacity: number | null; recruitDue: string | null;
 }): string {
   const out: string[] = [];
   const arrow = (label: string, a: string, b: string) => { if (a !== b) out.push(label + ' ' + (a || 'なし') + '→' + (b || 'なし')); };
@@ -56,6 +56,7 @@ export function changeText(ctx: Pick<Ctx, 'scenarios'>, old: Session, next: {
   const ow = windowInfo(old.windowFrom, old.windowTo)?.label ?? '', nw = windowInfo(next.windowFrom, next.windowTo)?.label ?? '';
   arrow('期間', ow, nw);
   arrow('GM', old.gm, next.gm);
+  arrow('共同GM', old.coGms.join('、'), next.coGms.join('、'));
   const add = next.members.filter((n) => !old.members.includes(n)), gone = old.members.filter((n) => !next.members.includes(n));
   if (add.length || gone.length) out.push('参加者' + add.map((n) => ' +' + n).join('') + gone.map((n) => ' −' + n).join(''));
   arrow('場所', old.place, next.place);

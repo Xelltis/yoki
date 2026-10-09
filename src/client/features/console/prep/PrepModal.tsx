@@ -15,6 +15,7 @@ import { fmtJa } from '../model/dates';
 import { byId, me } from '../model/model';
 import { hookFor } from '../model/notify';
 import { personChip } from '../styles';
+import { gmsOf, isGm as gmIncludes } from '../../../../shared/gm';
 
 /** 準備の様子（カードに出す短い文）。HOもキャラシの締め切りも無ければ空 */
 export function prepSummary(d: ConsoleData, s: ConsoleSession): string {
@@ -56,8 +57,9 @@ export function PrepModal() {
 
   const mine = me(d);
   const p = s.prep;
-  const memberGm = !!s.gm && d.members.some((m) => m.name === s.gm);
-  const isGm = memberGm && s.gm === mine;
+  // GMか共同GM（メンバー）だけが秘匿HOを読み書きできる
+  const memberGm = gmsOf(s).some((n) => d.members.some((m) => m.name === n));
+  const isGm = gmIncludes(s, mine) && d.members.some((m) => m.name === mine);
   const canFrame = isGm || d.isAdmin;
   const canAssign = isGm || (d.isAdmin && !memberGm);
   const players = playersOf(d, s);

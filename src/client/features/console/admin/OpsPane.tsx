@@ -8,6 +8,7 @@ import { discordSend, failToast } from '../api/discord';
 import { useConsole, useData } from '../context';
 import { daysBetween, fmtJa } from '../model/dates';
 import { byId, isActive, isAdjusting, isRecruit, me, sortSessions, sortedActive } from '../model/model';
+import { gmsOf } from '../../../../shared/gm';
 
 const ACTIONS = [
   ['status', '状態を変更'], ['addMember', '参加者を追加'], ['removeMember', '参加者から外す'], ['setGm', 'GMを変更'],
@@ -99,7 +100,7 @@ export function OpsPane() {
                     <td className="min-w-[14em] max-sm:min-w-0">
                       <b>{s.name}</b>
                       <small className="hidden text-12 leading-[1.5] text-muted max-sm:block">
-                        {[s.status, when, s.series && 'シリーズ: ' + s.series, s.gm && 'GM: ' + s.gm, s.members.length ? '参加: ' + s.members.join('、') : ''].filter(Boolean).join('　')}
+                        {[s.status, when, s.series && 'シリーズ: ' + s.series, s.gm && 'GM: ' + gmsOf(s).join('、'), s.members.length ? '参加: ' + s.members.join('、') : ''].filter(Boolean).join('　')}
                       </small>
                     </td>
                     <td className={'c nw ' + wide}>{s.series}</td><td className={'c nw ' + wide}>{s.status}</td><td className={'c nw ' + wide}>{when}</td><td className={'c min-w-[5em] ' + wide}>{s.gm}</td>

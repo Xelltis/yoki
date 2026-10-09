@@ -3,12 +3,13 @@ import { badRequest, notFound } from '../lib/errors';
 import { fmtDateJa, fmtYmdSlash, parseYmd } from '../lib/jst';
 import { uniq } from '../lib/text';
 import { DATED, STATUS } from './constants';
+import { gmsOf } from '../../shared/gm';
 import { type BookedParts, bookedPartsOf } from '../../shared/parts';
 import type { Ctx, Member, Session } from './types';
 
-/** GMと参加者（GAS版peopleOf_） */
-export function peopleOf(s: Pick<Session, 'gm' | 'members'>): string[] {
-  return uniq((s.gm ? [s.gm] : []).concat(s.members));
+/** GM（共同GMも）と参加者（GAS版peopleOf_） */
+export function peopleOf(s: Pick<Session, 'gm' | 'coGms' | 'members'>): string[] {
+  return uniq(gmsOf(s).concat(s.members));
 }
 
 export function findSession(ctx: Ctx, id: unknown): Session {
@@ -45,7 +46,7 @@ export function bookedMap(sessions: Session[], members: Pick<Member, 'name' | 'o
   for (const s of sessions) {
     if (!DATED.includes(s.status) || !s.date) continue;
     const day = (out[s.date] ??= {});
-    if (s.gm) day[s.gm] = 'GM';
+    for (const n of gmsOf(s)) day[n] = 'GM';
     for (const n of s.members) if (day[n] !== 'GM') day[n] = '参';
   }
   for (const m of members) for (const o of m.other) (out[o.date] ??= {})[m.name] ??= '他';
@@ -64,7 +65,7 @@ export function bookedPartsMap(sessions: Session[], members: Pick<Member, 'name'
  * 日程調整に答えられる人。GMと参加者のうち、ログインしたことがあるか、DiscordのIDが入っている（あとでログインできる）メンバー。
  * 回答は本人だけが入れるので、ゲストと、DiscordのIDの無いメンバーは答えられない。「全員そろった」はこの人たちで数える
  */
-export function pollVoters(ctx: Pick<Ctx, 'memberByName'>, s: Pick<Session, 'gm' | 'members'>): string[] {
+export function pollVoters(ctx: Pick<Ctx, 'memberByName'>, s: Pick<Session, 'gm' | 'coGms' | 'members'>): string[] {
   return peopleOf(s).filter((n) => {
     const m = ctx.memberByName.get(n);
     return !!m && (!!m.userId || !!m.discordId);
