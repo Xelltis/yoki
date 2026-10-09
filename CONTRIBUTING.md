@@ -92,6 +92,8 @@ npm run e2e          ブラウザで通しで確かめる（開発サーバー�
 
 サーバーのテストは、Workersの実行環境（`@cloudflare/vitest-pool-workers`）でローカルのD1にマイグレーションを当てて動かす。Discordへの送信は差し替えて記録する。
 
+同時に流すテストのファイルは、CPUの半分までにしている（`vitest.config.ts` の `maxWorkers`）。既定のCPUの数−1では、ほかの仕事と重なったときにWorkersのテストが順番待ちで長引き、上限で切れたテストが裏で動き続けて、次のテストまで崩していた。
+
 サーバー（`src/worker`）と共有の型（`src/shared`）のカバレッジは、文・分岐・関数・行のすべてで100% を保つ。通らない道を足したら、テストも足す。テストの環境では動かせない道（本番だけの分かれ道など）だけ、理由を書いて `/* istanbul ignore … -- @preserve 理由 */` で外す（`@preserve` が無いと、組み立てのときにコメントが消えて効かない）。画面（`src/client`）はe2eで確かめる。グループの画面のデータの読み書きの順番（`features/console/api/sync.ts`）と、サーバーの呼び出し（`features/console/api/rpc.ts`）だけは、単体テスト（`test/client/console-sync.test.ts`・`test/client/rpc.test.ts`）でも確かめる。
 
 lintはoxlint（`.oxlintrc.json`）。ESLintのTypeScript対応（typescript-eslint）が、このリポジトリのTypeScript 7にまだ対応していないため。警告も止める（`--deny-warnings`）。

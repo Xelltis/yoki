@@ -12,6 +12,10 @@ export default defineConfig(async (): Promise<ViteUserConfig> => {
   const migrations = await readD1Migrations(path.join(import.meta.dirname, 'migrations'));
   return {
     test: {
+      // 同時に流すファイルを、CPUの半分までにする。既定（CPUの数−1）では、ほかの仕事と重なるとWorkerのテストが順番待ちで
+      // 1つ数十秒かかり、上限で切れたテストが裏で動き続けて、次のテストの表まで崩していた。半分なら、全体の時間はほとんど変わらない。
+      // プロジェクトごとに変えると、Vitestがsequence.groupOrderを分けるよう求めるので、ここでそろえる
+      maxWorkers: '50%',
       coverage: {
         provider: 'istanbul',
         include: ['src/worker/**/*.ts', 'src/shared/**/*.ts'],
@@ -48,7 +52,14 @@ export default defineConfig(async (): Promise<ViteUserConfig> => {
           ],
           // Workerが使う、組み立てのときに入れる値（vite.config.ts）
           define: { __APP_VERSION__: JSON.stringify(appVersion()) },
-          test: { name: 'worker', include: ['test/worker/**/*.test.ts'], setupFiles: ['test/worker/setup.ts'] },
+          test: {
+            name: 'worker',
+            include: ['test/worker/**/*.test.ts'],
+            setupFiles: ['test/worker/setup.ts'],
+            // 上限に余裕を持たせる（ふだんはいちばん遅いテストで2秒ほど。既定はテスト5秒・前後の準備10秒。上のmaxWorkersも見る）
+            testTimeout: 30_000,
+            hookTimeout: 30_000,
+          },
         },
         {
           // 画面のJSが使う、組み立てのときに入れる値（vite.config.ts）
