@@ -63,7 +63,7 @@ afterEach(() => vi.restoreAllMocks());
 
 describe('DMを送る', () => {
   test('DMのチャンネルを開いてから書く。メンションは効かせない', async () => {
-    expect(await sendDm('tok', '1', 'こんにちは')).toEqual({ ok: true, error: '' });
+    expect(await sendDm('tok', '1', 'こんにちは')).toEqual({ ok: true, status: 200, error: '' });
     expect(reqs).toEqual([
       { url: 'https://discord.com/api/v10/users/@me/channels', method: 'POST', body: { recipient_id: '1' } },
       { url: 'https://discord.com/api/v10/channels/dm-1/messages', method: 'POST', body: { content: 'こんにちは', allowed_mentions: { parse: [] } } },
@@ -87,7 +87,7 @@ describe('DMを送る', () => {
 
   test('通信が切れても投げない', async () => {
     vi.spyOn(globalThis, 'fetch').mockRejectedValueOnce(new Error('network down')).mockRejectedValueOnce('切れた');
-    expect(await sendDm('tok', '1', 'x')).toEqual({ ok: false, error: '通信が切れました（network down）' });
+    expect(await sendDm('tok', '1', 'x')).toEqual({ ok: false, status: 0, error: '通信が切れました（network down）' });
     expect((await sendDm('tok', '1', 'x')).error).toBe('通信が切れました（切れた）');
   });
 });

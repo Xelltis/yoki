@@ -10,9 +10,9 @@ const TODAY = '2026-10-10';   // 土曜
 
 // ひよりとソラはDiscord IDあり、こまちは無し。名簿に無い名前（ゲスト）も卓に入れられる
 const MEMBERS: Member[] = [
-  { id: 1, name: 'ひより', discordId: '400000000000000010', note: '', isAdmin: true, userId: null, other: [], shareBusy: false },
-  { id: 2, name: 'ソラ', discordId: '400000000000000011', note: '', isAdmin: false, userId: null, other: [], shareBusy: false },
-  { id: 3, name: 'こまち', discordId: '', note: '', isAdmin: false, userId: null, other: [], shareBusy: false },
+  { id: 1, name: 'ひより', discordId: '400000000000000010', note: '', isAdmin: true, userId: null, other: [], shareBusy: false, dmKinds: '', dmError: '' },
+  { id: 2, name: 'ソラ', discordId: '400000000000000011', note: '', isAdmin: false, userId: null, other: [], shareBusy: false, dmKinds: '', dmError: '' },
+  { id: 3, name: 'こまち', discordId: '', note: '', isAdmin: false, userId: null, other: [], shareBusy: false, dmKinds: '', dmError: '' },
 ];
 
 function ctxOf(o: { appUrl?: string; votes?: Ctx['votes'] } = {}) {

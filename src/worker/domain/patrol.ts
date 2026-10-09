@@ -15,13 +15,14 @@ import { sessionTargets, type Target, targetNote } from '../discord/targets';
 import type { Bindings } from '../env';
 import { googleDeps } from '../google/config';
 import { googleBudget, patrolGoogle, WRITE_PAST_DAYS } from '../google/sync';
-import { addDays, daysBetween, jst, minutesOfTime } from '../lib/jst';
+import { addDays, daysBetween, fmtDateJa, jst, minutesOfTime, timeRange } from '../lib/jst';
 import { updateDeps, type UpdateDeps } from '../update/config';
 import { DATED, SOON_LATE_MIN, STATUS } from './constants';
 import { HISTORY_KEEP } from './history';
 import { loadGroup } from './load';
 import { pollPending } from './model';
 import { checkBot, GITHUB_CALLS, noticePatrolFailed, noticeVersion, VERSION_HOUR } from './operator-notice';
+import { dmStmt, queueDm, sendQueuedDms } from './dm-notices';
 import { aheadText, notifyHourOf, notifyYmdOf } from './notify';
 import type { Ctx, Session } from './types';
 
@@ -152,6 +153,9 @@ export async function patrol(env: Bindings, scheduledTime: number, deps: Deps): 
   await processDiscordEvents(db, load, events);
   if (hourly) await sweepOrphanEvents(db, bot.token, now, events);
 
+  // 自分あてのDMの知らせ: この回までに積んだDMを、少しずつ送る
+  await sendQueuedDms(db, bot.token, now);
+
   // 運営者への知らせ: 毎時Botのトークンを確かめ、毎日10時台に新しいバージョンを見る
   let github = 0;
   if (deps.operator) {
@@ -240,7 +244,15 @@ export async function sendReminders(ctx: Ctx, hour: number, deps: Deps): Promise
     }
   }
   await releaseMark(ctx, 'notified_at', mine.filter((s) => !delivered.has(s.rowId)).map((s) => s.rowId));
+  // 届いた卓は、GMと参加者のうち受け取ると決めた人に、DMでも知らせる（行けなくなった人は除く）
+  const dms = mine.filter((s) => delivered.has(s.rowId)).map((s) =>
+    dmStmt(ctx, 'remind', attendees(s), '📢 ' + aheadText(daysBetween(ctx.today, s.date!)) + 'は「' + s.name + '」の日です（' + fmtDateJa(s.date!) + ' ' + timeRange(s) + '）'));
+  const stmts = dms.filter((x): x is D1PreparedStatement => x !== null);
+  if (stmts.length) await ctx.db.batch(stmts);
 }
+
+/** 卓に来る人（GMと参加者。行けなくなった人は除く） */
+const attendees = (s: Session) => [s.gm, ...s.members].filter((n) => n && !s.absent.some((a) => a.name === n));
 
 /** 期間前の催促。募集中・調整中のまま、期間の始まりが明日に迫った卓をGMに知らせる。送る時刻は開催前の知らせと同じ */
 export async function sendUrges(ctx: Ctx, hour: number, deps: Deps): Promise<void> {
@@ -295,10 +307,15 @@ export async function sendPollDue(ctx: Ctx, hour: number, deps: Deps): Promise<v
     if (!(await claimMark(ctx, column, [s])).size) continue;
     const pending = pollPending(ctx, s);
     if (urge ? !pending.length : !!s.pollReadyAt) continue;
+    // DMは、印を付けた（もう送り直さない）ときに積む。送り先のチャンネルが無くても積む
+    const dm = () => urge
+      ? queueDm(ctx, 'poll', pending, '⏰ 「' + s.name + '」の日程調整の締め切りは' + (s.pollDue === ctx.today ? '今日' : '明日') + '（' + fmtDateJa(s.pollDue!) + '）です。まだ答えていない候補日があります。')
+      : queueDm(ctx, 'poll', [s.gm], '⌛ 「' + s.name + '」の日程調整の締め切り（' + fmtDateJa(s.pollDue!) + '）が過ぎました。開催日を選ぶか、候補日を選び直してください。');
     const targets = sessionTargets(ctx, s);
-    if (!targets.length) { await appendLog(logTo(ctx), kind, s.name, '送らず: 送り先のチャンネルが未設定'); continue; }
+    if (!targets.length) { await appendLog(logTo(ctx), kind, s.name, '送らず: 送り先のチャンネルが未設定'); await dm(); continue; }
     const payload = urge ? pollDuePayload(ctx, s, pending) : pollClosedPayload(ctx, s, pending);
-    if (!(await postSessionNotice(ctx, s, payload, kind, targets, deps.sleep))) await releaseMark(ctx, column, [s.rowId]);
+    if (await postSessionNotice(ctx, s, payload, kind, targets, deps.sleep)) await dm();
+    else await releaseMark(ctx, column, [s.rowId]);
   }
 }
 
@@ -316,9 +333,13 @@ export async function sendSheetUrges(ctx: Ctx, hour: number, deps: Deps): Promis
     const submitted = new Set(s.sheets.map((x) => x.memberId));
     const missing = s.members.map((n) => ctx.memberByName.get(n)?.id).filter((id): id is number => id !== undefined && !submitted.has(id));
     if (!missing.length) continue;
+    // DMは、印を付けた（もう送り直さない）ときに積む。送り先のチャンネルが無くても積む
+    const names = ctx.members.filter((m) => missing.includes(m.id)).map((m) => m.name);
+    const dm = () => queueDm(ctx, 'sheet', names, '📝 「' + s.name + '」のキャラシの締め切りは' + (s.sheetDue === ctx.today ? '今日' : '明日') + '（' + fmtDateJa(s.sheetDue!) + '）です。まだ出していません。');
     const targets = sessionTargets(ctx, s, 'remind');
-    if (!targets.length) { await appendLog(logTo(ctx), kind, s.name, '送らず: 送り先のチャンネルが未設定'); continue; }
-    if (!(await postSessionNotice(ctx, s, sheetUrgePayload(ctx, s, missing), kind, targets, deps.sleep))) await releaseMark(ctx, 'sheet_urged_at', [s.rowId]);
+    if (!targets.length) { await appendLog(logTo(ctx), kind, s.name, '送らず: 送り先のチャンネルが未設定'); await dm(); continue; }
+    if (await postSessionNotice(ctx, s, sheetUrgePayload(ctx, s, missing), kind, targets, deps.sleep)) await dm();
+    else await releaseMark(ctx, 'sheet_urged_at', [s.rowId]);
   }
 }
 
@@ -342,7 +363,9 @@ export async function sendStartingSoon(ctx: Ctx, deps: Deps): Promise<void> {
     const mentions = mentionsOf(ctx, [s]);
     const head = left <= 0 ? '⏰ まもなく「' + s.name + '」が始まります。' : '⏰ あと' + left + '分で「' + s.name + '」が始まります。';
     const payload = { content: head + (mentions ? ' ' + mentions : ''), embeds: [sessionEmbed(ctx, s)] };
-    if (!(await postSessionNotice(ctx, s, payload, kind, targets, deps.sleep))) await releaseMark(ctx, 'soon_at', [s.rowId]);
+    if (!(await postSessionNotice(ctx, s, payload, kind, targets, deps.sleep))) { await releaseMark(ctx, 'soon_at', [s.rowId]); continue; }
+    // 文の終わりの「。」の前に、時間を入れる
+    await queueDm(ctx, 'remind', attendees(s), head.slice(0, -1) + '（' + timeRange(s) + '）。');
   }
 }
 

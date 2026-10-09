@@ -7,7 +7,8 @@ import { sessionTargets } from '../discord/targets';
 import { adminError, badRequest } from '../lib/errors';
 import { consoleData } from './console-data';
 import { reloadLog } from './load';
-import { addDays, fmtDateJa, normTime, parseYmd } from '../lib/jst';
+import { addDays, fmtDateJa, normTime, parseYmd, timeRange } from '../lib/jst';
+import { queueDm } from './dm-notices';
 import { POLL_MARKS, POLL_MAX_DATES, STATUS } from './constants';
 import { type Form, list, requireSelf, str } from './form';
 import { bookedAt, type BookedParts, markAt, type Part, partOf } from '../../shared/parts';
@@ -88,6 +89,8 @@ async function afterVote(ctx: Ctx, sid: string, wasComplete: boolean, io: Io): P
   if (!claim.meta.changes) return { ready: true, message: '　全員の回答がそろいました。', fresh };
   const notified = await sendPollNotice(fresh, s, 'pollReady', io.sleep);
   if (notified === false) await fresh.db.prepare('UPDATE sessions SET poll_ready_at = NULL WHERE id = ?').bind(s.rowId).run();
+  // 知らせを送り直さないとき（届いた・送り先が無い）だけ、GMにDMでも知らせる（最後に答えたのがGMなら送らない）
+  else await queueDm(fresh, 'poll', [s.gm].filter((n) => n !== ctx.actor.name), '📝 「' + s.name + '」の日程調整の回答がそろいました。開催日を選んでください。');
   // 送ったら、送信記録だけを読み直す（返事の画面データに、送った結果を出すため）
   if (notified !== null) await reloadLog(fresh);
   return { ready: true, notified, message: '　全員の回答がそろいました。' + noticeNote(notified, 'GMへの知らせ'), fresh };
@@ -259,6 +262,8 @@ export async function decidePoll(ctx: Ctx, form: Form, io: Io) {
   const fresh = await io.reload();
   const decided = findSession(fresh, s.id);
   const notified = decided.status === STATUS.HELD ? await sendPollNotice(fresh, decided, 'decided', io.sleep) : null;
+  // GMと参加者に、DMでも知らせる（決めた人には送らない）
+  await queueDm(fresh, 'poll', [decided.gm, ...decided.members].filter((n) => n !== ctx.actor.name), '✅ 「' + s.name + '」の日程が決まりました: ' + fmtDateJa(k) + ' ' + timeRange(decided));
   if (notified !== null) await reloadLog(fresh);
   return {
     ok: true, id: s.id, decided: k, notified, message: '日程を決めました: ' + s.name + '（' + fmtDateJa(k) + '）' + noticeNote(notified, '決まった知らせ'),

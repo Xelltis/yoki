@@ -87,7 +87,7 @@ usersの行は消さない（印がそこにあるため）。Discordのユー�
 
 ## データベース（D1）
 
-表の定義は `migrations/`（`0001_init.sql` が最初の形、`0002_admin.sql` が締め出し・最後に使われた日と索引、`0003_bot.sql` が知らせのBot、`0004_calendar.sql` がカレンダーとの連携、`0005_member_check.sql` がBotで確かめた日時、`0006_google_login.sql` がGoogleでのログイン、`0007_scenarios.sql` がシナリオと通過、`0008_prep.sql` が卓の準備、`0009_discord_events.sql` がDiscordのイベント、`0010_note_ranges.sql` が期間の日付メモ、`0011_poll_maybe.sql` が日程調整の △、`0012_recruit_limits.sql` が募集の定員と締め切り、`0013_absences.sql` が行けなくなった印、`0014_day_parts.sql` が予定の時間帯、`0015_share_busy.sql` がほかのグループの卓、`0016_threads.sql` が卓ごとのスレッド、`0017_session_history.sql` が卓の変更の履歴、`0018_records.sql` が卓の記録とPC、`0019_poll_due.sql` が日程調整の回答の締め切り）。日付（開催日・予定・メモ）は日本時間の `YYYY-MM-DD`、日時（〜した時刻）はUTCのISO文字列。
+表の定義は `migrations/`（`0001_init.sql` が最初の形、`0002_admin.sql` が締め出し・最後に使われた日と索引、`0003_bot.sql` が知らせのBot、`0004_calendar.sql` がカレンダーとの連携、`0005_member_check.sql` がBotで確かめた日時、`0006_google_login.sql` がGoogleでのログイン、`0007_scenarios.sql` がシナリオと通過、`0008_prep.sql` が卓の準備、`0009_discord_events.sql` がDiscordのイベント、`0010_note_ranges.sql` が期間の日付メモ、`0011_poll_maybe.sql` が日程調整の △、`0012_recruit_limits.sql` が募集の定員と締め切り、`0013_absences.sql` が行けなくなった印、`0014_day_parts.sql` が予定の時間帯、`0015_share_busy.sql` がほかのグループの卓、`0016_threads.sql` が卓ごとのスレッド、`0017_session_history.sql` が卓の変更の履歴、`0018_records.sql` が卓の記録とPC、`0019_poll_due.sql` が日程調整の回答の締め切り、`0020_dm_notices.sql` が自分あてのDMの知らせ）。日付（開催日・予定・メモ）は日本時間の `YYYY-MM-DD`、日時（〜した時刻）はUTCのISO文字列。
 
 `users`・`user_guilds`・`auth_sessions`: ログイン。`users.banned_at`・`banned_reason` は締め出し。
 
@@ -195,6 +195,8 @@ usersの行は消さない（印がそこにあるため）。Discordのユー�
 
 **卓ごとのスレッド**（`discord/threads.ts`）。グループの管理者が入れると（`groups.threads`）、卓の知らせを卓ごとのスレッドにまとめる。スレッドは、その卓の知らせがチャンネルに届いたとき、そのメッセージから作り（`POST /channels/{id}/messages/{id}/threads`）、`sessions.thread_id`・`thread_parent` に控える。次からは、卓の知らせの最初の送り先がそのチャンネルなら、スレッドへ送る。スレッドが消えた・入れない（404・403）ときは控えを消し、チャンネルへ送り直してスレッドを作り直す。サーバーから送る卓の知らせ（回答そろい・日程決定・行けなくなった・期間前の催促・締め切り・キャラシの催促・開始直前）は `postSessionNotice`、画面から送る知らせは `sendDiscordStep` が使う。何卓かを1通にまとめる開催前の知らせは、チャンネルへ送る。Botには「公開スレッドの作成」と「スレッドでメッセージを送信」の権限が要り、知らせの区分に、それを足した招待URL（`bot.threadsInviteUrl`）を出す。
 
+**自分あてのDMの知らせ**（`domain/dm-notices.ts`・`discord/dm.ts`）。本人が設定で選んだ種類（`users.dm_kinds`。種類は `src/shared/api.ts` の `DM_KINDS`。どのグループにも効く）の知らせを、自分がGMか参加者の卓について、BotのDMでも送る。知らせを決めたところが、受け取ると決めた人の分を `dm_queue` に1文で積み（`dmStmt`。頭にグループの名前、終わりにグループのURL）、見回りが毎回、古い順に10通まで送る（`sendQueuedDms`。Discordを呼べる数を、知らせとGoogleの同期で分け合うため）。BotとのDMのチャンネルは `users.dm_channel` に控えて使い回す（無くなっていれば開き直す）。届かない断り（403など）と、送り直しの上限（3回）を超えたものは捨てて、理由を `users.dm_error` に残し、設定の画面に出す。トークンが使えなければ、その回は止める。12時間より古い控えは送らずに捨てる。積むのは、チャンネルへの知らせを送り直さないと決まったとき（届いた、か、印を付けて送り先が無いとき）だけ（同じDMを二度積まないため）。開催前の知らせは、届いた卓の分だけ積む。
+
 **Discordのボタン**（`discord/buttons.ts`・`discord/interactions.ts`・`routes/discord.ts`）。運営者が運営の管理画面で入れると（`meta` の `discord_buttons`）、日程調整の知らせに「予定表から答える」「どの日でもいい」と行ける日を選ぶ欄、募集の知らせに「参加希望」「興味あり」「取り消す」を付ける（message components。IDは `yoki:グループ:卓の番号:操作`）。入れるときは、Botのトークンで `GET /applications/@me` からPublic Keyを読んで `meta` に控え、`PATCH /applications/@me` でInteractions Endpoint URL（`/api/discord/interactions`）を入れる（Discordがそのとき確かめの要求を送るので、Public Keyを先に控える）。新しいsecretは要らない。
 
 受け口は、署名（Ed25519。`X-Signature-Ed25519`・`X-Signature-Timestamp`）を確かめてから受ける。Discordからの要求にOriginは付かないので、CSRFの確かめはそのまま通る。返事は3秒以内に返す決まりなので、すぐに「考え中」（本人にだけ見える）を返し、書き込みは返事のあと（`waitUntil`）で行って、`PATCH /webhooks/{アプリ}/{トークン}/messages/@original` で書き直す。押した人は、DiscordのユーザーIDで、ログインしたことのあるメンバー（`user_id`）を先に、無ければDiscordのIDを入れたメンバーに結びつける。ボタンはサーバーの中でしか押せないので、そのサーバーにいることはDiscordが確かめている。グループのサーバーと押したサーバーが違えば断る。締め出した人は断る。書き込みは画面と同じ関数（`setPollVoteFromAvail`・`setPollVoteAll`・`setPollVoteDays`・`setInterest`）で、本人の分だけを書く。
@@ -242,6 +244,8 @@ usersの行は消さない（印がそこにあるため）。Discordのユー�
 **キャラシの催促**は、締め切りの前日（開催前の知らせと同じ時刻台。逃したら当日）に、まだ出していない参加者（メンバー）をメンションする。みんな出していれば送らずに印だけ付け、送り先が無ければ記録して印を付ける（毎時記録しないように）。
 
 **Discordのイベント**は毎回、書き直しが要るグループを1つずつ合わせる（上の「Discordへの送信」）。Googleの同期より先に回し、使った呼び出しの数をGoogleの枠から引く。
+
+**自分あてのDMの知らせ**は毎回、積んであるDMを送る（Googleの同期より先）。
 
 **運営者への知らせ**は、毎時Botのトークンを確かめ、毎日10時台（`meta` の印 `operator_daily`）に新しいバージョンを見る（下の「運営の管理画面」）。これもGoogleの同期より先に回す。
 

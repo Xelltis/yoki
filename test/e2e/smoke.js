@@ -610,6 +610,25 @@ await withDevServer(async (base) => {
       await tab('cal');
     });
 
+    await step('設定: DMで受け取る知らせを選べる。手元にはBotが無いので、試しに送ると断られる', async () => {
+      await tab('settings');
+      assert.equal(await page.isChecked('#dm_remind'), false, 'はじめは受け取らない');
+      await page.click('#dm_remind');
+      await until((d) => d.me.dm.kinds.join() === 'remind');
+      await page.click('#dm_wait');
+      await until((d) => d.me.dm.kinds.join() === 'remind,wait');
+      const errorsBefore = errors.length;
+      await page.click('#dmTest');
+      await page.waitForSelector('#toast >> text=Botのトークンが無い', { timeout: 15000 });
+      errors.splice(errorsBefore);
+      // 戻す
+      await page.click('#dm_remind');
+      await until((d) => d.me.dm.kinds.join() === 'wait');
+      await page.click('#dm_wait');
+      await until((d) => d.me.dm.kinds.length === 0);
+      await tab('cal');
+    });
+
     await step('「更新」で読み直せる', async () => {
       await page.click('#reload');
       await page.waitForFunction(() => /最新/.test(document.getElementById('toast').textContent), null, { timeout: 15000 });

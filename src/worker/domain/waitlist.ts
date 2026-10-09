@@ -11,12 +11,15 @@ import { peopleOfSession, replacePeople } from './people';
 import { type Io, noticeNote } from './polls';
 import type { Ctx, Session } from './types';
 import type { Sleep } from '../discord/send';
+import { queueDm } from './dm-notices';
 
 /**
- * 繰り上がった人をDiscordで呼ぶ。sは変えたあとの卓（読み直さずに、変えた中身を当てたもの）。
+ * 繰り上がった人をDiscordで呼ぶ（DMを受け取ると決めた人には、DMも積む）。sは変えたあとの卓（読み直さずに、変えた中身を当てたもの）。
  * true（届いた）/ false（届かなかった）/ null（送り先のチャンネルが無い）
  */
 export async function noticeWaitPromoted(ctx: Ctx, s: Session, names: string[], auto: boolean, sleep: Sleep): Promise<boolean | null> {
+  // 繰り上がった本人には、DMでも知らせる（受け取ると決めた人だけ。送り先のチャンネルが無くても）
+  await queueDm(ctx, 'wait', names, '🎟️ 「' + s.name + '」のキャンセル待ちから、' + (auto ? '参加希望' : '参加者') + 'に繰り上がりました。');
   const targets = sessionTargets(ctx, s);
   if (!targets.length) return null;
   return postSessionNotice(ctx, s, waitPromotedPayload(ctx, s, names, auto), '繰り上げ', targets, sleep);

@@ -1,6 +1,6 @@
 // 画面に渡す一式（GAS版consoleData_）。形はsrc/shared/api.tsのConsoleData（画面と共有する）。日時の書き方はGAS版のまま。
 // 外したもの: url（シート）・hasPassword・adminSet。足したもの: me・group・members[].linked / admin・settings.remind
-import type { ConsoleData, ConsolePrep, ConsoleScenario } from '../../shared/api';
+import { type ConsoleData, type ConsolePrep, type ConsoleScenario, DM_KINDS, type DmKind } from '../../shared/api';
 import { botInviteUrl, CREATE_EVENTS, THREAD_PERMISSIONS } from '../discord/channel';
 import { addDays, fmtDateTime, stampText } from '../lib/jst';
 import { STATUS_LIST } from './constants';
@@ -9,6 +9,7 @@ import type { Ctx, Session } from './types';
 
 export function consoleData(ctx: Ctx): ConsoleData {
   const g = ctx.group;
+  const self = ctx.members.find((m) => m.id === ctx.actor.memberId);
   const availDays: string[] = [];
   for (let i = 0; i < g.avail_days; i++) availDays.push(addDays(ctx.today, i));
   const notes: ConsoleData['notes'] = {};
@@ -21,7 +22,10 @@ export function consoleData(ctx: Ctx): ConsoleData {
   const setter = g.remind_enabled ? g.remind_set_by || '有効' : '';
   return {
     title: g.title,
-    me: { name: ctx.actor.name, isAdmin: ctx.actor.isAdmin, shareBusy: !!ctx.members.find((m) => m.id === ctx.actor.memberId)?.shareBusy },
+    me: {
+      name: ctx.actor.name, isAdmin: ctx.actor.isAdmin, shareBusy: !!self?.shareBusy,
+      dm: { kinds: (self?.dmKinds ?? '').split(',').filter((k): k is DmKind => k in DM_KINDS), error: self?.dmError ?? '' },
+    },
     group: { id: g.id, guildName: g.guild_name },
     isAdmin: ctx.actor.isAdmin,
     admins: ctx.members.filter((m) => m.isAdmin).map((m) => m.name),

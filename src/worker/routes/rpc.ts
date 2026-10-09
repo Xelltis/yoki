@@ -29,6 +29,7 @@ import { getSessionHistory } from '../domain/history';
 import { saveRecord, setPcRecord } from '../domain/records';
 import { exportGroup } from '../domain/export';
 import { promoteWaiter } from '../domain/waitlist';
+import { setDmNotices, testDm } from '../domain/dm-notices';
 import { AppError, adminError, authError, goneError, notFound } from '../lib/errors';
 import type { RpcName } from '../../shared/api';
 
@@ -92,6 +93,9 @@ export const RPC: Record<Exclude<RpcName, 'getConsoleData'>, Entry> = {
   // 卓の記録（GMか管理者）と、自分のPC（参加者本人）。だれが書けるかは中で確かめる
   saveRecord: { run: saveRecord, data: true },
   setPcRecord: { run: setPcRecord, data: true },
+  // 自分あてのDMの知らせ（本人の設定。どのグループにも効く）と、試しに送る
+  setDmNotices: { run: setDmNotices, data: true },
+  testDm: { run: testDm, data: true },
   // キャンセル待ちの人を参加者にする（GMか管理者。中で確かめる）。参加者が変わるので、Googleの予定も書き直す
   promoteWaiter: { run: promoteWaiter, data: true, calendar: true },
   // グループの中身をJSONで書き出す（読むだけなので、画面のデータは付けない）

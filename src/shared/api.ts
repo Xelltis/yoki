@@ -24,6 +24,18 @@ export const ABSENCE_NOTE_MAX = 200;
 /** 募集の定員の上限（シナリオのPLの人数の上限と同じ） */
 export const CAPACITY_MAX = 20;
 
+/**
+ * 自分あてのDMの知らせの種類と、その説明（本人が選ぶ。どのグループにも効く）。
+ * 自分がGMか参加者の卓の知らせを、チャンネルに加えてBotのDMでも受け取る
+ */
+export const DM_KINDS = {
+  remind: '自分の卓の開催前の知らせと、開始直前の知らせ',
+  poll: '日程調整（締め切りの前日の催促、GMには回答がそろった・締め切りが過ぎた知らせ、日程が決まった知らせ）',
+  sheet: 'キャラシの締め切りの前日の催促',
+  wait: 'キャンセル待ちからの繰り上げ',
+} as const;
+export type DmKind = keyof typeof DM_KINDS;
+
 /** シナリオに書ける長さと、グループごとの数の上限（画面は入力欄に、サーバーは受け取るときに使う）。playersはPLの人数の上限 */
 export const SCENARIO_MAX = { count: 200, name: 100, system: 50, hours: 20, url: 500, memo: 500, players: 20 } as const;
 
@@ -36,7 +48,7 @@ export const RPC_FUNCS = [
   'saveSession', 'deleteSession', 'saveMember', 'deleteMember', 'saveConsoleSettings', 'saveSeriesNotify', 'renameGroup', 'startPoll', 'setPollVote',
   'setPollVoteAll', 'setPollVoteFromAvail', 'cancelPoll', 'decidePoll', 'setAdmin', 'deleteGroup', 'getDiscordChannels', 'saveCalendarFeed', 'deleteCalendarFeed',
   'saveGoogleSettings', 'syncGoogleNow', 'unlinkGoogle', 'unlinkGoogleLogin', 'saveScenario', 'deleteScenario', 'setScenarioMark',
-  'savePrep', 'saveSlotSecret', 'assignSlots', 'setSlotHope', 'submitSheet', 'setAbsence', 'setShareBusy', 'getSessionHistory', 'saveRecord', 'setPcRecord', 'exportGroup', 'promoteWaiter',
+  'savePrep', 'saveSlotSecret', 'assignSlots', 'setSlotHope', 'submitSheet', 'setAbsence', 'setShareBusy', 'getSessionHistory', 'saveRecord', 'setPcRecord', 'exportGroup', 'promoteWaiter', 'setDmNotices', 'testDm',
 ] as const;
 export type RpcName = (typeof RPC_FUNCS)[number];
 
@@ -170,8 +182,11 @@ export type SeriesNotifyView = { series: string; channelId: string; alsoBase: bo
 /** 画面のデータ（getConsoleDataの返事。書き込みの返事のdataにも付く） */
 export type ConsoleData = {
   title: string;
-  /** ログインした本人。shareBusyは、ほかのグループの卓の日を、入っているグループの予定表に「他」として出すか（本人の設定。どのグループにも効く） */
-  me: { name: string; isAdmin: boolean; shareBusy: boolean };
+  /**
+   * ログインした本人。shareBusyは、ほかのグループの卓の日を、入っているグループの予定表に「他」として出すか（本人の設定。どのグループにも効く）。
+   * dmは自分あてのDMの知らせ（受け取る種類と、最後に届かなかった理由。届けば空）
+   */
+  me: { name: string; isAdmin: boolean; shareBusy: boolean; dm: { kinds: DmKind[]; error: string } };
   group: { id: string; guildName: string };
   isAdmin: boolean;
   admins: string[];
