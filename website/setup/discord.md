@@ -56,7 +56,11 @@ Yokiは、「Discordでログイン」と、チャンネルへの知らせ（Bot
 
 [![Botの画面の下の方。1は公開BotのスイッチでON、2はPresence Intent・Server Members Intent・Message Content Intentの3つのスイッチでOFF](/setup/discord/08-bot-settings.png)](/setup/discord/08-bot-settings.png)
 
-公開BotをONにしておくのは、グループの管理者が、Yokiの画面から自分のDiscordサーバーにBotを招くためです。YokiのBotは、メッセージを書くことと、卓をサーバーのイベントにすることだけをします。Discordの会話を読みに行かないので、Intentsは要りません。
+公開BotをONにしておくのは、グループの管理者が、Yokiの画面から自分のDiscordサーバーにBotを招くためです。
+
+YokiのBotがするのは、チャンネルへの知らせ、卓をサーバーのイベントにすること、本人が選んだ知らせのDM、ボタンとスラッシュコマンドへの返事、管理者を決めるロールを読むことです。どれもDiscordを呼ぶだけで、Discordの会話を読みに行かないので、Intentsは要りません。
+
+Botを招くときに求める許可は「bot」だけで、スラッシュコマンドの許可（applications.commands）も、その中に含まれます。スラッシュコマンドのために、Botを招き直す必要はありません。
 
 ## 4. インストールリンクを「なし」にする
 

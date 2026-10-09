@@ -165,7 +165,7 @@ usersの行は消さない（印がそこにあるため）。Discordのユー�
 
 **Bot**: トークンはWorkerのsecret（`DISCORD_BOT_TOKEN`）。Gatewayには繋がず、RESTだけを使う（送る: `POST /channels/{id}/messages`、読む: `GET /guilds/{id}/channels`・`GET /channels/{id}`、イベント: `/guilds/{id}/scheduled-events`）。小道具は `discord/channel.ts`。
 
-**Botを招く**: グループの管理者が、管理画面の「知らせ」から自分のサーバーに招く。招くURLは、Client IDとグループのサーバーから作る（`botInviteUrl`。求める権限は、チャンネルを見る・メッセージを送る・埋め込みリンク。イベントに出すグループだけ、イベントを作成も）。Botは公開（Public Bot）。
+**Botを招く**: グループの管理者が、管理画面の「知らせ」から自分のサーバーに招く。招くURLは、Client IDとグループのサーバーから作る（`botInviteUrl`。求める権限は、チャンネルを見る・メッセージを送る・埋め込みリンク。イベントに出すグループだけ、イベントを作成も）。scopeは `bot` だけ（Discordの決まりで `applications.commands` も含まれるので、スラッシュコマンドもこのURLで足りる）。Botは公開（Public Bot）。Gatewayには繋がず、Privileged Gateway Intentsは要らない（DM・ロールと1人のメンバーの読み出しも、REST APIで行う）。
 
 **送り先はチャンネルのID**: `groups.channel_id`（基本）・`remind_channel_id`・`recruit_channel_id`（種類ごと。空なら基本）・`series_notify.channel_id`（シリーズ専用）。
 

@@ -48,7 +48,7 @@ Cloudflareだけなら `https://yoki.<アカウントのサブドメイン>.work
 
 OAuth2: 「リダイレクト」に `https://<公開するアドレス>/auth/callback` と `http://localhost:5173/auth/callback` を足す。クライアントIDと、「秘密をリセット」で出るクライアントシークレットを控える。
 
-Bot: 「トークンをリセット」でトークンを作って控える。「公開Bot」はON（グループの管理者が、Yokiの画面から自分のサーバーに招く）。Privileged Gateway Intentsは全部OFFのまま（Gatewayには繋がない）。
+Bot: 「トークンをリセット」でトークンを作って控える。「公開Bot」はON（グループの管理者が、Yokiの画面から自分のサーバーに招く）。Privileged Gateway Intentsは全部OFFのまま（Gatewayには繋がない。チャンネルへの知らせ・イベント・DM・ボタンとスラッシュコマンドへの返事・ロールと1人のメンバーの読み出しは、どれもREST APIで、Intentsは要らない）。Botを招くURLのscopeは `bot` だけで、`applications.commands` もそれに含まれるので、スラッシュコマンドのために招き直さなくてよい。
 
 インストール: 「インストールリンク」は「なし」（Botを招くURLはYokiが作る。求める権限は「チャンネルを見る」「メッセージを送信」「埋め込みリンク」。卓をDiscordのイベントに出すグループだけ「イベントを作成」も、卓ごとのスレッドを使うグループだけ「公開スレッドの作成」「スレッドでメッセージを送信」も）。
 
