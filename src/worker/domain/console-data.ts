@@ -26,6 +26,7 @@ export function consoleData(ctx: Ctx): ConsoleData {
     me: {
       name: ctx.actor.name, isAdmin: ctx.actor.isAdmin, shareBusy: !!self?.shareBusy,
       dm: { kinds: (self?.dmKinds ?? '').split(',').filter((k): k is DmKind => k in DM_KINDS), error: self?.dmError ?? '' },
+      weekly: self?.weekly ? (JSON.parse(self.weekly) as Record<string, string>) : {},
     },
     group: { id: g.id, guildName: g.guild_name },
     isAdmin: ctx.actor.isAdmin,

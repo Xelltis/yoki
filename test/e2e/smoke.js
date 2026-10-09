@@ -502,6 +502,22 @@ await withDevServer(async (base) => {
       await page.check('#abKeep');
     });
 
+    await step('いつもの予定を決めると、予定表の印の無い同じ曜日に入る。止めても入れた印は残る', async () => {
+      // 「まとめて入れる」を開くと、その下に出る
+      await page.waitForSelector('#availWeekly', { state: 'visible', timeout: 15000 });
+      await page.selectOption('#wk3', '×');
+      await page.click('#wkSave');
+      await until((d) => d.me.weekly['3'] === '×');
+      const wed = await page.evaluate(() => {
+        const d = window.yoki.D;
+        return d.availDays.filter((k) => new Date(k + 'T00:00:00').getDay() === 3 && !(d.booked[k] || {})['ひより']);
+      });
+      await until((d, days) => days.some((k) => (d.avail[k] || {})['ひより'] === '×'), wed);
+      await page.click('#wkClear');
+      await until((d) => Object.keys(d.me.weekly).length === 0);
+      await until((d, days) => days.some((k) => (d.avail[k] || {})['ひより'] === '×'), wed);
+    });
+
     await step('昼と夜に分けるグループでは、予定表の自分のマスが昼と夜に分かれ、時間帯ごとに印を入れられる', async () => {
       await admin('table');
       await page.click('#stDayParts');

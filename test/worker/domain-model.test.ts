@@ -29,7 +29,7 @@ describe('予定表の「参」「GM」（bookedMap）', () => {
 
 describe('日程調整に答えられる人（pollVoters）', () => {
   test('GMと参加者のうち、ログインしたかDiscordのIDがあるメンバーだけ。ゲストとDiscordの無いメンバーは入らない', () => {
-    const member = (id: number, name: string, discordId: string, userId: string | null): Member => ({ id, name, discordId, note: '', isAdmin: false, userId, other: [], shareBusy: false, dmKinds: '', dmError: '' });
+    const member = (id: number, name: string, discordId: string, userId: string | null): Member => ({ id, name, discordId, note: '', isAdmin: false, userId, other: [], shareBusy: false, dmKinds: '', dmError: '', weekly: '' });
     const memberByName = new Map(
       [member(1, 'ひより', '', 'u1'), member(2, 'ソラ', '400000000000000011', null), member(3, 'こまち', '', null)].map((m) => [m.name, m]),
     );

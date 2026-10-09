@@ -60,7 +60,7 @@ export async function loadGroup(
     db
       .prepare(
         `SELECT m.id, m.name, m.discord_id, m.note, m.is_admin, m.user_id, COALESCE(u.share_busy, 0) AS share_busy,
-           COALESCE(u.dm_kinds, '') AS dm_kinds, COALESCE(u.dm_error, '') AS dm_error,
+           COALESCE(u.dm_kinds, '') AS dm_kinds, COALESCE(u.dm_error, '') AS dm_error, m.weekly,
            (SELECT json_group_array(json_array(s.date, s.start_time))
               FROM members o JOIN session_people p ON p.member_id = o.id AND p.role IN ('gm', 'member') JOIN sessions s ON s.id = p.session_id
              WHERE u.share_busy = 1 AND o.user_id = m.user_id AND o.group_id <> m.group_id AND s.status = '開催' AND s.date >= ?2
@@ -127,7 +127,7 @@ export async function loadGroup(
   const scenarioMarks: ScenarioMarkRow[] = (JSON.parse(marks_json) as [number, number, ScenarioMarkRow['kind']][]).map(([scenarioId, memberId, kind]) => ({ scenarioId, memberId, kind }));
 
   type MemberRow = {
-    id: number; name: string; discord_id: string; note: string; is_admin: number; user_id: string | null; share_busy: number; other_json: string; dm_kinds: string; dm_error: string;
+    id: number; name: string; discord_id: string; note: string; is_admin: number; user_id: string | null; share_busy: number; other_json: string; dm_kinds: string; dm_error: string; weekly: string;
   };
   const members: Member[] = rows<MemberRow>(2).map((m) => ({
     id: m.id,
@@ -140,6 +140,7 @@ export async function loadGroup(
     shareBusy: m.share_busy === 1,
     dmKinds: m.dm_kinds,
     dmError: m.dm_error,
+    weekly: m.weekly,
   }));
 
   // 行けなくなった印の行は、メンバーが消えたら一緒に消えるので、名前はいつもある

@@ -38,11 +38,12 @@ export type GroupRow = {
 /**
  * メンバー。otherは、同じ利用者がほかのグループで入っている、これからの「開催」の卓（日と開始時刻だけ。本人が出すと決めているときだけ）。
  * shareBusyは、その利用者がほかのグループの卓を出すと決めているか（ログインしていないメンバーはfalse）。
- * dmKinds・dmErrorは、その利用者の自分あてのDMの知らせ（受け取る種類のカンマ区切りと、最後に届かなかった理由）。画面には本人の分だけを出す
+ * dmKinds・dmErrorは、その利用者の自分あてのDMの知らせ（受け取る種類のカンマ区切りと、最後に届かなかった理由）。画面には本人の分だけを出す。
+ * weeklyは、いつもの予定（{ 曜日: 印 } のJSON。決めていなければ空）。画面には本人の分だけを出す
  */
 export type Member = {
   id: number; name: string; discordId: string; note: string; isAdmin: boolean; userId: string | null; other: { date: string; start: string }[]; shareBusy: boolean;
-  dmKinds: string; dmError: string;
+  dmKinds: string; dmError: string; weekly: string;
 };
 
 export type Role = 'gm' | 'member' | 'want' | 'interest';

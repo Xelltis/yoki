@@ -8,7 +8,7 @@ import { appOrigin } from '../auth/origin';
 import { currentViewer } from '../auth/session';
 import { sendDiscordStep } from '../discord/step';
 import { realSleep } from '../discord/send';
-import { setAvailability, setAvailabilityBulk, setAvailNote, setDayNote } from '../domain/availability';
+import { setAvailability, setAvailabilityBulk, setAvailNote, setDayNote, setWeekly } from '../domain/availability';
 import { deleteCalendarFeed, saveCalendarFeed } from '../domain/calendar';
 import { consoleData } from '../domain/console-data';
 import { type Form, readForm } from '../domain/form';
@@ -56,6 +56,8 @@ export const RPC: Record<Exclude<RpcName, 'getConsoleData'>, Entry> = {
   setAvailability: { run: setAvailability },
   setAvailabilityBulk: { run: setAvailabilityBulk, data: true },
   setAvailNote: { run: setAvailNote, data: true },
+  // いつもの予定（本人。曜日ごとの印）
+  setWeekly: { run: setWeekly, data: true },
   setDayNote: { run: setDayNote, data: true },
   startPoll: { run: startPoll, data: true, calendar: true },
   setPollVote: { run: setPollVote, data: true },

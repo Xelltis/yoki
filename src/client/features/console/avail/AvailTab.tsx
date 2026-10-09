@@ -1,4 +1,4 @@
-// メンバーの予定のタブ。予定表（狭い画面では日ごとのリスト）・絞り込み・まとめて入れる・自分の印と予定のメモ
+// メンバーの予定のタブ。予定表（狭い画面では日ごとのリスト）・絞り込み・まとめて入れる・いつもの予定・自分の印と予定のメモ
 import { useEffect, useRef, useState } from 'react';
 import type { ConsoleData, ConsoleSession, RpcResult } from '../../../../shared/api';
 import type { Part } from '../../../../shared/parts';
@@ -16,6 +16,7 @@ import { active, isAdjusting, isRecruit, markOn, me, peopleOf, sortSessions, sor
 import { withAvail, withAvailNote } from '../model/optimistic';
 import { checkPill, notice } from '../styles';
 import { AvailList, AvailTable } from './AvailTable';
+import { WeeklyCard } from './WeeklyCard';
 import { type AvailFilter, type Mark, activeNames, availRows, markIn, targetNames, visibleNames } from './rows';
 
 const ALL_WDS = [0, 1, 2, 3, 4, 5, 6];
@@ -281,6 +282,7 @@ export function AvailTab() {
           <span id="abMsg" className="hint">{bulkMsg.text}</span>
         </div>
       </div>
+      <WeeklyCard hidden={!fold.availBulk} />
       {/* よく使う絞り込みは、表の上に常に出す（詳しい条件は上の「絞り込み」） */}
       <div className="mb-10 flex flex-wrap items-center gap-8 max-tab:flex-nowrap max-tab:overflow-x-auto max-tab:[scrollbar-width:none] max-tab:[&::-webkit-scrollbar]:hidden" id="availChips" role="group" aria-label="予定表をしぼる">
         <button type="button" className={avChip} data-chip="hol" aria-pressed={f.hol ? 'true' : 'false'} onClick={() => setF({ hol: !f.hol })}>土日祝だけ</button>

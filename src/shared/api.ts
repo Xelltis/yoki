@@ -48,7 +48,7 @@ export const RPC_FUNCS = [
   'saveSession', 'deleteSession', 'saveMember', 'deleteMember', 'saveConsoleSettings', 'saveSeriesNotify', 'renameGroup', 'startPoll', 'setPollVote',
   'setPollVoteAll', 'setPollVoteFromAvail', 'cancelPoll', 'decidePoll', 'setAdmin', 'deleteGroup', 'getDiscordChannels', 'saveCalendarFeed', 'deleteCalendarFeed',
   'saveGoogleSettings', 'syncGoogleNow', 'unlinkGoogle', 'unlinkGoogleLogin', 'saveScenario', 'deleteScenario', 'setScenarioMark',
-  'savePrep', 'saveSlotSecret', 'assignSlots', 'setSlotHope', 'submitSheet', 'setAbsence', 'setShareBusy', 'getSessionHistory', 'saveRecord', 'setPcRecord', 'exportGroup', 'promoteWaiter', 'setDmNotices', 'testDm',
+  'savePrep', 'saveSlotSecret', 'assignSlots', 'setSlotHope', 'submitSheet', 'setAbsence', 'setShareBusy', 'getSessionHistory', 'saveRecord', 'setPcRecord', 'exportGroup', 'promoteWaiter', 'setDmNotices', 'testDm', 'setWeekly',
 ] as const;
 export type RpcName = (typeof RPC_FUNCS)[number];
 
@@ -186,9 +186,10 @@ export type ConsoleData = {
   title: string;
   /**
    * ログインした本人。shareBusyは、ほかのグループの卓の日を、入っているグループの予定表に「他」として出すか（本人の設定。どのグループにも効く）。
-   * dmは自分あてのDMの知らせ（受け取る種類と、最後に届かなかった理由。届けば空）
+   * dmは自分あてのDMの知らせ（受け取る種類と、最後に届かなかった理由。届けば空）。
+   * weeklyはこのグループでの、いつもの予定{ 曜日（'0' が日曜）: '△' | '×' }（決めていなければ空）
    */
-  me: { name: string; isAdmin: boolean; shareBusy: boolean; dm: { kinds: DmKind[]; error: string } };
+  me: { name: string; isAdmin: boolean; shareBusy: boolean; dm: { kinds: DmKind[]; error: string }; weekly: Record<string, string> };
   group: { id: string; guildName: string };
   isAdmin: boolean;
   admins: string[];

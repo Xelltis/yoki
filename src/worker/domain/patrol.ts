@@ -23,6 +23,7 @@ import { loadGroup } from './load';
 import { pollPending } from './model';
 import { checkBot, GITHUB_CALLS, noticePatrolFailed, noticeVersion, VERSION_HOUR } from './operator-notice';
 import { dmStmt, queueDm, sendQueuedDms } from './dm-notices';
+import { weeklyFillStmts } from './availability';
 import { aheadText, notifyHourOf, notifyYmdOf } from './notify';
 import type { Ctx, Session } from './types';
 import { gmsOf } from '../../shared/gm';
@@ -371,10 +372,11 @@ export async function sendStartingSoon(ctx: Ctx, deps: Deps): Promise<void> {
   }
 }
 
-/** 毎日1回の片付け: 期限切れのログイン、古い送信記録・卓の履歴・予定・メモ、Googleの古い記録 */
+/** 毎日1回の片付け: 期限切れのログイン、古い送信記録・卓の履歴・予定・メモ、Googleの古い記録。いつもの予定を、予定表に新しく入った日に入れる */
 export async function cleanup(db: D1Database, now: Date): Promise<void> {
   const today = jst(now).ymd;
   await db.batch([
+    ...weeklyFillStmts(db, today),
     db.prepare('DELETE FROM auth_sessions WHERE expires_at < ?').bind(now.toISOString()),
     db.prepare(`DELETE FROM notify_log WHERE id IN (SELECT id FROM (SELECT id, ROW_NUMBER() OVER (PARTITION BY group_id ORDER BY id DESC) AS rn FROM notify_log) WHERE rn > ?)`).bind(KEEP_LOG_ROWS),
     db.prepare(`DELETE FROM session_history WHERE id IN (SELECT id FROM (SELECT id, ROW_NUMBER() OVER (PARTITION BY session_id ORDER BY id DESC) AS rn FROM session_history) WHERE rn > ?)`).bind(HISTORY_KEEP),

@@ -144,6 +144,76 @@ export async function setAvailabilityBulk(ctx: Ctx, form: Form) {
   return { ok: true, count: days.length, notes: noteDays.length, skippedBooked, skippedKeep, message };
 }
 
+const WD = ['日', '月', '火', '水', '木', '金', '土'];
+
+/** いつもの予定を読む（{ 曜日: 印 }。印の無い曜日は入れない）。曜日は0（日曜）〜6、印は △ か × */
+export function readWeekly(v: unknown): Record<string, string> {
+  const src = v && typeof v === 'object' && !Array.isArray(v) ? (v as Record<string, unknown>) : {};
+  const out: Record<string, string> = {};
+  for (const [k, m] of Object.entries(src)) {
+    if (!/^[0-6]$/.test(k)) throw badRequest('曜日が読めません: ' + k);
+    const mark = readMark(m);
+    if (mark) out[k] = mark;
+  }
+  return out;
+}
+
+/**
+ * いつもの予定を決める（本人）。form: { name, weekly: { 曜日: '△' | '×' } }。空なら止める（入れた印はそのまま残る）。
+ * 決めたら、予定表の範囲で、印の無い日（卓のある日は除く）にその曜日の印を入れる。
+ * これから予定表の範囲に入る日には、見回りが毎日入れる（weeklyFillStmts）
+ */
+export async function setWeekly(ctx: Ctx, form: Form) {
+  const name = requireSelf(ctx, form.name), memberId = ctx.actor.memberId;
+  const weekly = readWeekly(form.weekly);
+  const last = addDays(ctx.today, ctx.group.avail_days - 1);
+  const stmts: D1PreparedStatement[] = [
+    ctx.db.prepare('UPDATE members SET weekly = ?2, weekly_until = ?3 WHERE id = ?1').bind(memberId, Object.keys(weekly).length ? JSON.stringify(weekly) : '', last),
+  ];
+  const booked = bookedPartsMap(ctx.sessions, ctx.members);
+  const byMark: Record<string, string[]> = {};
+  for (let d = ctx.today; d <= last; d = addDays(d, 1)) {
+    const mark = weekly[String(dowOf(d))];
+    if (!mark || markAt(ctx.avail, ctx.availParts, d, name, '') || bookedAt(booked, d, name, '')) continue;
+    (byMark[mark] ??= []).push(d);
+  }
+  for (const [mark, days] of Object.entries(byMark)) stmts.push(...markStmts(ctx, memberId, days, '', mark));
+  await ctx.db.batch(stmts);
+  const count = Object.values(byMark).reduce((n, days) => n + days.length, 0);
+  const rule = Object.entries(weekly).sort(([a], [b]) => (Number(a) + 6) % 7 - (Number(b) + 6) % 7).map(([k, m]) => WD[Number(k)] + ' ' + m).join('・');
+  return {
+    ok: true, count,
+    message: rule
+      ? 'いつもの予定を保存しました（' + rule + '）。予定表の、印の無い' + count + '日に入れました。これから予定表に入る日にも、毎日入ります。'
+      : 'いつもの予定を止めました（入れた印はそのまま残ります）。',
+  };
+}
+
+/**
+ * 見回りが毎日、いつもの予定を、予定表の範囲に新しく入った日（weekly_untilの次の日から）に入れる文。
+ * 印の無い日だけで、このグループの「開催」の卓に入っている日は除く。入れ終えた日を進める
+ */
+export function weeklyFillStmts(db: D1Database, today: string): D1PreparedStatement[] {
+  return [
+    db.prepare(
+      `WITH RECURSIVE days(d) AS (SELECT date(?1) UNION ALL SELECT date(d, '+1 day') FROM days WHERE d < date(?1, '+400 days'))
+       INSERT INTO availability (member_id, date, part, mark)
+       SELECT m.id, days.d, '', json_extract(m.weekly, '$."' || strftime('%w', days.d) || '"')
+         FROM members m JOIN groups g ON g.id = m.group_id JOIN days
+        WHERE m.weekly <> '' AND days.d > COALESCE(m.weekly_until, date(?1, '-1 day')) AND days.d < date(?1, '+' || g.avail_days || ' days')
+          AND json_extract(m.weekly, '$."' || strftime('%w', days.d) || '"') IN ('△', '×')
+          AND NOT EXISTS (SELECT 1 FROM availability a WHERE a.member_id = m.id AND a.date = days.d)
+          AND NOT EXISTS (SELECT 1 FROM session_people p JOIN sessions s ON s.id = p.session_id
+                           WHERE p.member_id = m.id AND p.role IN ('gm', 'member') AND s.status = '開催' AND s.date = days.d)
+       ON CONFLICT DO NOTHING`,
+    ).bind(today),
+    db.prepare(
+      `UPDATE members SET weekly_until = date(?1, '+' || ((SELECT avail_days FROM groups WHERE id = members.group_id) - 1) || ' days')
+        WHERE weekly <> ''`,
+    ).bind(today),
+  ];
+}
+
 /** 予定の1マスにメモを書く。△×とは別で、卓に入っている日にも書ける。空にすると消える */
 export async function setAvailNote(ctx: Ctx, form: Form) {
   const name = requireSelf(ctx, form.name), memberId = ctx.actor.memberId;
