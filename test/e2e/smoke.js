@@ -653,6 +653,8 @@ await withDevServer(async (base) => {
       await sora.keyboard.press('Escape');
       await sora.click('#meBtn');
       await sora.click('#toSettings');
+      // 設定の画面が出てから確かめる（出る前なら、入口があっても見えない）
+      await sora.waitForSelector('#meNote');
       assert.equal(await sora.isVisible('#adminEntry'), false);
       await sora.fill('#meNote', 'e2eの備考');
       await sora.click('#meSave');
@@ -780,6 +782,8 @@ await withDevServer(async (base) => {
       await g.goto(base);
       await Promise.all([g.waitForURL('**/?login=google-new'), g.click('#googleLoginBtn')]);
       assert.match(await g.textContent('#notice'), /初めてのGoogleアカウント/);
+      // お知らせは /api/me を待たずに出るので、ログインの部品が出るまで待ってから数える
+      await g.waitForSelector('#devForm');
       assert.equal(await g.locator('#googleLoginBtn').count(), 0, '結びつけを待つあいだは、Googleのボタンを出さない');
       assert.equal(await g.locator('#devForm input[name=link_google]').count(), 1, '結びつけるためのログインに印を付ける');
       await g.selectOption('#devAs', 'ひより');
@@ -793,6 +797,7 @@ await withDevServer(async (base) => {
       const kept = await g.evaluate(() => Object.keys(localStorage).filter((k) => k.startsWith('taku.')));
       assert.equal(kept.some((k) => k.startsWith('taku.cache:')), false, 'ログアウトでグループの控えを消す');
       assert.equal(kept.includes('taku.font'), true, '端末の控えは残す');
+      await g.waitForSelector('#devForm');
       assert.equal(await g.locator('#devForm input[name=link_google]').count(), 0, 'ふだんのログインには印を付けない');
       await Promise.all([g.waitForURL((u) => u.pathname === '/' && !u.search), g.click('#googleLoginBtn')]);
       await g.waitForSelector('#groups');
