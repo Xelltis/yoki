@@ -63,8 +63,9 @@ export function UpdatePane() {
       + (u.migrations ? '表（D1）の変更を含みます。変える前の地点を控えるので、戻すときはそこへ戻せます。' : ''),
     ok: '更新する',
   }, () => { setBusy(true); void act('/api/admin/update', {}).then(() => setBusy(false)); });
+  // 読めなかったときは「最新です」と言わない（最新のバージョンは、前に読めたもの）
   const [tone, say] = u.available ? ['warn', '新しいバージョンv' + latest!.version + 'があります']
-    : latest ? ['ok', '最新です'] : u.error ? ['bad', '新しいバージョンを確かめられませんでした'] : ['ok', 'まだバージョンが出ていません'];
+    : !u.checked ? ['bad', '新しいバージョンを確かめられませんでした'] : latest ? ['ok', '最新です'] : ['ok', 'まだバージョンが出ていません'];
   return (
     <div data-pane="update">
       <div className="card" id="opUpdate">
@@ -73,7 +74,7 @@ export function UpdatePane() {
         {u.error && <p className="hint text-err-text" id="opUpdateError">{u.error}</p>}
         <dl className={dl}>
           <dt className={dt}>動いているバージョン</dt><dd className={dd} id="opVersion">{'v' + u.current}</dd>
-          <dt className={dt}>最新のバージョン</dt><dd className={dd} id="opLatest">{latest ? 'v' + latest.version + (latest.publishedAt ? '（' + fmt(latest.publishedAt) + '）' : '') : '—'}</dd>
+          <dt className={dt}>最新のバージョン</dt><dd className={dd} id="opLatest">{latest ? 'v' + latest.version + (latest.publishedAt ? '（' + fmt(latest.publishedAt) + '）' : '') + (u.checked ? '' : '・前に読めたもの') : '—'}</dd>
           <dt className={dt}>元のリポジトリ</dt><dd className={dd}><a href={'https://github.com/' + u.upstream} target="_blank" rel="noopener">{u.upstream}</a></dd>
           <dt className={dt}>確かめた時刻</dt><dd className={dd}>{fmt(u.checkedAt) + (u.checkedAt ? '（' + ago(u.checkedAt) + '）' : '')}</dd>
         </dl>

@@ -34,17 +34,19 @@ export async function checkRelease(db: D1Database, deps: UpdateDeps, now: Date, 
   if (!force && saved && saved.upstream === deps.upstream && saved.from === APP_VERSION && now.getTime() - Date.parse(saved.checkedAt) < TTL_MS) return saved;
   let c: Check;
   try {
-    const rel = await deps.api.latestRelease(deps.upstream);
+    // 更新のトークンがあれば、それで読む（トークンなしの上限は、Cloudflareのほかの利用者と分け合うため、すぐに尽きる）
+    const rel = await deps.api.latestRelease(deps.upstream, deps.token);
     const latest = rel && { version: rel.tag.replace(/^v/, ''), name: rel.name, url: rel.url, publishedAt: rel.publishedAt, notes: rel.body };
     let migrations: boolean | null = null;
     if (latest && newer(latest.version, APP_VERSION)) {
       // 表の変更があるか。今の版のタグが元のリポジトリに無い（フォークで版を変えた）など、比べられなければ分からないまま
-      migrations = await deps.api.changedFiles(deps.upstream, 'v' + APP_VERSION, rel.tag).then((files) => files.some((f) => f.startsWith('migrations/')), () => null);
+      migrations = await deps.api.changedFiles(deps.upstream, 'v' + APP_VERSION, rel.tag, deps.token).then((files) => files.some((f) => f.startsWith('migrations/')), () => null);
     }
     c = { latest, migrations, error: '', checkedAt: now.toISOString(), upstream: deps.upstream, from: APP_VERSION };
   } catch (e) {
-    // 読めなければ、前に読めた最新のバージョンは残す
-    c = { latest: saved?.latest ?? null, migrations: saved?.migrations ?? null, error: '新しいバージョンを確かめられませんでした（' + message(e) + '）', checkedAt: now.toISOString(), upstream: deps.upstream, from: APP_VERSION };
+    // 読めなければ、前に読めた最新のバージョンは残す。今の版より古ければ（読めたあとに更新した）残さない
+    const keep = saved?.latest && !newer(APP_VERSION, saved.latest.version) ? saved : null;
+    c = { latest: keep?.latest ?? null, migrations: keep?.migrations ?? null, error: '新しいバージョンを確かめられませんでした（' + message(e) + '）', checkedAt: now.toISOString(), upstream: deps.upstream, from: APP_VERSION };
   }
   await db.prepare('INSERT INTO meta (key, value) VALUES (?1, ?2) ON CONFLICT (key) DO UPDATE SET value = excluded.value').bind(KEY, JSON.stringify(c)).run();
   return c;
@@ -64,7 +66,7 @@ export async function updateStatus(db: D1Database, deps: UpdateDeps, now: Date, 
   }
   return {
     current: APP_VERSION, upstream: deps.upstream, latest: c.latest, available: !!c.latest && newer(c.latest.version, APP_VERSION), migrations: c.migrations,
-    error, checkedAt: c.checkedAt, repo: deps.repo, workflowUrl: deps.repo ? 'https://github.com/' + deps.repo + '/actions/workflows/' + UPDATE_WORKFLOW : '',
+    checked: !c.error, error, checkedAt: c.checkedAt, repo: deps.repo, workflowUrl: deps.repo ? 'https://github.com/' + deps.repo + '/actions/workflows/' + UPDATE_WORKFLOW : '',
     canDispatch, runs,
   };
 }

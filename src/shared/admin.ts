@@ -152,6 +152,8 @@ export type AdminUpdate = {
   available: boolean;
   /** 今の版から最新の版までに、表（D1）の変更があるか。分からなければnull */
   migrations: boolean | null;
+  /** 最新のReleaseを、いま読めたか。読めなければ、latestは前に読めたもの（今の版より古いものは残さない） */
+  checked: boolean;
   /** 読めなかったときの理由（読めたら空） */
   error: string;
   /** GitHubを最後に読んだ時刻 */

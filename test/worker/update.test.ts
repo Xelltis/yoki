@@ -6,7 +6,7 @@ import type { AdminUpdate } from '../../src/shared/admin';
 import { app } from '../../src/worker/app';
 import { newer, parseVersion, startUpdate, updateStatus } from '../../src/worker/domain/update';
 import type { Bindings } from '../../src/worker/env';
-import { realGitHub } from '../../src/worker/update/api';
+import { htmlToMarkdown, realGitHub } from '../../src/worker/update/api';
 import { DEFAULT_UPSTREAM, updateDeps, type UpdateDeps } from '../../src/worker/update/config';
 import { fakeGitHub, nextMinor } from '../../src/worker/update/dev';
 import { APP_VERSION } from '../../src/worker/version';
@@ -22,21 +22,38 @@ beforeEach(() => {
 });
 afterEach(() => vi.restoreAllMocks());
 
-/** GitHubのAPIの返事を差し替える。routesは「道 → 返事」（/で終わる道は、その下の全部）。呼ばれた道・方法・ヘッダー・本文を控える */
-function mockGitHub(routes: Record<string, () => Response>) {
+/**
+ * GitHubのAPIの返事を差し替える。routesは「道 → 返事」（/で終わる道は、その下の全部。APIの外はURLのまま）。
+ * 返事にはAuthorizationのヘッダーを渡す。呼ばれた道・方法・ヘッダー・本文を控える
+ */
+function mockGitHub(routes: Record<string, (auth: string) => Response>) {
   const calls: { url: string; method: string; auth: string; body: string }[] = [];
   vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
     const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
     const headers = new Headers(init?.headers);
     calls.push({ url, method: init?.method ?? 'GET', auth: headers.get('Authorization') ?? '', body: String(init?.body ?? '') });
-    const path = url.slice('https://api.github.com'.length).split('?')[0]!;
+    const path = url.startsWith('https://api.github.com') ? url.slice('https://api.github.com'.length).split('?')[0]! : url;
     const key = Object.keys(routes).find((k) => (k.endsWith('/') ? path.startsWith(k) : path === k));
-    return key ? routes[key]!() : new Response('not found', { status: 404 });
+    return key ? routes[key]!(headers.get('Authorization') ?? '') : new Response('not found', { status: 404 });
   });
   return calls;
 }
 const release = (tag: string, extra: Record<string, unknown> = {}) => () => Response.json({ tag_name: tag, name: 'Release ' + tag, html_url: 'https://github.com/o/u/releases/tag/' + tag, published_at: '2026-10-01T00:00:00Z', body: '### 直したこと\n\n* 直す', ...extra });
 const deps = (over: Partial<UpdateDeps> = {}): UpdateDeps => ({ api: realGitHub(), upstream: 'o/u', repo: 'me/yoki', token: 'tok', ...over });
+/** 読み出しの上限に達したときのGitHubの返事 */
+const limitedRes = (status = 403) => () => new Response('API rate limit exceeded', { status, headers: { 'x-ratelimit-remaining': '0' } });
+const FEED = 'https://github.com/o/u/releases.atom';
+/** HTMLを、フィードの中身のように文字の参照にする */
+const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+/** Releaseのフィード（GitHubのreleases.atomの形）。entriesは新しい順のRelease */
+const feed = (entries: string[]) => () => new Response(
+  '<?xml version="1.0" encoding="UTF-8"?>\n<feed xmlns="http://www.w3.org/2005/Atom">\n  <id>tag:github.com,2008:https://github.com/o/u/releases</id>\n  <title>Release notes from u</title>\n'
+    + entries.join('\n') + '\n</feed>\n',
+  { headers: { 'Content-Type': 'application/atom+xml; charset=utf-8' } },
+);
+const entry = (tag: string, html: string) => '  <entry>\n    <id>tag:github.com,2008:Repository/1/' + tag + '</id>\n    <updated>2026-10-09T05:55:54Z</updated>\n'
+  + '    <link rel="alternate" type="text/html" href="https://github.com/o/u/releases/tag/' + tag + '"/>\n    <title>' + tag + '</title>\n'
+  + '    <content type="html">' + esc(html) + '</content>\n  </entry>';
 
 describe('版を比べる', () => {
   test('頭のvはあってもなくてもよい。読めない版は比べない', () => {
@@ -72,9 +89,8 @@ describe('新しい版を確かめる（本物のGitHub。fetchを差し替え�
       { id: 6, status: 'in_progress', conclusion: '', createdAt: '2026-10-01T00:00:00Z', url: 'u' },
     ]);
     expect(calls.find((c) => c.url.includes('/compare/'))!.url).toContain('/compare/v' + APP_VERSION + '...v' + NEXT);
-    // Releaseは誰でも読めるので、トークンを付けない。実行の一覧はトークンで読む
-    expect(calls.find((c) => c.url.endsWith('/releases/latest'))!.auth).toBe('');
-    expect(calls.find((c) => c.url.includes('/runs'))!.auth).toBe('Bearer tok');
+    // 更新のトークンがあれば、Releaseも比べるのもトークンで読む（トークンなしの上限は、Cloudflareのほかの利用者と分け合うため）
+    expect(calls.filter((c) => c.url.startsWith('https://api.github.com')).map((c) => c.auth)).toEqual(['Bearer tok', 'Bearer tok', 'Bearer tok']);
     const n = calls.filter((c) => c.url.endsWith('/releases/latest')).length;
     await updateStatus(env.DB, deps(), new Date(now.getTime() + 30 * 60_000));
     expect(calls.filter((c) => c.url.endsWith('/releases/latest')).length).toBe(n);
@@ -115,16 +131,81 @@ describe('新しい版を確かめる（本物のGitHub。fetchを差し替え�
     vi.restoreAllMocks();
     mockGitHub({ '/repos/o/u/releases/latest': () => new Response('x', { status: 500 }) });
     const broken = await updateStatus(env.DB, deps({ token: '' }), new Date(), true);
-    expect(broken).toMatchObject({ available: true, latest: { version: NEXT }, migrations: false, error: '新しいバージョンを確かめられませんでした（GitHubが500を返しました）' });
+    expect(broken).toMatchObject({ available: true, latest: { version: NEXT }, migrations: false, checked: false, error: '新しいバージョンを確かめられませんでした（GitHubが500を返しました）' });
     vi.restoreAllMocks();
     // 控えが無いときに読めなければ、何も無い
     await env.DB.prepare("DELETE FROM meta WHERE key = 'update_check'").run();
     vi.spyOn(globalThis, 'fetch').mockRejectedValue('network down');
-    expect(await updateStatus(env.DB, deps({ token: '' }), new Date(), true)).toMatchObject({ latest: null, migrations: null, error: '新しいバージョンを確かめられませんでした（network down）' });
+    expect(await updateStatus(env.DB, deps({ token: '' }), new Date(), true)).toMatchObject({ latest: null, migrations: null, checked: false, error: '新しいバージョンを確かめられませんでした（network down）' });
     vi.restoreAllMocks();
     // 今の版のタグが元のリポジトリに無ければ（フォークで版を変えたなど）、表の変更は分からない
     mockGitHub({ '/repos/o/u/releases/latest': release('v' + NEXT) });
     expect((await updateStatus(env.DB, deps({ token: '' }), new Date(), true)).migrations).toBeNull();
+  });
+
+  test('前に読めた最新のバージョンが今の版より古ければ（読めたあとに更新した）、読めなかったときに残さない', async () => {
+    mockGitHub({ '/repos/o/u/releases/latest': release('v0.0.1') });
+    expect((await updateStatus(env.DB, deps({ token: '' }), new Date(), true)).latest).toMatchObject({ version: '0.0.1' });
+    vi.restoreAllMocks();
+    mockGitHub({ '/repos/o/u/releases/latest': () => new Response('x', { status: 500 }) });
+    expect(await updateStatus(env.DB, deps({ token: '' }), new Date(), true)).toMatchObject({ latest: null, available: false, checked: false });
+  });
+
+  test('トークンが使えなければ（401。期限切れ・取り消し）、トークンなしで読み直す', async () => {
+    const no = () => new Response('Bad credentials', { status: 401 });
+    const calls = mockGitHub({
+      '/repos/o/u/releases/latest': (auth) => (auth ? no() : release('v' + NEXT)()),
+      '/repos/o/u/compare/': (auth) => (auth ? no() : Response.json({ files: [{ filename: 'migrations/0099_x.sql' }] })),
+    });
+    expect(await updateStatus(env.DB, deps({ repo: '' }), new Date(), true)).toMatchObject({ available: true, migrations: true, checked: true, error: '' });
+    expect(calls.map((c) => c.url.replace(/.*\/repos\/o\/u\//, '').replace(/\.\.\..*/, '') + ' ' + c.auth)).toEqual([
+      'releases/latest Bearer tok', 'releases/latest ', 'compare/v' + APP_VERSION + ' Bearer tok', 'compare/v' + APP_VERSION + ' ',
+    ]);
+    // Releaseがまだ無ければ、リポジトリがあるかもトークンなしで確かめる
+    vi.restoreAllMocks();
+    const calls2 = mockGitHub({ '/repos/o/u/releases/latest': (auth) => (auth ? no() : new Response('', { status: 404 })), '/repos/o/u': () => Response.json({}) });
+    expect(await updateStatus(env.DB, deps({ repo: '' }), new Date(), true)).toMatchObject({ latest: null, checked: true, error: '' });
+    expect(calls2.map((c) => c.auth)).toEqual(['Bearer tok', '', '']);
+  });
+
+  test('APIが断ったら（読み出しの上限）、Releaseのフィードで読む。表の変更は分からないまま', async () => {
+    const html = '<h2><a href="https://github.com/o/u/compare/v1.0.0...v' + NEXT + '">' + NEXT + '</a> (2026-10-09)</h2>\n<h3>足したこと・変えたこと</h3>\n<ul>\n'
+      + '<li><strong>auth:</strong> ロールで管理者を決める (<a href="https://github.com/o/u/commit/9df6345">9df6345</a>)</li>\n'
+      + '<li>a &lt; b &amp;amp; c</li>\n</ul>\n<h3>直したこと</h3>\n<ul>\n<li>直す</li>\n</ul>';
+    const calls = mockGitHub({ '/repos/o/u/releases/latest': limitedRes(), '/repos/o/u/compare/': limitedRes(), [FEED]: feed([entry('v' + NEXT, html), entry('v1.0.0', '<p>古い</p>')]) });
+    const u = await updateStatus(env.DB, deps({ token: '' }), new Date(), true);
+    expect(u).toMatchObject({
+      available: true, migrations: null, checked: true, error: '',
+      latest: { version: NEXT, name: 'v' + NEXT, url: 'https://github.com/o/u/releases/tag/v' + NEXT, publishedAt: '2026-10-09T05:55:54Z' },
+    });
+    expect(u.latest!.notes).toBe('## [' + NEXT + '](https://github.com/o/u/compare/v1.0.0...v' + NEXT + ') (2026-10-09)\n### 足したこと・変えたこと\n\n'
+      + '* **auth:** ロールで管理者を決める ([9df6345](https://github.com/o/u/commit/9df6345))\n* a < b &amp; c\n\n### 直したこと\n\n* 直す');
+    // フィードはAPIの外なので、トークンを付けない
+    expect(calls.find((c) => c.url === FEED)!.auth).toBe('');
+  });
+
+  test('フィードにReleaseがまだ無ければ、版は無い。欄が欠けていれば、タグで補う', async () => {
+    mockGitHub({ '/repos/o/u/releases/latest': limitedRes(429), [FEED]: feed([]) });
+    expect(await updateStatus(env.DB, deps({ token: '' }), new Date(), true)).toMatchObject({ latest: null, available: false, checked: true, error: '' });
+    vi.restoreAllMocks();
+    mockGitHub({ '/repos/o/u/releases/latest': limitedRes(), [FEED]: feed(['<entry><id>tag:github.com,2008:Repository/1/v' + NEXT + '</id></entry>']) });
+    expect((await updateStatus(env.DB, deps({ token: '' }), new Date(), true)).latest).toEqual({ version: NEXT, name: 'v' + NEXT, url: '', publishedAt: '', notes: '' });
+  });
+
+  test('フィードも読めなければ、上限に達したと出す（トークンの権限のせいにしない）', async () => {
+    const say = '新しいバージョンを確かめられませんでした（GitHubの読み出しの上限に達しました。しばらくしてから確かめ直してください（トークンなしの読み出しは、Cloudflareのほかの利用者と上限を分け合います。WorkerのsecretにUPDATE_DISPATCH_TOKENがあれば、それで読みます））';
+    mockGitHub({ '/repos/o/u/releases/latest': limitedRes() });
+    expect(await updateStatus(env.DB, deps({ token: '' }), new Date(), true)).toMatchObject({ checked: false, error: say });
+    vi.restoreAllMocks();
+    // フィードの代わりにHTML（ログインの画面など）が返っても、読めないとする
+    mockGitHub({ '/repos/o/u/releases/latest': limitedRes(429), [FEED]: () => new Response('<!DOCTYPE html><html></html>') });
+    expect((await updateStatus(env.DB, deps({ token: '' }), new Date(), true)).error).toBe(say);
+  });
+
+  test('Releaseの本文のHTMLを、見出しと箇条書きのMarkdownにする', () => {
+    expect(htmlToMarkdown('<h4 id="x">小見出し</h4>\n<p>前置き &quot;引用&quot; と &#39;単&#39;</p>\n<ul><li>行&gt;</li></ul>\n\n\n\n<p>終わり</p>')).toBe(
+      '#### 小見出し\n前置き "引用" と \'単\'\n* 行>\n\n終わり',
+    );
   });
 
   test('実行の一覧が読めなければ、そう出す（トークンの権限を確かめるよう添える）', async () => {
