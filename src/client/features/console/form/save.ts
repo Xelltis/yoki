@@ -10,6 +10,7 @@ import { winLabel } from '../model/dates';
 import { byId, hasPoll, isRecruit, me, splitNames, STATUS_PROMOTE } from '../model/model';
 import { isTmp, TMP, withoutSession, withoutTmp, withSessions } from '../model/optimistic';
 import type { SessionForm } from './model';
+import { splitWant } from '../../../../shared/waitlist';
 
 export function useSessionSave() {
   const d = useData();
@@ -29,11 +30,13 @@ export function useSessionSave() {
     if (promoted) promoted.forEach((n) => { if (form.members.indexOf(n) < 0) form.members.push(n); });
     // 押した瞬間にカレンダーへ仮に出す。予定にするなら参加希望の人も参加者に入れておく
     const tmpMembers = form.members.concat(splitNames(form.extra)), toDated = STATUS_PROMOTE.indexOf(form.status) >= 0;
-    if (prev && toDated) prev.want.forEach((n) => { if (tmpMembers.indexOf(n) < 0 && n !== form.gm.trim()) tmpMembers.push(n); });
+    // 募集から移すときは、参加希望（定員の中）の人だけ。キャンセル待ちの人は並んだまま残る
+    const pw = prev ? splitWant(prev) : { want: [], wait: [] };
+    if (prev && toDated && isRecruit(prev)) pw.want.forEach((n) => { if (tmpMembers.indexOf(n) < 0 && n !== form.gm.trim()) tmpMembers.push(n); });
     const tmp: ConsoleSession = {
       id: form.id || TMP, name: form.name.trim(), gm: form.gm.trim(), members: tmpMembers,
       date: form.date, start: form.start, end: form.end, status: form.status as ConsoleSession['status'], place: form.place.trim(), memo: form.memo.trim(), notified: '', editor: form.me,
-      want: prev && !toDated ? prev.want : [], interest: prev ? prev.interest : [], series: form.series, seriesEnd: form.seriesEnd, asked: '',
+      want: !prev ? [] : !toDated ? prev.want : (isRecruit(prev) ? pw.wait : prev.want).filter((n) => tmpMembers.indexOf(n) < 0), interest: prev ? prev.interest : [], series: form.series, seriesEnd: form.seriesEnd, asked: '',
       window: '', windowFrom: form.windowFrom, windowTo: form.windowTo, windowLabel: winLabel(form.windowFrom, form.windowTo), windowKey: form.windowFrom || '',
       candidates: prev && form.status === '調整中' ? (prev.candidates || []) : [], votes: prev ? (prev.votes || {}) : {},
       pollDue: prev && form.status === '調整中' ? prev.pollDue : '',

@@ -47,7 +47,7 @@ export async function seedSample(db: D1Database, groupId: string, appUrl: string
   const nextMid = nextFrom.slice(0, 8) + '15';
   const nextTo = addDays(nmM === 12 ? nmY + 1 + '-01-01' : nmY + '-' + String(nmM + 1).padStart(2, '0') + '-01', -1);
   const S = async (o: Record<string, unknown>, by = 'ひより') =>
-    (await saveSession(await as(by), { extra: '', members: [], start: '', end: '', place: '', memo: '', series: '', ...o })) as { id: string };
+    (await saveSession(await as(by), { extra: '', members: [], start: '', end: '', place: '', memo: '', series: '', ...o }, io)) as { id: string };
   /** シナリオを登録して、そのIDを返す */
   const SC = async (by: string, o: Record<string, unknown>) => (await saveScenario(await as(by), o)).id;
   const mark = async (id: string, name: string, kind: string) => { await setScenarioMark(await as(name), { id, name, kind }); };
@@ -87,13 +87,12 @@ export async function seedSample(db: D1Database, groupId: string, appUrl: string
   await assignSlots(await as('レン'), { id: library.id, assign: { 1: 'こまち', 2: 'ひより' } });
   await submitSheet(await as('こまち'), { id: library.id, name: 'こまち', url: 'https://example.com/sheet/komachi', pc: '水瀬 栞' });
   // 募集
-  const castle = await S({ name: '雪原の古城', gm: 'こまち', status: '募集', windowFrom: nextFrom, windowTo: nextMid, memo: '3〜4人で。ボイスあり', scenarioId: scCastle, capacity: 4, recruitDue: T(20) });
-  await setInterest(await as('ソラ'), { id: castle.id, name: 'ソラ', level: 'want' });
-  await setInterest(await as('レン'), { id: castle.id, name: 'レン', level: 'interest' });
-  await setInterest(await as('ユズ'), { id: castle.id, name: 'ユズ', level: 'interest' });
+  // 定員に達していて、キャンセル待ちが1人並んでいる
+  const castle = await S({ name: '雪原の古城', gm: 'こまち', status: '募集', windowFrom: nextFrom, windowTo: nextMid, memo: '3人まで。ボイスあり', scenarioId: scCastle, capacity: 3, recruitDue: T(20) });
+  for (const name of ['ソラ', 'ミナト', 'ユズ', 'レン']) await setInterest(await as(name), { id: castle.id, name, level: 'want' }, io);
   const camp = await S({ name: '新キャンペーン顔合わせ', gm: 'ひより', status: '募集', windowFrom: nextMid, windowTo: nextTo, memo: '長いキャンペーンの相談会。見学だけでも' });
-  await setInterest(await as('ミナト'), { id: camp.id, name: 'ミナト', level: 'want' });
-  await setInterest(await as('こまち'), { id: camp.id, name: 'こまち', level: 'interest' });
+  await setInterest(await as('ミナト'), { id: camp.id, name: 'ミナト', level: 'want' }, io);
+  await setInterest(await as('こまち'), { id: camp.id, name: 'こまち', level: 'interest' }, io);
   // 日程調整
   const maze = await S({ name: '迷宮の底へ', gm: 'レン', members: ['ひより', 'ソラ', 'こまち'], status: '調整中', windowFrom: T(18), windowTo: T(32), memo: '候補の期間のどこかで1回' }, 'レン');
   await startPoll(await as('レン'), { id: maze.id, dates: [T(19), T(21), T(24), T(26)], start: '20:00', end: '23:00', due: T(14) });

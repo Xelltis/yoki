@@ -141,7 +141,10 @@ describe('押されたボタンの処理', () => {
     expect(await handle(press(customId(G.id, 1, 'interest')))).toBe('「古城」に興味ありを付けました: ソラ');
     expect(await handle(press(customId(G.id, 1, 'none')))).toBe('「古城」への希望を取り消しました: ソラ');
     await ok(G.komachi, G.id, 'setInterest', { id: 'S001', name: 'こまち', level: 'want' });
-    expect(await handle(press(customId(G.id, 1, 'want')))).toBe('「古城」は定員（1人）に達しています。「興味あり」なら付けられます。');
+    // 定員に達していれば、キャンセル待ちに並ぶ
+    expect(await handle(press(customId(G.id, 1, 'want')))).toBe('「古城」は定員（1人）に達しているので、キャンセル待ちに並びました（1番目）: ソラ');
+    await env.DB.prepare('UPDATE sessions SET recruit_due = ?').bind(T(-1)).run();
+    expect(await handle(press(customId(G.id, 1, 'interest')))).toContain('「古城」の募集は締め切りました');
     expect(await handle(press(customId(G.id, 9, 'want')))).toBe('その卓が見つかりません: S009');
   });
 

@@ -25,6 +25,7 @@ import ILink from '~icons/material-symbols/link-outline-rounded';
 import ILogin from '~icons/material-symbols/login-outline-rounded';
 import ILogout from '~icons/material-symbols/logout-outline-rounded';
 import INotifications from '~icons/material-symbols/notifications-outline-rounded';
+import IPersonAdd from '~icons/material-symbols/person-add-outline-rounded';
 import IPlayCircle from '~icons/material-symbols/play-circle-outline-rounded';
 import IRefresh from '~icons/material-symbols/refresh-outline-rounded';
 import IRestartAlt from '~icons/material-symbols/restart-alt-outline-rounded';
@@ -65,6 +66,7 @@ export const ICONS = {
   login: ILogin,
   logout: ILogout,
   notifications: INotifications,
+  person_add: IPersonAdd,
   play_circle: IPlayCircle,
   refresh: IRefresh,
   restart_alt: IRestartAlt,

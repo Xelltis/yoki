@@ -12,6 +12,7 @@ import { checkForm, collect, conflictText, type Fields, fieldsOf, FLOW, type Msg
 import { ConflictWarn, DateRow, FormMsg, NameRow, NotifyCheck, PeopleFields, PlaceMemo, RecruitRow, ScenarioRow, SeriesRow, WindowRow } from './parts';
 import { type PromoteAsk, PromoteModal } from './PromoteModal';
 import { useSessionSave } from './save';
+import { splitWant } from '../../../../shared/waitlist';
 
 export function EditSessionForm({ req, onClose, reopen }: { req: FormReq; onClose: () => void; reopen: () => void }) {
   const d = useData();
@@ -27,8 +28,12 @@ export function EditSessionForm({ req, onClose, reopen }: { req: FormReq; onClos
   const st = f.status, noDate = st === '募集' || st === '調整中';
   const changed = !!s && s.status !== st && FLOW[st];
   const conflict = conflictText(d, collect(d, f, '')), passWarn = passWarnText(d, collect(d, f, ''));
-  const wantInfo = s && isRecruit(s) && (s.want.length || s.interest.length)
-    ? { text: '参加希望: ' + (s.want.length ? s.want.join('、') : 'なし') + '　／　興味あり: ' + (s.interest.length ? s.interest.join('、') : 'なし'), promote: STATUS_PROMOTE.indexOf(st) >= 0 && s.want.length > 0 }
+  const w = s ? splitWant(s) : null;
+  const wantInfo = s && w && isRecruit(s) && (s.want.length || s.interest.length)
+    ? {
+      text: '参加希望: ' + (w.want.length ? w.want.join('、') : 'なし') + (w.wait.length ? '　／　キャンセル待ち: ' + w.wait.join('、') : '') + '　／　興味あり: ' + (s.interest.length ? s.interest.join('、') : 'なし'),
+      promote: STATUS_PROMOTE.indexOf(st) >= 0 && w.want.length > 0,
+    }
     : null;
   const pollNext = st === '調整中' && !(s && hasPoll(s));
   const fail = (m: string) => { reopen(); setMsg({ text: m, cls: 'err' }); };

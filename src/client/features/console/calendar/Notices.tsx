@@ -7,6 +7,7 @@ import { daysBetween, fmtJa, timeRange } from '../model/dates';
 import { active, hasPoll, isAdjusting, isDated, isMyTurn, isRecruit, pollPending, sortedActive, sortSessions } from '../model/model';
 import { notifyState } from '../model/notify';
 import { notice, noticeSub } from '../styles';
+import { splitWant } from '../../../../shared/waitlist';
 
 /** 押したときに移る先。dayはその日を選ぶ、recruitは「募集・調整」のタブ（卓のIDがあればその卓のカードへ）、targetは都合を見る卓 */
 type Item = { cls: string; body: ReactNode; day?: string; recruit?: { id?: string }; target?: string };
@@ -35,7 +36,7 @@ export function Notices({ d, onDay, onRecruit, onTarget }: {
         <Icon name="campaign" />{'募集中' + rec.length + '件'}
         {rec.slice(0, rec.length > 3 ? 2 : 3).map((s) => (
           <span className="block" key={s.id}>
-            <b>{s.name}</b><span className="ml-6 text-12 font-normal text-muted">{(s.windowLabel || '期間未定') + (s.want.length || s.capacity ? '　希望' + s.want.length + (s.capacity ? '/' + s.capacity : '') + '人' : '') + (s.recruitDue && s.recruitDue >= d.today ? '　' + fmtJa(s.recruitDue) + '締め切り' : '')}</span>
+            <b>{s.name}</b><span className="ml-6 text-12 font-normal text-muted">{(s.windowLabel || '期間未定') + (s.want.length || s.capacity ? '　希望' + splitWant(s).want.length + (s.capacity ? '/' + s.capacity : '') + '人' + (splitWant(s).wait.length ? '・待ち' + splitWant(s).wait.length + '人' : '') : '') + (s.recruitDue && s.recruitDue >= d.today ? '　' + fmtJa(s.recruitDue) + '締め切り' : '')}</span>
           </span>
         ))}
         {/* 多いときは2件だけ出し、残りの数を出す（全部は「募集・調整」タブにある） */}

@@ -3,6 +3,7 @@ import { STATUS } from '../domain/constants';
 import { peopleOf, pollVoters, windowInfo } from '../domain/model';
 import type { Ctx, Session } from '../domain/types';
 import { fmtDateJa, timeRange } from '../lib/jst';
+import { splitWant } from '../../shared/waitlist';
 import { type Component, pollComponents, recruitComponents } from './buttons';
 
 export type Embed = { title: string; description: string; color: number; footer: { text: string } };
@@ -26,7 +27,11 @@ export function whenText(s: Session): string {
 
 export function sessionEmbed(ctx: PayloadCtx, s: Session): Embed {
   const lines = ['GM: ' + (s.gm || '未定'), '日時: ' + whenText(s), '参加者: ' + (s.members.length ? s.members.join('、') : '未定')];
-  if (s.status === STATUS.RECRUIT && (s.want.length || s.capacity)) lines.push('参加希望: ' + (s.want.join('、') || 'まだいません') + (s.capacity ? '（' + s.want.length + '/' + s.capacity + '人）' : ''));
+  if (s.status === STATUS.RECRUIT && (s.want.length || s.capacity)) {
+    const w = splitWant(s);
+    lines.push('参加希望: ' + (w.want.join('、') || 'まだいません') + (s.capacity ? '（' + w.want.length + '/' + s.capacity + '人）' : ''));
+    if (w.wait.length) lines.push('キャンセル待ち: ' + w.wait.join('、'));
+  }
   if (s.status === STATUS.RECRUIT && s.recruitDue) lines.push('締め切り: ' + fmtDateJa(s.recruitDue));
   if (s.status === STATUS.HELD && s.absent.length) lines.push('行けなくなった: ' + s.absent.map((a) => a.name).join('、'));
   if (s.place) lines.push('場所: ' + s.place);
@@ -100,10 +105,12 @@ export function pollPayload(ctx: PayloadCtx, s: Session, me: string): Payload {
   return { content: lines.join('\n'), embeds: [sessionEmbed(ctx, s)], components: pollComponents(ctx, s) };
 }
 
-/** GMを呼ぶ文（DiscordのIDが無ければ名前） */
+/** 人を呼ぶ文（DiscordのIDが無ければ名前） */
+const callOf = (ctx: PayloadCtx, name: string) => { const id = discordIdOf(ctx, name); return id ? '<@' + id + '>' : name + 'さん'; };
+
+/** GMを呼ぶ文（GMがいなければ空） */
 function gmCall(ctx: PayloadCtx, s: Session): string {
-  const gmId = discordIdOf(ctx, s.gm);
-  return gmId ? '<@' + gmId + '>' : s.gm ? s.gm + 'さん' : '';
+  return s.gm ? callOf(ctx, s.gm) : '';
 }
 
 /** これからの候補日ごとの ◯ と △ の数（1日1行） */
@@ -128,7 +135,7 @@ export function pollReadyPayload(ctx: PayloadCtx, s: Session): Payload {
 
 /** 日程調整の締め切りが近い（明日か今日）。まだ答えていない人だけを呼ぶ。ボタンを使うグループでは、そのまま答えられる */
 export function pollDuePayload(ctx: PayloadCtx, s: Session, pending: string[]): Payload {
-  const call = pending.map((n) => { const id = discordIdOf(ctx, n); return id ? '<@' + id + '>' : n + 'さん'; }).join(' ');
+  const call = pending.map((n) => callOf(ctx, n)).join(' ');
   const when = s.pollDue === ctx.today ? '今日' : '明日';
   return {
     content: [
@@ -161,6 +168,7 @@ export function absencePayload(ctx: PayloadCtx, s: Session, name: string, note: 
   return {
     content: '🙇 「' + s.name + '」（' + fmtDateJa(s.date!) + ' ' + timeRange(s) + '）に、' + name + 'が行けなくなりました。' + call +
       (note ? '\n💬 ' + note.replace(/\s+/g, ' ').replace(/@/g, '@\u200b') : '') +
+      (s.want.length ? '\nキャンセル待ち: ' + s.want.join('、') + '（Yokiの「繰り上げる」で参加者にできます）' : '') +
       '\nYokiで「日を組み直す」か、参加者を見直してください。' + (ctx.appUrl ? '\n🔗 ' + ctx.appUrl : ''),
     embeds: [sessionEmbed(ctx, s)],
   };
@@ -170,10 +178,25 @@ export function absencePayload(ctx: PayloadCtx, s: Session, name: string, note: 
 export function recruitDuePayload(ctx: PayloadCtx, s: Session): Payload {
   const gmId = discordIdOf(ctx, s.gm);
   const call = gmId ? ' <@' + gmId + '>' : s.gm ? ' ' + s.gm + 'さん' : '';
-  const got = '参加希望: ' + (s.want.length ? s.want.join('、') : 'まだいません') + (s.capacity ? '（' + s.want.length + '/' + s.capacity + '人）' : '（' + s.want.length + '人）');
+  const w = splitWant(s);
+  const got = '参加希望: ' + (w.want.length ? w.want.join('、') : 'まだいません') + (s.capacity ? '（' + w.want.length + '/' + s.capacity + '人）' : '（' + w.want.length + '人）') +
+    (w.wait.length ? '　キャンセル待ち: ' + w.wait.join('、') : '');
   return {
     content: '📮 「' + s.name + '」の募集は今日（' + fmtDateJa(s.recruitDue!) + '）で締め切りです。' + got + call +
       '\n集まったら、カードの「開催にする」か、「編集」で状態を「調整中」にして進めてください。' + (ctx.appUrl ? '\n🔗 ' + ctx.appUrl : ''),
+    embeds: [sessionEmbed(ctx, s)],
+  };
+}
+
+/**
+ * キャンセル待ちから繰り上がった。繰り上がった人を呼ぶ。
+ * autoなら募集の卓に空きが出て自動で参加希望に、でなければGMか管理者が参加者にした
+ */
+export function waitPromotedPayload(ctx: PayloadCtx, s: Session, names: string[], auto: boolean): Payload {
+  const call = names.map((n) => callOf(ctx, n)).join(' ');
+  return {
+    content: (auto ? '🎟️ 「' + s.name + '」に空きが出たので、キャンセル待ちから参加希望に繰り上がりました: ' : '🎟️ 「' + s.name + '」のキャンセル待ちから、参加者に繰り上がりました: ') +
+      call + (ctx.appUrl ? '\n🔗 ' + ctx.appUrl : ''),
     embeds: [sessionEmbed(ctx, s)],
   };
 }

@@ -18,6 +18,8 @@ import { fmtJa, holidayName, parseYmd, timeRange } from '../model/dates';
 import { byId, hasPoll, isAdjusting, isRecruit, me, peopleOf, periodOfSession, pollCount, pollFillDays, pollPending, pollVoters, scenarioOf, sortSessions, voteFromAvail } from '../model/model';
 import { hookFor } from '../model/notify';
 import { withSession } from '../model/optimistic';
+import { splitWant } from '../../../../shared/waitlist';
+import { WaitList } from './WaitList';
 import { Place } from '../Place';
 import { useGoTab } from '../shell/nav';
 import { people, personChip, res } from '../styles';
@@ -103,8 +105,9 @@ export function RecruitTab() {
     setFlag(setSaving, s.id, true);
     sync.write<RpcResult>('setInterest', { id: s.id, name: mine, level }, {
       optimistic: (cur) => withSession(cur, s.id, (x) => {
-        const want = x.want.filter((n) => n !== mine), interest = x.interest.filter((n) => n !== mine);
-        if (level === 'want') want.push(mine); else if (level === 'interest') interest.push(mine);
+        // 参加希望を出し直しても、並んだ順は変えない（サーバーと同じ）
+        const want = level === 'want' && x.want.indexOf(mine) >= 0 ? x.want : x.want.filter((n) => n !== mine).concat(level === 'want' ? [mine] : []);
+        const interest = x.interest.filter((n) => n !== mine).concat(level === 'interest' ? [mine] : []);
         return { ...x, want, interest };
       }),
     }).then((res) => { setFlag(setSaving, s.id, false); toast(res.message); },
@@ -208,8 +211,9 @@ export function RecruitTab() {
         )}
         {list.map((s) => {
           const level = s.want.indexOf(mine) >= 0 ? 'want' : s.interest.indexOf(mine) >= 0 ? 'interest' : 'none';
-          // 定員に達した卓は参加希望を、締め切りを過ぎた卓はどちらも、新しく付けられない（取り消しはできる）
-          const full = s.capacity > 0 && s.want.length >= s.capacity, closed = !!s.recruitDue && d.today > s.recruitDue;
+          // 定員に達した卓の参加希望は、キャンセル待ちに並ぶ。締め切りを過ぎた卓には、新しく付けられない（取り消しはできる）
+          const w = splitWant(s), queue = w.wait.indexOf(mine);
+          const full = s.capacity > 0 && w.want.length >= s.capacity, closed = !!s.recruitDue && d.today > s.recruitDue;
           const member = !!mine && peopleOf(s).indexOf(mine) >= 0;
           const canAsk = hookFor(d, s.series, 'recruit');
           const askTitle = !canAsk ? 'チャンネル未設定' : !s.interest.length ? '興味ありの人がいません' : '興味ありの人にメンションして、参加できるかDiscordで聞く';
@@ -224,22 +228,25 @@ export function RecruitTab() {
               {scenarioOf(d, s) && <div className="hint" data-scenario-of={s.id}>{'シナリオ: ' + scenarioOf(d, s)!.name}</div>}
               <People d={d} s={s} none="GM・参加者 未定" />
               <div className="mt-10 grid grid-cols-[max-content_minmax(0,1fr)] gap-x-12 gap-y-2 text-13">
-                <div className="contents"><b className="font-semibold text-muted">参加希望</b><span data-want-of={s.id}>{s.want.length ? s.want.join('、') : <span className="hint">まだいません</span>}{s.capacity > 0 && <span className={'ml-6 text-12 font-semibold ' + (full ? 'text-soon-text' : 'text-muted')}>{s.want.length + '/' + s.capacity + '人' + (full ? '（定員）' : '')}</span>}</span></div>
+                <div className="contents"><b className="font-semibold text-muted">参加希望</b><span data-want-of={s.id}>{w.want.length ? w.want.join('、') : <span className="hint">まだいません</span>}{s.capacity > 0 && <span className={'ml-6 text-12 font-semibold ' + (full ? 'text-soon-text' : 'text-muted')}>{w.want.length + '/' + s.capacity + '人' + (full ? '（定員）' : '')}</span>}</span></div>
+                {w.wait.length > 0 && <div className="contents"><b className="font-semibold text-muted">キャンセル待ち</b><span data-wait-of={s.id}>{w.wait.map((n, i) => (i + 1) + '. ' + n).join('　')}</span></div>}
                 <div className="contents"><b className="font-semibold text-muted">興味あり</b>{s.interest.length ? s.interest.join('、') : <span className="hint">まだいません</span>}</div>
                 {s.recruitDue && <div className="contents"><b className="font-semibold text-muted">締め切り</b><span data-due-of={s.id} className={closed ? 'text-soon-text' : ''}>{fmtJa(s.recruitDue) + (closed ? '（締め切りました）' : s.recruitDue === d.today ? '（今日まで）' : 'まで')}</span></div>}
               </div>
               {s.place && <Place place={s.place} className={rcRow} />}
               {s.memo && <div className={rcRow + ' hint'}>{s.memo}</div>}
-              {s.gm === mine && <p className={next}><Icon name="arrow_forward" size="sm" className={nextIcon} /><span>集まったら「編集」で状態を「開催」（日が決まっている）か「調整中」（みんなで日を選ぶ）にします。参加希望の人はそのまま参加者に入ります。</span></p>}
+              {s.gm === mine && <p className={next}><Icon name="arrow_forward" size="sm" className={nextIcon} /><span>{'集まったら「編集」で状態を「開催」（日が決まっている）か「調整中」（みんなで日を選ぶ）にします。参加希望の人はそのまま参加者に入ります。' + (w.wait.length ? 'キャンセル待ちの人は、並んだまま残ります。' : '')}</span></p>}
               <div className="btns mt-12 gap-6">
                 {member ? <span className="hint">{'あなたはこの卓の' + (s.gm === mine ? ' GM ' : '参加者') + 'です'}</span> : (
                   <>
                     <button type="button" className={'btn small' + (level === 'want' ? ' on' : '')} aria-pressed={level === 'want'} data-level="want" data-id={s.id}
-                      disabled={level !== 'want' && (closed || full)} title={level !== 'want' && closed ? '募集は締め切りました' : level !== 'want' && full ? '定員に達しています' : undefined} onClick={() => setLevel(s, 'want')}>参加希望</button>
+                      disabled={level !== 'want' && closed} title={level !== 'want' && closed ? '募集は締め切りました' : level !== 'want' && full ? '定員に達しています。並ぶと、空きが出たときに順に繰り上がります' : undefined} onClick={() => setLevel(s, 'want')}>
+                      {queue >= 0 ? 'キャンセル待ち ' + (queue + 1) + '番目' : level !== 'want' && full ? 'キャンセル待ちに並ぶ' : '参加希望'}
+                    </button>
                     <button type="button" className={'btn small' + (level === 'interest' ? ' on' : '')} aria-pressed={level === 'interest'} data-level="interest" data-id={s.id}
                       disabled={level !== 'interest' && closed} title={level !== 'interest' && closed ? '募集は締め切りました' : undefined} onClick={() => setLevel(s, 'interest')}>興味あり</button>
                     {level !== 'none' && <button type="button" className="btn small" data-level="none" data-id={s.id} onClick={() => setLevel(s, 'none')}>取り消す</button>}
-                    {level === 'none' && (closed || full) && <span className="hint">{closed ? '募集は締め切りました' : '定員に達しています。「興味あり」なら付けられます'}</span>}
+                    {level === 'none' && (closed || full) && <span className="hint">{closed ? '募集は締め切りました' : '定員に達しています。並ぶと、空きが出たときに順に繰り上がります'}</span>}
                   </>
                 )}
                 <span className={res} data-rres={s.id}>{saving[s.id] ? '保存しています…' : ''}</span>
@@ -288,6 +295,7 @@ export function RecruitTab() {
               {scenarioOf(d, s) && <div className="hint" data-scenario-of={s.id}>{'シナリオ: ' + scenarioOf(d, s)!.name}</div>}
               {prepSummary(d, s) && <div className="hint" data-prep-of={s.id}>{prepSummary(d, s)}</div>}
               <People d={d} s={s} none="GM・参加者 未定" />
+              <WaitList s={s} />
               {s.place && <Place place={s.place} className={rcRow} />}
               {s.memo && <div className={rcRow + ' hint'}>{s.memo}</div>}
               {poll && (

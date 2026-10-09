@@ -4,6 +4,7 @@ import type { ConsoleSession } from '../../../../shared/api';
 import { Modal } from '../../../ui/Modal';
 import { formActions } from '../../../ui/modalParts';
 import { checkPill, checkPills } from '../styles';
+import { splitWant } from '../../../../shared/waitlist';
 
 export type PromoteAsk = { s: ConsoleSession; status: string };
 
@@ -14,7 +15,9 @@ export function PromoteModal({ ask, onDone }: { ask: PromoteAsk | null; onDone: 
   // 開くたびに、チェックを外した状態から始める
   if (ask !== seen) { setSeen(ask); setPicked([]); }
   const s = ask?.s;
-  const lead = s ? '「' + s.name + '」を「' + ask!.status + '」にします。' + (s.want.length ? '参加希望の' + s.want.join('、') + 'は参加者に入ります。' : '') +
+  const w = s ? splitWant(s) : null;
+  const lead = s && w ? '「' + s.name + '」を「' + ask!.status + '」にします。' + (w.want.length ? '参加希望の' + w.want.join('、') + 'は参加者に入ります。' : '') +
+    (w.wait.length ? 'キャンセル待ちの' + w.wait.join('、') + 'は、並んだまま残ります。' : '') +
     '興味ありの人は、参加者にする人だけチェックしてください。チェックしない人は一覧から外れます。' : '';
   return (
     <Modal id="promoteModal" open={!!ask} onClose={() => onDone(null)} backdropClose>

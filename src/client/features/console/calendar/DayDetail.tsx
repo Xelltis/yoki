@@ -18,6 +18,7 @@ import { hookFor, kindOf, notifyState } from '../model/notify';
 import { withSession } from '../model/optimistic';
 import { useGoRecruit } from '../shell/nav';
 import { Place } from '../Place';
+import { WaitList } from '../recruit/WaitList';
 import { notice, people as peopleRow, personChip, res, row2 } from '../styles';
 
 /** 内訳のカード（狭い画面では、日を選ぶまで隠す）。上の帯と下のタブに隠れないように送る */
@@ -137,6 +138,7 @@ export function DayDetail({ d, target }: { d: ConsoleData; target: string }) {
                   {upcoming && (s.gm === mine || d.isAdmin) && <span className="block text-12">「日を組み直す」で候補日を出し直すか、「編集」で参加者を見直してください。</span>}
                 </div>
               )}
+              <WaitList s={s} />
               {s.place && <Place place={s.place} className={row2} />}
               {s.memo && <div className={row2 + ' hint'}>{s.memo}</div>}
               {s.notified ? <div className={row2 + ' hint'}>{'開催前の知らせは' + s.notified + 'に送りました'}</div>

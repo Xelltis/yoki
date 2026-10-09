@@ -102,7 +102,7 @@ export async function handleComponent(env: Bindings, it: ComponentInteraction, a
     const r = id.action === 'fill' ? await setPollVoteFromAvail(ctx, form, io)
       : id.action === 'any' ? await setPollVoteAll(ctx, form, io)
         : id.action === 'days' ? await setPollVoteDays(ctx, { ...form, days: it.data?.values ?? [] }, io)
-          : await setInterest(ctx, { ...form, level: id.action });
+          : await setInterest(ctx, { ...form, level: id.action }, io);
     return r.message;
   } catch (e) {
     if (e instanceof AppError) return e.message;

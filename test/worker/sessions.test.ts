@@ -175,17 +175,6 @@ describe('募集の定員と締め切り', () => {
     expect((await fail(G.admin, G.id, 'saveSession', { name: '古城', status: '募集', recruitDue: 'x' })).error).toBe('募集の締め切りの日付が読めません: x');
   });
 
-  test('定員に達したら参加希望は付けられない（興味ありと取り消しはできる）。付けている人は付け直せる', async () => {
-    await ok(G.admin, G.id, 'saveSession', { name: '古城', gm: 'ひより', status: '募集', capacity: 1 });
-    await ok(G.sora, G.id, 'setInterest', { id: 'S001', name: 'ソラ', level: 'want' });
-    expect((await fail(G.komachi, G.id, 'setInterest', { id: 'S001', name: 'こまち', level: 'want' })).error).toBe('「古城」は定員（1人）に達しています。「興味あり」なら付けられます。');
-    await ok(G.komachi, G.id, 'setInterest', { id: 'S001', name: 'こまち', level: 'interest' });
-    await ok(G.sora, G.id, 'setInterest', { id: 'S001', name: 'ソラ', level: 'want' });
-    await ok(G.sora, G.id, 'setInterest', { id: 'S001', name: 'ソラ', level: 'none' });
-    const r = await ok(G.komachi, G.id, 'setInterest', { id: 'S001', name: 'こまち', level: 'want' });
-    expect(sessionOf(r, 'S001')).toMatchObject({ want: ['こまち'], interest: [] });
-  });
-
   test('締め切りを過ぎたら、参加希望も興味ありも付けられない（取り消しはできる）。締め切りの日は付けられる', async () => {
     await ok(G.admin, G.id, 'saveSession', { name: '古城', gm: 'ひより', status: '募集', recruitDue: T(0) });
     await ok(G.sora, G.id, 'setInterest', { id: 'S001', name: 'ソラ', level: 'interest' });

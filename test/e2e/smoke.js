@@ -263,27 +263,48 @@ await withDevServer(async (base) => {
       await tab('cal');
     });
 
-    await step('募集中の卓に参加希望を付け、取り消せる', async () => {
+    await step('募集中の卓に参加希望を付け、取り消せる。定員に達した卓では、キャンセル待ちに並ぶ', async () => {
       await tab('recruit');
       const s = (await D()).sessions.find((x) => x.name === '雪原の古城');
+      // サンプルの「雪原の古城」は定員3人に達していて、レンがキャンセル待ちの1番目
+      assert.match(await page.textContent(`#recruitList button[data-level="want"][data-id="${s.id}"]`), /キャンセル待ちに並ぶ/);
       await page.click(`#recruitList button[data-level="want"][data-id="${s.id}"]`);
       await until((d, id) => d.sessions.find((x) => x.id === id).want.includes('ひより'), s.id);
+      await page.waitForSelector(`#recruitList button[data-level="want"][data-id="${s.id}"]:has-text("キャンセル待ち 2番目")`);
+      assert.match(await page.textContent(`[data-wait-of="${s.id}"]`), /1\. レン　2\. ひより/);
       await page.click(`#recruitList button[data-level="none"][data-id="${s.id}"]`);
       await until((d, id) => !d.sessions.find((x) => x.id === id).want.includes('ひより'), s.id);
     });
 
-    await step('募集の定員を決めると、定員に達した卓には参加希望を付けられない', async () => {
+    await step('募集の定員を変えると、外に出た人はキャンセル待ちに並び、増やすと前の人から繰り上がる', async () => {
       const s = (await D()).sessions.find((x) => x.name === '雪原の古城');
-      assert.equal(s.capacity, 4, 'サンプルの定員');
-      await page.click(`#recruitList button[data-edit="${s.id}"]`);
-      assert.equal(await page.inputValue('#capacity'), '4');
-      await page.fill('#capacity', '1');
-      await page.click('#f button[type=submit]');
-      await until((d, id) => d.sessions.find((x) => x.id === id).capacity === 1, s.id);
-      assert.match(await page.textContent(`[data-want-of="${s.id}"]`), /1\/1人（定員）/);
-      assert.equal(await page.isDisabled(`#recruitList button[data-level="want"][data-id="${s.id}"]`), true, '参加希望は押せない');
+      assert.equal(s.capacity, 3, 'サンプルの定員');
+      const setCapacity = async (n) => {
+        await page.click(`#recruitList button[data-edit="${s.id}"]`);
+        await page.fill('#capacity', String(n));
+        await page.click('#f button[type=submit]');
+        await until((d, a) => d.sessions.find((x) => x.id === a[0]).capacity === a[1], [s.id, n]);
+      };
+      await setCapacity(1);
+      assert.match(await page.textContent(`[data-want-of="${s.id}"]`), /ソラ1\/1人（定員）/);
+      assert.match(await page.textContent(`[data-wait-of="${s.id}"]`), /1\. ミナト　2\. ユズ　3\. レン/);
+      assert.equal(await page.isDisabled(`#recruitList button[data-level="want"][data-id="${s.id}"]`), false, '定員に達していても並べる');
       assert.equal(await page.isDisabled(`#recruitList button[data-level="interest"][data-id="${s.id}"]`), false, '興味ありは押せる');
       assert.match(await page.textContent(`[data-due-of="${s.id}"]`), /まで/);
+      await setCapacity(2);
+      assert.match(await page.textContent(`[data-want-of="${s.id}"]`), /ソラ、ミナト2\/2人（定員）/);
+    });
+
+    await step('募集を開催にすると、キャンセル待ちの人は並んだまま残り、管理者が繰り上げられる', async () => {
+      const d = await D(), s = d.sessions.find((x) => x.name === '雪原の古城'), day = d.availDays[9];
+      await page.click(`#recruitList button[data-hold="${s.id}"]`);
+      await page.fill('#date', day);
+      await page.click('#f button[type=submit]');
+      await until((x, id) => { const t = x.sessions.find((y) => y.id === id); return t.status === '開催' && t.want.join() === 'ユズ,レン'; }, s.id);
+      await tab('cal');
+      await page.evaluate((k) => window.yoki.selectDay(k), day);
+      await page.click(`#dayBody [data-promote="${s.id}"][data-name="ユズ"]`);
+      await until((x, id) => { const t = x.sessions.find((y) => y.id === id); return t.members.includes('ユズ') && t.want.join() === 'レン'; }, s.id);
     });
 
     await step('調整中の卓を登録すると候補日を選ぶ窓が開き、候補日を出せる', async () => {

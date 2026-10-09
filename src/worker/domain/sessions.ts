@@ -11,6 +11,9 @@ import { changeText, createdText, historyForSeqStmt, historyManyStmt, historyStm
 import { checkGmChange, unassignGoneStmt } from './prep';
 import { findScenario, keepPassesStmt, readScenarioId } from './scenarios';
 import type { Ctx, Session } from './types';
+import { promotedBy, splitWant } from '../../shared/waitlist';
+import { type Io, noticeNote } from './polls';
+import { noticeWaitPromoted } from './waitlist';
 
 /** 状態を読む。知らない値は「開催」（旧い版の「予定」も「開催」） */
 function readStatus(v: unknown): Status {
@@ -66,7 +69,7 @@ function readRecruitLimits(form: Form, status: Status, existing: Session | null)
 }
 
 /** 卓を登録・更新する。form.datesに2日以上あれば、まとめて登録する（新規だけ） */
-export async function saveSession(ctx: Ctx, form: Form) {
+export async function saveSession(ctx: Ctx, form: Form, io: Io) {
   const name = str(form.name);
   if (!name) throw badRequest('卓の名前を入れてください。');
   const dates = uniq(list(form.dates)).sort();
@@ -90,15 +93,20 @@ export async function saveSession(ctx: Ctx, form: Form) {
   const notIn = (n: string) => !members.includes(n) && n !== gm;
   let want = existing ? existing.want.filter(notIn) : [];
   let interest = existing ? existing.interest.filter(notIn) : [];
-  let promoted: string[] = [], dropped: string[] = [];
+  let promoted: string[] = [], dropped: string[] = [], waiting: string[] = [];
   if (existing && existing.status === STATUS.RECRUIT && PROMOTE.includes(status)) {
-    // 参加希望はそのまま参加者に。興味ありは、画面で選ばれた人だけが参加者に入っている
-    promoted = want.slice();
+    // 参加希望（定員の中）は参加者に。キャンセル待ちは、そのまま並んで残る。興味ありは、画面で選ばれた人だけが参加者に入っている
+    const w = splitWant({ status: STATUS.RECRUIT, want, capacity: existing.capacity });
+    promoted = w.want;
     members = uniq(members.concat(promoted));
-    want = [];
+    want = waiting = w.wait;
     dropped = interest.filter((n) => !members.includes(n));
     interest = [];
   }
+  // 募集のまま定員を増やしたら、キャンセル待ちの前の人から参加希望に入る
+  const raised = existing && existing.status === STATUS.RECRUIT && status === STATUS.RECRUIT
+    ? promotedBy(existing, { status, want, capacity: limits.capacity })
+    : [];
   const start = normTime(form.start), end = normTime(form.end);
   const at = ctx.now.toISOString();
   const seriesEnd = series ? parseYmd(form.seriesEnd) : null;
@@ -146,6 +154,7 @@ export async function saveSession(ctx: Ctx, form: Form) {
       windowFrom: win?.from ?? null, windowTo: win?.to ?? null, scenarioId, capacity: limits.capacity, recruitDue: limits.due,
     });
     if (detail) stmts.push(historyStmt(ctx, existing.rowId, '変更', detail));
+    if (raised.length) stmts.push(historyStmt(ctx, existing.rowId, '繰り上げ', raised.join('、') + 'を参加希望に'));
   } else {
     const seq = await allocateSeq(ctx, 1);
     id = sessionCode(seq);
@@ -167,8 +176,14 @@ export async function saveSession(ctx: Ctx, form: Form) {
   let message = (existing ? '更新しました: ' : '登録しました: ') + name + '（' + id + '）';
   if (linked) message += '　前の回も「' + series + '」にまとめました。';
   if (promoted.length) message += '　参加希望の' + promoted.join('、') + 'を参加者に加えました。';
+  if (waiting.length) message += '　キャンセル待ちの' + waiting.join('、') + 'は、そのまま並んでいます。';
   if (dropped.length) message += '　興味ありの' + dropped.join('、') + 'は外しました。';
-  return { ok: true, id, message, promoted, dropped };
+  let notified: boolean | null = null;
+  if (raised.length) {
+    notified = await noticeWaitPromoted(ctx, { ...existing!, name, capacity: limits.capacity, want, interest }, raised, true, io.sleep);
+    message += '　キャンセル待ちの' + raised.join('、') + 'が参加希望に繰り上がりました。' + noticeNote(notified, '繰り上げの知らせ');
+  }
+  return { ok: true, id, message, promoted, dropped, notified };
 }
 
 /**
@@ -216,32 +231,44 @@ async function saveSessionDates(ctx: Ctx, form: Form, name: string, raw: string[
   return { ok: true, id: ids[0], ids, names, count: dates.length, message: dates.length + '回分を登録しました: ' + names.join('、') };
 }
 
-/** 募集タブの「参加希望」「興味あり」「取り消す」。片方だけ付く。Discordには送らない */
-export async function setInterest(ctx: Ctx, form: Form) {
+/**
+ * 募集タブの「参加希望」「興味あり」「取り消す」。片方だけ付く。
+ * 定員に達した卓の参加希望は、キャンセル待ちに並ぶ。参加希望の人が外れたら、キャンセル待ちの前の人が繰り上がり、Discordでその人を呼ぶ。
+ * 開催・調整中の卓では、キャンセル待ちをやめる（取り消す）ことだけができる
+ */
+export async function setInterest(ctx: Ctx, form: Form, io: Io) {
   const name = requireSelf(ctx, form.name);
   const level = str(form.level) || 'none';
   if (!['want', 'interest', 'none'].includes(level)) throw badRequest('操作が不正です: ' + level);
   const s = findSession(ctx, form.id);
-  if (s.status !== STATUS.RECRUIT) throw badRequest('「' + s.name + '」は募集中ではありません（' + s.status + '）。');
+  const leaving = level === 'none' && s.want.includes(name);
+  if (s.status !== STATUS.RECRUIT && !leaving) throw badRequest('「' + s.name + '」は募集中ではありません（' + s.status + '）。');
   if (level !== 'none' && peopleOf(s).includes(name)) throw badRequest(name + 'はすでにこの卓の' + (s.gm === name ? 'GM' : '参加者') + 'です。');
   // 締め切りを過ぎたら、新しく付けられない（取り消すことはできる）
   if (level !== 'none' && s.recruitDue && ctx.today > s.recruitDue) throw badRequest('「' + s.name + '」の募集は締め切りました（' + fmtDateJa(s.recruitDue) + 'まで）。');
-  if (level === 'want' && s.capacity !== null && !s.want.includes(name) && s.want.length >= s.capacity) {
-    throw badRequest('「' + s.name + '」は定員（' + s.capacity + '人）に達しています。「興味あり」なら付けられます。');
-  }
-  const want = s.want.filter((n) => n !== name);
-  const interest = s.interest.filter((n) => n !== name);
-  if (level === 'want') want.push(name);
-  if (level === 'interest') interest.push(name);
+  // 参加希望を出し直しても、並んだ順は変えない
+  const want = level === 'want' && s.want.includes(name) ? s.want.slice() : s.want.filter((n) => n !== name).concat(level === 'want' ? [name] : []);
+  const interest = s.interest.filter((n) => n !== name).concat(level === 'interest' ? [name] : []);
+  const after: Session = { ...s, want, interest };
+  const raised = promotedBy(s, after);
   await ctx.db.batch([
-    ...replacePeople(ctx, [{ rowId: s.rowId, people: { ...peopleOfSession(s), want, interest } }]),
+    ...replacePeople(ctx, [{ rowId: s.rowId, people: peopleOfSession(after) }]),
     ctx.db.prepare('UPDATE sessions SET updated_at = ? WHERE id = ?').bind(ctx.now.toISOString(), s.rowId),
+    ...(raised.length ? [historyStmt(ctx, s.rowId, '繰り上げ', raised.join('、') + 'を参加希望に')] : []),
   ]);
-  const message =
-    level === 'want' ? '「' + s.name + '」に参加希望を出しました: ' + name
+  const queue = splitWant(after).wait.indexOf(name);
+  let message =
+    s.status !== STATUS.RECRUIT ? '「' + s.name + '」のキャンセル待ちをやめました: ' + name
+    : level === 'want' && queue >= 0 ? '「' + s.name + '」は定員（' + s.capacity + '人）に達しているので、キャンセル待ちに並びました（' + (queue + 1) + '番目）: ' + name
+    : level === 'want' ? '「' + s.name + '」に参加希望を出しました: ' + name
     : level === 'interest' ? '「' + s.name + '」に興味ありを付けました: ' + name
     : '「' + s.name + '」への希望を取り消しました: ' + name;
-  return { ok: true, id: s.id, level, message };
+  let notified: boolean | null = null;
+  if (raised.length) {
+    notified = await noticeWaitPromoted(ctx, after, raised, true, io.sleep);
+    message += '　キャンセル待ちの' + raised.join('、') + 'が参加希望に繰り上がりました。' + noticeNote(notified, '繰り上げの知らせ');
+  }
+  return { ok: true, id: s.id, level, waiting: queue >= 0 ? queue + 1 : 0, notified, message };
 }
 
 export async function deleteSession(ctx: Ctx, form: Form) {
@@ -335,10 +362,11 @@ export async function bulkUpdateSessions(ctx: Ctx, form: Form) {
     if (v !== STATUS.ADJUSTING) stmts.push(db.prepare('DELETE FROM poll_votes WHERE session_id IN (SELECT value FROM json_each(?))').bind(rowIds));
     if (PROMOTE.includes(v)) {
       for (const s of targets) {
-        if (!s.want.length) continue;
-        // 参加希望の人を参加者に移す
-        const add = s.want.filter((n) => !s.members.includes(n) && n !== s.gm);
-        peopleChanges.push({ rowId: s.rowId, people: { ...peopleOfSession(s), member: uniq(s.members.concat(add)), want: [] } });
+        if (s.status !== STATUS.RECRUIT || !s.want.length) continue;
+        // 参加希望（定員の中）の人を参加者に移す。キャンセル待ちは、そのまま並んで残る
+        const w = splitWant(s);
+        const add = w.want.filter((n) => !s.members.includes(n) && n !== s.gm);
+        peopleChanges.push({ rowId: s.rowId, people: { ...peopleOfSession(s), member: uniq(s.members.concat(add)), want: w.wait } });
         add.forEach((n) => promoted.push(n + '（' + s.name + '）'));
       }
     }

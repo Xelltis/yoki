@@ -28,6 +28,7 @@ import { setAbsence } from '../domain/absence';
 import { getSessionHistory } from '../domain/history';
 import { saveRecord, setPcRecord } from '../domain/records';
 import { exportGroup } from '../domain/export';
+import { promoteWaiter } from '../domain/waitlist';
 import { AppError, adminError, authError, goneError, notFound } from '../lib/errors';
 import type { RpcName } from '../../shared/api';
 
@@ -91,6 +92,8 @@ export const RPC: Record<Exclude<RpcName, 'getConsoleData'>, Entry> = {
   // 卓の記録（GMか管理者）と、自分のPC（参加者本人）。だれが書けるかは中で確かめる
   saveRecord: { run: saveRecord, data: true },
   setPcRecord: { run: setPcRecord, data: true },
+  // キャンセル待ちの人を参加者にする（GMか管理者。中で確かめる）。参加者が変わるので、Googleの予定も書き直す
+  promoteWaiter: { run: promoteWaiter, data: true, calendar: true },
   // グループの中身をJSONで書き出す（読むだけなので、画面のデータは付けない）
   exportGroup: { run: exportGroup, admin: 'グループを書き出すこと' },
   // 消したあとは画面のデータを読めないのでdataを付けない
