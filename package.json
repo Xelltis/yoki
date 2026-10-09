@@ -1,6 +1,6 @@
 {
   "name": "yoki",
-  "version": "1.5.0",
+  "version": "1.5.1",
   "private": true,
   "license": "MIT",
   "description": "Yoki（TRPGの卓の予定を管理する。Cloudflare Workers + D1 + Discordログイン）",
