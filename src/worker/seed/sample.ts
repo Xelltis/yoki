@@ -93,6 +93,7 @@ export async function seedSample(db: D1Database, groupId: string, appUrl: string
   const camp = await S({ name: '新キャンペーン顔合わせ', gm: 'ひより', status: '募集', windowFrom: nextMid, windowTo: nextTo, memo: '長いキャンペーンの相談会。見学だけでも' });
   await setInterest(await as('ミナト'), { id: camp.id, name: 'ミナト', level: 'want' }, io);
   await setInterest(await as('こまち'), { id: camp.id, name: 'こまち', level: 'interest' }, io);
+  await setInterest(await as('ユズ'), { id: camp.id, name: 'ユズ', level: 'watch' }, io);
   // 日程調整
   const maze = await S({ name: '迷宮の底へ', gm: 'レン', members: ['ひより', 'ソラ', 'こまち'], status: '調整中', windowFrom: T(18), windowTo: T(32), memo: '候補の期間のどこかで1回' }, 'レン');
   await startPoll(await as('レン'), { id: maze.id, dates: [T(19), T(21), T(24), T(26)], start: '20:00', end: '23:00', due: T(14) });

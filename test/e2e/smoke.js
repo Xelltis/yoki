@@ -322,6 +322,13 @@ await withDevServer(async (base) => {
       await page.evaluate((k) => window.yoki.selectDay(k), day);
       await page.click(`#dayBody [data-promote="${s.id}"][data-name="ユズ"]`);
       await until((x, id) => { const t = x.sessions.find((y) => y.id === id); return t.members.includes('ユズ') && t.want.join() === 'レン'; }, s.id);
+      // 参加者でなければ、内訳から見学を付けて外せる
+      await page.click(`#dayBody [data-watch="${s.id}"]`);
+      await until((x, id) => x.sessions.find((y) => y.id === id).watch.includes('ひより'), s.id);
+      await page.waitForSelector(`#dayBody [data-watch-of="${s.id}"] >> text=見学をやめる`, { timeout: 15000 });
+      assert.match(await page.textContent(`#dayBody [data-watch-of="${s.id}"]`), /見学ひより/);
+      await page.click(`#dayBody [data-watch="${s.id}"]`);
+      await until((x, id) => !x.sessions.find((y) => y.id === id).watch.includes('ひより'), s.id);
     });
 
     await step('調整中の卓を登録すると候補日を選ぶ窓が開き、候補日を出せる', async () => {

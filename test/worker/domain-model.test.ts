@@ -7,7 +7,7 @@ import type { Member, Session } from '../../src/worker/domain/types';
 /** 卓を1つ作る。指定しない項目は空 */
 function session(over: Partial<Session>): Session {
   return {
-    rowId: 0, id: 'S000', seq: 0, name: '卓', gm: '', coGms: [], members: [], want: [], interest: [], date: null, start: '', end: '',
+    rowId: 0, id: 'S000', seq: 0, name: '卓', gm: '', coGms: [], members: [], want: [], interest: [], watch: [], date: null, start: '', end: '',
     status: STATUS.HELD, place: '', memo: '', series: '', seriesEnd: null, windowFrom: null, windowTo: null, candidates: [],
     editor: '', updatedAt: '', notifiedAt: null, askedAt: null, urgedAt: null, soonAt: null, pollReadyAt: null, pollDue: null, pollUrgedAt: null, pollClosedAt: null, scenarioId: null, sheetDue: null, sheetUrgedAt: null, slots: [], sheets: [], capacity: null, recruitDue: null, dueUrgedAt: null, absent: [], threadId: null, threadParent: null, logUrl: '', recap: '',
     ...over,

@@ -21,6 +21,7 @@ import { Place } from '../Place';
 import { WaitList } from '../recruit/WaitList';
 import { notice, people as peopleRow, personChip, res, row2 } from '../styles';
 import { isGm } from '../../../../shared/gm';
+import { WatchRow } from '../recruit/WatchRow';
 
 /** 内訳のカード（狭い画面では、日を選ぶまで隠す）。上の帯と下のタブに隠れないように送る */
 const detailCard = 'card mb-0 scroll-mt-[calc(var(--appbar-h)+12px)] scroll-mb-[calc(var(--nav-h)+12px)]';
@@ -140,6 +141,7 @@ export function DayDetail({ d, target }: { d: ConsoleData; target: string }) {
                 </div>
               )}
               <WaitList s={s} />
+              <WatchRow s={s} />
               {s.place && <Place place={s.place} className={row2} />}
               {s.memo && <div className={row2 + ' hint'}>{s.memo}</div>}
               {s.notified ? <div className={row2 + ' hint'}>{'開催前の知らせは' + s.notified + 'に送りました'}</div>

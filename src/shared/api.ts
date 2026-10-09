@@ -73,6 +73,8 @@ export type ConsoleSession = {
   editor: string;
   want: string[];
   interest: string[];
+  /** 見学（参加はしないが見る人）。定員にも参加者にも数えない */
+  watch: string[];
   /** 興味ありの人に聞いた日時 */
   asked: string;
   series: string;
@@ -313,7 +315,7 @@ export type GroupExport = {
   members: { name: string; discordId: string; note: string; admin: boolean }[];
   sessions: {
     id: string; name: string; status: string; date: string; start: string; end: string; place: string; memo: string; series: string; seriesEnd: string;
-    windowFrom: string; windowTo: string; gm: string; coGms: string[]; members: string[]; want: string[]; interest: string[]; scenario: string;
+    windowFrom: string; windowTo: string; gm: string; coGms: string[]; members: string[]; want: string[]; interest: string[]; watch: string[]; scenario: string;
     candidates: string[]; votes: Record<string, Record<string, string>>; pollDue: string; capacity: number; recruitDue: string; absent: { name: string; note: string }[];
     prep: { sheetDue: string; slots: { label: string; summary: string; assigned: string }[]; sheets: Record<string, { url: string; pc: string; outcome: string }> };
     record: ConsoleRecord;

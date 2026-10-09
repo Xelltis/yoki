@@ -147,12 +147,12 @@ export async function loadGroup(
   const nameOf = new Map(members.map((m) => [m.id, m.name]));
   const people = new Map<number, Record<Role, string[]>>();
   for (const p of rows<{ session_id: number; role: Role; name: string }>(4)) {
-    const e = people.get(p.session_id) ?? { gm: [], member: [], want: [], interest: [] };
+    const e = people.get(p.session_id) ?? { gm: [], member: [], want: [], interest: [], watch: [] };
     e[p.role].push(p.name);
     people.set(p.session_id, e);
   }
   const sessions: Session[] = rows<SessionRow>(3).map((r) => {
-    const pp = people.get(r.id) ?? { gm: [], member: [], want: [], interest: [] };
+    const pp = people.get(r.id) ?? { gm: [], member: [], want: [], interest: [], watch: [] };
     return {
       rowId: r.id,
       id: sessionCode(r.seq),
@@ -163,6 +163,7 @@ export async function loadGroup(
       members: pp.member,
       want: pp.want,
       interest: pp.interest,
+      watch: pp.watch,
       date: r.date,
       start: r.start_time,
       end: r.end_time,

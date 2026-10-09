@@ -4,15 +4,15 @@ import { sessionsCsv } from '../../src/client/features/console/admin/exportFile'
 import type { GroupExport } from '../../src/shared/api';
 
 const session = (over: Partial<GroupExport['sessions'][number]>) => ({
-  id: 'S001', name: '港', status: '開催', date: '2026-10-10', start: '20:00', end: '', gm: 'ひより', coGms: ['ユズ'], members: ['ソラ', 'こまち'],
+  id: 'S001', name: '港', status: '開催', date: '2026-10-10', start: '20:00', end: '', gm: 'ひより', coGms: ['ユズ'], members: ['ソラ', 'こまち'], watch: ['ミナト'],
   place: '', series: '', scenario: '', memo: '', record: { logUrl: '', recap: '' }, ...over,
 }) as GroupExport['sessions'][number];
 const csv = (...sessions: GroupExport['sessions']) => sessionsCsv({ sessions } as GroupExport);
 
 test('頭にBOMと見出しを付け、行はCRLFで区切る。値はいつも " で囲む', () => {
   const lines = csv(session({})).split('\r\n');
-  expect(lines[0]).toBe('﻿"卓のID","名前","状態","開催日","開始","終了","GM","共同GM","参加者","場所","シリーズ","シナリオ","メモ","ログ"');
-  expect(lines[1]).toBe('"S001","港","開催","2026-10-10","20:00","","ひより","ユズ","ソラ、こまち","","","","",""');
+  expect(lines[0]).toBe('﻿"卓のID","名前","状態","開催日","開始","終了","GM","共同GM","参加者","見学","場所","シリーズ","シナリオ","メモ","ログ"');
+  expect(lines[1]).toBe('"S001","港","開催","2026-10-10","20:00","","ひより","ユズ","ソラ、こまち","ミナト","","","","",""');
   expect(lines[2]).toBe('');
 });
 

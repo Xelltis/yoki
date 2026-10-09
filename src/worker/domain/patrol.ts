@@ -238,7 +238,7 @@ export async function sendReminders(ctx: Ctx, hour: number, deps: Deps): Promise
   for (const g of groups.values()) {
     for (let i = 0; i < g.list.length; i += EMBEDS_PER_MESSAGE) {
       const chunk = g.list.slice(i, i + EMBEDS_PER_MESSAGE);
-      const mentions = mentionsOf(ctx, chunk);
+      const mentions = mentionsOf(ctx, chunk, true);
       const payload = { content: '📢 ' + aheadText(g.ahead) + 'は卓の日です！' + (mentions ? ' ' + mentions : ''), embeds: chunk.map((s) => sessionEmbed(ctx, s)) };
       if (await postDiscord(logTo(ctx), payload, kind, chunk.map((s) => s.name).join('、') + targetNote(g.t), g.t.channelId, deps.sleep)) {
         chunk.forEach((s) => delivered.add(s.rowId));
@@ -253,8 +253,8 @@ export async function sendReminders(ctx: Ctx, hour: number, deps: Deps): Promise
   if (stmts.length) await ctx.db.batch(stmts);
 }
 
-/** 卓に来る人（GMと参加者。行けなくなった人は除く） */
-const attendees = (s: Session) => [...gmsOf(s), ...s.members].filter((n) => !s.absent.some((a) => a.name === n));
+/** 卓に来る人（GMと参加者と見学。行けなくなった人は除く） */
+const attendees = (s: Session) => [...gmsOf(s), ...s.members, ...s.watch].filter((n) => !s.absent.some((a) => a.name === n));
 
 /** 期間前の催促。募集中・調整中のまま、期間の始まりが明日に迫った卓をGMに知らせる。送る時刻は開催前の知らせと同じ */
 export async function sendUrges(ctx: Ctx, hour: number, deps: Deps): Promise<void> {
@@ -363,7 +363,7 @@ export async function sendStartingSoon(ctx: Ctx, deps: Deps): Promise<void> {
     const targets = sessionTargets(ctx, s, 'remind');
     if (!targets.length) { await appendLog(logTo(ctx), kind, s.name, '送らず: 送り先のチャンネルが未設定'); continue; }
     if (!(await claimMark(ctx, 'soon_at', [s])).size) continue;
-    const mentions = mentionsOf(ctx, [s]);
+    const mentions = mentionsOf(ctx, [s], true);
     const head = left <= 0 ? '⏰ まもなく「' + s.name + '」が始まります。' : '⏰ あと' + left + '分で「' + s.name + '」が始まります。';
     const payload = { content: head + (mentions ? ' ' + mentions : ''), embeds: [sessionEmbed(ctx, s)] };
     if (!(await postSessionNotice(ctx, s, payload, kind, targets, deps.sleep))) { await releaseMark(ctx, 'soon_at', [s.rowId]); continue; }

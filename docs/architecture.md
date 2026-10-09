@@ -87,7 +87,7 @@ usersの行は消さない（印がそこにあるため）。Discordのユー�
 
 ## データベース（D1）
 
-表の定義は `migrations/`（`0001_init.sql` が最初の形、`0002_admin.sql` が締め出し・最後に使われた日と索引、`0003_bot.sql` が知らせのBot、`0004_calendar.sql` がカレンダーとの連携、`0005_member_check.sql` がBotで確かめた日時、`0006_google_login.sql` がGoogleでのログイン、`0007_scenarios.sql` がシナリオと通過、`0008_prep.sql` が卓の準備、`0009_discord_events.sql` がDiscordのイベント、`0010_note_ranges.sql` が期間の日付メモ、`0011_poll_maybe.sql` が日程調整の △、`0012_recruit_limits.sql` が募集の定員と締め切り、`0013_absences.sql` が行けなくなった印、`0014_day_parts.sql` が予定の時間帯、`0015_share_busy.sql` がほかのグループの卓、`0016_threads.sql` が卓ごとのスレッド、`0017_session_history.sql` が卓の変更の履歴、`0018_records.sql` が卓の記録とPC、`0019_poll_due.sql` が日程調整の回答の締め切り、`0020_dm_notices.sql` が自分あてのDMの知らせ、`0021_weekly.sql` がいつもの予定）。日付（開催日・予定・メモ）は日本時間の `YYYY-MM-DD`、日時（〜した時刻）はUTCのISO文字列。
+表の定義は `migrations/`（`0001_init.sql` が最初の形、`0002_admin.sql` が締め出し・最後に使われた日と索引、`0003_bot.sql` が知らせのBot、`0004_calendar.sql` がカレンダーとの連携、`0005_member_check.sql` がBotで確かめた日時、`0006_google_login.sql` がGoogleでのログイン、`0007_scenarios.sql` がシナリオと通過、`0008_prep.sql` が卓の準備、`0009_discord_events.sql` がDiscordのイベント、`0010_note_ranges.sql` が期間の日付メモ、`0011_poll_maybe.sql` が日程調整の △、`0012_recruit_limits.sql` が募集の定員と締め切り、`0013_absences.sql` が行けなくなった印、`0014_day_parts.sql` が予定の時間帯、`0015_share_busy.sql` がほかのグループの卓、`0016_threads.sql` が卓ごとのスレッド、`0017_session_history.sql` が卓の変更の履歴、`0018_records.sql` が卓の記録とPC、`0019_poll_due.sql` が日程調整の回答の締め切り、`0020_dm_notices.sql` が自分あてのDMの知らせ、`0021_weekly.sql` がいつもの予定、`0022_watch.sql` が見学）。日付（開催日・予定・メモ）は日本時間の `YYYY-MM-DD`、日時（〜した時刻）はUTCのISO文字列。
 
 `users`・`user_guilds`・`auth_sessions`: ログイン。`users.banned_at`・`banned_reason` は締め出し。
 
@@ -212,6 +212,8 @@ usersの行は消さない（印がそこにあるため）。Discordのユー�
 **シナリオと通過**（`domain/scenarios.ts`・`src/shared/scenario.ts`）。通過は、本人や管理者が付けた印（`member_scenarios`）と、そのシナリオの「終了」の卓から出すもの（GMは `gm`、参加者は `played`）を合わせたもので、`gm` が強い。卓から出す分は表に書かず、読み込んだ卓から計算する（問い合わせを増やさないため）。「終了」の卓を消すときだけ、消す前に参加者を印へ書き写す（`keepPassesStmt`。卓が消えても通過が残るように）。卓から付いた通過は、未通過に戻せない。
 
 計算（`passesOf`・`plannedOf`・`playableDays`）は `src/shared/` に置き、画面（シナリオのタブ・卓の窓の注意）とサーバー（印を外せるか）で使う。テストのカバレッジも、ここで測る。遊べる日は、未通過で、その日に × もほかの卓も無く、そのシナリオの「開催」「調整中」の卓に入っていない人をPLに数え、「GMできる」の人をGMに数える。
+
+**見学**。卓の関わる人の役に `watch` を足す（`session_people` は役の決まりを変えるために作り直した）。参加はしないが見る人で、定員にも参加者にも、日程調整に答える人にも、予定表の「参」にも数えない。本人が `setInterest` で付け外しし、募集のほかに、調整中とこれからの開催の卓でも付けられる（参加希望・興味あり・見学は、どれか1つ）。開催前の知らせ・開始直前・日程が決まった知らせではメンションし（`mentionsOf` の `withWatch`）、本人の購読URL・Googleの予定・あなたの予定・自分あてのDMにも入れる。
 
 **共同GM**（`src/shared/gm.ts`）。表は増やさず、卓の関わる人の `gm` の行を2つ目から共同GM（`Session.coGms`。3人まで）として持つ（先頭がGM）。共同GMもGMと同じことができ、権限の確かめは `isGm`、顔ぶれは `gmsOf` で見る（開催日を決める・キャンセル待ちを繰り上げる・記録を書く・準備・秘匿HO）。SQLで `role = 'gm'` を見るところ（秘匿HOを読む人・あなたの予定・終わった卓の通過を印に写す）は、そのまま共同GMにも効く。知らせではGMと一緒に呼び、予定表・購読URL・通過・日程調整に答える人でも、GMとして扱う。
 

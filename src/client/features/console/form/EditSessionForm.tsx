@@ -31,7 +31,8 @@ export function EditSessionForm({ req, onClose, reopen }: { req: FormReq; onClos
   const w = s ? splitWant(s) : null;
   const wantInfo = s && w && isRecruit(s) && (s.want.length || s.interest.length)
     ? {
-      text: '参加希望: ' + (w.want.length ? w.want.join('、') : 'なし') + (w.wait.length ? '　／　キャンセル待ち: ' + w.wait.join('、') : '') + '　／　興味あり: ' + (s.interest.length ? s.interest.join('、') : 'なし'),
+      text: '参加希望: ' + (w.want.length ? w.want.join('、') : 'なし') + (w.wait.length ? '　／　キャンセル待ち: ' + w.wait.join('、') : '') + '　／　興味あり: ' + (s.interest.length ? s.interest.join('、') : 'なし')
+        + (s.watch.length ? '　／　見学: ' + s.watch.join('、') : ''),
       promote: STATUS_PROMOTE.indexOf(st) >= 0 && w.want.length > 0,
     }
     : null;

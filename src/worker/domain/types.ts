@@ -46,7 +46,7 @@ export type Member = {
   dmKinds: string; dmError: string; weekly: string;
 };
 
-export type Role = 'gm' | 'member' | 'want' | 'interest';
+export type Role = 'gm' | 'member' | 'want' | 'interest' | 'watch';
 
 export type Session = {
   rowId: number;
@@ -60,6 +60,8 @@ export type Session = {
   members: string[];
   want: string[];
   interest: string[];
+  /** 見学（参加はしないが見る人）。定員にも参加者にも数えない */
+  watch: string[];
   date: string | null;
   start: string;
   end: string;

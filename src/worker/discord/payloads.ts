@@ -36,6 +36,7 @@ export function sessionEmbed(ctx: PayloadCtx, s: Session): Embed {
     lines.push('参加希望: ' + (w.want.join('、') || 'まだいません') + (s.capacity ? '（' + w.want.length + '/' + s.capacity + '人）' : ''));
     if (w.wait.length) lines.push('キャンセル待ち: ' + w.wait.join('、'));
   }
+  if (s.watch.length) lines.push('見学: ' + s.watch.join('、'));
   if (s.status === STATUS.RECRUIT && s.recruitDue) lines.push('締め切り: ' + fmtDateJa(s.recruitDue));
   if (s.status === STATUS.HELD && s.absent.length) lines.push('行けなくなった: ' + s.absent.map((a) => a.name).join('、'));
   if (s.place) lines.push('場所: ' + s.place);
@@ -50,10 +51,10 @@ export function sessionEmbed(ctx: PayloadCtx, s: Session): Embed {
 
 const discordIdOf = (ctx: PayloadCtx, name: string) => ctx.memberByName.get(name)?.discordId ?? '';
 
-/** GMと参加者のメンション（Discord IDのある人だけ。重ならないように） */
-export function mentionsOf(ctx: PayloadCtx, sessions: Session[]): string {
+/** GMと参加者のメンション（Discord IDのある人だけ。重ならないように）。withWatchなら見学の人も */
+export function mentionsOf(ctx: PayloadCtx, sessions: Session[], withWatch = false): string {
   const ids = new Set<string>();
-  for (const s of sessions) for (const n of peopleOf(s)) { const id = discordIdOf(ctx, n); if (id) ids.add('<@' + id + '>'); }
+  for (const s of sessions) for (const n of [...peopleOf(s), ...(withWatch ? s.watch : [])]) { const id = discordIdOf(ctx, n); if (id) ids.add('<@' + id + '>'); }
   return [...ids].join(' ');
 }
 
@@ -205,7 +206,8 @@ export function waitPromotedPayload(ctx: PayloadCtx, s: Session, names: string[]
 
 /** 日程が決まった。YokiのURLを添える。開催日のある卓だけに使う（step.tsとpolls.tsが確かめてから呼ぶ） */
 export function decidedPayload(ctx: PayloadCtx, s: Session): Payload {
-  const mentions = mentionsOf(ctx, [s]);
+  // 決まった日は、見学の人にも知らせる
+  const mentions = mentionsOf(ctx, [s], true);
   return {
     content: '✅ 「' + s.name + '」の日程が決まりました: ' + fmtDateJa(s.date!) + ' ' + timeRange(s) + (mentions ? '\n' + mentions : '') + (ctx.appUrl ? '\n🔗 Yoki: ' + ctx.appUrl : ''),
     embeds: [sessionEmbed(ctx, s)],

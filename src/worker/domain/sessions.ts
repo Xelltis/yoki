@@ -108,6 +108,8 @@ export async function saveSession(ctx: Ctx, form: Form, io: Io) {
   const notIn = (n: string) => !members.includes(n) && n !== gm && !coGms.includes(n);
   let want = existing ? existing.want.filter(notIn) : [];
   let interest = existing ? existing.interest.filter(notIn) : [];
+  // 見学は、参加者やGMになったら外す。状態を変えても残る
+  const watch = existing ? existing.watch.filter(notIn) : [];
   let promoted: string[] = [], dropped: string[] = [], waiting: string[] = [];
   if (existing && existing.status === STATUS.RECRUIT && PROMOTE.includes(status)) {
     // 参加希望（定員の中）は参加者に。キャンセル待ちは、そのまま並んで残る。興味ありは、画面で選ばれた人だけが参加者に入っている
@@ -125,7 +127,7 @@ export async function saveSession(ctx: Ctx, form: Form, io: Io) {
   const start = normTime(form.start), end = normTime(form.end);
   const at = ctx.now.toISOString();
   const seriesEnd = series ? parseYmd(form.seriesEnd) : null;
-  const people: People = { gm: gmsOf({ gm, coGms }), member: members, want, interest };
+  const people: People = { gm: gmsOf({ gm, coGms }), member: members, want, interest, watch };
   const db = ctx.db;
   const stmts: D1PreparedStatement[] = [];
   let id: string;
@@ -224,7 +226,7 @@ async function saveSessionDates(ctx: Ctx, form: Form, name: string, raw: string[
   const names = dates.map((_, i) => (i === 0 ? name : m ? m[1]! + (Number(m[2]) + i) + m[3]! : name + ' #' + (i + 1)));
   const at = ctx.now.toISOString();
   const seriesEnd = series ? parseYmd(form.seriesEnd) : null;
-  const people: People = { gm: gmsOf({ gm, coGms }), member: members, want: [], interest: [] };
+  const people: People = { gm: gmsOf({ gm, coGms }), member: members, want: [], interest: [], watch: [] };
   // 卓・関わる人・履歴・番号を、日数によらず4文で書く（D1の1回の呼び出しで使える問い合わせの数を超えないように）。
   // 番号は、グループの次の番号から順に振り、最後に進める。1つのbatchなので、途中で失敗すれば番号も進まない
   const [, , , seq] = await ctx.db.batch([
@@ -248,24 +250,28 @@ async function saveSessionDates(ctx: Ctx, form: Form, name: string, raw: string[
 }
 
 /**
- * 募集タブの「参加希望」「興味あり」「取り消す」。片方だけ付く。
+ * 募集タブの「参加希望」「興味あり」「見学」「取り消す」。どれか1つだけ付く。
  * 定員に達した卓の参加希望は、キャンセル待ちに並ぶ。参加希望の人が外れたら、キャンセル待ちの前の人が繰り上がり、Discordでその人を呼ぶ。
- * 開催・調整中の卓では、キャンセル待ちをやめる（取り消す）ことだけができる
+ * 調整中とこれからの開催の卓では、見学の付け外しと、キャンセル待ちをやめる（取り消す）ことだけができる
  */
 export async function setInterest(ctx: Ctx, form: Form, io: Io) {
   const name = requireSelf(ctx, form.name);
   const level = str(form.level) || 'none';
-  if (!['want', 'interest', 'none'].includes(level)) throw badRequest('操作が不正です: ' + level);
+  if (!['want', 'interest', 'watch', 'none'].includes(level)) throw badRequest('操作が不正です: ' + level);
   const s = findSession(ctx, form.id);
-  const leaving = level === 'none' && s.want.includes(name);
-  if (s.status !== STATUS.RECRUIT && !leaving) throw badRequest('「' + s.name + '」は募集中ではありません（' + s.status + '）。');
+  if (s.status !== STATUS.RECRUIT) {
+    const open = s.status === STATUS.ADJUSTING || (s.status === STATUS.HELD && !!s.date && s.date >= ctx.today);
+    const ok = (level === 'watch' && open) || (level === 'none' && (s.want.includes(name) || s.watch.includes(name)));
+    if (!ok) throw badRequest('「' + s.name + '」は募集中ではありません（' + s.status + '）。');
+  }
   if (level !== 'none' && peopleOf(s).includes(name)) throw badRequest(name + 'はすでにこの卓の' + (s.gm === name ? 'GM' : isGm(s, name) ? '共同GM' : '参加者') + 'です。');
   // 締め切りを過ぎたら、新しく付けられない（取り消すことはできる）
   if (level !== 'none' && s.recruitDue && ctx.today > s.recruitDue) throw badRequest('「' + s.name + '」の募集は締め切りました（' + fmtDateJa(s.recruitDue) + 'まで）。');
   // 参加希望を出し直しても、並んだ順は変えない
   const want = level === 'want' && s.want.includes(name) ? s.want.slice() : s.want.filter((n) => n !== name).concat(level === 'want' ? [name] : []);
   const interest = s.interest.filter((n) => n !== name).concat(level === 'interest' ? [name] : []);
-  const after: Session = { ...s, want, interest };
+  const watch = s.watch.filter((n) => n !== name).concat(level === 'watch' ? [name] : []);
+  const after: Session = { ...s, want, interest, watch };
   const raised = promotedBy(s, after);
   await ctx.db.batch([
     ...replacePeople(ctx, [{ rowId: s.rowId, people: peopleOfSession(after) }]),
@@ -274,7 +280,8 @@ export async function setInterest(ctx: Ctx, form: Form, io: Io) {
   ]);
   const queue = splitWant(after).wait.indexOf(name);
   let message =
-    s.status !== STATUS.RECRUIT ? '「' + s.name + '」のキャンセル待ちをやめました: ' + name
+    level === 'watch' ? '「' + s.name + '」に見学を付けました: ' + name
+    : s.status !== STATUS.RECRUIT ? '「' + s.name + '」の' + (s.want.includes(name) ? 'キャンセル待ちをやめました: ' : '見学を取り消しました: ') + name
     : level === 'want' && queue >= 0 ? '「' + s.name + '」は定員（' + s.capacity + '人）に達しているので、キャンセル待ちに並びました（' + (queue + 1) + '番目）: ' + name
     : level === 'want' ? '「' + s.name + '」に参加希望を出しました: ' + name
     : level === 'interest' ? '「' + s.name + '」に興味ありを付けました: ' + name

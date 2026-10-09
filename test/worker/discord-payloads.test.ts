@@ -27,7 +27,7 @@ function ctxOf(o: { appUrl?: string; votes?: Ctx['votes'] } = {}) {
 
 function session(o: Partial<Session> = {}): Session {
   return {
-    rowId: 1, id: 'S001', seq: 1, name: '港', gm: '', coGms: [], members: [], want: [], interest: [], date: null, start: '', end: '', status: '開催',
+    rowId: 1, id: 'S001', seq: 1, name: '港', gm: '', coGms: [], members: [], want: [], interest: [], watch: [], date: null, start: '', end: '', status: '開催',
     place: '', memo: '', series: '', seriesEnd: null, windowFrom: null, windowTo: null, candidates: [], editor: '', updatedAt: '',
     notifiedAt: null, askedAt: null, urgedAt: null, soonAt: null, pollReadyAt: null, pollDue: null, pollUrgedAt: null, pollClosedAt: null, scenarioId: null, sheetDue: null, sheetUrgedAt: null, slots: [], sheets: [], capacity: null, recruitDue: null, dueUrgedAt: null, absent: [], threadId: null, threadParent: null, logUrl: '', recap: '', ...o,
   };

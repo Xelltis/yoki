@@ -26,6 +26,7 @@ import { people, personChip, res } from '../styles';
 import { notifyDecided, notifyReady } from './pollNotify';
 import { isGm } from '../../../../shared/gm';
 import { candDay, candPart } from '../../../../shared/candidates';
+import { WatchRow } from './WatchRow';
 
 /** 区切りの見出し（募集中・日程調整中） */
 const bar = 'mt-24 mb-10 flex flex-wrap items-center gap-8';
@@ -110,7 +111,8 @@ export function RecruitTab() {
         // 参加希望を出し直しても、並んだ順は変えない（サーバーと同じ）
         const want = level === 'want' && x.want.indexOf(mine) >= 0 ? x.want : x.want.filter((n) => n !== mine).concat(level === 'want' ? [mine] : []);
         const interest = x.interest.filter((n) => n !== mine).concat(level === 'interest' ? [mine] : []);
-        return { ...x, want, interest };
+        const watch = x.watch.filter((n) => n !== mine).concat(level === 'watch' ? [mine] : []);
+        return { ...x, want, interest, watch };
       }),
     }).then((res) => { setFlag(setSaving, s.id, false); toast(res.message); },
       (e: Error) => { setFlag(setSaving, s.id, false); toast(e.message); void sync.refresh('quiet'); });
@@ -213,7 +215,7 @@ export function RecruitTab() {
           </div>
         )}
         {list.map((s) => {
-          const level = s.want.indexOf(mine) >= 0 ? 'want' : s.interest.indexOf(mine) >= 0 ? 'interest' : 'none';
+          const level = s.want.indexOf(mine) >= 0 ? 'want' : s.interest.indexOf(mine) >= 0 ? 'interest' : s.watch.indexOf(mine) >= 0 ? 'watch' : 'none';
           // 定員に達した卓の参加希望は、キャンセル待ちに並ぶ。締め切りを過ぎた卓には、新しく付けられない（取り消しはできる）
           const w = splitWant(s), queue = w.wait.indexOf(mine);
           const full = s.capacity > 0 && w.want.length >= s.capacity, closed = !!s.recruitDue && d.today > s.recruitDue;
@@ -234,6 +236,7 @@ export function RecruitTab() {
                 <div className="contents"><b className="font-semibold text-muted">参加希望</b><span data-want-of={s.id}>{w.want.length ? w.want.join('、') : <span className="hint">まだいません</span>}{s.capacity > 0 && <span className={'ml-6 text-12 font-semibold ' + (full ? 'text-soon-text' : 'text-muted')}>{w.want.length + '/' + s.capacity + '人' + (full ? '（定員）' : '')}</span>}</span></div>
                 {w.wait.length > 0 && <div className="contents"><b className="font-semibold text-muted">キャンセル待ち</b><span data-wait-of={s.id}>{w.wait.map((n, i) => (i + 1) + '. ' + n).join('　')}</span></div>}
                 <div className="contents"><b className="font-semibold text-muted">興味あり</b>{s.interest.length ? s.interest.join('、') : <span className="hint">まだいません</span>}</div>
+                {s.watch.length > 0 && <div className="contents"><b className="font-semibold text-muted">見学</b><span data-watch-of={s.id}>{s.watch.join('、')}</span></div>}
                 {s.recruitDue && <div className="contents"><b className="font-semibold text-muted">締め切り</b><span data-due-of={s.id} className={closed ? 'text-soon-text' : ''}>{fmtJa(s.recruitDue) + (closed ? '（締め切りました）' : s.recruitDue === d.today ? '（今日まで）' : 'まで')}</span></div>}
               </div>
               {s.place && <Place place={s.place} className={rcRow} />}
@@ -248,6 +251,8 @@ export function RecruitTab() {
                     </button>
                     <button type="button" className={'btn small' + (level === 'interest' ? ' on' : '')} aria-pressed={level === 'interest'} data-level="interest" data-id={s.id}
                       disabled={level !== 'interest' && closed} title={level !== 'interest' && closed ? '募集は締め切りました' : undefined} onClick={() => setLevel(s, 'interest')}>興味あり</button>
+                    <button type="button" className={'btn small' + (level === 'watch' ? ' on' : '')} aria-pressed={level === 'watch'} data-level="watch" data-id={s.id}
+                      disabled={level !== 'watch' && closed} title={level !== 'watch' && closed ? '募集は締め切りました' : '参加はしないで見学します（定員に数えません）'} onClick={() => setLevel(s, 'watch')}>見学</button>
                     {level !== 'none' && <button type="button" className="btn small" data-level="none" data-id={s.id} onClick={() => setLevel(s, 'none')}>取り消す</button>}
                     {level === 'none' && (closed || full) && <span className="hint">{closed ? '募集は締め切りました' : '定員に達しています。並ぶと、空きが出たときに順に繰り上がります'}</span>}
                   </>
@@ -299,6 +304,7 @@ export function RecruitTab() {
               {prepSummary(d, s) && <div className="hint" data-prep-of={s.id}>{prepSummary(d, s)}</div>}
               <People d={d} s={s} none="GM・参加者 未定" />
               <WaitList s={s} />
+              <WatchRow s={s} />
               {s.place && <Place place={s.place} className={rcRow} />}
               {s.memo && <div className={rcRow + ' hint'}>{s.memo}</div>}
               {poll && (

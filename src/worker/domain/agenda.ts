@@ -10,7 +10,7 @@ export const AGENDA_SESSIONS = 20;
 
 type Row = {
   group_id: string; title: string; seq: number; name: string; status: string; date: string | null; start_time: string; end_time: string;
-  candidates: string; poll_ready: number; poll_due: string | null; sheet_due: string | null; role: 'gm' | 'member'; voted_json: string; sheet_done: number; absent: number;
+  candidates: string; poll_ready: number; poll_due: string | null; sheet_due: string | null; role: 'gm' | 'member' | 'watch'; voted_json: string; sheet_done: number; absent: number;
 };
 
 /**
@@ -26,7 +26,7 @@ export async function agendaOf(db: D1Database, userId: string, groupIds: string[
          EXISTS (SELECT 1 FROM session_sheets sh WHERE sh.session_id = s.id AND sh.member_id = m.id) AS sheet_done,
          EXISTS (SELECT 1 FROM session_absences a WHERE a.session_id = s.id AND a.member_id = m.id) AS absent
          FROM members m JOIN groups g ON g.id = m.group_id
-         JOIN session_people p ON p.member_id = m.id AND p.role IN ('gm', 'member') JOIN sessions s ON s.id = p.session_id
+         JOIN session_people p ON p.member_id = m.id AND p.role IN ('gm', 'member', 'watch') JOIN sessions s ON s.id = p.session_id
         WHERE m.user_id = ?1 AND m.group_id IN (SELECT value FROM json_each(?2))
           AND ((s.status = '開催' AND s.date >= ?3) OR s.status = '調整中')`,
     )
@@ -39,7 +39,8 @@ export async function agendaOf(db: D1Database, userId: string, groupIds: string[
       ({ kind, groupId: r.group_id, groupTitle: r.title, id: sessionCode(r.seq), name: r.name, date, start: r.start_time, end: r.end_time });
     if (r.status === '開催') {
       if (!r.absent && r.date! < last) sessions.push(item('session', r.date!));
-    } else {
+    } else if (r.role !== 'watch') {
+      // 見学の人は、日程調整に答えない
       const voted = JSON.parse(r.voted_json) as string[];
       // 答える番には、回答の締め切りを添える（無ければ空）
       if ((JSON.parse(r.candidates) as string[]).some((k) => k >= today && !voted.includes(k))) turns.push(item('vote', r.poll_due ?? ''));

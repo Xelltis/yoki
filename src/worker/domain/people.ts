@@ -11,14 +11,14 @@ export function personRef(ctx: Ctx, name: string): PersonRef {
 }
 
 export function peopleOfSession(s: Session): People {
-  return { gm: gmsOf(s), member: s.members, want: s.want, interest: s.interest };
+  return { gm: gmsOf(s), member: s.members, want: s.want, interest: s.interest, watch: s.watch };
 }
 
 type Row = PersonRef & { session_id: number | null; role: Role; pos: number };
 
 function rows(ctx: Ctx, sessionId: number | null, people: People): Row[] {
   const out: Row[] = [];
-  for (const role of ['gm', 'member', 'want', 'interest'] as Role[]) {
+  for (const role of ['gm', 'member', 'want', 'interest', 'watch'] as Role[]) {
     people[role].forEach((name, pos) => out.push({ session_id: sessionId, role, pos, ...personRef(ctx, name) }));
   }
   return out;

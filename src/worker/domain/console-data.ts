@@ -50,7 +50,7 @@ export function consoleData(ctx: Ctx): ConsoleData {
         id: s.id, name: s.name, gm: s.gm, coGms: s.coGms, members: s.members, date: s.date ?? '',
         start: s.start, end: s.end, status: s.status, place: s.place, memo: s.memo,
         notified: stampText(s.notifiedAt), editor: s.editor,
-        want: s.want, interest: s.interest,
+        want: s.want, interest: s.interest, watch: s.watch,
         asked: stampText(s.askedAt), series: s.series, seriesEnd: s.seriesEnd ?? '',
         window: w?.text ?? '', windowFrom: w?.from ?? '', windowTo: w?.to ?? '', windowLabel: w?.label ?? '', windowKey: w?.from ?? '',
         candidates: s.candidates, votes: ctx.votes.get(s.rowId) ?? {}, pollDue: s.pollDue ?? '',

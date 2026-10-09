@@ -60,6 +60,7 @@ import IToday from '~icons/material-symbols/today-outline-rounded';
 import ITouchApp from '~icons/material-symbols/touch-app-outline-rounded';
 import IUndo from '~icons/material-symbols/undo-outline-rounded';
 import IUpgrade from '~icons/material-symbols/upgrade-outline-rounded';
+import IVisibility from '~icons/material-symbols/visibility-outline-rounded';
 import IWarning from '~icons/material-symbols/warning-outline-rounded';
 import IAutoStoriesFilled from '~icons/material-symbols/auto-stories-rounded';
 import ICalendarMonthFilled from '~icons/material-symbols/calendar-month-rounded';
@@ -127,6 +128,7 @@ export const ICONS = {
   touch_app: ITouchApp,
   undo: IUndo,
   upgrade: IUpgrade,
+  visibility: IVisibility,
   warning: IWarning,
 } satisfies Record<string, IconComponent>;
 
