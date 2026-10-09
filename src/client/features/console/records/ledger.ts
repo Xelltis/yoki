@@ -39,3 +39,37 @@ export function ledger(d: ConsoleData): LedgerRow[] {
     pcs: [...r.pcs.values()].sort((a, b) => (b.sessions.at(-1)!.date).localeCompare(a.sessions.at(-1)!.date)),
   }));
 }
+
+/**
+ * あなたの遊んだ記録（このグループ）。終わった卓のうち、GM（共同GMも）か参加者として入った卓（行けなくなった卓は数えない）から作る。
+ * systemsはシステムごとの回数（多い順。シナリオの無い卓は「シナリオ未設定」、システムの無いシナリオは「システム未設定」）、
+ * partnersはよく一緒に遊んだ人（GMも参加者も数える。多い順に3人まで）、first・lastは最初と最後に終えた卓の日
+ */
+export type MyStats = {
+  gm: number; pl: number; first: string; last: string;
+  systems: { system: string; gm: number; pl: number }[];
+  partners: { name: string; n: number }[];
+};
+
+export function myStats(d: ConsoleData, name: string): MyStats {
+  const out: MyStats = { gm: 0, pl: 0, first: '', last: '', systems: [], partners: [] };
+  const systems = new Map<string, { system: string; gm: number; pl: number }>(), partners = new Map<string, number>();
+  finishedSessions(d).reverse().forEach((s) => {
+    const asGm = gmsOf(s).includes(name), asPl = s.members.includes(name) && !s.absent.some((a) => a.name === name);
+    if (!asGm && !asPl) return;
+    if (asGm) out.gm++; else out.pl++;
+    out.first ||= s.date;
+    out.last = s.date;
+    const sc = d.scenarios.find((x) => x.id === s.scenarioId);
+    const key = !sc ? 'シナリオ未設定' : sc.system || 'システム未設定';
+    const row = systems.get(key) ?? { system: key, gm: 0, pl: 0 };
+    if (asGm) row.gm++; else row.pl++;
+    systems.set(key, row);
+    for (const n of [...gmsOf(s), ...s.members]) {
+      if (n !== name && !s.absent.some((a) => a.name === n)) partners.set(n, (partners.get(n) ?? 0) + 1);
+    }
+  });
+  out.systems = [...systems.values()].sort((a, b) => b.gm + b.pl - (a.gm + a.pl) || a.system.localeCompare(b.system, 'ja'));
+  out.partners = [...partners].map(([n, c]) => ({ name: n, n: c })).sort((a, b) => b.n - a.n || a.name.localeCompare(b.name, 'ja')).slice(0, 3);
+  return out;
+}

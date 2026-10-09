@@ -1,4 +1,4 @@
-// 記録のタブ: 終わった卓（ログ・振り返り・参加者のPCと結果）と、メンバーごとのPCの台帳
+// 記録のタブ: あなたの記録（回数・システム・よく一緒に遊んだ人・PC）、終わった卓（ログ・振り返り・参加者のPCと結果）と、メンバーごとのPCの台帳
 import { useState } from 'react';
 import { Icon } from '../../../ui/Icon';
 import { PageHead } from '../../../ui/PageHead';
@@ -7,7 +7,7 @@ import { useConsole, useData } from '../context';
 import { fmtJa } from '../model/dates';
 import { me, scenarioOf } from '../model/model';
 import { people, personChip } from '../styles';
-import { finishedSessions, ledger } from './ledger';
+import { finishedSessions, ledger, myStats } from './ledger';
 import { gmsOf, isGm } from '../../../../shared/gm';
 
 /** はじめに出す、終わった卓の数（多いときは「もっと見る」で開く） */
@@ -20,9 +20,22 @@ export function RecordsTab() {
   const [all, setAll] = useState(false);
   const done = finishedSessions(d), list = all ? done : done.slice(0, SHOWN);
   const rows = ledger(d).filter((r) => r.gm || r.pl || r.pcs.length);
+  const my = myStats(d, mine), myPcs = rows.find((r) => r.name === mine)?.pcs ?? [];
   return (
     <section id="tab-records">
       <PageHead title="記録" lead="終わった卓のログと振り返り、メンバーごとのPCです。記録はGMと管理者、PCはその卓の参加者が書きます。" />
+      {my.gm + my.pl > 0 && (
+        <div className="card" id="myRecord">
+          <h3><Icon name="history_edu" size="sm" />あなたの記録</h3>
+          <p className="m-0 text-15"><b>{'GM ' + my.gm + '回・PL ' + my.pl + '回'}</b><span className="hint">{'　' + fmtJa(my.first) + (my.first !== my.last ? '〜' + fmtJa(my.last) : '') + '（このグループの、終わった卓）'}</span></p>
+          <dl className="mt-8 mb-0 grid grid-cols-[max-content_minmax(0,1fr)] gap-x-12 gap-y-4 text-13">
+            <dt className="font-semibold text-muted">システム</dt>
+            <dd className="m-0" id="mySystems">{my.systems.map((x) => x.system + ' ' + (x.gm + x.pl) + '回' + (x.gm && x.pl ? '（GM ' + x.gm + '・PL ' + x.pl + '）' : x.gm ? '（GM）' : '')).join('、')}</dd>
+            {my.partners.length > 0 && <><dt className="font-semibold text-muted">よく一緒に</dt><dd className="m-0" id="myPartners">{my.partners.map((x) => x.name + ' ' + x.n + '回').join('、')}</dd></>}
+            {myPcs.length > 0 && <><dt className="font-semibold text-muted">PC</dt><dd className="m-0" id="myPcs">{myPcs.map((pc) => pc.pc + '（' + pc.sessions.length + '回' + (pc.sessions.at(-1)!.outcome ? '・' + pc.sessions.at(-1)!.outcome : '') + '）').join('、')}</dd></>}
+          </dl>
+        </div>
+      )}
       <div className="card" id="doneList">
         <h3><Icon name="task_alt" size="sm" />終わった卓</h3>
         {!done.length && <p className="hint">まだ終わった卓はありません。</p>}

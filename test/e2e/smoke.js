@@ -272,6 +272,9 @@ await withDevServer(async (base) => {
       const s = (await D()).sessions.find((x) => x.name === '鉄鳴界の夜明け #1');
       assert.match(await page.textContent(`#doneList [data-done="${s.id}"]`), /ソラ（カイ・ハーツ・継続）/);
       assert.match(await page.textContent('#pcLedger [data-ledger="ソラ"]'), /カイ・ハーツ/);
+      // いちばん上に、自分（ひより）の記録が出る
+      assert.match(await page.textContent('#myRecord'), /GM \d+回・PL \d+回/);
+      assert.ok((await page.textContent('#mySystems')).length > 0, 'システムごとの回数が出る');
       await page.click(`#doneList button[data-record="${s.id}"]`);
       await page.fill('#recordRecap', 'e2eの振り返り');
       await page.click('#recordSave');
