@@ -2,10 +2,10 @@
 //   npm run dev     開発サーバー。WorkerとD1（ローカル）ごと動く
 //   npm run build   dist/ に組み立てる（Cloudflareの組み立て（Workers Builds）とGitHub Actionsのdeploy.ymlが使う）。開発用ログインが残っていたら止まる
 // 組み立てると、プラグインがwrangler deployの行き先（.wrangler/deploy/config.json）をroot（src/client）の下に書く。
-// リポジトリの直下で動かすwrangler deploy（Workers Buildsの公開）からは見えないので、直下にも同じ行き先を書く（deployRedirect）
+// リポジトリの直下で動かすwrangler deploy（Workers Buildsの公開）からは見えないので、直下にも写す（deployRedirect）
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { cloudflare, type WorkerConfig } from '@cloudflare/vite-plugin';
 import tailwindcss from '@tailwindcss/vite';
@@ -30,7 +30,7 @@ export function appRepository(): string {
 }
 
 /**
- * 組み立てのときに、公開するCloudflareごとの値を設定（dist/yoki/wrangler.json）に入れる。
+ * 組み立てのときに、公開するCloudflareごとの値を設定（dist/<Workerの名前>/wrangler.json）に入れる。
  * D1のID: 「Deploy to Cloudflare」のボタンで設置したリポジトリでは、wrangler.jsoncにCloudflareが書き込んである。
  * GitHub Actionsで公開するときは、deploy.ymlがYOKI_D1_DATABASE_IDで渡す（YOKI_DEPLOY=1のときに無ければ、IDの無いまま公開しないように止める）。
  * リポジトリ（運営の管理画面の「更新」）は、毎回組み立てのときに決まるのでvarsに入れる。空なら入れない。
@@ -50,19 +50,29 @@ function deployValues(config: WorkerConfig): void {
 }
 
 /**
- * 組み立てたあと、リポジトリの直下にもwrangler deployの行き先（.wrangler/deploy/config.json）を書く。
- * Workers Buildsが直下で動かすwrangler deploy・wrangler versions uploadが、組み立てたWorker（dist/yoki/wrangler.json）を公開するように
+ * 組み立てたあと、プラグインがroot（src/client）の下に書いたwrangler deployの行き先（.wrangler/deploy/config.json）を、リポジトリの直下にも写す。
+ * Workers Buildsが直下で動かすwrangler deploy・wrangler versions uploadが、組み立てたWorker（dist/<Workerの名前>/wrangler.json）を公開するように。
+ * 組み立て先はWorkerの名前で変わる（ボタンで設置するときに名前を変えられる）ので、決め打ちにしない
  */
 function deployRedirect(): Plugin {
+  const from = path.join(root, '.wrangler/deploy/config.json');
+  const to = path.join(import.meta.dirname, '.wrangler/deploy/config.json');
   return {
     name: 'yoki:deploy-redirect',
     apply: 'build',
     closeBundle() {
-      const dir = path.join(import.meta.dirname, '.wrangler/deploy');
-      mkdirSync(dir, { recursive: true });
-      writeFileSync(path.join(dir, 'config.json'), JSON.stringify({ configPath: '../../dist/yoki/wrangler.json', auxiliaryWorkers: [] }));
+      // 組み立てに失敗したときは、プラグインが書いていないことがある
+      if (!existsSync(from)) return;
+      mkdirSync(path.dirname(to), { recursive: true });
+      writeFileSync(to, moveDeployConfig(readFileSync(from, 'utf8'), path.dirname(from), path.dirname(to)));
     },
   };
+}
+
+/** wrangler deployの行き先の中身を、置き場所をfromDirからtoDirに移したものにする（中の道は、置き場所からの相対で書くため） */
+export function moveDeployConfig(text: string, fromDir: string, toDir: string): string {
+  const { configPath } = JSON.parse(text) as { configPath: string };
+  return JSON.stringify({ configPath: path.relative(toDir, path.resolve(fromDir, configPath)), auxiliaryWorkers: [] });
 }
 
 const root = path.join(import.meta.dirname, 'src/client');

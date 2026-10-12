@@ -28,7 +28,7 @@ Yokiを自分のCloudflareに公開する仕組みと、新しいバージョン
 | Workerのsecretの値を聞く | 聞く名前は `.dev.vars.example` のコメントでない行（Discordアプリの3つと `OPERATOR_IDS`）。説明は `package.json` の `"cloudflare"` |
 | 組み立てて公開する（Workers Builds）。この後も、mainが変わるたびに公開し直す | `npm run build` と `npm run deploy`（表の変更を当ててから `wrangler deploy`） |
 
-Viteは、`wrangler deploy` の行き先（`.wrangler/deploy/config.json`）を `src/client/` の下に書く。直下で動く `wrangler deploy` から見えるように、組み立ての終わりに直下にも同じ行き先を書く（`vite.config.ts` の `deployRedirect`）。表の変更（`wrangler d1 migrations apply`）は行き先を見ないので、直下の `wrangler.jsonc`（CloudflareがIDを書いたもの）を読む。
+Viteは、`wrangler deploy` の行き先（`.wrangler/deploy/config.json`）を `src/client/` の下に書く。直下で動く `wrangler deploy` から見えるように、組み立ての終わりに、その行き先を直下にも写す（`vite.config.ts` の `deployRedirect`）。行き先の組み立て先（`dist/<Workerの名前>/`）は、ボタンで設置するときに付けた名前で変わるので、決め打ちにしない。表の変更（`wrangler d1 migrations apply`）は行き先を見ないので、直下の `wrangler.jsonc`（CloudflareがIDを書いたもの）を読む。
 
 Workerの値は、どれもsecretにする（varsにしない）。Workers Buildsは公開のたびに、設定に無いvarsを消すため。公開のアドレス（`APP_URL`）は無くてもよい。そのときは届いた要求のアドレスを使い、要求の無い見回り（cron）のために、ログインのたびにD1に控える（`auth/origin.ts`）。公開しているリポジトリの名前（運営の管理画面の「更新」）は、組み立てのときにGitのoriginから読む。
 
@@ -36,7 +36,7 @@ Workerの値は、どれもsecretにする（varsにしない）。Workers Build
 
 ## GitHub Actionsで公開する
 
-元のリポジトリと、フォークして自分で公開するときのやり方。公開するCloudflareごとの値は、GitHubのenvironment「production」に置く。D1のIDとリポジトリの名前は組み立てた設定（`dist/yoki/wrangler.json`）に入れ（`vite.config.ts`）、ほかはWorkerのsecretとして公開するバージョンと一緒に送る（`deploy.yml`）。
+元のリポジトリと、フォークして自分で公開するときのやり方。公開するCloudflareごとの値は、GitHubのenvironment「production」に置く。D1のIDとリポジトリの名前は組み立てた設定（`dist/<Workerの名前>/wrangler.json`）に入れ（`vite.config.ts`）、ほかはWorkerのsecretとして公開するバージョンと一緒に送る（`deploy.yml`）。
 
 ### 1. 公開するアドレスを決める
 
