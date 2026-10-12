@@ -132,18 +132,24 @@ jobs:
           YOKI_REPOSITORY: ${{ github.repository }}
           YOKI_UPSTREAM: ${{ vars.YOKI_UPSTREAM }}
 
+      # 組み立てた設定は dist/<Worker の名前>/wrangler.json にでき、名前は wrangler.jsonc の name で変わる。
+      # 組み立てが直下に写した wrangler deploy の行き先（.wrangler/deploy/config.json。vite.config.ts の deployRedirect）から場所を読み、下の手順で使う
+      - name: 組み立てた設定の場所を読む
+        run: |
+          echo "BUILT_CONFIG=$(node -p "path.join('.wrangler/deploy', require('./.wrangler/deploy/config.json').configPath)")" >> "$GITHUB_ENV"
+
       # 表を変える前の地点（bookmark）を控える。更新で困ったら、wrangler d1 time-travel restore で戻す（docs/deployment.md の「新しい版に上げる」）
       - name: 表を変える前の地点を控える（D1 の Time Travel）
         run: |
           {
             echo '### 表を変える前の D1 の地点'
             echo '```'
-            npx wrangler d1 time-travel info DB --config dist/yoki/wrangler.json 2>&1 || echo '控えられませんでした（公開は続けます）'
+            npx wrangler d1 time-travel info DB --config "$BUILT_CONFIG" 2>&1 || echo '控えられませんでした（公開は続けます）'
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: 本番の D1 に表の変更を当てる
-        run: npx wrangler d1 migrations apply DB --remote --config dist/yoki/wrangler.json
+        run: npx wrangler d1 migrations apply DB --remote --config "$BUILT_CONFIG"
 
       # Worker の secret は、公開する版と一緒に送る（ファイルは runner の一時の場所に置き、送ったら消す）。
       # DiscordアプリのClient ID・公開のアドレス・GoogleのClient IDは秘密ではないが、var にすると Workers Builds で公開したときと
@@ -176,4 +182,4 @@ jobs:
             if (process.env.UPDATE_DISPATCH_TOKEN) s.UPDATE_DISPATCH_TOKEN = process.env.UPDATE_DISPATCH_TOKEN;
             require('fs').writeFileSync(process.argv[1], JSON.stringify(s), { mode: 0o600 });
           " "$secrets"
-          npx wrangler deploy --config dist/yoki/wrangler.json --secrets-file "$secrets"
+          npx wrangler deploy --config "$BUILT_CONFIG" --secrets-file "$secrets"
