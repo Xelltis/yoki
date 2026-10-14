@@ -1,9 +1,9 @@
 // 管理画面の土台: 運営者の判定・締め出し・ログインのあとの戻り先
-import { env, SELF } from 'cloudflare:test';
+import { env } from 'cloudflare:test';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import { isOperator, parseOperatorIds } from '../../src/worker/auth/operator';
 import { isReturnPath } from '../../src/shared/routes';
-import { call, loginAs, mockDiscord, setCookies } from './helpers';
+import { call, fetchWorker, loginAs, mockDiscord, setCookies } from './helpers';
 
 afterEach(() => vi.restoreAllMocks());
 
@@ -58,7 +58,7 @@ describe('締め出し', () => {
 
   test('開発用ログインでも断る', async () => {
     await env.DB.prepare("INSERT INTO users (id, username, guilds_checked_at, created_at, last_login_at, banned_at) VALUES ('400000000000000011', 'dev-11', '', '', '', '2026-01-01')").run();
-    const res = await SELF.fetch('http://localhost:5173/dev/login', {
+    const res = await fetchWorker('http://localhost:5173/dev/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded', Origin: 'http://localhost:5173' },
       body: 'as=ソラ',

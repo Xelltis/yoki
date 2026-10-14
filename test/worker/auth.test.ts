@@ -1,7 +1,7 @@
 // Discordでログイン・ログアウト・/api/me
-import { env, SELF } from 'cloudflare:test';
+import { env } from 'cloudflare:test';
 import { afterEach, describe, expect, test, vi } from 'vitest';
-import { call, loginAs, makeGroup, mockDiscord, ORIGIN, postJson, setCookies, SID } from './helpers';
+import { call, fetchWorker, loginAs, makeGroup, mockDiscord, ORIGIN, postJson, setCookies, SID } from './helpers';
 
 afterEach(() => vi.restoreAllMocks());
 
@@ -177,7 +177,7 @@ describe('ログインの端の場合', () => {
 
 describe('/api/meとグループを作るときの端の場合', () => {
   test('手元から開くと、開発用ログインの人を並べる', async () => {
-    const body = await (await SELF.fetch('http://localhost:5173/api/me')).json<{ dev: { users: string[] } | null }>();
+    const body = await (await fetchWorker('http://localhost:5173/api/me')).json<{ dev: { users: string[] } | null }>();
     expect(body.dev?.users).toContain('ひより');
   });
 

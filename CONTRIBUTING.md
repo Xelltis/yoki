@@ -90,9 +90,9 @@ npm run lint         lint（oxlint。正しさの決まりと、React の hooks�
 npm run e2e          ブラウザで通しで確かめる（開発サーバーをその場で立てる。初回は npx playwright install chromium）
 ```
 
-サーバーのテストは、Workersの実行環境（`@cloudflare/vitest-pool-workers`）でローカルのD1にマイグレーションを当てて動かす。Discordへの送信は差し替えて記録する。
+サーバーのテストは、Workersの実行環境（`@cloudflare/vitest-pool-workers`）でローカルのD1にマイグレーションを当てて動かす。Discordへの送信は差し替えて記録する。Workerは、`test/worker/helpers.ts` の `fetchWorker`（`call`・`postJson` もこれを使う）でアプリ（`src/worker/app.ts`）を直に呼ぶ。`cloudflare:test` の `SELF.fetch` は使わない。呼ぶたびに少しずつ遅くなり、数百回呼ぶと1回に数十msかかるようになるため。
 
-同時に流すテストのファイルは、CPUの半分までにしている（`vitest.config.ts` の `maxWorkers`）。既定のCPUの数−1では、ほかの仕事と重なったときにWorkersのテストが順番待ちで長引き、上限で切れたテストが裏で動き続けて、次のテストまで崩していた。
+実行環境（workerdとローカルのD1。1つ300MBほど）は、同時に2つまでにし（`vitest.config.ts` の `maxWorkers`）、ファイルが変わっても使い回す（`isolate: false`）。ファイルごとに立て直すと、その手間とメモリがファイルの数だけかかる。D1はテストのたびに `test/worker/setup.ts` が空にし、差し替えた関数（`vi.spyOn`）もテストのたびに戻すので、ファイルどうしは混ざらない。テストを足すときも、差し替えたものは戻してください。画面のテストも、ファイルごとにNodeのプロセスを立て直さない。
 
 サーバー（`src/worker`）と共有の型（`src/shared`）のカバレッジは、文・分岐・関数・行のすべてで100% を保つ。通らない道を足したら、テストも足す。テストの環境では動かせない道（本番だけの分かれ道など）だけ、理由を書いて `/* istanbul ignore … -- @preserve 理由 */` で外す（`@preserve` が無いと、組み立てのときにコメントが消えて効かない）。画面（`src/client`）はe2eで確かめる。グループの画面のデータの読み書きの順番（`features/console/api/sync.ts`）と、サーバーの呼び出し（`features/console/api/rpc.ts`）だけは、単体テスト（`test/client/console-sync.test.ts`・`test/client/rpc.test.ts`）でも確かめる。
 

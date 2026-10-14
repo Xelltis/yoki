@@ -1,9 +1,9 @@
 // 新規登録の受付（運営者が切り替える）。止めると、新しいグループの作成と、初めての人のログインを断る。もう使っている人と運営者は別
-import { env, SELF } from 'cloudflare:test';
+import { env } from 'cloudflare:test';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import type { AdminOverview } from '../../src/shared/admin';
 import type { MeResponse } from '../../src/shared/api';
-import { call, loginAs, mockDiscord, postJson } from './helpers';
+import { call, fetchWorker, loginAs, mockDiscord, postJson } from './helpers';
 
 const OP = '400000000000000098';
 let op = '';
@@ -60,7 +60,7 @@ describe('受付を止めているとき', () => {
 
   test('開発用ログインでも、初めての人は断る（開発では、ひよりは運営者なので入れる）', async () => {
     const dev = (as: string) =>
-      SELF.fetch('http://localhost:5173/dev/login', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded', Origin: 'http://localhost:5173' }, body: 'as=' + as, redirect: 'manual' });
+      fetchWorker('http://localhost:5173/dev/login', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded', Origin: 'http://localhost:5173' }, body: 'as=' + as, redirect: 'manual' });
     expect((await dev('ソラ')).headers.get('Location')).toBe('/?login=closed');
     expect((await dev('ひより')).headers.get('Location')).toBe('/g/sample/');
     // 一度入った人は、止めていても入れる

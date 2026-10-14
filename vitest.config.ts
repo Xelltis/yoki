@@ -12,10 +12,10 @@ export default defineConfig(async (): Promise<ViteUserConfig> => {
   const migrations = await readD1Migrations(path.join(import.meta.dirname, 'migrations'));
   return {
     test: {
-      // 同時に流すファイルを、CPUの半分までにする。既定（CPUの数−1）では、ほかの仕事と重なるとWorkerのテストが順番待ちで
-      // 1つ数十秒かかり、上限で切れたテストが裏で動き続けて、次のテストの表まで崩していた。半分なら、全体の時間はほとんど変わらない。
+      // 同時に流すのは2つまで。Workerのテストは、1つにつきWorkersの実行環境（workerdとローカルのD1。300MBほど）を1つ立てるので、
+      // 数を決めておかないと、CPUの数に合わせて立ち、メモリを食う（16コアの手元で、CPUの半分の8つでは3GB余り。2つなら2GBに収まり、全部で30秒ほど）。
       // プロジェクトごとに変えると、Vitestがsequence.groupOrderを分けるよう求めるので、ここでそろえる
-      maxWorkers: '50%',
+      maxWorkers: 2,
       coverage: {
         provider: 'istanbul',
         include: ['src/worker/**/*.ts', 'src/shared/**/*.ts'],
@@ -56,7 +56,10 @@ export default defineConfig(async (): Promise<ViteUserConfig> => {
             name: 'worker',
             include: ['test/worker/**/*.test.ts'],
             setupFiles: ['test/worker/setup.ts'],
-            // 上限に余裕を持たせる（ふだんはいちばん遅いテストで2秒ほど。既定はテスト5秒・前後の準備10秒。上のmaxWorkersも見る）
+            // 立てた実行環境を、次のファイルでも使い回す（ファイルごとに立て直さない）。D1はsetup.tsがテストごとに空にし、
+            // 差し替えた関数（vi.spyOn）はテストのたびに戻すので、ファイルどうしは混ざらない
+            isolate: false,
+            // 上限に余裕を持たせる（ふだんはいちばん遅いテストで2秒ほど。既定はテスト5秒・前後の準備10秒）
             testTimeout: 30_000,
             hookTimeout: 30_000,
           },
@@ -64,7 +67,8 @@ export default defineConfig(async (): Promise<ViteUserConfig> => {
         {
           // 画面のJSが使う、組み立てのときに入れる値（vite.config.ts）
           define: { __API_SHAPE__: JSON.stringify('test') },
-          test: { name: 'client', include: ['test/client/**/*.test.{js,ts}'], environment: 'node' },
+          // 画面のテストも、ファイルごとにNodeのプロセスを立て直さない（差し替えたものは、テストのたびに戻す）
+          test: { name: 'client', include: ['test/client/**/*.test.{js,ts}'], environment: 'node', isolate: false },
         },
       ],
     },

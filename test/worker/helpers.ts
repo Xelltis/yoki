@@ -1,6 +1,7 @@
 // テストの小道具: ログイン済みの人を作る、Discordとの通信を差し替える、Workerを呼ぶ
-import { env, SELF } from 'cloudflare:test';
+import { createExecutionContext, env, waitOnExecutionContext } from 'cloudflare:test';
 import { vi } from 'vitest';
+import { app } from '../../src/worker/app';
 import { sha256Hex } from '../../src/worker/lib/ids';
 
 export const ORIGIN = 'https://yoki.test';
@@ -42,11 +43,22 @@ export async function makeGroup(id: string, guildId: string, title = 'テスト�
     .run();
 }
 
+/**
+ * Workerの入口（src/worker/index.tsのfetch。Honoのアプリ）を、テストの中で直に呼ぶ。後回しの仕事（waitUntil）も終わってから返す。転送は追わない。
+ * cloudflare:testのSELF.fetchは使わない（呼ぶたびに少しずつ遅くなり、数百回で1回数十msかかるようになる。アプリを直に呼べば、いつも1msほど）
+ */
+export async function fetchWorker(url: string, init?: RequestInit): Promise<Response> {
+  const ctx = createExecutionContext();
+  const res = await app.fetch(new Request(url, init), env, ctx);
+  await waitOnExecutionContext(ctx);
+  return res;
+}
+
 /** Workerを呼ぶ。cookieがあれば添える。転送は追わない */
 export function call(path: string, init: RequestInit & { sid?: string } = {}): Promise<Response> {
   const headers = new Headers(init.headers);
   if (init.sid) headers.set('Cookie', SID + '=' + init.sid);
-  return SELF.fetch(ORIGIN + path, { ...init, headers, redirect: 'manual' });
+  return fetchWorker(ORIGIN + path, { ...init, headers });
 }
 
 export function postJson(path: string, body: unknown, sid?: string, extra: Record<string, string> = {}): Promise<Response> {

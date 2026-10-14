@@ -1,5 +1,5 @@
 // Google連携の部品: 暗号化、設定、本物のGoogleの呼び方（fetchを差し替える）、開発用の偽のGoogle
-import { env, SELF } from 'cloudflare:test';
+import { env } from 'cloudflare:test';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import { app } from '../../src/worker/app';
 import type { Bindings } from '../../src/worker/env';
@@ -8,7 +8,7 @@ import { googleConfigured, googleDeps } from '../../src/worker/google/config';
 import { fakeGoogle, readFake, writeFake } from '../../src/worker/google/dev';
 import { jstMs } from '../../src/worker/lib/ics';
 import { importKey, open, seal } from '../../src/worker/lib/secretbox';
-import { call, ORIGIN, setupGroup, SID } from './helpers';
+import { call, fetchWorker, ORIGIN, setupGroup, SID } from './helpers';
 
 const KEY = btoa(String.fromCharCode(...new Uint8Array(32).fill(7)));
 const OTHER = btoa(String.fromCharCode(...new Uint8Array(32).fill(9)));
@@ -229,17 +229,17 @@ describe('開発用の偽のGoogle', () => {
 
   const LOCAL = 'http://localhost:5173';
   test('道: 同意の画面の代わりにすぐ戻す。中身を読む・予定ありを置き換える。手元からだけ', async () => {
-    const res = await SELF.fetch(LOCAL + '/dev/google/authorize?redirect_uri=' + encodeURIComponent(LOCAL + '/auth/google/callback') + '&state=st', { redirect: 'manual' });
+    const res = await fetchWorker(LOCAL + '/dev/google/authorize?redirect_uri=' + encodeURIComponent(LOCAL + '/auth/google/callback') + '&state=st', { redirect: 'manual' });
     expect(res.status).toBe(302);
     // codeは毎回変わる（前に取り消したrefresh tokenと重ならないように）
     expect(res.headers.get('Location')).toMatch(new RegExp('^' + LOCAL + '/auth/google/callback\\?code=dev-code-[\\w-]{8}&state=st$'));
-    expect((await SELF.fetch(LOCAL + '/dev/google/authorize?redirect_uri=https://evil.example/&state=st', { redirect: 'manual' })).status).toBe(404);
-    expect((await SELF.fetch(LOCAL + '/dev/google/authorize', { redirect: 'manual' })).headers.get('Location')).toMatch(new RegExp('^' + LOCAL + '/\\?code=dev-code-[\\w-]{8}&state=$'));
+    expect((await fetchWorker(LOCAL + '/dev/google/authorize?redirect_uri=https://evil.example/&state=st', { redirect: 'manual' })).status).toBe(404);
+    expect((await fetchWorker(LOCAL + '/dev/google/authorize', { redirect: 'manual' })).headers.get('Location')).toMatch(new RegExp('^' + LOCAL + '/\\?code=dev-code-[\\w-]{8}&state=$'));
     const busy = [{ start: '2026-10-10T10:00:00Z', end: '2026-10-10T12:00:00Z' }];
-    const post = await SELF.fetch(LOCAL + '/dev/google/busy', { method: 'POST', headers: { 'Content-Type': 'application/json', Origin: LOCAL }, body: JSON.stringify({ busy }) });
+    const post = await fetchWorker(LOCAL + '/dev/google/busy', { method: 'POST', headers: { 'Content-Type': 'application/json', Origin: LOCAL }, body: JSON.stringify({ busy }) });
     expect(post.status).toBe(200);
-    expect((await (await SELF.fetch(LOCAL + '/dev/google/state')).json() as any).busy).toEqual(busy);
-    await SELF.fetch(LOCAL + '/dev/google/busy', { method: 'POST', headers: { 'Content-Type': 'application/json', Origin: LOCAL }, body: '{}' });
+    expect((await (await fetchWorker(LOCAL + '/dev/google/state')).json() as any).busy).toEqual(busy);
+    await fetchWorker(LOCAL + '/dev/google/busy', { method: 'POST', headers: { 'Content-Type': 'application/json', Origin: LOCAL }, body: '{}' });
     expect((await readFake(env.DB)).busy).toEqual([]);
     expect((await call('/dev/google/authorize')).status).toBe(404);
     expect((await call('/dev/google/state')).status).toBe(404);

@@ -1,9 +1,10 @@
 // 土台の確認: Workerが動き、D1にテーブルがそろっている
-import { env, SELF } from 'cloudflare:test';
+import { env } from 'cloudflare:test';
 import { expect, test } from 'vitest';
+import { fetchWorker } from './helpers';
 
 test('/api/healthがD1のテーブル数を返す', async () => {
-  const res = await SELF.fetch('https://yoki.test/api/health');
+  const res = await fetchWorker('https://yoki.test/api/health');
   expect(res.status).toBe(200);
   const body = await res.json<{ ok: boolean; tables: number }>();
   expect(body.ok).toBe(true);

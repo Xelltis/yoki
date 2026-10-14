@@ -1,7 +1,7 @@
 // グループを作る・グループのページに入る・メンバーを決める・CSRF・開発用ログイン・管理画面のページ・グループを消す
 import { env } from 'cloudflare:test';
 import { describe, expect, test } from 'vitest';
-import { call, loginAs, makeGroup, mockBotGuilds, ORIGIN, postJson, rpc, setupGroup } from './helpers';
+import { call, fetchWorker, loginAs, makeGroup, mockBotGuilds, ORIGIN, postJson, rpc, setupGroup } from './helpers';
 
 const member = (groupId: string, userId: string) =>
   env.DB.prepare('SELECT name, is_admin, discord_id FROM members WHERE group_id = ? AND user_id = ?').bind(groupId, userId).first<{ name: string; is_admin: number; discord_id: string }>();
@@ -117,8 +117,7 @@ describe('グループのページ（/g/:id/）', () => {
 
 describe('開発用ログイン', () => {
   test('手元（http://localhost）ではサンプルのグループに入れる', async () => {
-    const { SELF } = await import('cloudflare:test');
-    const res = await SELF.fetch('http://localhost:5173/dev/login', {
+    const res = await fetchWorker('http://localhost:5173/dev/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded', Origin: 'http://localhost:5173' },
       body: 'as=ソラ',

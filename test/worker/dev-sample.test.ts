@@ -1,15 +1,15 @@
 // 開発用ログインの端の場合と、サンプルのグループの作り直し・年をまたぐ月のサンプル
-import { env, SELF } from 'cloudflare:test';
+import { env } from 'cloudflare:test';
 import { describe, expect, test } from 'vitest';
 import { ensureSampleGroup } from '../../src/worker/auth/dev';
 import type { Bindings } from '../../src/worker/env';
 import { googleDeps } from '../../src/worker/google/config';
 import { seal } from '../../src/worker/lib/secretbox';
-import { call, ORIGIN } from './helpers';
+import { call, fetchWorker, ORIGIN } from './helpers';
 
 const LOCAL = 'http://localhost:5173';
 const devPost = (path: string, body = '') =>
-  SELF.fetch(LOCAL + path, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded', Origin: LOCAL }, body, redirect: 'manual' });
+  fetchWorker(LOCAL + path, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded', Origin: LOCAL }, body, redirect: 'manual' });
 const sessionCount = () => env.DB.prepare("SELECT count(*) AS n FROM sessions WHERE group_id = 'sample'").first<number>('n');
 
 describe('開発用ログイン', () => {
@@ -57,7 +57,7 @@ describe('開発用ログインとGoogleでのログイン', () => {
   test('初めてのGoogleのアカウントを控えていれば、結びつけるために押した開発用ログインの人に結びつけ、入口で知らせる', async () => {
     const key = (await googleDeps(env as unknown as Bindings, LOCAL))!.key;
     const pending = await seal(key, JSON.stringify({ sub: 'g-dev', email: 'dev@example.com', at: new Date().toISOString() }));
-    const devLogin = (body: string) => SELF.fetch(LOCAL + '/dev/login', {
+    const devLogin = (body: string) => fetchWorker(LOCAL + '/dev/login', {
       method: 'POST', redirect: 'manual', body,
       headers: { 'Content-Type': 'application/x-www-form-urlencoded', Origin: LOCAL, Cookie: 'yoki_glink=' + encodeURIComponent(pending) },
     });
