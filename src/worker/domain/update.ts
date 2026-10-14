@@ -1,5 +1,8 @@
 // 運営の管理画面の「更新」。動いているバージョンと、元のリポジトリの最新のReleaseを比べる。新しければ、変わったことと表の変更があるかを出し、
 // 公開しているリポジトリの更新のワークフローを動かす（update/config.ts）。GitHubを読むのは1時間に1回まで（metaのupdate_checkに控える）
+// 公開しているリポジトリに更新のワークフローが無ければ（ボタンで作ったリポジトリには、Cloudflareがワークフローのファイルを写さない）、
+// 入れるためのGitHubの画面を出す。中身はtools/update/workflow.yml（.github/workflows/update.ymlの写し。ボタンで作ったリポジトリにも写る）
+import WORKFLOW from '../../../tools/update/workflow.yml?raw';
 import type { AdminUpdate } from '../../shared/admin';
 import { AppError } from '../lib/errors';
 import { UPDATE_WORKFLOW, type UpdateDeps } from '../update/config';
@@ -26,6 +29,9 @@ export function newer(a: string, b: string): boolean {
 }
 
 const message = (e: unknown) => (e instanceof Error ? e.message : String(e));
+
+/** 公開しているリポジトリのmainに、更新のワークフローを入れるGitHubの画面（ファイルの名前と中身を入れてある。押すのは「Commit changes」だけ） */
+export const setupUrl = (repo: string) => 'https://github.com/' + repo + '/new/main?filename=.github/workflows/' + UPDATE_WORKFLOW + '&value=' + encodeURIComponent(WORKFLOW);
 
 /** 最新のReleaseを読む（控えが1時間より新しければ控えを使う）。運営者への知らせ（operator-notice.ts）も使う */
 export async function checkRelease(db: D1Database, deps: UpdateDeps, now: Date, force: boolean): Promise<Check> {
@@ -55,11 +61,13 @@ export async function checkRelease(db: D1Database, deps: UpdateDeps, now: Date, 
 /** 版と更新の様子。forceならGitHubを読み直す */
 export async function updateStatus(db: D1Database, deps: UpdateDeps, now: Date, force = false): Promise<AdminUpdate> {
   const c = await checkRelease(db, deps, now, force);
-  const canDispatch = !!(deps.repo && deps.token);
-  let runs: AdminUpdate['runs'] = [], error = c.error;
-  if (canDispatch) {
+  const canRead = !!(deps.repo && deps.token);
+  let runs: AdminUpdate['runs'] = [], error = c.error, missing = false;
+  if (canRead) {
     try {
-      runs = await deps.api.runs(deps.repo, deps.token, UPDATE_WORKFLOW);
+      const r = await deps.api.runs(deps.repo, deps.token, UPDATE_WORKFLOW);
+      if (r) runs = r;
+      else missing = true;
     } catch (e) {
       error = error || '更新の記録を読めませんでした（' + message(e) + '）';
     }
@@ -67,7 +75,7 @@ export async function updateStatus(db: D1Database, deps: UpdateDeps, now: Date, 
   return {
     current: APP_VERSION, upstream: deps.upstream, latest: c.latest, available: !!c.latest && newer(c.latest.version, APP_VERSION), migrations: c.migrations,
     checked: !c.error, error, checkedAt: c.checkedAt, repo: deps.repo, workflowUrl: deps.repo ? 'https://github.com/' + deps.repo + '/actions/workflows/' + UPDATE_WORKFLOW : '',
-    canDispatch, runs,
+    canDispatch: canRead && !missing, setupUrl: missing ? setupUrl(deps.repo) : '', runs,
   };
 }
 

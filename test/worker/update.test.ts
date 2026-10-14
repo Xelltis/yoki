@@ -4,7 +4,7 @@ import { env } from 'cloudflare:test';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import type { AdminUpdate } from '../../src/shared/admin';
 import { app } from '../../src/worker/app';
-import { newer, parseVersion, startUpdate, updateStatus } from '../../src/worker/domain/update';
+import { newer, parseVersion, setupUrl, startUpdate, updateStatus } from '../../src/worker/domain/update';
 import type { Bindings } from '../../src/worker/env';
 import { htmlToMarkdown, realGitHub } from '../../src/worker/update/api';
 import { DEFAULT_UPSTREAM, updateDeps, type UpdateDeps } from '../../src/worker/update/config';
@@ -213,6 +213,33 @@ describe('新しい版を確かめる（本物のGitHub。fetchを差し替え�
     const u = await updateStatus(env.DB, deps(), new Date(), true);
     expect(u.runs).toEqual([]);
     expect(u.error).toBe('更新の記録を読めませんでした（GitHubが403を返しました。トークンの権限と、リポジトリの名前を確かめてください）');
+    expect(u.setupUrl).toBe('');
+  });
+
+  test('公開しているリポジトリに更新のワークフローが無ければ（ボタンで作ったリポジトリ）、入れるGitHubの画面を出し、ボタンでは始めない', async () => {
+    const calls = mockGitHub({ '/repos/o/u/releases/latest': release('v' + NEXT), '/repos/me/yoki': () => Response.json({ full_name: 'me/yoki' }) });
+    const u = await updateStatus(env.DB, deps(), new Date(), true);
+    expect(u).toMatchObject({ available: true, canDispatch: false, error: '', runs: [] });
+    const url = new URL(u.setupUrl);
+    expect(url.origin + url.pathname).toBe('https://github.com/me/yoki/new/main');
+    expect(url.searchParams.get('filename')).toBe('.github/workflows/update.yml');
+    // 中身は、元のリポジトリの更新のワークフローと同じ（tools/update/workflow.yml。テストのclientが、.github/workflows/update.ymlと同じかを確かめる）
+    expect(url.searchParams.get('value')).toMatch(/^# Yokiを新しい版に上げる[\s\S]*name: Yokiを更新する[\s\S]*tools\/update\/update\.sh/);
+    expect(u.setupUrl).toBe(setupUrl('me/yoki'));
+    // GitHubは長い道を断るので、短く保つ
+    expect(u.setupUrl.length).toBeLessThan(8000);
+    // ワークフローが無いのか、リポジトリが見えないのかを、リポジトリをトークンで読んで分ける
+    expect(calls.slice(-1)[0]).toMatchObject({ url: 'https://api.github.com/repos/me/yoki', auth: 'Bearer tok' });
+  });
+
+  test('実行の一覧もリポジトリも見えなければ、ワークフローが無いとは言わず、そう出す', async () => {
+    mockGitHub({ '/repos/o/u/releases/latest': release('v' + APP_VERSION) });
+    expect(await updateStatus(env.DB, deps(), new Date(), true)).toMatchObject({
+      setupUrl: '', canDispatch: true, error: '更新の記録を読めませんでした（GitHubで公開しているリポジトリ「me/yoki」が見えません。トークンの対象のリポジトリと、名前を確かめてください）',
+    });
+    vi.restoreAllMocks();
+    mockGitHub({ '/repos/o/u/releases/latest': release('v' + APP_VERSION), '/repos/me/yoki': () => new Response('no', { status: 403 }) });
+    expect((await updateStatus(env.DB, deps(), new Date(), true)).error).toBe('更新の記録を読めませんでした（GitHubが403を返しました。トークンの権限と、リポジトリの名前を確かめてください）');
   });
 });
 

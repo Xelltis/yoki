@@ -14,7 +14,9 @@ Yokiの新しいバージョンは、元のリポジトリ（[Xelltis/yoki](http
 
 ボタンで作ったリポジトリには、GitHub Actionsのワークフローのファイル（`.github/workflows/`）が入っていません。リポジトリを作るCloudflareのGitHub Appに、ワークフローのファイルを書く権限が無いためです。更新のワークフローは、あなたが入れてください。
 
-あなたのリポジトリで「Add file」→「Create new file」を開き、名前を `.github/workflows/update.yml` にします。中身には元のリポジトリの[update.yml](https://github.com/Xelltis/yoki/blob/release/.github/workflows/update.yml)をそのまま写し、「Commit changes」を押してください。
+4のトークンを入れてあれば、運営の管理画面の「更新」に「更新のワークフローを入れる」のボタンが出ます。押すと、ファイルの名前と中身を入れたGitHubの画面が開きます。そのまま「Commit changes」を押してください。
+
+ボタンが出ないときは、手で入れます。あなたのリポジトリで「Add file」→「Create new file」を開き、名前を `.github/workflows/update.yml` にします。中身には元のリポジトリの[update.yml](https://github.com/Xelltis/yoki/blob/release/.github/workflows/update.yml)をそのまま写し、「Commit changes」を押してください。
 
 入れたワークフローは、書き換えずに使い続けられます。更新のたびに、取り込むバージョンの手順を読んで動くからです。
 

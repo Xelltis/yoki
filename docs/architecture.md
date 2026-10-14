@@ -353,7 +353,7 @@ YokiはOSSとして、ほかの人が自分のCloudflareに設置して公開す
 
 フォーク（履歴がつながっている）: タグをmainにマージし、GitHub Actionsで公開すると決めていれば（`YOKI_DEPLOY_WITH_ACTIONS`）、公開のワークフローを動かす。ぶつかったらmainを変えずに `update/vX.Y.Z` のブランチとPRを作って止まる。
 
-**2つのトークン**: 管理画面のボタンは、Workerのsecretの `UPDATE_DISPATCH_TOKEN`（そのリポジトリのActionsを動かすだけの権限）で、更新のワークフローを `workflow_dispatch` で動かし、その実行の一覧を読む。運営者のDiscordのアカウントを取られても、コードは書き換えられない。mainへの書き込みは、フォークでは、更新のワークフローがActionsのsecretの `UPDATE_PUSH_TOKEN`（ContentsとWorkflows）で行う。既定の `GITHUB_TOKEN` は `.github/workflows/` を書き換えられず、書き込んだpushでは公開のワークフローも動かないので、そのときは更新のワークフローが公開のワークフローを動かす。
+**2つのトークン**: 管理画面のボタンは、Workerのsecretの `UPDATE_DISPATCH_TOKEN`（そのリポジトリのActionsを動かすだけの権限）で、更新のワークフローを `workflow_dispatch` で動かし、その実行の一覧を読む。一覧が404でもリポジトリが見えるなら、ワークフローが無い（ボタンで作ったリポジトリ）として、ボタンの代わりに、入れるためのGitHubの画面（`setupUrl`。中身は `tools/update/workflow.yml`）を出す。運営者のDiscordのアカウントを取られても、コードは書き換えられない。mainへの書き込みは、フォークでは、更新のワークフローがActionsのsecretの `UPDATE_PUSH_TOKEN`（ContentsとWorkflows）で行う。既定の `GITHUB_TOKEN` は `.github/workflows/` を書き換えられず、書き込んだpushでは公開のワークフローも動かないので、そのときは更新のワークフローが公開のワークフローを動かす。
 
 **表の変更**: 公開のワークフローは、当てる前にD1のTime Travelの地点（bookmark）をSummaryに控える。Workers Buildsは控えないので、時刻で戻す。表の変更は戻せないので、困ったらWorkerを前のバージョンに戻し、D1を更新の前に戻す。
 

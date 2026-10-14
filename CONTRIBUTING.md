@@ -68,7 +68,7 @@ tools/lint-ja.mjs  文書の日本語の検査（yomiyasu。tools/yomiyasu/ に�
 tools/shims/       npm audit に出る部品の差し替え（package.json の overrides）
 tools/icons.ts     アイコン（unplugin-icons）の決まり。使ってよい集まりとライセンス、SVG を React の部品にする変換（アプリとサイトで使う）
 tools/release/     バージョンを出すときに package.json のバージョンを書き換えてコミットする（semantic-release のプラグイン）
-tools/update/      更新の手順（update.sh。更新のワークフローが、取り込むバージョンのものを動かす）・ボタンで設置したリポジトリの wrangler.jsonc の値の引き継ぎ
+tools/update/      更新の手順（update.sh。更新のワークフローが、取り込むバージョンのものを動かす）・ボタンで設置したリポジトリの wrangler.jsonc の値の引き継ぎ・更新のワークフローの写し（workflow.yml。管理画面が入れ方を案内する）
 tools/licenses/    第三者のライセンスの本文（THIRD_PARTY_NOTICES.md に載せる）
 tools/third-party.mjs 第三者のライセンスの断り書き（THIRD_PARTY_NOTICES.md）を書き出す（npm run notices）
 vitest.config.ts   テスト

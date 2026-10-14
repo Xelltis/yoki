@@ -15,8 +15,8 @@ export interface UpdateApi {
   changedFiles(repo: string, base: string, head: string, token: string): Promise<string[]>;
   /** ワークフローをmainで動かす（workflow_dispatch） */
   dispatch(repo: string, token: string, workflow: string, inputs: Record<string, string>): Promise<void>;
-  /** ワークフローの最近の実行（新しい順に5件） */
-  runs(repo: string, token: string, workflow: string): Promise<UpdateRun[]>;
+  /** ワークフローの最近の実行（新しい順に5件）。リポジトリにワークフローが無ければnull */
+  runs(repo: string, token: string, workflow: string): Promise<UpdateRun[] | null>;
 }
 
 const API = 'https://api.github.com';
@@ -114,6 +114,13 @@ export function realGitHub(): UpdateApi {
     },
     async runs(repo, token, workflow) {
       const res = await gh('/repos/' + repo + '/actions/workflows/' + workflow + '/runs?per_page=5', token);
+      if (res.status === 404) {
+        // ワークフローが無い（ボタンで作ったリポジトリには、Cloudflareがワークフローのファイルを写さない）のか、リポジトリが見えないのかを分ける
+        const home = await gh('/repos/' + repo, token);
+        if (home.status === 404) throw new Error('GitHubで公開しているリポジトリ「' + repo + '」が見えません。トークンの対象のリポジトリと、名前を確かめてください');
+        if (!home.ok) throw refused(home);
+        return null;
+      }
       if (!res.ok) throw refused(res);
       const r = (await res.json()) as { workflow_runs: { id: number; status: string; conclusion: string | null; created_at: string; html_url: string }[] };
       return r.workflow_runs.map((x) => ({ id: x.id, status: x.status, conclusion: x.conclusion ?? '', createdAt: x.created_at, url: x.html_url }));

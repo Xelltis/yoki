@@ -1,0 +1,46 @@
+# Yokiを新しい版に上げる（設置した人のリポジトリで動かす）。取り込む版のタグを取り、その版の tools/update/update.sh が取り込む。
+# ボタンで作ったリポジトリには、Cloudflareがこのファイルを写さないので、運営者が1回だけ入れる。更新はこのファイルを書き換えない。
+# tools/update/workflow.yml と同じ中身にする（テストが確かめる）
+name: Yokiを更新する
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 上げる版（例 1.2.0）。空なら最新の版
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+  pull-requests: write
+  actions: write
+
+concurrency:
+  group: update
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    env:
+      UPSTREAM: ${{ vars.YOKI_UPSTREAM || 'Xelltis/yoki' }}
+      WANT: ${{ inputs.version }}
+      GH_TOKEN: ${{ github.token }}
+      UPDATE_TOKEN: ${{ secrets.UPDATE_PUSH_TOKEN }}
+      DEPLOY_WITH_ACTIONS: ${{ vars.YOKI_DEPLOY_WITH_ACTIONS }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.UPDATE_PUSH_TOKEN || github.token }}
+      - name: 取り込む
+        run: |
+          if [ "$GITHUB_REPOSITORY" = "$UPSTREAM" ]; then echo '::error::元のリポジトリでは動かしません'; exit 1; fi
+          tag="$WANT"
+          if [ -z "$tag" ]; then tag=$(gh release view --repo "$UPSTREAM" --json tagName --jq .tagName); fi
+          tag="v${tag#v}"
+          if ! printf '%s' "$tag" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$'; then echo "::error::版の形が違います: $tag"; exit 1; fi
+          git fetch --no-tags "https://github.com/$UPSTREAM.git" "refs/tags/$tag:refs/tags/$tag"
+          if ! git show "$tag:tools/update/update.sh" > "$RUNNER_TEMP/update.sh"; then echo "::error::$tag は、このワークフローでは取り込めません"; exit 1; fi
+          TAG="$tag" bash "$RUNNER_TEMP/update.sh"

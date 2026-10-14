@@ -49,6 +49,12 @@ test('更新でwrangler.jsoncを入れ替えるとき、Workerの名前とD1の�
   expect(parseJsonc(carry('{ "name": "only" }', next)).d1_databases[0].database_id).toBeUndefined();
 });
 
+test('更新のワークフローは、管理画面が入れ方を案内するときの写し（tools/update/workflow.yml）と同じ中身', () => {
+  // ボタンで作ったリポジトリには .github/workflows/ が無いので、Workerは写しのほうを読む
+  expect(read('.github/workflows/update.yml')).toBe(read('tools/update/workflow.yml'));
+  expect(read('tools/update/workflow.yml')).toContain('tools/update/update.sh');
+});
+
 /**
  * 更新の手順（tools/update/update.sh）を、手元の仮のリポジトリで動かす。
  * 元のリポジトリ（https://github.com/o/u.git をGitのinsteadOfで手元に向ける）にv1.0.0とv1.1.0を作る。

@@ -76,6 +76,7 @@ export function UpdatePane() {
           <dt className={dt}>動いているバージョン</dt><dd className={dd} id="opVersion">{'v' + u.current}</dd>
           <dt className={dt}>最新のバージョン</dt><dd className={dd} id="opLatest">{latest ? 'v' + latest.version + (latest.publishedAt ? '（' + fmt(latest.publishedAt) + '）' : '') + (u.checked ? '' : '・前に読めたもの') : '—'}</dd>
           <dt className={dt}>元のリポジトリ</dt><dd className={dd}><a href={'https://github.com/' + u.upstream} target="_blank" rel="noopener">{u.upstream}</a></dd>
+          {u.repo && <><dt className={dt}>公開しているリポジトリ</dt><dd className={dd}><a href={'https://github.com/' + u.repo} target="_blank" rel="noopener">{u.repo}</a></dd></>}
           <dt className={dt}>確かめた時刻</dt><dd className={dd}>{fmt(u.checkedAt) + (u.checkedAt ? '（' + ago(u.checkedAt) + '）' : '')}</dd>
         </dl>
         {u.available && notes.length > 0 && (
@@ -92,20 +93,28 @@ export function UpdatePane() {
         {u.available && u.migrations && (
           <p className={stateCls('warn') + ' text-13'} id="opMigrations">表（D1）の変更を含みます。公開のときに、変える前の地点（D1のTime Travel）を控えます。戻すときは、その地点へ戻します。</p>
         )}
+        {u.setupUrl && (
+          <p className={stateCls('warn') + ' text-13'} id="opUpdateSetup">
+            公開しているリポジトリに、更新のワークフローがありません。「Deploy to Cloudflare」のボタンで設置したときは、Cloudflareがワークフローのファイルを写さないので、初めに1回だけ入れてください。「更新のワークフローを入れる」を押すとGitHubの画面が開くので、そのまま「Commit changes」を押し、ここで「確かめ直す」を押します。
+          </p>
+        )}
         <div className="btns mt-12">
+          {u.setupUrl && (
+            <a className="btn primary" id="opUpdateSetupLink" href={u.setupUrl} target="_blank" rel="noopener"><Icon name="open_in_new" size="sm" />更新のワークフローを入れる</a>
+          )}
           {u.available && u.canDispatch && (
             <button type="button" className="btn primary" id="opUpdateStart" disabled={busy} onClick={start}><Icon name="upgrade" size="sm" />{'v' + latest!.version + 'に更新する'}</button>
           )}
-          {u.available && !u.canDispatch && u.workflowUrl && (
+          {u.available && !u.canDispatch && !u.setupUrl && u.workflowUrl && (
             <a className="btn primary" id="opUpdateGitHub" href={u.workflowUrl} target="_blank" rel="noopener"><Icon name="open_in_new" size="sm" />GitHubで更新する</a>
           )}
           {latest && <a className="btn" href={latest.url} target="_blank" rel="noopener"><Icon name="open_in_new" size="sm" />Releaseを見る</a>}
           <button type="button" className="btn" id="opUpdateCheck" disabled={busy} onClick={recheck}><Icon name="refresh" size="sm" />確かめ直す</button>
         </div>
-        {u.available && !u.canDispatch && (
+        {u.available && !u.canDispatch && !u.setupUrl && (
           <p className="hint">
             {u.workflowUrl ? 'GitHubの画面で「Run workflow」を押すと、最新のバージョンを取り込んで公開します。' : '公開しているリポジトリが分かりません。あなたのリポジトリのActionsで「Yokiを更新する」を動かしてください。'}
-            WorkerのsecretにUPDATE_DISPATCH_TOKENを入れると、ここのボタンで更新できます（<a href={HELP_URL + 'setup/update'} target="_blank" rel="noopener">新しいバージョンに上げる</a>）。
+            ボタンで設置したときは、初めに更新のワークフローを入れてください。WorkerのsecretにUPDATE_DISPATCH_TOKENを入れると、ここのボタンで更新できます（<a href={HELP_URL + 'setup/update'} target="_blank" rel="noopener">新しいバージョンに上げる</a>）。
           </p>
         )}
         <p className="hint">更新は、公開しているリポジトリのGitHubのActions（更新のワークフロー）が、元のリポジトリのバージョンを取り込んで公開します。コードを直しているときなど、取り込みでぶつかったら、mainを変えずにPRを作って止まります。</p>

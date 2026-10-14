@@ -164,7 +164,7 @@ Googleでログインした人がグループに入れるかは、Discordのサ�
 
 ### 1. 更新のワークフローを入れる（ボタンで作ったリポジトリ）
 
-元のリポジトリの `.github/workflows/update.yml` を、同じ名前でmainに入れる（GitHubの画面の「Add file」→「Create new file」）。
+元のリポジトリの `.github/workflows/update.yml` を、同じ名前でmainに入れる（GitHubの画面の「Add file」→「Create new file」）。`UPDATE_DISPATCH_TOKEN` があれば、運営の管理画面の「更新」がワークフローの無いことを見つけ、ファイルの名前と中身を入れたGitHubの画面（`/new/main?filename=…&value=…`）を開くボタンを出す。中身は `tools/update/workflow.yml`（`update.yml` の写し。ボタンで作ったリポジトリにも写るので、Workerはこちらを読む）。
 
 ### 2. Actionsを使えるようにする
 
