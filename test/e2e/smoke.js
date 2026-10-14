@@ -14,6 +14,8 @@ await withDevServer(async (base) => {
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));
   page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
+  // 断られた呼び出しは、ブラウザのエラーにURLが出ないので、どの道かも控える
+  page.on('response', (r) => { if (r.status() >= 400) errors.push(r.status() + ' ' + r.request().method() + ' ' + new URL(r.url()).pathname); });
   const D = () => page.evaluate(() => window.yoki.D);
   /** 画面のデータが条件を満たすまで待つ（fnはブラウザの中でDとargを受け取る） */
   const until = (fn, arg) => page.waitForFunction(`(${fn})(window.yoki.D, ${JSON.stringify(arg ?? null)})`, null, { timeout: 15000 });
