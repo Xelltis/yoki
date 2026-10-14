@@ -2,9 +2,9 @@
 # 一度だけ止めたいときはLEFTHOOK=0 git commit …
 # 書き方: https://lefthook.dev/configuration/
 
-# コミットの前: 型の確認・lint・テスト。関係するファイル（依存を変えたときのpackage-lock.jsonも）をコミットするときだけ回す
+# コミットの前: 型の確認・lint・テスト。関係するファイル（依存を変えたときのpackage-lock.jsonも）をコミットするときだけ回す。
+# 1つずつ順に回す（同時に回すと、メモリの最大がその合計になる。型の確認とlintは数秒で終わる）
 pre-commit:
-  parallel: true
   jobs:
     - name: 型の確認
       glob:
@@ -29,16 +29,28 @@ pre-commit:
         - "**/*.md"
       run: node tools/lint-ja.mjs {staged_files}
 
-    - name: テスト
+    # テストは、変えたものに関わるほうだけを回す。サーバー（Workersの実行環境を立てる。30秒ほど）と、画面・道具・サイト（Nodeで数秒）
+    - name: テスト（サーバー）
       glob:
-        - "src/**"
-        - "test/**"
+        - "src/worker/**"
+        - "src/shared/**"
+        - "test/worker/**"
         - "migrations/**"
-        - "website/**"
         - "*.config.ts"
         - "wrangler.jsonc"
         - "package-lock.json"
-      run: npm test
+      run: npx vitest run --project worker
+
+    - name: テスト（画面・道具・サイト）
+      glob:
+        - "src/**"
+        - "test/client/**"
+        - "tools/**"
+        - "website/**"
+        - ".github/**"
+        - "*.config.ts"
+        - "package-lock.json"
+      run: npx vitest run --project client
 
 # コミットの説明: Conventional Commitsの形か（commitlint。決まりはcommitlint.config.jsとCLAUDE.mdの「コミット」）。
 # Gitが作る説明（Merge・Revert・fixup! など）はcommitlintがそのまま通す

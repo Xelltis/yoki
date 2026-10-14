@@ -100,7 +100,7 @@ lintはoxlint（`.oxlintrc.json`）。ESLintのTypeScript対応（typescript-esl
 
 コミットのときは、Gitのフック（lefthook。`lefthook.yml`）が次を確かめる。フックは `npm install` のときに入る（入っていなければ `npx lefthook install`）。
 
-コミットの前: 型の確認（TypeScript・TSX・Vue・tsconfigを変えたとき）、lint（TypeScript・TSX・JavaScript・`.oxlintrc.json` を変えたとき）とテスト（`src/`・`test/`・`migrations/`・`website/`・設定を変えたとき）。
+コミットの前: 型の確認（TypeScript・TSX・Vue・tsconfigを変えたとき）、lint（TypeScript・TSX・JavaScript・`.oxlintrc.json` を変えたとき）、日本語の検査（Markdownを変えたとき）とテストを、1つずつ順に回す。テストは、変えたものに関わるほうだけを回す。サーバーのテストは `src/worker/`・`src/shared/`・`test/worker/`・`migrations/`・`wrangler.jsonc`・設定を変えたとき、画面・道具・サイトのテストは `src/`・`test/client/`・`tools/`・`website/`・`.github/`・設定を変えたとき。
 
 コミットの説明: [Conventional Commits](https://www.conventionalcommits.org/ja/v1.0.0/) の形か（commitlint。`commitlint.config.js`。書き方は [CLAUDE.md](CLAUDE.md) の「コミット」）。
 
