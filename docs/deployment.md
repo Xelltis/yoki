@@ -176,7 +176,7 @@ Googleでログインした人がグループに入れるかは、Discordのサ�
 
 ### 4. 管理画面のボタンで更新する（任意）
 
-このリポジトリだけに「Actions」のRead and writeを付けたトークンを作り、Workerのsecretの `UPDATE_DISPATCH_TOKEN` に入れる（ボタンで設置したならCloudflareのWorkerのVariables and Secretsに種類「Secret」で、GitHub Actionsで公開しているならenvironment「production」の秘密に入れて公開し直す）。Workerはこのトークンで更新のワークフローを動かし、その記録を読む。コードは書き換えられない権限にとどめる。無ければ、「更新」の区分にGitHubの画面を開くボタンが出る。
+このリポジトリだけに「Actions」のRead and writeを付けたトークンを作り、Workerのsecretの `UPDATE_DISPATCH_TOKEN` に入れる（ボタンで設置したならCloudflareのWorkerのVariables and Secretsに種類「Secret」で、GitHub Actionsで公開しているならenvironment「production」の秘密に入れて公開し直す）。Workerはこのトークンで更新のワークフローを動かし、その記録を読む。コードは書き換えられない権限にとどめる。権限が足りずにGitHubが403を返したら、管理画面に、GitHubが返す要る権限（`X-Accepted-GitHub-Permissions`）をトークンの画面の言葉で出す（「Actions」の「Read and write」など）。無ければ、「更新」の区分にGitHubの画面を開くボタンが出る。
 
 ### 5. 元のリポジトリを変える（任意。フォークのフォークなど）
 

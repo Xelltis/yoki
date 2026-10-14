@@ -87,6 +87,21 @@ GitHubは、トークンなしの読み出しの数を、出口のアドレス�
 
 PRを開き、差分を確かめてからマージしてください。マージすると公開されます。コードを直さずに使っていれば、PRにはなりません。
 
+## 403と出るとき
+
+「GitHubが403を返しました」と出るのは、トークンの権限が足りないときです。出たところによって、確かめるトークンが変わります。
+
+| 出たところ | 確かめるトークン | 要る権限 |
+|---|---|---|
+| 運営の管理画面の「更新」 | Workerのsecretの `UPDATE_DISPATCH_TOKEN` | 「Actions」の「Read and write」（「Workflows」ではありません） |
+| Actionsの「Yokiを更新する」の記録 | Actionsのsecretの `UPDATE_PUSH_TOKEN` | 「Contents」と「Workflows」の「Read and write」 |
+
+GitHubのトークンの画面では、「Repository access」も見てください。「Only select repositories」にして、あなたのリポジトリを選びます。「Public repositories」のままでは、どのリポジトリにも書き込めません。リポジトリがOrganizationのものなら、「Resource owner」をそのOrganizationにします（Organizationが認めるまで使えないこともあります）。
+
+権限は、トークンを作ったあとでも変えられます。変えてもトークンの値は同じなので、入れ直す必要はありません。
+
+ボタンで設置したときは、`UPDATE_PUSH_TOKEN` は要りません。入れてあって403になるなら、消してかまいません（Actionsの既定のトークンで書き込みます）。
+
 ## 困ったときに戻す
 
 上げたバージョンで困ったら、次の順に戻します。

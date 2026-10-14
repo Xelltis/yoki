@@ -24,12 +24,28 @@ const API = 'https://api.github.com';
 /** 読み出しの上限に達したか（429か、残りが0の403） */
 const limited = (res: Response) => res.status === 429 || (res.status === 403 && res.headers.get('x-ratelimit-remaining') === '0');
 
-/** GitHubが断ったときの文。上限なら、そう書く。権限・名前の誤りなら、確かめることを添える */
+/**
+ * 要る権限（X-Accepted-GitHub-Permissions。actions=write,metadata=read の形で、どれか1組あればよい組が;で並ぶ）を、
+ * GitHubのトークンの画面の言葉にする。初めの組だけを出す（例 「Actions」の「Read and write」）
+ */
+export function permissionText(header: string): string {
+  return header.split(';')[0]!.split(',').map((p) => {
+    const kv = p.trim().split('=');
+    const name = kv[0]!;
+    return '「' + name.charAt(0).toUpperCase() + name.slice(1).replace(/_/g, ' ') + '」の「' + (kv[1] === 'write' ? 'Read and write' : 'Read-only') + '」';
+  }).join('と');
+}
+
+/** GitHubが断ったときの文。上限なら、そう書く。権限・名前の誤りなら、確かめることを添える。トークンの権限が足りなければ、要る権限を書く */
 function refused(res: Response): Error {
   if (limited(res)) {
     return new Error('GitHubの読み出しの上限に達しました。しばらくしてから確かめ直してください（トークンなしの読み出しは、Cloudflareのほかの利用者と上限を分け合います。WorkerのsecretにUPDATE_DISPATCH_TOKENがあれば、それで読みます）');
   }
   const s = res.status;
+  const need = res.headers.get('x-accepted-github-permissions');
+  if (s === 403 && need) {
+    return new Error('GitHubが403を返しました。トークンに、公開しているリポジトリの' + permissionText(need) + 'の権限がありません。トークンの対象のリポジトリと権限を確かめてください');
+  }
   return new Error('GitHubが' + s + 'を返しました' + (s === 401 || s === 403 || s === 404 ? '。トークンの権限と、リポジトリの名前を確かめてください' : ''));
 }
 
@@ -110,7 +126,8 @@ export function realGitHub(): UpdateApi {
     },
     async dispatch(repo, token, workflow, inputs) {
       const res = await gh('/repos/' + repo + '/actions/workflows/' + workflow + '/dispatches', token, { method: 'POST', body: { ref: 'main', inputs } });
-      if (res.status !== 204) throw refused(res);
+      // 始まれば、204（中身なし）か200（実行のIDとURL）が返る
+      if (!res.ok) throw refused(res);
     },
     async runs(repo, token, workflow) {
       const res = await gh('/repos/' + repo + '/actions/workflows/' + workflow + '/runs?per_page=5', token);

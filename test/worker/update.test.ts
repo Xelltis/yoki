@@ -6,7 +6,7 @@ import type { AdminUpdate } from '../../src/shared/admin';
 import { app } from '../../src/worker/app';
 import { newer, parseVersion, setupUrl, startUpdate, updateStatus } from '../../src/worker/domain/update';
 import type { Bindings } from '../../src/worker/env';
-import { htmlToMarkdown, realGitHub } from '../../src/worker/update/api';
+import { htmlToMarkdown, permissionText, realGitHub } from '../../src/worker/update/api';
 import { DEFAULT_UPSTREAM, updateDeps, type UpdateDeps } from '../../src/worker/update/config';
 import { fakeGitHub, nextMinor } from '../../src/worker/update/dev';
 import { APP_VERSION } from '../../src/worker/version';
@@ -256,12 +256,27 @@ describe('更新を始める', () => {
     await expect(startUpdate(env.DB, deps())).rejects.toMatchObject({ status: 409, message: '更新を始められませんでした（GitHubが422を返しました）' });
   });
 
-  test('最新のバージョンで、更新のワークフローをmainで動かす', async () => {
+  test('トークンの権限が足りなければ（403）、GitHubが返す要る権限を、トークンの画面の言葉で出す', async () => {
+    const noActions = () => new Response(JSON.stringify({ message: 'Resource not accessible by personal access token' }), { status: 403, headers: { 'x-accepted-github-permissions': 'actions=write' } });
+    mockGitHub({ '/repos/o/u/releases/latest': release('v' + NEXT), '/repos/me/yoki/actions/workflows/update.yml/dispatches': noActions });
+    await updateStatus(env.DB, deps(), new Date(), true);
+    await expect(startUpdate(env.DB, deps())).rejects.toMatchObject({
+      status: 409, message: '更新を始められませんでした（GitHubが403を返しました。トークンに、公開しているリポジトリの「Actions」の「Read and write」の権限がありません。トークンの対象のリポジトリと権限を確かめてください）',
+    });
+    // どれか1組あればよい組が並んでいれば、初めの組を出す
+    expect(permissionText('actions=read,metadata=read; pull_requests=write')).toBe('「Actions」の「Read-only」と「Metadata」の「Read-only」');
+    expect(permissionText('pull_requests=write')).toBe('「Pull requests」の「Read and write」');
+  });
+
+  test('最新のバージョンで、更新のワークフローをmainで動かす。GitHubは204か、実行のIDを付けて200を返す', async () => {
     const calls = mockGitHub({ '/repos/o/u/releases/latest': release('v' + NEXT), '/repos/me/yoki/actions/workflows/update.yml/dispatches': () => new Response(null, { status: 204 }) });
     expect(await startUpdate(env.DB, deps(), new Date())).toBe(NEXT);
     const d = calls.find((c) => c.url.endsWith('/dispatches'))!;
     expect(d).toMatchObject({ method: 'POST', auth: 'Bearer tok' });
     expect(JSON.parse(d.body)).toEqual({ ref: 'main', inputs: { version: NEXT } });
+    vi.restoreAllMocks();
+    mockGitHub({ '/repos/o/u/releases/latest': release('v' + NEXT), '/repos/me/yoki/actions/workflows/update.yml/dispatches': () => Response.json({ workflow_run_id: 1, run_url: 'u', html_url: 'h' }) });
+    expect(await startUpdate(env.DB, deps(), new Date())).toBe(NEXT);
   });
 });
 
