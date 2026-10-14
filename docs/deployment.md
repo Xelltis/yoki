@@ -32,7 +32,7 @@ Viteは、`wrangler deploy` の行き先（`.wrangler/deploy/config.json`）を 
 
 Workerの値は、どれもsecretにする（varsにしない）。Workers Buildsは公開のたびに、設定に無いvarsを消すため。公開のアドレス（`APP_URL`）は無くてもよい。そのときは届いた要求のアドレスを使い、要求の無い見回り（cron）のために、ログインのたびにD1に控える（`auth/origin.ts`）。公開しているリポジトリの名前（運営の管理画面の「更新」）は、組み立てのときにGitのoriginから読む。
 
-写したリポジトリでは、公開のワークフロー（`deploy.yml`）とサイトの公開（`pages.yml`）は動かない。更新のワークフロー（`update.yml`）は動く（下の「新しいバージョンに上げる」）。
+写したリポジトリには、`.github/workflows/` が無い。リポジトリを作るCloudflareのGitHub App（Cloudflare Workers and Pages）は `workflows` の権限を持たず、GitHubはその権限の無いAppにワークフローのファイルを書かせないため。公開のワークフロー（`deploy.yml`）とサイトの公開（`pages.yml`）は要らない。更新のワークフロー（`update.yml`）だけは、運営者が1回だけ入れる（下の「新しいバージョンに上げる」）。
 
 ## GitHub Actionsで公開する
 
@@ -151,30 +151,34 @@ Googleでログインした人がグループに入れるかは、Discordのサ�
 
 **新しいバージョンを知る**: 運営の管理画面の「様子」のいちばん上と、「更新」の区分に出る。元のリポジトリのReleaseを、1時間に1回まで読む。`UPDATE_DISPATCH_TOKEN` があればそれで読み、無ければトークンなしで読む（公開されたリポジトリは、どのトークンでも読める）。トークンなしの上限（出口のアドレスごとに1時間60回）は、Cloudflareではほかの利用者と分け合うので、すぐに尽きる。APIが断ったら、Releaseのフィード（`releases.atom`。APIの上限を使わない）から読む。このときは、表の変更を含むかが分からないままになる。表（D1）の変更を含むバージョンは、そう出る。元のリポジトリが非公開だと読めず、その理由が出る。読めなかったときは「最新です」とは出さず、前に読めた最新のバージョンを添えて理由を出す。運営者（`OPERATOR_IDS`）には、BotからDiscordのDMでも知らせる（見回りが毎日10時台に1回見る。同じバージョンは2度送らない。運営の管理画面の「運営者への知らせ」で止められる）。
 
-**更新する**: 「更新」の区分のボタンか、GitHubのActionsの「Yokiを更新する」（`.github/workflows/update.yml`）の「Run workflow」。ワークフローは、設置した人のリポジトリの作り方で、取り込み方を変える。
+**更新する**: 「更新」の区分のボタンか、GitHubのActionsの「Yokiを更新する」（`.github/workflows/update.yml`）の「Run workflow」。ワークフローは取り込むバージョンを決めてタグをfetchし、そのバージョンの `tools/update/update.sh` を取り出して動かす（いつも取り込むバージョンの手順で動くように。ボタンで作ったリポジトリのワークフローは、書き換えずに使い続けるため）。手順は、設置した人のリポジトリの作り方で、取り込み方を変える。
 
 | リポジトリ | 見分け方 | 取り込み方 | 公開 |
 |---|---|---|---|
-| ボタンで作った | 元の履歴とつながっていない | バージョンのファイルで入れ替える。Cloudflareが `wrangler.jsonc` に書いた値（Workerの名前・D1の名前とID）は引き継ぐ（`tools/update/carry-wrangler.mjs`） | mainへのpushで、Workers Buildsが表の変更を当てて公開する |
+| ボタンで作った | 元の履歴とつながっていない | バージョンのファイルで入れ替える。`.github/` は入れ替えない（運営者が入れた更新のワークフローを残し、ワークフローのファイルを変えないので、Actionsの既定のトークンで書き込める）。Cloudflareが `wrangler.jsonc` に書いた値（Workerの名前・D1の名前とID）は引き継ぐ（`tools/update/carry-wrangler.mjs`） | mainへのpushで、Workers Buildsが表の変更を当てて公開する |
 | フォーク | 元の履歴とつながっている | バージョンのタグをマージする | 公開のワークフローが、表を変える前のD1の地点（bookmark）をSummaryに控えてから、表の変更を当てて公開する（`YOKI_DEPLOY_WITH_ACTIONS` が `true` のとき） |
 
-**mainに入れずにPRにするとき**: ボタンで作ったリポジトリのコードが、今のバージョン（`package.json` のバージョンのタグ）から変わっているとき（入れ替えると、その変更が消えるため。`wrangler.jsonc` は比べない）と、フォークでマージがぶつかったとき。どちらも `update/v1.4.0` のブランチとPRを作って止まる。GitHubの画面で確かめてマージすると公開される。サーバーごとの値はsecretかenvironmentに、規約の文はD1にあるので、コードを直さずに使っていればPRにならない。
+**mainに入れずにPRにするとき**: ボタンで作ったリポジトリのコードが、今のバージョン（`package.json` のバージョンのタグ）から変わっているとき（入れ替えると、その変更が消えるため。`wrangler.jsonc` と `.github/` は比べない）と、フォークでマージがぶつかったとき。どちらも `update/v1.4.0` のブランチとPRを作って止まる。GitHubの画面で確かめてマージすると公開される。サーバーごとの値はsecretかenvironmentに、規約の文はD1にあるので、コードを直さずに使っていればPRにならない。
 
 初めの1回だけ、次を準備する。
 
-### 1. Actionsを使えるようにする
+### 1. 更新のワークフローを入れる（ボタンで作ったリポジトリ）
+
+元のリポジトリの `.github/workflows/update.yml` を、同じ名前でmainに入れる（GitHubの画面の「Add file」→「Create new file」）。
+
+### 2. Actionsを使えるようにする
 
 フォークでは、Actionsは初めは止まっている（Actionsの画面で使うと決める）。ボタンで作ったリポジトリでは、初めから動く。どちらも、Settings → Actions → Generalの「Workflow permissions」を「Read and write permissions」にし、「Allow GitHub Actions to create and approve pull requests」を入れる（PRのため）。
 
-### 2. mainに書き込むトークン（おすすめ）
+### 3. mainに書き込むトークン（フォーク。おすすめ）
 
-元のリポジトリが `.github/workflows/` を変えたバージョンは、Actionsの既定のトークンではmainに書き込めない。GitHubのSettings → Developer settings → Fine-grained tokensで、このリポジトリだけに「Contents」と「Workflows」のRead and writeを付けたトークンを作り、リポジトリのSettings → Secrets and variables → ActionsのRepository secretsに `UPDATE_PUSH_TOKEN` として入れる（environmentではなく、リポジトリのsecret）。
+ボタンで作ったリポジトリでは要らない（更新は `.github/` を変えない）。フォークでは、元のリポジトリが `.github/workflows/` を変えたバージョンを、Actionsの既定のトークンではmainに書き込めない。GitHubのSettings → Developer settings → Fine-grained tokensで、このリポジトリだけに「Contents」と「Workflows」のRead and writeを付けたトークンを作り、リポジトリのSettings → Secrets and variables → ActionsのRepository secretsに `UPDATE_PUSH_TOKEN` として入れる（environmentではなく、リポジトリのsecret）。
 
-### 3. 管理画面のボタンで更新する（任意）
+### 4. 管理画面のボタンで更新する（任意）
 
 このリポジトリだけに「Actions」のRead and writeを付けたトークンを作り、Workerのsecretの `UPDATE_DISPATCH_TOKEN` に入れる（ボタンで設置したならCloudflareのWorkerのVariables and Secretsに種類「Secret」で、GitHub Actionsで公開しているならenvironment「production」の秘密に入れて公開し直す）。Workerはこのトークンで更新のワークフローを動かし、その記録を読む。コードは書き換えられない権限にとどめる。無ければ、「更新」の区分にGitHubの画面を開くボタンが出る。
 
-### 4. 元のリポジトリを変える（任意。フォークのフォークなど）
+### 5. 元のリポジトリを変える（任意。フォークのフォークなど）
 
 リポジトリのSettings → Secrets and variables → ActionsのRepository variablesに `YOKI_UPSTREAM`（`owner/name`）を入れる（更新のワークフローが取り込む元）。運営の管理画面が新しいバージョンを見に行く先は、組み立てのときの `YOKI_UPSTREAM` で決まる。ボタンで設置したなら、Workers Buildsの組み立ての変数（Settings → Build）にも入れる。
 

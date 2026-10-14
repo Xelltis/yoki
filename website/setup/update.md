@@ -6,29 +6,39 @@ description: 設置したYokiを、新しいバージョンに上げる手順と
 
 Yokiの新しいバージョンは、元のリポジトリ（[Xelltis/yoki](https://github.com/Xelltis/yoki)）のRelease（`v1.4.0` など）として出ます。設置したYokiは、運営の管理画面で新しいバージョンと変わったことを見て、ボタンかGitHubの画面から取り込めます。コードを触る必要はありません。
 
-更新を受け持つのは、あなたのリポジトリのGitHub Actions（「Yokiを更新する」のワークフロー）です。ボタンで設置したリポジトリにも、このワークフローが入っています。
+更新を受け持つのは、あなたのリポジトリのGitHub Actions（「Yokiを更新する」のワークフロー）です。ボタンで設置したときは、このワークフローを初めに1回だけ入れます。
 
 ## 初めに1回だけ準備する
 
-### 1. Actionsの権限を変える
+### 1. 更新のワークフローを入れる（ボタンで設置したとき）
+
+ボタンで作ったリポジトリには、GitHub Actionsのワークフローのファイル（`.github/workflows/`）が入っていません。リポジトリを作るCloudflareのGitHub Appに、ワークフローのファイルを書く権限が無いためです。更新のワークフローは、あなたが入れてください。
+
+あなたのリポジトリで「Add file」→「Create new file」を開き、名前を `.github/workflows/update.yml` にします。中身には元のリポジトリの[update.yml](https://github.com/Xelltis/yoki/blob/release/.github/workflows/update.yml)をそのまま写し、「Commit changes」を押してください。
+
+入れたワークフローは、書き換えずに使い続けられます。更新のたびに、取り込むバージョンの手順を読んで動くからです。
+
+### 2. Actionsの権限を変える
 
 あなたのリポジトリの「Settings」→「Actions」→「General」を開きます。「Workflow permissions」を「Read and write permissions」にし、「Allow GitHub Actions to create and approve pull requests」に印を入れて保存してください。更新のワークフローが、mainに書き込み、PRを作るために要ります。
 
 この2つを選べないときは、リポジトリを持つOrganizationの設定で止められています。Organizationの「Settings」→「Actions」→「General」で、同じ設定を許してください。
 
-### 2. mainに書き込むトークンを入れる（おすすめ）
+### 3. mainに書き込むトークンを入れる（GitHub Actionsで公開しているとき）
 
-元のリポジトリが `.github/workflows/` のファイルを変えたバージョンは、Actionsの既定のトークンではmainに書き込めません。どのバージョンでも取り込めるように、専用のトークンを入れておきます。
+ボタンで設置したときは要りません。ボタンで作ったリポジトリの更新は、ワークフローのファイルを変えないためです。
+
+フォークしてGitHub Actionsで公開しているときは、元のリポジトリが `.github/workflows/` のファイルを変えたバージョンを、Actionsの既定のトークンではmainに書き込めません。どのバージョンでも取り込めるように、専用のトークンを入れておきます。
 
 GitHubの「Settings」（あなたのアカウントの設定）→「Developer settings」→「Fine-grained tokens」でトークンを作ります。対象のリポジトリはあなたのリポジトリだけにし、権限は「Contents」と「Workflows」の「Read and write」を付けてください。
 
 作ったトークンの入れ先は、あなたのリポジトリの「Settings」→「Secrets and variables」→「Actions」の「Repository secrets」です。名前は `UPDATE_PUSH_TOKEN` にします。
 
-### 3. 管理画面のボタンで更新できるようにする（任意）
+### 4. 管理画面のボタンで更新できるようにする（任意）
 
 このトークンを入れると、運営の管理画面の「更新」のボタンで更新を始められます。入れなければ、同じ場所に「GitHubで更新する」のボタンが出て、GitHubの画面から始める形です。
 
-2と同じ手順で、あなたのリポジトリだけに「Actions」の「Read and write」を付けたトークンを作ります。入れ先は、YokiのWorkerのsecretで、名前は `UPDATE_DISPATCH_TOKEN` です。
+GitHubの「Settings」→「Developer settings」→「Fine-grained tokens」でトークンを作ります。対象のリポジトリはあなたのリポジトリだけにし、権限は「Actions」の「Read and write」を付けてください。入れ先は、YokiのWorkerのsecretで、名前は `UPDATE_DISPATCH_TOKEN` です。
 
 | 設置のしかた | 入れ先 |
 |---|---|
@@ -41,7 +51,7 @@ Yokiは、このトークンで更新のワークフローを動かし、その�
 
 新しいバージョンが出ると、運営の管理画面の「様子」のいちばん上と、「更新」の区分に出ます。Yokiは、元のリポジトリのReleaseを1時間に1回まで読みます。すぐ確かめたいときは、「更新」の「確かめ直す」を押してください。
 
-GitHubは、トークンなしの読み出しの数を、出口のアドレスごとに1時間60回までにしています。Cloudflareでは出口をほかの利用者と分け合うので、この上限にすぐ達しますが、そのときはReleaseの一覧のフィード（RSSのようなもの）から読み直すので、新しいバージョンは分かります。ただし、表の変更を含むかは「分からない」のままです。確実に読ませたいときは、3のトークン（`UPDATE_DISPATCH_TOKEN`）を入れてください。
+GitHubは、トークンなしの読み出しの数を、出口のアドレスごとに1時間60回までにしています。Cloudflareでは出口をほかの利用者と分け合うので、この上限にすぐ達しますが、そのときはReleaseの一覧のフィード（RSSのようなもの）から読み直すので、新しいバージョンは分かります。ただし、表の変更を含むかは「分からない」のままです。確実に読ませたいときは、4のトークン（`UPDATE_DISPATCH_TOKEN`）を入れてください。
 
 読めなかったときは、「新しいバージョンを確かめられませんでした」と理由が出ます。最新のバージョンの欄に残るのは、前に読めたものです。
 
@@ -57,7 +67,7 @@ GitHubは、トークンなしの読み出しの数を、出口のアドレス�
 
 | 設置のしかた | 取り込み方 | 公開 |
 |---|---|---|
-| ボタンで設置した | 新しいバージョンのファイルで入れ替える。Cloudflareが `wrangler.jsonc` に書いたデータベースのIDなどは引き継ぐ | mainが変わると、Cloudflareが組み立てて公開する |
+| ボタンで設置した | 新しいバージョンのファイルで入れ替える。`.github/` の中（入れた更新のワークフロー）と、Cloudflareが `wrangler.jsonc` に書いたデータベースのIDなどは残す | mainが変わると、Cloudflareが組み立てて公開する |
 | GitHub Actionsで公開している（フォーク） | 新しいバージョンをマージする | 「アプリを公開する」のワークフローが公開する |
 
 どちらでも、データベースの表の変更は、公開のときに当たります。数分たつと、運営の管理画面のバージョンが新しくなっているはずです。

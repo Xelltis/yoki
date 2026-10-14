@@ -347,13 +347,13 @@ YokiはOSSとして、ほかの人が自分のCloudflareに設置して公開す
 
 **新しいバージョンを知る**（`domain/update.ts`）: 元のリポジトリ（`UPSTREAM_REPOSITORY`。無ければ `update/config.ts` の既定）の最新のReleaseをGitHubのAPIで読み、今のバージョンと比べる。新しければ、2つのタグのあいだに変わったファイル（compare）に `migrations/` があるかで、表の変更を含むかを出す。読んだ結果は `meta` の `update_check` に控え、1時間は読み直さない（GitHubのAPIは、トークンなしでは出口のアドレスごとに1時間60回まで。Cloudflareではほかの利用者と分け合う）。`UPDATE_DISPATCH_TOKEN` があれば、それで読む（公開されたリポジトリは、どのトークンでも読める。401ならトークンなしで読み直す）。APIがReleaseを断ったら（上限の403・429など）、Releaseのフィード（`https://github.com/<repo>/releases.atom`）の最初のentryから読み、本文のHTMLを、APIと同じ形のMarkdownにする（`update/api.ts` の `htmlToMarkdown`）。フィードではcompareを読めないので、表の変更は分からないまま。上限で断られたら、権限や名前のせいにせず、上限だと出す。Releaseが404なら、リポジトリそのものも読む。リポジトリも見えなければ（非公開・名前の誤り）、「バージョンがまだ無い」とは言わずに理由を出す。読めなければ理由を出し（`checked` が偽）、前に読めた最新のバージョンは残す（今のバージョンより古ければ残さない）。
 
-**更新する**（`.github/workflows/update.yml`。各地のリポジトリで動く）: 元のリポジトリのタグをfetchし、履歴がつながっているかで取り込み方を変える。バージョンの形（`vX.Y.Z`）を確かめてから使い、入力は式の中に直に書かない（スクリプトの差し込みを防ぐ）。
+**更新する**（`.github/workflows/update.yml`。各地のリポジトリで動く）: 元のリポジトリのタグをfetchし、そのバージョンの `tools/update/update.sh` を取り出して動かす。手順は、履歴がつながっているかで取り込み方を変える。ワークフローはバージョンを決めて手順を取り出すだけにし、中身は手順に置く（ボタンで作ったリポジトリのワークフローは運営者が1回だけ入れ、更新では書き換えないので、手順のほうを新しくする）。バージョンの形（`vX.Y.Z`）を確かめてから使い、入力は式の中に直に書かない（スクリプトの差し込みを防ぐ）。
 
-ボタンで作ったリポジトリ（履歴がつながっていない）: バージョンのファイルで入れ替える。Cloudflareが設置のときに `wrangler.jsonc` に書いた値（Workerの名前・D1の名前とID）は、`tools/update/carry-wrangler.mjs` が新しいバージョンの `wrangler.jsonc` に引き継ぐ（コメント付きの文のまま、値の行だけを書き換える）。入れ替える前に、今のコードが今のバージョン（`package.json` のバージョンのタグ。`wrangler.jsonc` は除く）と同じかを比べ、違えば設置した人が変えたものとして、mainを変えずにPRを作って止まる。mainへのpushで、Workers Buildsが表の変更を当てて公開する。
+ボタンで作ったリポジトリ（履歴がつながっていない）: バージョンのファイルで入れ替える。`.github/` は入れ替えも比べもしない。CloudflareのGitHub Appは `workflows` の権限を持たず、ボタンで作ったリポジトリには `.github/workflows/` が無いため。運営者が入れた更新のワークフローを残し、ワークフローのファイルを変えないので、既定の `GITHUB_TOKEN` で書き込める。Cloudflareが設置のときに `wrangler.jsonc` に書いた値（Workerの名前・D1の名前とID）は、`tools/update/carry-wrangler.mjs` が新しいバージョンの `wrangler.jsonc` に引き継ぐ（コメント付きの文のまま、値の行だけを書き換える）。入れ替える前に、今のコードが今のバージョン（`package.json` のバージョンのタグ。`wrangler.jsonc` と `.github/` は除く）と同じかを比べ、違えば設置した人が変えたものとして、mainを変えずにPRを作って止まる。mainへのpushで、Workers Buildsが表の変更を当てて公開する。
 
 フォーク（履歴がつながっている）: タグをmainにマージし、GitHub Actionsで公開すると決めていれば（`YOKI_DEPLOY_WITH_ACTIONS`）、公開のワークフローを動かす。ぶつかったらmainを変えずに `update/vX.Y.Z` のブランチとPRを作って止まる。
 
-**2つのトークン**: 管理画面のボタンは、Workerのsecretの `UPDATE_DISPATCH_TOKEN`（そのリポジトリのActionsを動かすだけの権限）で、更新のワークフローを `workflow_dispatch` で動かし、その実行の一覧を読む。運営者のDiscordのアカウントを取られても、コードは書き換えられない。mainへの書き込みは、更新のワークフローがActionsのsecretの `UPDATE_PUSH_TOKEN`（ContentsとWorkflows）で行う。既定の `GITHUB_TOKEN` は `.github/workflows/` を書き換えられず、書き込んだpushでは公開のワークフローも動かないので、そのときは更新のワークフローが公開のワークフローを動かす。
+**2つのトークン**: 管理画面のボタンは、Workerのsecretの `UPDATE_DISPATCH_TOKEN`（そのリポジトリのActionsを動かすだけの権限）で、更新のワークフローを `workflow_dispatch` で動かし、その実行の一覧を読む。運営者のDiscordのアカウントを取られても、コードは書き換えられない。mainへの書き込みは、フォークでは、更新のワークフローがActionsのsecretの `UPDATE_PUSH_TOKEN`（ContentsとWorkflows）で行う。既定の `GITHUB_TOKEN` は `.github/workflows/` を書き換えられず、書き込んだpushでは公開のワークフローも動かないので、そのときは更新のワークフローが公開のワークフローを動かす。
 
 **表の変更**: 公開のワークフローは、当てる前にD1のTime Travelの地点（bookmark）をSummaryに控える。Workers Buildsは控えないので、時刻で戻す。表の変更は戻せないので、困ったらWorkerを前のバージョンに戻し、D1を更新の前に戻す。
 
