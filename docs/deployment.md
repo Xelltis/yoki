@@ -172,7 +172,7 @@ Googleでログインした人がグループに入れるかは、Discordのサ�
 
 ### 3. mainに書き込むトークン（フォーク。おすすめ）
 
-ボタンで作ったリポジトリでは要らない（更新は `.github/` を変えない）。フォークでは、元のリポジトリが `.github/workflows/` を変えたバージョンを、Actionsの既定のトークンではmainに書き込めない。GitHubのSettings → Developer settings → Fine-grained tokensで、このリポジトリだけに「Contents」と「Workflows」のRead and writeを付けたトークンを作り、リポジトリのSettings → Secrets and variables → ActionsのRepository secretsに `UPDATE_PUSH_TOKEN` として入れる（environmentではなく、リポジトリのsecret）。
+ボタンで作ったリポジトリでは要らない（更新は `.github/` を変えない）。フォークでは、元のリポジトリが `.github/workflows/` を変えたバージョンを、Actionsの既定のトークンではmainに書き込めない。GitHubのSettings → Developer settings → Fine-grained tokensで、このリポジトリだけに「Contents」と「Workflows」のRead and writeを付けたトークンを作り、リポジトリのSettings → Secrets and variables → ActionsのRepository secretsに `UPDATE_PUSH_TOKEN` として入れる（environmentではなく、リポジトリのsecret）。このトークンが使えなくなると（作り直した・消した・期限切れ）、更新のワークフローは初めのcheckoutで `could not read Username for 'https://github.com'` と出て止まる。公開のリポジトリでも、無効なトークンでは読めないため。ボタンで作ったリポジトリなら消し、フォークなら作り直して入れ直す。
 
 ### 4. 管理画面のボタンで更新する（任意）
 

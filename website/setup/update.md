@@ -115,6 +115,14 @@ GitHubのトークンの画面では、「Repository access」も見てくださ
 
 ボタンで設置したときは、`UPDATE_PUSH_TOKEN` は要りません。入れてあって403になるなら、消してかまいません（Actionsの既定のトークンで書き込みます）。
 
+## 「could not read Username」と出るとき
+
+Actionsの「Yokiを更新する」の記録に、`could not read Username for 'https://github.com': terminal prompts disabled` と出て、初めの `actions/checkout` で止まることがあります。Actionsのsecretの `UPDATE_PUSH_TOKEN` に入れたトークンが、使えなくなったときです。トークンを作り直した・消した・期限が切れたときに起こります。同じトークンを `UPDATE_DISPATCH_TOKEN` にも使っていて、そちらのために作り直したときも同じです。
+
+ボタンで設置したときは、`UPDATE_PUSH_TOKEN` を消してください。あなたのリポジトリの「Settings」→「Secrets and variables」→「Actions」の「Repository secrets」にあります。消すと、Actionsの既定のトークンで書き込みます。
+
+GitHub Actionsで公開しているときは、手順3と同じ権限でトークンを作り直し、`UPDATE_PUSH_TOKEN` に入れ直してください。
+
 ## 困ったときに戻す
 
 上げたバージョンで困ったら、次の順に戻します。
