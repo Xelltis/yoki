@@ -20,11 +20,13 @@ Yokiの新しいバージョンは、元のリポジトリ（[Xelltis/yoki](http
 
 入れたワークフローは、書き換えずに使い続けられます。更新のたびに、取り込むバージョンの手順を読んで動くからです。
 
-### 2. Actionsの権限を変える
+### 2. リポジトリのActionsの設定を変える
 
 あなたのリポジトリの「Settings」→「Actions」→「General」を開きます。「Workflow permissions」を「Read and write permissions」にし、「Allow GitHub Actions to create and approve pull requests」に印を入れて保存してください。更新のワークフローが、mainに書き込み、PRを作るために要ります。
 
 この2つを選べないときは、リポジトリを持つOrganizationの設定で止められています。Organizationの「Settings」→「Actions」→「General」で、同じ設定を許してください。
+
+ここで変えるのはリポジトリの設定で、4で作るトークンの権限とは別のものです。
 
 ### 3. mainに書き込むトークンを入れる（GitHub Actionsで公開しているとき）
 
@@ -40,7 +42,16 @@ GitHubの「Settings」（あなたのアカウントの設定）→「Developer
 
 このトークンを入れると、運営の管理画面の「更新」のボタンで更新を始められます。入れなければ、同じ場所に「GitHubで更新する」のボタンが出て、GitHubの画面から始める形です。
 
-GitHubの「Settings」→「Developer settings」→「Fine-grained tokens」でトークンを作ります。対象のリポジトリはあなたのリポジトリだけにし、権限は「Actions」の「Read and write」を付けてください。入れ先は、YokiのWorkerのsecretで、名前は `UPDATE_DISPATCH_TOKEN` です。
+2で変えたリポジトリの設定とは別に、GitHubのトークンを作ります。どちらにも「Actions」と「Read and write」が出てきますが、2はリポジトリの設定で、ここで決めるのはトークンの権限です。3のトークンとも別にしてください。
+
+1. GitHubの「Settings」（あなたのアカウントの設定）→「Developer settings」→「Fine-grained tokens」を開き、「Generate new token」を押す
+2. 「Repository access」を「Only select repositories」にして、あなたのリポジトリを選ぶ
+3. 「Permissions」で、「Actions」を「Read and write」にする
+4. 「Generate token」を押して、出たトークンを控える
+
+付けるのは「Actions」だけです（「Metadata」の「Read-only」は、自動で付きます）。「Workflows」は名前が似ていますが、ワークフローのファイルを書き換える権限で、ワークフローを動かすのは「Actions」の権限です。
+
+作ったトークンの入れ先は、YokiのWorkerのsecretです。名前は `UPDATE_DISPATCH_TOKEN` にします。
 
 | 設置のしかた | 入れ先 |
 |---|---|
@@ -95,6 +106,8 @@ PRを開き、差分を確かめてからマージしてください。マージ
 |---|---|---|
 | 運営の管理画面の「更新」 | Workerのsecretの `UPDATE_DISPATCH_TOKEN` | 「Actions」の「Read and write」（「Workflows」ではありません） |
 | Actionsの「Yokiを更新する」の記録 | Actionsのsecretの `UPDATE_PUSH_TOKEN` | 「Contents」と「Workflows」の「Read and write」 |
+
+運営の管理画面で出たときは、リポジトリの「Settings」→「Actions」→「General」（手順2）を変えても直りません。トークンの権限を確かめてください。
 
 GitHubのトークンの画面では、「Repository access」も見てください。「Only select repositories」にして、あなたのリポジトリを選びます。「Public repositories」のままでは、どのリポジトリにも書き込めません。リポジトリがOrganizationのものなら、「Resource owner」をそのOrganizationにします（Organizationが認めるまで使えないこともあります）。
 
