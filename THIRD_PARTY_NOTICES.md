@@ -10,23 +10,23 @@ Yokiが使っている、第三者のソフトウェアと素材の一覧です�
 
 | 名前 | 版 | ライセンス | 著作権 |
 |---|---|---|---|
-| [Material Symbols](https://github.com/google/material-design-icons)（アイコン。@iconify-json/material-symbols） | 1.2.94 | Apache-2.0 | Google |
+| [Material Symbols](https://github.com/google/material-design-icons)（アイコン。@iconify-json/material-symbols） | 1.2.95 | Apache-2.0 | Google |
 | [tailwindcss](https://github.com/tailwindlabs/tailwindcss)（組み立てたCSS） | 4.3.3 | MIT | Copyright (c) Tailwind Labs, Inc. |
-| [@tanstack/history](https://github.com/TanStack/router) | 1.162.4 | MIT | Copyright (c) 2021-present Tanner Linsley |
-| [@tanstack/query-core](https://github.com/TanStack/query) | 5.104.1 | MIT | Copyright (c) 2021-present Tanner Linsley |
-| [@tanstack/react-query](https://github.com/TanStack/query) | 5.104.1 | MIT | Copyright (c) 2021-present Tanner Linsley |
-| [@tanstack/react-router](https://github.com/TanStack/router) | 1.170.41 | MIT | Copyright (c) 2021-present Tanner Linsley |
+| [@tanstack/history](https://github.com/TanStack/router) | 1.162.5 | MIT | Copyright (c) 2021-present Tanner Linsley |
+| [@tanstack/query-core](https://github.com/TanStack/query) | 5.104.4 | MIT | Copyright (c) 2021-present Tanner Linsley |
+| [@tanstack/react-query](https://github.com/TanStack/query) | 5.104.4 | MIT | Copyright (c) 2021-present Tanner Linsley |
+| [@tanstack/react-router](https://github.com/TanStack/router) | 1.170.45 | MIT | Copyright (c) 2021-present Tanner Linsley |
 | [@tanstack/react-store](https://github.com/TanStack/store) | 0.11.2 | MIT | Copyright (c) 2021 Tanner Linsley |
-| [@tanstack/router-core](https://github.com/TanStack/router) | 1.171.34 | MIT | Copyright (c) 2021-present Tanner Linsley |
+| [@tanstack/router-core](https://github.com/TanStack/router) | 1.171.38 | MIT | Copyright (c) 2021-present Tanner Linsley |
 | [@tanstack/store](https://github.com/TanStack/store) | 0.11.2 | MIT | Copyright (c) 2021 Tanner Linsley |
 | [cookie-es](https://github.com/unjs/cookie-es) | 3.1.1 | MIT | Copyright (c) 2012-2014 Roman Shtylman <shtylman@gmail.com><br>Copyright (c) 2015 Douglas Christopher Wilson <doug@somethingdoug.com><br>Copyright (c) 2015 Nathan Friedly <nathan@nfriedly.com> (http://nfriedly.com/) |
-| [hono](https://github.com/honojs/hono) | 4.13.12 | MIT | Copyright (c) 2021 - present, Yusuke Wada and Hono contributors |
+| [hono](https://github.com/honojs/hono) | 4.13.13 | MIT | Copyright (c) 2021 - present, Yusuke Wada and Hono contributors |
 | [isbot](https://github.com/omrilotan/isbot) | 5.2.2 | Unlicense | — |
-| [react](https://github.com/react/react) | 19.3.0 | MIT | Copyright (c) Meta Platforms, Inc. and affiliates. |
-| [react-dom](https://github.com/react/react) | 19.3.0 | MIT | Copyright (c) Meta Platforms, Inc. and affiliates. |
+| [react](https://github.com/react/react) | 19.3.1 | MIT | Copyright (c) Meta Platforms, Inc. and affiliates. |
+| [react-dom](https://github.com/react/react) | 19.3.1 | MIT | Copyright (c) Meta Platforms, Inc. and affiliates. |
 | [scheduler](https://github.com/react/react) | 0.28.0 | MIT | Copyright (c) Meta Platforms, Inc. and affiliates. |
-| [seroval](https://github.com/lxsmnsyc/seroval) | 1.6.8 | MIT | Copyright (c) Alexis Munsayac |
-| [seroval-plugins](https://github.com/lxsmnsyc/seroval) | 1.6.8 | MIT | Copyright (c) Alexis Munsayac |
+| [seroval](https://github.com/lxsmnsyc/seroval) | 1.6.11 | MIT | Copyright (c) Alexis Munsayac |
+| [seroval-plugins](https://github.com/lxsmnsyc/seroval) | 1.6.11 | MIT | Copyright (c) Alexis Munsayac |
 | [use-sync-external-store](https://github.com/react/react) | 1.7.0 | MIT | Copyright (c) Meta Platforms, Inc. and affiliates. |
 
 ## 使い方のサイト
@@ -35,7 +35,7 @@ Yokiが使っている、第三者のソフトウェアと素材の一覧です�
 
 | 名前 | 版 | ライセンス | 著作権 |
 |---|---|---|---|
-| [Material Symbols](https://github.com/google/material-design-icons)（アイコン。@iconify-json/material-symbols） | 1.2.94 | Apache-2.0 | Google |
+| [Material Symbols](https://github.com/google/material-design-icons)（アイコン。@iconify-json/material-symbols） | 1.2.95 | Apache-2.0 | Google |
 | [vitepress](https://github.com/vuejs/vitepress) | 2.0.0-alpha.20 | MIT | Copyright (c) 2019-present, Yuxi (Evan) You |
 | [vue](https://github.com/vuejs/core) | 3.5.43 | MIT | Copyright (c) 2018-present, Yuxi (Evan) You |
 | [@vue/runtime-dom](https://github.com/vuejs/core) | 3.5.43 | MIT | Copyright (c) 2018-present, Yuxi (Evan) You |
