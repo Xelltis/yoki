@@ -6,7 +6,7 @@
 import path from 'node:path';
 import { cloudflareTest, readD1Migrations } from '@cloudflare/vitest-pool-workers';
 import { defineConfig, type ViteUserConfig } from 'vitest/config';
-import { appVersion } from './vite.config';
+import { appVersion } from './vite.config.ts';
 
 export default defineConfig(async (): Promise<ViteUserConfig> => {
   const migrations = await readD1Migrations(path.join(import.meta.dirname, 'migrations'));

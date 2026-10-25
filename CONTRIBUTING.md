@@ -106,9 +106,9 @@ lintはoxlint（`.oxlintrc.json`）。ESLintのTypeScript対応（typescript-esl
 
 依存のインストールスクリプトは、`package.json` の `allowScripts` で信頼したもの（workerd・esbuild・lefthook）だけを動かす。足すときは中身を確かめてから `npm approve-scripts --no-allow-scripts-pin <パッケージ>` で足す。
 
-Workersのテスト用の道具（`@cloudflare/vitest-pool-workers`）は、古いwranglerとminiflareを固定して抱えている（npm auditに出る）。`package.json` の `overrides` で、アプリと同じバージョンにそろえている。wranglerを上げたら、`overrides` のminiflareもwranglerが使うバージョンに合わせる（テストが確かめる）。
+Workersのテスト用の道具（`@cloudflare/vitest-pool-workers`）は、古いwranglerとminiflareを固定して抱えている（npm auditに出る）。`package.json` の `overrides` で、アプリと同じバージョンにそろえている。wranglerを上げたら、`overrides` のminiflareもwranglerが使うバージョンに合わせる（テストが確かめる）。同じ道具が固定している `zod` も、npm auditに指摘が出たバージョンなので、`overrides` で直ったバージョンに上げている。
 
-miniflareが固定している `sharp`（画像の部品）は、npm auditに指摘が出たバージョンなので、`overrides` で直ったバージョンに上げている。miniflareが直ったバージョンを使うようになったら、外す。
+miniflareが固定している `undici`（HTTPの部品）も、npm auditに指摘が出たバージョンなので、`overrides` で直ったバージョンに上げている。どちらも、固定している側が直ったバージョンを使うようになったら外す。
 
 Dependabotが、npmの依存とGitHub Actionsの新しいバージョンを、毎週月曜にPRにする（`.github/dependabot.yml`）。小さい上げ（minorとpatch）は1つのPRにまとめ、npmは出てから7日たったバージョンだけを出す。脆弱性を直すPR（セキュリティの更新）は、リポジトリの設定で入れてあり、待たずに出る。コミットの説明は `build(deps)`・`build(deps-dev)`・`ci(deps)` なので、マージしてもバージョンは出ない。PRの確かめが次のところで止まったら、PRのブランチで直してからマージする。
 
