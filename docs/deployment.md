@@ -34,6 +34,8 @@ Workerの値は、どれもsecretにする（varsにしない）。Workers Build
 
 写したリポジトリには、`.github/workflows/` が無い。リポジトリを作るCloudflareのGitHub App（Cloudflare Workers and Pages）は `workflows` の権限を持たず、GitHubはその権限の無いAppにワークフローのファイルを書かせないため。公開のワークフロー（`deploy.yml`）とサイトの公開（`pages.yml`）は要らない。更新のワークフロー（`update.yml`）だけは、運営者が1回だけ入れる（下の「新しいバージョンに上げる」）。
 
+Dependabotの設定（`.github/dependabot.yml`。依存とActionsの新しいバージョンをPRにする）は、写ったリポジトリでも動くことがある。届いたPRはマージしない（テストを通っていない依存で公開され、次の更新も、コードが変わったとみなしてPRで止まる）。依存は、更新のたびにテストを通ったバージョンに入れ替わる。止めるなら、運営者がこのファイルを消す。更新は `.github/` を入れ替えないので、消したままになる。設置する人向けの手順は、サイトの「新しいバージョンに上げる」の「DependabotのPRが届くとき」。
+
 ## GitHub Actionsで公開する
 
 元のリポジトリと、フォークして自分で公開するときのやり方。公開するCloudflareごとの値は、GitHubのenvironment「production」に置く。D1のIDとリポジトリの名前は組み立てた設定（`dist/<Workerの名前>/wrangler.json`）に入れ（`vite.config.ts`）、ほかはWorkerのsecretとして公開するバージョンと一緒に送る（`deploy.yml`）。
