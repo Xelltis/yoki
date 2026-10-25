@@ -1,5 +1,5 @@
 # PR を確かめる。マージの前に、公開のワークフロー（deploy.yml）と同じ確かめ（型・lint・日本語の検査・テストとカバレッジ・e2e）と、
-# サイトの組み立て・コミットの説明の形（commitlint）を確かめる。main に入ったあとの確かめは、公開のワークフローがする
+# サイトの組み立て・コミットの説明の形（commitlint）・npm audit を確かめる。main に入ったあとの確かめは、公開のワークフローがする
 name: 確かめる
 
 on:
@@ -27,6 +27,8 @@ jobs:
           node-version-file: .node-version
           cache: npm
       - run: npm ci
+      # npm audit は 0 件に保つ。Dependabot の上げで、間接の依存が直ったバージョンより前に戻ることもある
+      - run: npm audit
       - run: npm run typecheck
       # oxlint と、日本語の検査（yomiyasu。Python 3 は runner に入っている）
       - run: npm run lint

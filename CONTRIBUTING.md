@@ -118,6 +118,7 @@ Dependabotが、npmの依存とGitHub Actionsの新しいバージョンを、�
 | 実行時の依存（`dependencies`） | `npm run notices` で `THIRD_PARTY_NOTICES.md` を書き出し直す |
 | React・Hono・TypeScript | READMEのバッジのバージョン |
 | 更新のワークフロー（`update.yml`）のActions | 同じ中身を `tools/update/workflow.yml` にも写す |
+| どれでも（npm auditで止まった） | `npm audit fix`。選び直した間接の依存が、直ったばかりのバージョンより前に戻ることがある |
 
 ## ほかのコマンド
 
