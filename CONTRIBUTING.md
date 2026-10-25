@@ -110,6 +110,15 @@ Workersのテスト用の道具（`@cloudflare/vitest-pool-workers`）は、古�
 
 miniflareが固定している `sharp`（画像の部品）は、npm auditに指摘が出たバージョンなので、`overrides` で直ったバージョンに上げている。miniflareが直ったバージョンを使うようになったら、外す。
 
+Dependabotが、npmの依存とGitHub Actionsの新しいバージョンを、毎週月曜にPRにする（`.github/dependabot.yml`）。小さい上げ（minorとpatch）は1つのPRにまとめ、npmは出てから7日たったバージョンだけを出す。脆弱性を直すPR（セキュリティの更新）は、リポジトリの設定で入れてあり、待たずに出る。コミットの説明は `build(deps)`・`build(deps-dev)`・`ci(deps)` なので、マージしてもバージョンは出ない。PRの確かめが次のところで止まったら、PRのブランチで直してからマージする。
+
+| 上げたもの | 直すところ |
+|---|---|
+| wrangler | `overrides` のminiflareを、wranglerが使うバージョンに合わせる |
+| 実行時の依存（`dependencies`） | `npm run notices` で `THIRD_PARTY_NOTICES.md` を書き出し直す |
+| React・Hono・TypeScript | READMEのバッジのバージョン |
+| 更新のワークフロー（`update.yml`）のActions | 同じ中身を `tools/update/workflow.yml` にも写す |
+
 ## ほかのコマンド
 
 | コマンド | すること |

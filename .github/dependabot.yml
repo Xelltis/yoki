@@ -1,0 +1,43 @@
+# Dependabot。npmの依存とGitHub Actionsの新しいバージョンを、毎週PRにする。
+# 脆弱性を直すPR（セキュリティの更新）は、リポジトリの設定で入れてある。どちらもコミットの説明はbuild(deps)などで、バージョンは出さない。
+# PRで確かめが止まったときの直し方は、CONTRIBUTING.mdの「テスト」。
+# ボタンで作ったリポジトリに写っても、運営者は消してよい（更新は.github/を変えない。docs/deployment.md）
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '09:00'
+      timezone: Asia/Tokyo
+    # 出てから7日たったバージョンだけを出す（乗っ取られた版をすぐに取り込まないように）。セキュリティの更新は待たない
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: build
+      prefix-development: build
+      include: scope
+    groups:
+      # 小さい上げ（minor・patch）は1つのPRにまとめる。大きい上げ（major）は1つずつ
+      minor-and-patch:
+        applies-to: version-updates
+        patterns: ['*']
+        update-types: [minor, patch]
+      security:
+        applies-to: security-updates
+        patterns: ['*']
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '09:00'
+      timezone: Asia/Tokyo
+    commit-message:
+      prefix: ci
+      include: scope
+    groups:
+      actions:
+        patterns: ['*']
