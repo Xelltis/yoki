@@ -110,7 +110,7 @@ Workersのテスト用の道具（`@cloudflare/vitest-pool-workers`）は、古�
 
 miniflareが固定している `undici`（HTTPの部品）も、npm auditに指摘が出たバージョンなので、`overrides` で直ったバージョンに上げている。どちらも、固定している側が直ったバージョンを使うようになったら外す。
 
-Dependabotが、npmの依存とGitHub Actionsの新しいバージョンを、毎週月曜にPRにする（`.github/dependabot.yml`）。小さい上げ（minorとpatch）は1つのPRにまとめ、npmは出てから7日たったバージョンだけを出す。脆弱性を直すPR（セキュリティの更新）は、リポジトリの設定で入れてあり、待たずに出る。コミットの説明は `build(deps)`・`build(deps-dev)`・`ci(deps)` なので、マージしてもバージョンは出ない。PRの確かめが次のところで止まったら、PRのブランチで直してからマージする。
+Dependabotが、npmの依存とGitHub Actionsの新しいバージョンを、毎週月曜にPRにする（`.github/dependabot.yml`）。小さい上げ（minorとpatch）は1つのPRにまとめ、npmは出てから7日たったバージョンだけを出す。脆弱性を直すPR（セキュリティの更新）は、リポジトリの設定で入れてあり、待たずに出る。コミットの説明は `build(deps)`・`build(deps-dev)`・`ci(deps)` なので、マージしてもバージョンは出ない。まだ動かない大きい上げ（今はvitest 5とconventional-changelog-conventionalcommits 10）は、理由と一緒に `ignore` に書いて止める。PRの確かめが次のところで止まったら、PRのブランチで直してからマージする。
 
 | 上げたもの | 直すところ |
 |---|---|

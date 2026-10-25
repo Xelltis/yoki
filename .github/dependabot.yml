@@ -18,7 +18,22 @@ updates:
       prefix: build
       prefix-development: build
       include: scope
+    # 大きい上げのうち、まだ動かないもの。動くようになったら外す
+    ignore:
+      # vitest 5は、Workersのテストの道具（@cloudflare/vitest-pool-workers）がまだ使えない（peerがvitest ^4）
+      - dependency-name: vitest
+        update-types: [version-update:semver-major]
+      - dependency-name: '@vitest/*'
+        update-types: [version-update:semver-major]
+      # 10は、semantic-releaseの書き出しの部品（conventional-changelog-writer 8）では描けない（CONTRIBUTING.mdの「バージョンを出す」）
+      - dependency-name: conventional-changelog-conventionalcommits
+        update-types: [version-update:semver-major]
     groups:
+      # vitestと@vitest/*の大きい上げは、一緒でないと入らないので1つのPRにする
+      vitest-major:
+        applies-to: version-updates
+        patterns: [vitest, '@vitest/*']
+        update-types: [major]
       # 小さい上げ（minor・patch）は1つのPRにまとめる。大きい上げ（major）は1つずつ
       minor-and-patch:
         applies-to: version-updates
