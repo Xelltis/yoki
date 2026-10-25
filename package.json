@@ -46,7 +46,7 @@
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.1",
     "@vitest/coverage-istanbul": "^4.1.12",
-    "conventional-changelog-conventionalcommits": "^9.3.1",
+    "conventional-changelog-conventionalcommits": "^10.4.1",
     "lefthook": "^2.1.16",
     "micromatch": "file:tools/shims/micromatch",
     "oxlint": "^1.86.0",
